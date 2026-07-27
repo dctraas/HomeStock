@@ -7,23 +7,23 @@ import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -35,7 +35,11 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.style.TextAlign
@@ -135,29 +139,94 @@ private fun CameraPreview(
             },
         )
 
-        ScanOverlay(modifier = Modifier.align(Alignment.Center))
+        ScanOverlay(modifier = Modifier.fillMaxSize())
 
-        Text(
-            text = "Richt de camera op de barcode van een product",
-            color = Color.White,
-            textAlign = TextAlign.Center,
+        Surface(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .fillMaxWidth()
-                .background(Color.Black.copy(alpha = 0.5f))
-                .padding(16.dp),
+                .padding(24.dp),
+            shape = RoundedCornerShape(24.dp),
+            color = Color.Black.copy(alpha = 0.6f),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 14.dp),
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.QrCodeScanner,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(20.dp),
+                )
+                Text(
+                    text = "Richt de camera op de barcode van een product",
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(start = 12.dp),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Dims everything outside a centered scan frame and draws corner brackets
+ * around it, like a typical barcode-scanner viewfinder.
+ */
+@Composable
+private fun ScanOverlay(modifier: Modifier = Modifier) {
+    val scrimColor = Color.Black.copy(alpha = 0.55f)
+    val frameColor = Color.White
+
+    Canvas(modifier = modifier) {
+        val frameWidth = size.width * 0.78f
+        val frameHeight = frameWidth / 1.6f
+        val left = (size.width - frameWidth) / 2f
+        val top = (size.height - frameHeight) / 2f
+        val right = left + frameWidth
+        val bottom = top + frameHeight
+
+        drawRect(color = scrimColor, topLeft = Offset(0f, 0f), size = Size(size.width, top))
+        drawRect(color = scrimColor, topLeft = Offset(0f, bottom), size = Size(size.width, size.height - bottom))
+        drawRect(color = scrimColor, topLeft = Offset(0f, top), size = Size(left, frameHeight))
+        drawRect(color = scrimColor, topLeft = Offset(right, top), size = Size(size.width - right, frameHeight))
+
+        drawCornerBrackets(
+            left = left,
+            top = top,
+            right = right,
+            bottom = bottom,
+            bracketLength = 28.dp.toPx(),
+            strokeWidth = 5.dp.toPx(),
+            color = frameColor,
         )
     }
 }
 
-@Composable
-private fun ScanOverlay(modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxWidth(0.75f)
-            .aspectRatio(1.6f)
-            .border(3.dp, Color.White, RoundedCornerShape(16.dp)),
-    )
+private fun DrawScope.drawCornerBrackets(
+    left: Float,
+    top: Float,
+    right: Float,
+    bottom: Float,
+    bracketLength: Float,
+    strokeWidth: Float,
+    color: Color,
+) {
+    val cap = StrokeCap.Round
+
+    // top-left
+    drawLine(color, Offset(left, top + bracketLength), Offset(left, top), strokeWidth, cap)
+    drawLine(color, Offset(left, top), Offset(left + bracketLength, top), strokeWidth, cap)
+    // top-right
+    drawLine(color, Offset(right - bracketLength, top), Offset(right, top), strokeWidth, cap)
+    drawLine(color, Offset(right, top), Offset(right, top + bracketLength), strokeWidth, cap)
+    // bottom-left
+    drawLine(color, Offset(left, bottom - bracketLength), Offset(left, bottom), strokeWidth, cap)
+    drawLine(color, Offset(left, bottom), Offset(left + bracketLength, bottom), strokeWidth, cap)
+    // bottom-right
+    drawLine(color, Offset(right - bracketLength, bottom), Offset(right, bottom), strokeWidth, cap)
+    drawLine(color, Offset(right, bottom), Offset(right, bottom - bracketLength), strokeWidth, cap)
 }
 
 @Composable
