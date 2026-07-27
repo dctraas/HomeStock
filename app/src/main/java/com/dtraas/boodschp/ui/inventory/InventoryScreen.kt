@@ -27,7 +27,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
@@ -83,7 +82,6 @@ private enum class InventoryViewMode { LIST, GRID }
 @Composable
 fun InventoryScreen(
     onProductClick: (String) -> Unit,
-    onOpenActivityLog: () -> Unit,
 ) {
     val application = LocalContext.current.applicationContext as BoodschpApplication
     val viewModel: InventoryViewModel = viewModel(
@@ -137,9 +135,6 @@ fun InventoryScreen(
                             imageVector = if (viewMode == InventoryViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
                             contentDescription = if (viewMode == InventoryViewMode.LIST) "Toon als kaarten" else "Toon als lijst",
                         )
-                    }
-                    IconButton(onClick = onOpenActivityLog) {
-                        Icon(Icons.Filled.History, contentDescription = "Wijzigingen")
                     }
                 },
             )

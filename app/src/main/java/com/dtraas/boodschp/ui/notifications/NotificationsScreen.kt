@@ -1,6 +1,5 @@
-package com.dtraas.boodschp.ui.activitylog
+package com.dtraas.boodschp.ui.notifications
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,9 +14,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddShoppingCart
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Card
@@ -25,7 +23,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -45,6 +42,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.boodschp.BoodschpApplication
 import com.dtraas.boodschp.data.local.dao.ActivityLogWithProduct
 import com.dtraas.boodschp.data.model.ActivityType
+import com.dtraas.boodschp.data.model.DeveloperNotice
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -52,37 +50,92 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ActivityLogScreen(onBack: () -> Unit) {
+fun NotificationsScreen() {
     val application = LocalContext.current.applicationContext as BoodschpApplication
-    val viewModel: ActivityLogViewModel = viewModel(
+    val viewModel: NotificationsViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { ActivityLogViewModel(application.container.activityLogRepository) }
+            initializer { NotificationsViewModel(application.container.activityLogRepository) }
         },
     )
-    val entries by viewModel.entries.collectAsState()
+    val appActivity by viewModel.appActivity.collectAsState()
 
     Scaffold(
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("Wijzigingen") },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Terug")
-                    }
-                },
-            )
-        },
+        topBar = { CenterAlignedTopAppBar(title = { Text("Meldingen") }) },
     ) { padding ->
-        if (entries.isEmpty()) {
-            EmptyActivityLog(modifier = Modifier.fillMaxSize().padding(padding))
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(16.dp),
-            ) {
-                items(entries, key = { it.id }) { entry ->
-                    ActivityLogRow(entry)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().padding(padding),
+            contentPadding = PaddingValues(16.dp),
+        ) {
+            item {
+                SectionTitle("Van de ontwikkelaar")
+            }
+            items(viewModel.developerNotices) { notice ->
+                DeveloperNoticeRow(notice)
+            }
+
+            item {
+                SectionTitle("Vanuit de app", modifier = Modifier.padding(top = 12.dp))
+            }
+            if (appActivity.isEmpty()) {
+                item {
+                    Text(
+                        text = "Scans en aanpassingen verschijnen hier.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(vertical = 8.dp),
+                    )
                 }
+            } else {
+                items(appActivity, key = { it.id }) { entry ->
+                    AppActivityRow(entry)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionTitle(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.titleMedium,
+        modifier = modifier.padding(bottom = 8.dp),
+    )
+}
+
+@Composable
+private fun DeveloperNoticeRow(notice: DeveloperNotice) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = RoundedCornerShape(14.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                modifier = Modifier.size(36.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = Icons.Filled.Campaign,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                    )
+                }
+            }
+            Column(modifier = Modifier.padding(start = 12.dp)) {
+                Text(notice.title, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = notice.message,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
             }
         }
     }
@@ -99,7 +152,7 @@ private fun activityIcon(type: ActivityType): ImageVector = when (type) {
 }
 
 @Composable
-private fun ActivityLogRow(entry: ActivityLogWithProduct) {
+private fun AppActivityRow(entry: ActivityLogWithProduct) {
     val type = ActivityType.fromStorageKey(entry.type)
     val formatted = remember(entry.timestamp) {
         timestampFormatter.format(Instant.ofEpochMilli(entry.timestamp).atZone(ZoneId.systemDefault()))
@@ -142,40 +195,5 @@ private fun ActivityLogRow(entry: ActivityLogWithProduct) {
                 )
             }
         }
-    }
-}
-
-@Composable
-private fun EmptyActivityLog(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier.padding(32.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier.size(96.dp),
-        ) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Icon(
-                    imageVector = Icons.Filled.History,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
-        }
-        Text(
-            text = "Nog geen wijzigingen.",
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(top = 20.dp),
-        )
-        Text(
-            text = "Scans en aanpassingen verschijnen hier.",
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 4.dp),
-        )
     }
 }
