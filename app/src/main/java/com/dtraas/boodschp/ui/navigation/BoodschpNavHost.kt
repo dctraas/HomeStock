@@ -107,12 +107,24 @@ private fun BoodschpBottomBar(navController: NavHostController, currentRoute: St
             NavigationBarItem(
                 selected = currentRoute == destination.destination.route,
                 onClick = {
-                    navController.navigate(destination.destination.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
+                    val startRoute = navController.graph.findStartDestination().route
+                    if (destination.destination.route == startRoute) {
+                        // navigate(startRoute) { popUpTo(startRoute) { ... } } is a known
+                        // no-op edge case in Navigation Compose when the target IS the
+                        // popUpTo anchor — it silently fails to update the displayed
+                        // screen. Popping back to it directly sidesteps that entirely.
+                        navController.popBackStack(
+                            route = startRoute!!,
+                            inclusive = false,
+                        )
+                    } else {
+                        navController.navigate(destination.destination.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
                     }
                 },
                 icon = { Icon(destination.icon, contentDescription = destination.label) },
