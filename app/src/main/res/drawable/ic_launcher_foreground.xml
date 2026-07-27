@@ -3,16 +3,24 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Basket handle -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M34,38 L74,38 L70,80 L38,80 Z" />
+        android:pathData="M40,50 C40,30 68,30 68,50"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="5"
+        android:strokeLineCap="round" />
+    <!-- Basket body -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M44,38 C44,28 64,28 64,38"
-        android:strokeColor="#FFFFFF"
-        android:strokeWidth="4"
-        android:fillAlpha="0" />
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M28,50 L80,50 L72,82 C72,84.2 70.2,86 68,86 L40,86 C37.8,86 36,84.2 36,82 Z" />
+    <!-- Basket weave detail -->
     <path
-        android:fillColor="#2E7D32"
-        android:pathData="M48,52 L60,52 L60,60 L48,60 Z" />
+        android:strokeColor="#2FA84F"
+        android:strokeWidth="3"
+        android:strokeLineCap="round"
+        android:pathData="M46,58 L43,78 M62,58 L65,78 M54,58 L54,78" />
+    <!-- Fresh leaf accent -->
+    <path
+        android:fillColor="#A8F5A2"
+        android:pathData="M54,16 C60,16 64,21 61,27 C59,30.5 51,30.5 49,27 C46,21 48,16 54,16 Z" />
 </vector>

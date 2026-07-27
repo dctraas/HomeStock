@@ -35,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -71,7 +72,7 @@ fun InventoryScreen(
             ) {
                 groupedInventory.forEach { (category, itemsInCategory) ->
                     stickyHeader {
-                        CategoryHeader(category)
+                        CategoryHeader(category, itemCount = itemsInCategory.size)
                     }
                     items(itemsInCategory, key = { it.barcode }) { item ->
                         InventoryRow(
@@ -89,25 +90,33 @@ fun InventoryScreen(
 }
 
 @Composable
-private fun CategoryHeader(category: Category) {
+private fun CategoryHeader(category: Category, itemCount: Int) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
             .padding(horizontal = 16.dp, vertical = 10.dp),
     ) {
-        Icon(
-            imageVector = category.icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(20.dp),
-        )
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = category.icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
+            Text(
+                text = category.displayName,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
         Text(
-            text = category.displayName,
-            style = MaterialTheme.typography.titleSmall,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(start = 8.dp),
+            text = itemCount.toString(),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
     }
 }
@@ -124,12 +133,12 @@ private fun InventoryRow(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp),
+            .padding(horizontal = 16.dp, vertical = 5.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         shape = RoundedCornerShape(16.dp),
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
+            modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             ProductAvatar(item)
@@ -138,12 +147,21 @@ private fun InventoryRow(
                     .weight(1f)
                     .padding(horizontal = 12.dp),
             ) {
-                Text(item.name, style = MaterialTheme.typography.titleSmall)
-                item.brand?.let {
+                Text(
+                    text = item.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                val subtitle = listOfNotNull(item.brand, item.unit).joinToString(" · ")
+                if (subtitle.isNotEmpty()) {
                     Text(
-                        it,
+                        text = subtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp),
                     )
                 }
             }
@@ -152,11 +170,12 @@ private fun InventoryRow(
                 onDecrease = onDecrease,
                 onIncrease = onIncrease,
             )
-            IconButton(onClick = onDelete) {
+            IconButton(onClick = onDelete, modifier = Modifier.size(40.dp)) {
                 Icon(
                     Icons.Filled.Delete,
                     contentDescription = "Verwijderen uit voorraad",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                    tint = MaterialTheme.colorScheme.outline,
                 )
             }
         }
@@ -166,9 +185,9 @@ private fun InventoryRow(
 @Composable
 private fun ProductAvatar(item: InventoryItemWithProduct) {
     Surface(
-        shape = CircleShape,
+        shape = RoundedCornerShape(12.dp),
         color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = Modifier.size(48.dp),
+        modifier = Modifier.size(52.dp),
     ) {
         if (item.imageUrl != null) {
             AsyncImage(
