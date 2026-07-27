@@ -49,6 +49,8 @@ import androidx.core.content.ContextCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat.checkSelfPermission
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import java.util.concurrent.Executors
 
 @Composable
@@ -100,6 +102,21 @@ private fun CameraPreview(
 
     DisposableEffect(Unit) {
         onDispose { cameraExecutor.shutdown() }
+    }
+
+    // "Scan" is the navigation graph's start destination, so switching
+    // bottom-nav tabs and back never actually disposes/recreates this
+    // composable (unlike the other tabs) — only its own lifecycle resumes.
+    // Without this, scannedCode would stay set after the first scan and
+    // silently block every scan after that.
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                scannedCode = null
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
     }
 
     Box(modifier = Modifier.fillMaxSize().padding(padding)) {
