@@ -7,6 +7,7 @@ import com.dtraas.boodschp.data.remote.OpenFoodFactsApi
 import com.dtraas.boodschp.data.repository.InventoryRepository
 import com.dtraas.boodschp.data.repository.ProductRepository
 import com.dtraas.boodschp.data.repository.ShoppingListRepository
+import com.dtraas.boodschp.data.repository.StatisticsRepository
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -46,5 +47,9 @@ class AppContainer(context: Context) {
 
     val shoppingListRepository: ShoppingListRepository by lazy {
         ShoppingListRepository(database.shoppingListDao())
+    }
+
+    val statisticsRepository: StatisticsRepository by lazy {
+        StatisticsRepository(database.scanHistoryDao(), database.inventoryDao())
     }
 }

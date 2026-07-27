@@ -22,6 +22,7 @@ import com.dtraas.boodschp.ui.productdetail.ProductDetailScreen
 import com.dtraas.boodschp.ui.scan.ScanScreen
 import com.dtraas.boodschp.ui.scanresult.ScanResultScreen
 import com.dtraas.boodschp.ui.shoppinglist.ShoppingListScreen
+import com.dtraas.boodschp.ui.statistics.StatisticsScreen
 
 @Composable
 fun BoodschpApp() {
@@ -58,6 +59,9 @@ fun BoodschpApp() {
             }
             composable(Destination.ShoppingList.route) {
                 ShoppingListScreen()
+            }
+            composable(Destination.Statistics.route) {
+                StatisticsScreen()
             }
             composable(
                 route = Destination.ScanResult.route,

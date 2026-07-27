@@ -23,6 +23,12 @@ data class InventoryItemWithProduct(
     val updatedAt: Long,
 )
 
+/** Number of distinct inventory items per category, for the statistics screen. */
+data class CategoryCount(
+    val category: String,
+    val count: Int,
+)
+
 @Dao
 interface InventoryDao {
     @Query(
@@ -50,4 +56,17 @@ interface InventoryDao {
 
     @Query("SELECT COUNT(*) FROM inventory_items WHERE barcode = :barcode")
     suspend fun isInInventory(barcode: String): Int
+
+    @Query("SELECT COUNT(*) FROM inventory_items")
+    fun observeInventoryCount(): Flow<Int>
+
+    @Query(
+        """
+        SELECT p.category AS category, COUNT(*) AS count
+        FROM inventory_items i
+        INNER JOIN products p ON p.barcode = i.barcode
+        GROUP BY p.category
+        """
+    )
+    fun observeCategoryDistribution(): Flow<List<CategoryCount>>
 }
