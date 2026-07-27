@@ -63,10 +63,10 @@ fun NotificationsScreen() {
     )
     val appActivity by viewModel.appActivity.collectAsState()
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabTitles = listOf("Van de ontwikkelaar", "Vanuit de app")
+    val tabTitles = listOf("Meldingen", "Geschiedenis")
 
     Scaffold(
-        topBar = { CenterAlignedTopAppBar(title = { Text("Meldingen") }) },
+        topBar = { CenterAlignedTopAppBar(title = { Text("Nieuws") }) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             TabRow(selectedTabIndex = selectedTab) {

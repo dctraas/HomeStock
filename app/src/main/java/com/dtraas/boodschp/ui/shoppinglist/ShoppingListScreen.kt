@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -247,12 +248,12 @@ private fun ShoppingListRow(
         shape = RoundedCornerShape(16.dp),
     ) {
         Row(
-            modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(start = 4.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+            verticalAlignment = Alignment.Top,
         ) {
             Checkbox(checked = item.isChecked, onCheckedChange = onCheckedChange)
             ShoppingItemAvatar(item, category)
-            Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
+            Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
                 Text(
                     text = item.name,
                     style = MaterialTheme.typography.titleSmall,
@@ -267,19 +268,25 @@ private fun ShoppingListRow(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-            }
-            QuantityStepper(
-                quantity = item.quantity,
-                onDecrease = onDecrease,
-                onIncrease = onIncrease,
-                minQuantity = 1,
-            )
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Filled.Delete,
-                    contentDescription = "Verwijderen",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    QuantityStepper(
+                        quantity = item.quantity,
+                        onDecrease = onDecrease,
+                        onIncrease = onIncrease,
+                        minQuantity = 1,
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = "Verwijderen",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
             }
         }
     }

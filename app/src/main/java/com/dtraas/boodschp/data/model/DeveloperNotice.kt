@@ -1,6 +1,6 @@
 package com.dtraas.boodschp.data.model
 
-/** A short "what's new" style message from the app's developer, shown on the Meldingen screen. */
+/** A short "what's new" style message from the app's developer, shown on the Nieuws screen. */
 data class DeveloperNotice(
     val title: String,
     val message: String,

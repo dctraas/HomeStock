@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -326,14 +327,14 @@ private fun InventoryRow(
         shape = RoundedCornerShape(16.dp),
     ) {
         Row(
-            modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.Top,
         ) {
             ProductAvatar(item, modifier = Modifier.size(52.dp))
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = 12.dp),
+                    .padding(start = 12.dp),
             ) {
                 Text(
                     text = item.name,
@@ -352,25 +353,31 @@ private fun InventoryRow(
                         modifier = Modifier.padding(top = 2.dp),
                     )
                 }
-            }
-            QuantityStepper(
-                quantity = item.quantity,
-                onDecrease = onDecrease,
-                onIncrease = onIncrease,
-            )
-            IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(48.dp)) {
-                Icon(
-                    Icons.Filled.AddShoppingCart,
-                    contentDescription = "Toevoegen aan boodschappenlijst",
-                    tint = MaterialTheme.colorScheme.primary,
-                )
-            }
-            IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
-                Icon(
-                    Icons.Filled.Delete,
-                    contentDescription = "Verwijderen uit voorraad",
-                    tint = MaterialTheme.colorScheme.outline,
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    QuantityStepper(
+                        quantity = item.quantity,
+                        onDecrease = onDecrease,
+                        onIncrease = onIncrease,
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    IconButton(onClick = onAddToShoppingList) {
+                        Icon(
+                            Icons.Filled.AddShoppingCart,
+                            contentDescription = "Toevoegen aan boodschappenlijst",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    IconButton(onClick = onDelete) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = "Verwijderen uit voorraad",
+                            tint = MaterialTheme.colorScheme.outline,
+                        )
+                    }
+                }
             }
         }
     }
