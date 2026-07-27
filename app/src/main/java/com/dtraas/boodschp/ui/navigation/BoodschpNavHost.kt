@@ -17,6 +17,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.compose.runtime.getValue
+import com.dtraas.boodschp.ui.activitylog.ActivityLogScreen
 import com.dtraas.boodschp.ui.inventory.InventoryScreen
 import com.dtraas.boodschp.ui.productdetail.ProductDetailScreen
 import com.dtraas.boodschp.ui.scan.ScanScreen
@@ -55,6 +56,9 @@ fun BoodschpApp() {
                     onProductClick = { barcode ->
                         navController.navigate(Destination.ProductDetail.createRoute(barcode))
                     },
+                    onOpenActivityLog = {
+                        navController.navigate(Destination.ActivityLog.route)
+                    },
                 )
             }
             composable(Destination.ShoppingList.route) {
@@ -87,6 +91,9 @@ fun BoodschpApp() {
                     barcode = barcode,
                     onBack = { navController.popBackStack() },
                 )
+            }
+            composable(Destination.ActivityLog.route) {
+                ActivityLogScreen(onBack = { navController.popBackStack() })
             }
         }
     }

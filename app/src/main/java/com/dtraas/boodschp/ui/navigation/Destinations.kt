@@ -18,6 +18,7 @@ sealed class Destination(val route: String) {
     data object ProductDetail : Destination("product_detail/{barcode}") {
         fun createRoute(barcode: String) = "product_detail/$barcode"
     }
+    data object ActivityLog : Destination("activity_log")
 }
 
 data class TopLevelDestination(

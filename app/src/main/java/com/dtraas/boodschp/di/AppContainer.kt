@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.dtraas.boodschp.data.local.AppDatabase
 import com.dtraas.boodschp.data.remote.OpenFoodFactsApi
+import com.dtraas.boodschp.data.repository.ActivityLogRepository
 import com.dtraas.boodschp.data.repository.InventoryRepository
 import com.dtraas.boodschp.data.repository.ProductRepository
 import com.dtraas.boodschp.data.repository.ShoppingListRepository
@@ -24,7 +25,12 @@ class AppContainer(context: Context) {
         context.applicationContext,
         AppDatabase::class.java,
         AppDatabase.DATABASE_NAME,
-    ).build()
+    )
+        // The app hasn't shipped yet, so schema changes during active
+        // development just reset the local dev database instead of
+        // requiring a hand-written Migration for every iteration.
+        .fallbackToDestructiveMigration()
+        .build()
 
     private val okHttpClient: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC })
@@ -41,8 +47,12 @@ class AppContainer(context: Context) {
         ProductRepository(database.productDao(), api)
     }
 
+    val activityLogRepository: ActivityLogRepository by lazy {
+        ActivityLogRepository(database.activityLogDao())
+    }
+
     val inventoryRepository: InventoryRepository by lazy {
-        InventoryRepository(database, database.inventoryDao(), database.scanHistoryDao())
+        InventoryRepository(database, database.inventoryDao(), database.scanHistoryDao(), activityLogRepository)
     }
 
     val shoppingListRepository: ShoppingListRepository by lazy {
