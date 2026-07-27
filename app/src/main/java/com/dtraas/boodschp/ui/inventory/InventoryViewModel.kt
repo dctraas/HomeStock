@@ -16,9 +16,17 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/** How items are ordered within each category group in the Voorraad overview. */
+enum class InventorySortOption(val label: String) {
+    NAME("Naam"),
+    QUANTITY("Aantal"),
+    RECENTLY_UPDATED("Laatst toegevoegd"),
+}
+
 data class InventoryUiState(
     val searchQuery: String = "",
     val selectedCategory: Category? = null,
+    val sortOption: InventorySortOption = InventorySortOption.NAME,
     val groupedInventory: Map<Category, List<InventoryItemWithProduct>> = emptyMap(),
 )
 
@@ -30,12 +38,14 @@ class InventoryViewModel(
 
     private val searchQuery = MutableStateFlow("")
     private val selectedCategory = MutableStateFlow<Category?>(null)
+    private val sortOption = MutableStateFlow(InventorySortOption.NAME)
 
     val uiState: StateFlow<InventoryUiState> = combine(
         inventoryRepository.observeInventoryWithProduct(),
         searchQuery,
         selectedCategory,
-    ) { items, query, category ->
+        sortOption,
+    ) { items, query, category, sort ->
         val filtered = items.filter { item ->
             val matchesCategory = category == null || Category.fromStorageKey(item.category) == category
             val matchesQuery = query.isBlank() ||
@@ -43,10 +53,16 @@ class InventoryViewModel(
                 item.brand?.contains(query, ignoreCase = true) == true
             matchesCategory && matchesQuery
         }
+        val sorted = when (sort) {
+            InventorySortOption.NAME -> filtered.sortedBy { it.name.lowercase() }
+            InventorySortOption.QUANTITY -> filtered.sortedByDescending { it.quantity }
+            InventorySortOption.RECENTLY_UPDATED -> filtered.sortedByDescending { it.updatedAt }
+        }
         InventoryUiState(
             searchQuery = query,
             selectedCategory = category,
-            groupedInventory = filtered
+            sortOption = sort,
+            groupedInventory = sorted
                 .groupBy { Category.fromStorageKey(it.category) }
                 .toSortedMap(compareBy { it.sortOrder }),
         )
@@ -58,6 +74,10 @@ class InventoryViewModel(
 
     fun onCategoryFilterChange(category: Category?) {
         selectedCategory.value = category
+    }
+
+    fun onSortOptionChange(option: InventorySortOption) {
+        sortOption.value = option
     }
 
     fun setQuantity(barcode: String, quantity: Int) {
