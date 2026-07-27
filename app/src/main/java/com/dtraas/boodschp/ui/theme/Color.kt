@@ -2,32 +2,46 @@ package com.dtraas.boodschp.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val GreenPrimary = Color(0xFF2E7D32)
+// A "fresh market" palette: leaf green (produce) as primary, warm terracotta
+// (bread, spices, pantry) as secondary, and a soft blueberry blue as tertiary
+// accent — richer and more appetizing than a single flat green.
+
+val GreenPrimary = Color(0xFF2E7D4F)
 val OnGreenPrimary = Color(0xFFFFFFFF)
-val GreenPrimaryContainer = Color(0xFFA8F5A2)
-val OnGreenPrimaryContainer = Color(0xFF002204)
+val GreenPrimaryContainer = Color(0xFFB7F0C4)
+val OnGreenPrimaryContainer = Color(0xFF002110)
 
-val GreenSecondary = Color(0xFF52634F)
-val OnGreenSecondary = Color(0xFFFFFFFF)
-val GreenSecondaryContainer = Color(0xFFD5E8CF)
-val OnGreenSecondaryContainer = Color(0xFF101F0F)
+val TerracottaSecondary = Color(0xFF7A5B3A)
+val OnTerracottaSecondary = Color(0xFFFFFFFF)
+val TerracottaSecondaryContainer = Color(0xFFFFDCBB)
+val OnTerracottaSecondaryContainer = Color(0xFF2C1600)
 
-val GreenTertiary = Color(0xFF39656B)
-val OnGreenTertiary = Color(0xFFFFFFFF)
-val GreenTertiaryContainer = Color(0xFFBCEBF2)
-val OnGreenTertiaryContainer = Color(0xFF001F23)
+val BlueberryTertiary = Color(0xFF4A5F92)
+val OnBlueberryTertiary = Color(0xFFFFFFFF)
+val BlueberryTertiaryContainer = Color(0xFFD9E2FF)
+val OnBlueberryTertiaryContainer = Color(0xFF001945)
 
-val GreenPrimaryDark = Color(0xFF8DD888)
-val OnGreenPrimaryDark = Color(0xFF00390A)
-val GreenPrimaryContainerDark = Color(0xFF0B5314)
-val OnGreenPrimaryContainerDark = Color(0xFFA8F5A2)
+val MarketBackground = Color(0xFFFBFDF8)
+val MarketSurfaceVariant = Color(0xFFDEE5D8)
+val OnMarketSurfaceVariant = Color(0xFF424940)
+val MarketOutline = Color(0xFF71796E)
 
-val GreenSecondaryDark = Color(0xFFBACCB5)
-val OnGreenSecondaryDark = Color(0xFF243424)
-val GreenSecondaryContainerDark = Color(0xFF3A4B38)
-val OnGreenSecondaryContainerDark = Color(0xFFD5E8CF)
+val GreenPrimaryDark = Color(0xFF9CD6AB)
+val OnGreenPrimaryDark = Color(0xFF00391C)
+val GreenPrimaryContainerDark = Color(0xFF00522C)
+val OnGreenPrimaryContainerDark = Color(0xFFB7F0C4)
 
-val GreenTertiaryDark = Color(0xFFA1CED4)
-val OnGreenTertiaryDark = Color(0xFF00363C)
-val GreenTertiaryContainerDark = Color(0xFF1F4D53)
-val OnGreenTertiaryContainerDark = Color(0xFFBCEBF2)
+val TerracottaSecondaryDark = Color(0xFFE9C09B)
+val OnTerracottaSecondaryDark = Color(0xFF452B0D)
+val TerracottaSecondaryContainerDark = Color(0xFF5F4020)
+val OnTerracottaSecondaryContainerDark = Color(0xFFFFDCBB)
+
+val BlueberryTertiaryDark = Color(0xFFB3C5FF)
+val OnBlueberryTertiaryDark = Color(0xFF1A2E60)
+val BlueberryTertiaryContainerDark = Color(0xFF324578)
+val OnBlueberryTertiaryContainerDark = Color(0xFFD9E2FF)
+
+val MarketBackgroundDark = Color(0xFF10140F)
+val MarketSurfaceVariantDark = Color(0xFF42493E)
+val OnMarketSurfaceVariantDark = Color(0xFFC2C9BB)
+val MarketOutlineDark = Color(0xFF8C9388)

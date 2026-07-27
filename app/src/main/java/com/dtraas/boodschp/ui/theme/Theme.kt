@@ -15,14 +15,19 @@ private val LightColors = lightColorScheme(
     onPrimary = OnGreenPrimary,
     primaryContainer = GreenPrimaryContainer,
     onPrimaryContainer = OnGreenPrimaryContainer,
-    secondary = GreenSecondary,
-    onSecondary = OnGreenSecondary,
-    secondaryContainer = GreenSecondaryContainer,
-    onSecondaryContainer = OnGreenSecondaryContainer,
-    tertiary = GreenTertiary,
-    onTertiary = OnGreenTertiary,
-    tertiaryContainer = GreenTertiaryContainer,
-    onTertiaryContainer = OnGreenTertiaryContainer,
+    secondary = TerracottaSecondary,
+    onSecondary = OnTerracottaSecondary,
+    secondaryContainer = TerracottaSecondaryContainer,
+    onSecondaryContainer = OnTerracottaSecondaryContainer,
+    tertiary = BlueberryTertiary,
+    onTertiary = OnBlueberryTertiary,
+    tertiaryContainer = BlueberryTertiaryContainer,
+    onTertiaryContainer = OnBlueberryTertiaryContainer,
+    background = MarketBackground,
+    surface = MarketBackground,
+    surfaceVariant = MarketSurfaceVariant,
+    onSurfaceVariant = OnMarketSurfaceVariant,
+    outline = MarketOutline,
 )
 
 private val DarkColors = darkColorScheme(
@@ -30,19 +35,24 @@ private val DarkColors = darkColorScheme(
     onPrimary = OnGreenPrimaryDark,
     primaryContainer = GreenPrimaryContainerDark,
     onPrimaryContainer = OnGreenPrimaryContainerDark,
-    secondary = GreenSecondaryDark,
-    onSecondary = OnGreenSecondaryDark,
-    secondaryContainer = GreenSecondaryContainerDark,
-    onSecondaryContainer = OnGreenSecondaryContainerDark,
-    tertiary = GreenTertiaryDark,
-    onTertiary = OnGreenTertiaryDark,
-    tertiaryContainer = GreenTertiaryContainerDark,
-    onTertiaryContainer = OnGreenTertiaryContainerDark,
+    secondary = TerracottaSecondaryDark,
+    onSecondary = OnTerracottaSecondaryDark,
+    secondaryContainer = TerracottaSecondaryContainerDark,
+    onSecondaryContainer = OnTerracottaSecondaryContainerDark,
+    tertiary = BlueberryTertiaryDark,
+    onTertiary = OnBlueberryTertiaryDark,
+    tertiaryContainer = BlueberryTertiaryContainerDark,
+    onTertiaryContainer = OnBlueberryTertiaryContainerDark,
+    background = MarketBackgroundDark,
+    surface = MarketBackgroundDark,
+    surfaceVariant = MarketSurfaceVariantDark,
+    onSurfaceVariant = OnMarketSurfaceVariantDark,
+    outline = MarketOutlineDark,
 )
 
 /**
  * [dynamicColor] defaults to false: this app has a deliberately designed
- * green grocery palette, and letting Android 12+ override it with
+ * "fresh market" palette, and letting Android 12+ override it with
  * wallpaper-based colors would undermine that. Callers can still opt in.
  */
 @Composable
