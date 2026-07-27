@@ -47,7 +47,7 @@ fun BoodschpApp() {
             composable(Destination.Scan.route) {
                 ScanScreen(
                     isActive = currentRoute == Destination.Scan.route,
-                    onBarcodeScanned = { barcode ->
+                    onNeedsConfirmation = { barcode ->
                         navController.navigate(Destination.ScanResult.createRoute(barcode))
                     },
                 )

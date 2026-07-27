@@ -78,6 +78,17 @@ class InventoryRepository(
         }
     }
 
+    /** Re-creates an inventory row after an undo action, without touching the activity log. */
+    suspend fun restoreItem(barcode: String, quantity: Int) {
+        inventoryDao.upsert(
+            InventoryItemEntity(
+                barcode = barcode,
+                quantity = quantity.coerceAtLeast(0),
+                updatedAt = System.currentTimeMillis(),
+            )
+        )
+    }
+
     fun observeInventoryItem(barcode: String): Flow<InventoryItemEntity?> =
         inventoryDao.observeByBarcode(barcode)
 

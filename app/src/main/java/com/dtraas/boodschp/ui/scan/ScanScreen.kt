@@ -23,6 +23,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,6 +33,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -49,13 +52,30 @@ import androidx.core.content.ContextCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat.checkSelfPermission
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import com.dtraas.boodschp.BoodschpApplication
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
 
 @Composable
 fun ScanScreen(
     isActive: Boolean,
-    onBarcodeScanned: (String) -> Unit,
+    onNeedsConfirmation: (String) -> Unit,
 ) {
+    val application = LocalContext.current.applicationContext as BoodschpApplication
+    val viewModel: ScanViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer {
+                ScanViewModel(
+                    productRepository = application.container.productRepository,
+                    inventoryRepository = application.container.inventoryRepository,
+                )
+            }
+        },
+    )
     val context = LocalContext.current
     var hasCameraPermission by remember {
         mutableStateOf(
@@ -73,12 +93,30 @@ fun ScanScreen(
         }
     }
 
-    Scaffold { padding ->
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { padding ->
         if (hasCameraPermission) {
             CameraPreview(
                 padding = padding,
                 isActive = isActive,
-                onBarcodeScanned = onBarcodeScanned,
+                onBarcodeDetected = { barcode ->
+                    when (val outcome = viewModel.handleScannedBarcode(barcode)) {
+                        is ScanOutcome.QuickAdded -> {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar("${outcome.productName} toegevoegd (+1)")
+                            }
+                            true
+                        }
+                        ScanOutcome.NeedsConfirmation -> {
+                            onNeedsConfirmation(barcode)
+                            false
+                        }
+                    }
+                },
             )
         } else {
             PermissionRationale(
@@ -93,14 +131,15 @@ fun ScanScreen(
 private fun CameraPreview(
     padding: PaddingValues,
     isActive: Boolean,
-    onBarcodeScanned: (String) -> Unit,
+    onBarcodeDetected: suspend (String) -> Boolean,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var scannedCode by remember { mutableStateOf<String?>(null) }
-    val currentOnBarcodeScanned by rememberUpdatedState(onBarcodeScanned)
+    val currentOnBarcodeDetected by rememberUpdatedState(onBarcodeDetected)
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     val previewView = remember { PreviewView(context) }
+    val coroutineScope = rememberCoroutineScope()
 
     DisposableEffect(Unit) {
         onDispose { cameraExecutor.shutdown() }
@@ -130,7 +169,18 @@ private fun CameraPreview(
                         it.setAnalyzer(cameraExecutor, BarcodeAnalyzer { barcode ->
                             if (scannedCode == null) {
                                 scannedCode = barcode
-                                currentOnBarcodeScanned(barcode)
+                                coroutineScope.launch {
+                                    val keepScanning = currentOnBarcodeDetected(barcode)
+                                    if (keepScanning) {
+                                        // Brief pause so the same barcode isn't immediately
+                                        // re-detected while still in view, then re-arm so
+                                        // the next item can be scanned right away.
+                                        delay(1200)
+                                        scannedCode = null
+                                    }
+                                    // Otherwise we're navigating to the confirmation screen;
+                                    // the isActive-driven rebind resets the guard on return.
+                                }
                             }
                         })
                     }

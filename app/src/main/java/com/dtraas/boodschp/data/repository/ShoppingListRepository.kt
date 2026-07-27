@@ -37,6 +37,11 @@ class ShoppingListRepository(
         shoppingListDao.update(item.copy(name = item.name.trim(), quantity = item.quantity.coerceAtLeast(1)))
     }
 
+    /** Re-inserts a previously removed item (as a new row) after an undo action. */
+    suspend fun restoreItem(item: ShoppingListItemEntity) {
+        shoppingListDao.insert(item.copy(id = 0))
+    }
+
     suspend fun setChecked(id: Long, checked: Boolean) = shoppingListDao.setChecked(id, checked)
 
     suspend fun removeItem(id: Long) = shoppingListDao.deleteById(id)

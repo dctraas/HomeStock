@@ -13,6 +13,9 @@ class ProductRepository(
 ) {
     fun observeProduct(barcode: String): Flow<ProductEntity?> = productDao.observeByBarcode(barcode)
 
+    /** Returns the cached product for [barcode], or null if we've never seen it before. */
+    suspend fun findCached(barcode: String): ProductEntity? = productDao.findByBarcode(barcode)
+
     /**
      * Returns the cached product for [barcode] if we already know it,
      * otherwise looks it up via Open Food Facts and caches the result.

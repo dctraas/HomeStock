@@ -33,6 +33,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -42,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,6 +66,7 @@ import com.dtraas.boodschp.ui.components.CategoryDropdown
 import com.dtraas.boodschp.ui.components.QuantityStepper
 import com.dtraas.boodschp.ui.components.StoreDropdown
 import com.dtraas.boodschp.ui.components.icon
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -77,6 +82,8 @@ fun ShoppingListScreen() {
 
     var showAddDialog by remember { mutableStateOf(false) }
     var editingItem by remember { mutableStateOf<ShoppingListItemEntity?>(null) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -96,6 +103,7 @@ fun ShoppingListScreen() {
                 Icon(Icons.Filled.Add, contentDescription = "Item toevoegen")
             }
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         if (groupedByStore.isEmpty()) {
             EmptyShoppingList(modifier = Modifier.fillMaxSize().padding(padding))
@@ -113,7 +121,18 @@ fun ShoppingListScreen() {
                             item = item,
                             onCheckedChange = { checked -> viewModel.setChecked(item.id, checked) },
                             onClick = { editingItem = item },
-                            onDelete = { viewModel.removeItem(item.id) },
+                            onDelete = {
+                                viewModel.removeItem(item.id)
+                                coroutineScope.launch {
+                                    val result = snackbarHostState.showSnackbar(
+                                        message = "${item.name} verwijderd",
+                                        actionLabel = "Ongedaan maken",
+                                    )
+                                    if (result == SnackbarResult.ActionPerformed) {
+                                        viewModel.restoreItem(item)
+                                    }
+                                }
+                            },
                         )
                     }
                 }

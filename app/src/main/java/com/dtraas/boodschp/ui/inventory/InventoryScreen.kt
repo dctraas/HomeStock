@@ -7,12 +7,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -20,10 +25,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -36,6 +43,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,12 +53,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -59,6 +73,9 @@ import com.dtraas.boodschp.data.local.dao.InventoryItemWithProduct
 import com.dtraas.boodschp.data.model.Category
 import com.dtraas.boodschp.ui.components.QuantityStepper
 import com.dtraas.boodschp.ui.components.icon
+import kotlinx.coroutines.launch
+
+private enum class InventoryViewMode { LIST, GRID }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -79,18 +96,49 @@ fun InventoryScreen(
         },
     )
     val uiState by viewModel.uiState.collectAsState()
+    var viewMode by remember { mutableStateOf(InventoryViewMode.LIST) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    fun deleteWithUndo(item: InventoryItemWithProduct) {
+        viewModel.removeFromInventory(item.barcode)
+        coroutineScope.launch {
+            val result = snackbarHostState.showSnackbar(
+                message = "${item.name} verwijderd",
+                actionLabel = "Ongedaan maken",
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                viewModel.restoreItem(item)
+            }
+        }
+    }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Voorraad") },
                 actions = {
+                    IconButton(
+                        onClick = {
+                            viewMode = if (viewMode == InventoryViewMode.LIST) {
+                                InventoryViewMode.GRID
+                            } else {
+                                InventoryViewMode.LIST
+                            }
+                        },
+                    ) {
+                        Icon(
+                            imageVector = if (viewMode == InventoryViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
+                            contentDescription = if (viewMode == InventoryViewMode.LIST) "Toon als kaarten" else "Toon als lijst",
+                        )
+                    }
                     IconButton(onClick = onOpenActivityLog) {
                         Icon(Icons.Filled.History, contentDescription = "Wijzigingen")
                     }
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             SearchField(
@@ -111,7 +159,7 @@ fun InventoryScreen(
                     isFiltered = uiState.searchQuery.isNotBlank() || uiState.selectedCategory != null,
                     modifier = Modifier.fillMaxSize(),
                 )
-            } else {
+            } else if (viewMode == InventoryViewMode.LIST) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(vertical = 8.dp),
@@ -126,7 +174,31 @@ fun InventoryScreen(
                                 onClick = { onProductClick(item.barcode) },
                                 onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
                                 onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
-                                onDelete = { viewModel.removeFromInventory(item.barcode) },
+                                onDelete = { deleteWithUndo(item) },
+                                onAddToShoppingList = { viewModel.addToShoppingList(item) },
+                            )
+                        }
+                    }
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    uiState.groupedInventory.forEach { (category, itemsInCategory) ->
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            CategoryHeader(category, itemCount = itemsInCategory.size)
+                        }
+                        items(itemsInCategory, key = { it.barcode }) { item ->
+                            InventoryGridCard(
+                                item = item,
+                                onClick = { onProductClick(item.barcode) },
+                                onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
+                                onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
+                                onDelete = { deleteWithUndo(item) },
                                 onAddToShoppingList = { viewModel.addToShoppingList(item) },
                             )
                         }
@@ -247,7 +319,7 @@ private fun InventoryRow(
             modifier = Modifier.padding(start = 12.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ProductAvatar(item)
+            ProductAvatar(item, modifier = Modifier.size(52.dp))
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -276,26 +348,96 @@ private fun InventoryRow(
                 onDecrease = onDecrease,
                 onIncrease = onIncrease,
             )
-            InventoryRowActions(
+            InventoryItemMenu(
                 onAddToShoppingList = onAddToShoppingList,
                 onDelete = onDelete,
+                modifier = Modifier.size(40.dp),
+                tint = MaterialTheme.colorScheme.outline,
             )
         }
     }
 }
 
 @Composable
-private fun InventoryRowActions(
+private fun InventoryGridCard(
+    item: InventoryItemWithProduct,
+    onClick: () -> Unit,
+    onIncrease: () -> Unit,
+    onDecrease: () -> Unit,
+    onDelete: () -> Unit,
+    onAddToShoppingList: () -> Unit,
+) {
+    Card(
+        onClick = onClick,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column {
+            Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
+                ProductAvatar(item, shape = RoundedCornerShape(0.dp), modifier = Modifier.fillMaxSize())
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(30.dp),
+                ) {
+                    InventoryItemMenu(
+                        onAddToShoppingList = onAddToShoppingList,
+                        onDelete = onDelete,
+                        modifier = Modifier.fillMaxSize(),
+                        iconSize = 16.dp,
+                        tint = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
+            Column(modifier = Modifier.padding(10.dp)) {
+                Text(
+                    text = item.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                val subtitle = listOfNotNull(item.brand, item.unit).joinToString(" · ")
+                if (subtitle.isNotEmpty()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+                QuantityStepper(
+                    quantity = item.quantity,
+                    onDecrease = onDecrease,
+                    onIncrease = onIncrease,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun InventoryItemMenu(
     onAddToShoppingList: () -> Unit,
     onDelete: () -> Unit,
+    modifier: Modifier = Modifier,
+    iconSize: Dp = 24.dp,
+    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
-    Box {
-        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(40.dp)) {
+    Box(modifier = modifier) {
+        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.fillMaxSize()) {
             Icon(
                 Icons.Filled.MoreVert,
                 contentDescription = "Meer opties",
-                tint = MaterialTheme.colorScheme.outline,
+                modifier = Modifier.size(iconSize),
+                tint = tint,
             )
         }
         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
@@ -320,11 +462,15 @@ private fun InventoryRowActions(
 }
 
 @Composable
-private fun ProductAvatar(item: InventoryItemWithProduct) {
+private fun ProductAvatar(
+    item: InventoryItemWithProduct,
+    modifier: Modifier = Modifier,
+    shape: Shape = RoundedCornerShape(12.dp),
+) {
     Surface(
-        shape = RoundedCornerShape(12.dp),
+        shape = shape,
         color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = Modifier.size(52.dp),
+        modifier = modifier,
     ) {
         if (item.imageUrl != null) {
             AsyncImage(

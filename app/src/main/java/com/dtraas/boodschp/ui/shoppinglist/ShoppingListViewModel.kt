@@ -43,6 +43,10 @@ class ShoppingListViewModel(
         viewModelScope.launch { shoppingListRepository.removeItem(id) }
     }
 
+    fun restoreItem(item: ShoppingListItemEntity) {
+        viewModelScope.launch { shoppingListRepository.restoreItem(item) }
+    }
+
     fun clearChecked() {
         viewModelScope.launch { shoppingListRepository.clearChecked() }
     }
