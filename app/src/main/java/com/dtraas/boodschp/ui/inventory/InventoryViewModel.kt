@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.dtraas.boodschp.data.local.dao.InventoryItemWithProduct
 import com.dtraas.boodschp.data.model.ActivityType
 import com.dtraas.boodschp.data.model.Category
+import com.dtraas.boodschp.data.model.Store
 import com.dtraas.boodschp.data.repository.ActivityLogRepository
 import com.dtraas.boodschp.data.repository.InventoryRepository
 import com.dtraas.boodschp.data.repository.ShoppingListRepository
@@ -72,8 +73,10 @@ class InventoryViewModel(
             shoppingListRepository.addItem(
                 name = item.name,
                 category = Category.fromStorageKey(item.category),
+                store = Store.GEEN,
                 quantity = 1,
                 barcode = item.barcode,
+                imageUrl = item.imageUrl,
             )
             activityLogRepository.log(
                 item.barcode,

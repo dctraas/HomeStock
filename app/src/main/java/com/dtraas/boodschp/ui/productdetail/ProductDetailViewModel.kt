@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.dtraas.boodschp.data.local.entity.ProductEntity
 import com.dtraas.boodschp.data.local.entity.ScanHistoryEntity
 import com.dtraas.boodschp.data.model.Category
+import com.dtraas.boodschp.data.model.Store
 import com.dtraas.boodschp.data.repository.InventoryRepository
 import com.dtraas.boodschp.data.repository.ProductRepository
 import com.dtraas.boodschp.data.repository.ShoppingListRepository
@@ -58,8 +59,10 @@ class ProductDetailViewModel(
             shoppingListRepository.addItem(
                 name = product.name,
                 category = Category.fromStorageKey(product.category),
+                store = Store.GEEN,
                 quantity = 1,
                 barcode = barcode,
+                imageUrl = product.imageUrl,
             )
         }
     }

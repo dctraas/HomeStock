@@ -13,6 +13,8 @@ data class ShoppingListItemEntity(
     val barcode: String?,
     val name: String,
     val category: String,
+    val store: String,
+    val imageUrl: String?,
     val quantity: Int,
     val isChecked: Boolean,
     val addedAt: Long,

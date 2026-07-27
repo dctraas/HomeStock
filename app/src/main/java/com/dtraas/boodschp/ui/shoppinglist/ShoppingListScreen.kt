@@ -1,5 +1,7 @@
 package com.dtraas.boodschp.ui.shoppinglist
 
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,6 +20,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,20 +45,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import coil.compose.AsyncImage
 import com.dtraas.boodschp.BoodschpApplication
 import com.dtraas.boodschp.data.local.entity.ShoppingListItemEntity
 import com.dtraas.boodschp.data.model.Category
+import com.dtraas.boodschp.data.model.Store
 import com.dtraas.boodschp.ui.components.CategoryDropdown
 import com.dtraas.boodschp.ui.components.QuantityStepper
+import com.dtraas.boodschp.ui.components.StoreDropdown
 import com.dtraas.boodschp.ui.components.icon
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ShoppingListScreen() {
     val application = LocalContext.current.applicationContext as BoodschpApplication
@@ -64,15 +72,18 @@ fun ShoppingListScreen() {
             initializer { ShoppingListViewModel(application.container.shoppingListRepository) }
         },
     )
-    val shoppingItems by viewModel.shoppingList.collectAsState()
+    val groupedByStore by viewModel.groupedByStore.collectAsState()
+    val hasCheckedItems = groupedByStore.values.flatten().any { it.isChecked }
+
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingItem by remember { mutableStateOf<ShoppingListItemEntity?>(null) }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Boodschappenlijst") },
                 actions = {
-                    if (shoppingItems.any { it.isChecked }) {
+                    if (hasCheckedItems) {
                         IconButton(onClick = viewModel::clearChecked) {
                             Icon(Icons.Filled.DeleteSweep, contentDescription = "Wis afgevinkte items")
                         }
@@ -86,29 +97,60 @@ fun ShoppingListScreen() {
             }
         },
     ) { padding ->
-        if (shoppingItems.isEmpty()) {
+        if (groupedByStore.isEmpty()) {
             EmptyShoppingList(modifier = Modifier.fillMaxSize().padding(padding))
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(padding),
                 contentPadding = PaddingValues(vertical = 8.dp),
             ) {
-                items(shoppingItems, key = { it.id }) { item ->
-                    ShoppingListRow(
-                        item = item,
-                        onCheckedChange = { checked -> viewModel.setChecked(item.id, checked) },
-                        onDelete = { viewModel.removeItem(item.id) },
-                    )
+                groupedByStore.forEach { (store, itemsInStore) ->
+                    stickyHeader {
+                        StoreHeader(store, itemCount = itemsInStore.size)
+                    }
+                    items(itemsInStore, key = { it.id }) { item ->
+                        ShoppingListRow(
+                            item = item,
+                            onCheckedChange = { checked -> viewModel.setChecked(item.id, checked) },
+                            onClick = { editingItem = item },
+                            onDelete = { viewModel.removeItem(item.id) },
+                        )
+                    }
                 }
             }
         }
 
         if (showAddDialog) {
-            AddItemDialog(
+            ItemFormDialog(
+                title = "Item toevoegen",
+                confirmLabel = "Toevoegen",
                 onDismiss = { showAddDialog = false },
-                onConfirm = { name, category, quantity ->
-                    viewModel.addItem(name, category, quantity)
+                onConfirm = { name, category, store, quantity ->
+                    viewModel.addItem(name, category, store, quantity)
                     showAddDialog = false
+                },
+            )
+        }
+
+        editingItem?.let { item ->
+            ItemFormDialog(
+                title = "Item bewerken",
+                confirmLabel = "Opslaan",
+                initialName = item.name,
+                initialCategory = Category.fromStorageKey(item.category),
+                initialStore = Store.fromStorageKey(item.store),
+                initialQuantity = item.quantity,
+                onDismiss = { editingItem = null },
+                onConfirm = { name, category, store, quantity ->
+                    viewModel.updateItem(
+                        item.copy(
+                            name = name,
+                            category = category.storageKey,
+                            store = store.storageKey,
+                            quantity = quantity,
+                        )
+                    )
+                    editingItem = null
                 },
             )
         }
@@ -116,13 +158,47 @@ fun ShoppingListScreen() {
 }
 
 @Composable
+private fun StoreHeader(store: Store, itemCount: Int) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Filled.Storefront,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
+            Text(
+                text = store.displayName,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 8.dp),
+            )
+        }
+        Text(
+            text = itemCount.toString(),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
 private fun ShoppingListRow(
     item: ShoppingListItemEntity,
     onCheckedChange: (Boolean) -> Unit,
+    onClick: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val category = Category.fromStorageKey(item.category)
     Card(
+        onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 6.dp),
@@ -130,34 +206,25 @@ private fun ShoppingListRow(
         shape = RoundedCornerShape(16.dp),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Checkbox(checked = item.isChecked, onCheckedChange = onCheckedChange)
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.size(40.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        imageVector = category.icon,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                    )
-                }
-            }
+            ShoppingItemAvatar(item, category)
             Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
                 Text(
                     text = item.name,
                     style = MaterialTheme.typography.titleSmall,
                     textDecoration = if (item.isChecked) TextDecoration.LineThrough else null,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
                 Text(
                     text = "${category.displayName} · ${item.quantity}x",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
                 )
             }
             IconButton(onClick = onDelete) {
@@ -165,6 +232,33 @@ private fun ShoppingListRow(
                     Icons.Filled.Delete,
                     contentDescription = "Verwijderen",
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ShoppingItemAvatar(item: ShoppingListItemEntity, category: Category) {
+    Surface(
+        shape = RoundedCornerShape(10.dp),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        modifier = Modifier.size(40.dp),
+    ) {
+        if (item.imageUrl != null) {
+            AsyncImage(
+                model = item.imageUrl,
+                contentDescription = item.name,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Icon(
+                    imageVector = category.icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp),
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
             }
         }
@@ -201,17 +295,24 @@ private fun EmptyShoppingList(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun AddItemDialog(
+private fun ItemFormDialog(
+    title: String,
+    confirmLabel: String,
+    initialName: String = "",
+    initialCategory: Category = Category.OVERIG,
+    initialStore: Store = Store.GEEN,
+    initialQuantity: Int = 1,
     onDismiss: () -> Unit,
-    onConfirm: (name: String, category: Category, quantity: Int) -> Unit,
+    onConfirm: (name: String, category: Category, store: Store, quantity: Int) -> Unit,
 ) {
-    var name by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf(Category.OVERIG) }
-    var quantity by remember { mutableIntStateOf(1) }
+    var name by remember { mutableStateOf(initialName) }
+    var category by remember { mutableStateOf(initialCategory) }
+    var store by remember { mutableStateOf(initialStore) }
+    var quantity by remember { mutableIntStateOf(initialQuantity) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Item toevoegen") },
+        title = { Text(title) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 OutlinedTextField(
@@ -223,6 +324,11 @@ private fun AddItemDialog(
                 CategoryDropdown(
                     selected = category,
                     onSelected = { category = it },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                StoreDropdown(
+                    selected = store,
+                    onSelected = { store = it },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -238,10 +344,10 @@ private fun AddItemDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(name, category, quantity) },
+                onClick = { onConfirm(name, category, store, quantity) },
                 enabled = name.isNotBlank(),
             ) {
-                Text("Toevoegen")
+                Text(confirmLabel)
             }
         },
         dismissButton = {

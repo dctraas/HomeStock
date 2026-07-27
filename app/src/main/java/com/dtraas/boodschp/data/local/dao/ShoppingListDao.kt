@@ -3,6 +3,7 @@ package com.dtraas.boodschp.data.local.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Update
 import com.dtraas.boodschp.data.local.entity.ShoppingListItemEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -13,6 +14,9 @@ interface ShoppingListDao {
 
     @Insert
     suspend fun insert(item: ShoppingListItemEntity)
+
+    @Update
+    suspend fun update(item: ShoppingListItemEntity)
 
     @Query("UPDATE shopping_list_items SET isChecked = :checked WHERE id = :id")
     suspend fun setChecked(id: Long, checked: Boolean)
