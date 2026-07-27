@@ -24,14 +24,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -42,7 +42,6 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -58,12 +57,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -73,6 +70,7 @@ import com.dtraas.boodschp.BoodschpApplication
 import com.dtraas.boodschp.data.local.dao.InventoryItemWithProduct
 import com.dtraas.boodschp.data.model.Category
 import com.dtraas.boodschp.ui.components.QuantityStepper
+import com.dtraas.boodschp.ui.components.SearchField
 import com.dtraas.boodschp.ui.components.icon
 import kotlinx.coroutines.launch
 
@@ -145,6 +143,7 @@ fun InventoryScreen(
             SearchField(
                 query = uiState.searchQuery,
                 onQueryChange = viewModel::onSearchQueryChange,
+                placeholder = "Zoek in voorraad…",
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -199,7 +198,6 @@ fun InventoryScreen(
                                 onClick = { onProductClick(item.barcode) },
                                 onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
                                 onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
-                                onDelete = { deleteWithUndo(item) },
                                 onAddToShoppingList = { viewModel.addToShoppingList(item) },
                             )
                         }
@@ -216,9 +214,16 @@ private fun SortMenuButton(
     onSelected: (InventorySortOption) -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
+    val isCustomSort = selected != InventorySortOption.NAME
     Box {
         IconButton(onClick = { menuExpanded = true }) {
-            Icon(Icons.Filled.Sort, contentDescription = "Sorteren")
+            if (isCustomSort) {
+                BadgedBox(badge = { Badge() }) {
+                    Icon(Icons.Filled.Sort, contentDescription = "Sorteren (actief: ${selected.label})")
+                }
+            } else {
+                Icon(Icons.Filled.Sort, contentDescription = "Sorteren")
+            }
         }
         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
             InventorySortOption.entries.forEach { option ->
@@ -237,31 +242,6 @@ private fun SortMenuButton(
             }
         }
     }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun SearchField(
-    query: String,
-    onQueryChange: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    OutlinedTextField(
-        value = query,
-        onValueChange = onQueryChange,
-        modifier = modifier,
-        placeholder = { Text("Zoek in voorraad…") },
-        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
-        trailingIcon = {
-            if (query.isNotEmpty()) {
-                IconButton(onClick = { onQueryChange("") }) {
-                    Icon(Icons.Filled.Close, contentDescription = "Zoekopdracht wissen")
-                }
-            }
-        },
-        singleLine = true,
-        shape = RoundedCornerShape(16.dp),
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -378,12 +358,20 @@ private fun InventoryRow(
                 onDecrease = onDecrease,
                 onIncrease = onIncrease,
             )
-            InventoryItemMenu(
-                onAddToShoppingList = onAddToShoppingList,
-                onDelete = onDelete,
-                modifier = Modifier.size(40.dp),
-                tint = MaterialTheme.colorScheme.outline,
-            )
+            IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(48.dp)) {
+                Icon(
+                    Icons.Filled.AddShoppingCart,
+                    contentDescription = "Toevoegen aan boodschappenlijst",
+                    tint = MaterialTheme.colorScheme.primary,
+                )
+            }
+            IconButton(onClick = onDelete, modifier = Modifier.size(48.dp)) {
+                Icon(
+                    Icons.Filled.Delete,
+                    contentDescription = "Verwijderen uit voorraad",
+                    tint = MaterialTheme.colorScheme.outline,
+                )
+            }
         }
     }
 }
@@ -394,7 +382,6 @@ private fun InventoryGridCard(
     onClick: () -> Unit,
     onIncrease: () -> Unit,
     onDecrease: () -> Unit,
-    onDelete: () -> Unit,
     onAddToShoppingList: () -> Unit,
 ) {
     Card(
@@ -412,15 +399,15 @@ private fun InventoryGridCard(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(6.dp)
-                        .size(30.dp),
+                        .size(44.dp),
                 ) {
-                    InventoryItemMenu(
-                        onAddToShoppingList = onAddToShoppingList,
-                        onDelete = onDelete,
-                        modifier = Modifier.fillMaxSize(),
-                        iconSize = 16.dp,
-                        tint = MaterialTheme.colorScheme.onSurface,
-                    )
+                    IconButton(onClick = onAddToShoppingList, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            Icons.Filled.AddShoppingCart,
+                            contentDescription = "Toevoegen aan boodschappenlijst",
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
                 }
             }
             Column(modifier = Modifier.padding(10.dp)) {
@@ -448,45 +435,6 @@ private fun InventoryGridCard(
                     modifier = Modifier.padding(top = 6.dp),
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun InventoryItemMenu(
-    onAddToShoppingList: () -> Unit,
-    onDelete: () -> Unit,
-    modifier: Modifier = Modifier,
-    iconSize: Dp = 24.dp,
-    tint: Color = MaterialTheme.colorScheme.onSurfaceVariant,
-) {
-    var menuExpanded by remember { mutableStateOf(false) }
-    Box(modifier = modifier) {
-        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.fillMaxSize()) {
-            Icon(
-                Icons.Filled.MoreVert,
-                contentDescription = "Meer opties",
-                modifier = Modifier.size(iconSize),
-                tint = tint,
-            )
-        }
-        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-            DropdownMenuItem(
-                text = { Text("Toevoegen aan boodschappenlijst") },
-                leadingIcon = { Icon(Icons.Filled.AddShoppingCart, contentDescription = null) },
-                onClick = {
-                    menuExpanded = false
-                    onAddToShoppingList()
-                },
-            )
-            DropdownMenuItem(
-                text = { Text("Verwijderen uit voorraad") },
-                leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
-                onClick = {
-                    menuExpanded = false
-                    onDelete()
-                },
-            )
         }
     }
 }

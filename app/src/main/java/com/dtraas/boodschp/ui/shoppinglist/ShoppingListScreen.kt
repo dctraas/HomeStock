@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material3.AlertDialog
@@ -64,6 +65,7 @@ import com.dtraas.boodschp.data.model.Category
 import com.dtraas.boodschp.data.model.Store
 import com.dtraas.boodschp.ui.components.CategoryDropdown
 import com.dtraas.boodschp.ui.components.QuantityStepper
+import com.dtraas.boodschp.ui.components.SearchField
 import com.dtraas.boodschp.ui.components.StoreDropdown
 import com.dtraas.boodschp.ui.components.icon
 import kotlinx.coroutines.launch
@@ -78,6 +80,7 @@ fun ShoppingListScreen() {
         },
     )
     val groupedByStore by viewModel.groupedByStore.collectAsState()
+    val searchQuery by viewModel.searchQueryState.collectAsState()
     val hasCheckedItems = groupedByStore.values.flatten().any { it.isChecked }
 
     var showAddDialog by remember { mutableStateOf(false) }
@@ -105,35 +108,51 @@ fun ShoppingListScreen() {
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
-        if (groupedByStore.isEmpty()) {
-            EmptyShoppingList(modifier = Modifier.fillMaxSize().padding(padding))
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentPadding = PaddingValues(vertical = 8.dp),
-            ) {
-                groupedByStore.forEach { (store, itemsInStore) ->
-                    stickyHeader {
-                        StoreHeader(store, itemCount = itemsInStore.size)
-                    }
-                    items(itemsInStore, key = { it.id }) { item ->
-                        ShoppingListRow(
-                            item = item,
-                            onCheckedChange = { checked -> viewModel.setChecked(item.id, checked) },
-                            onClick = { editingItem = item },
-                            onDelete = {
-                                viewModel.removeItem(item.id)
-                                coroutineScope.launch {
-                                    val result = snackbarHostState.showSnackbar(
-                                        message = "${item.name} verwijderd",
-                                        actionLabel = "Ongedaan maken",
-                                    )
-                                    if (result == SnackbarResult.ActionPerformed) {
-                                        viewModel.restoreItem(item)
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            SearchField(
+                query = searchQuery,
+                onQueryChange = viewModel::onSearchQueryChange,
+                placeholder = "Zoek in boodschappenlijst…",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+
+            if (groupedByStore.isEmpty()) {
+                EmptyShoppingList(
+                    isFiltered = searchQuery.isNotBlank(),
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(vertical = 8.dp),
+                ) {
+                    groupedByStore.forEach { (store, itemsInStore) ->
+                        stickyHeader {
+                            StoreHeader(store, itemCount = itemsInStore.size)
+                        }
+                        items(itemsInStore, key = { it.id }) { item ->
+                            ShoppingListRow(
+                                item = item,
+                                onCheckedChange = { checked -> viewModel.setChecked(item.id, checked) },
+                                onClick = { editingItem = item },
+                                onIncrease = { viewModel.setQuantity(item.id, item.quantity + 1) },
+                                onDecrease = { viewModel.setQuantity(item.id, item.quantity - 1) },
+                                onDelete = {
+                                    viewModel.removeItem(item.id)
+                                    coroutineScope.launch {
+                                        val result = snackbarHostState.showSnackbar(
+                                            message = "${item.name} verwijderd",
+                                            actionLabel = "Ongedaan maken",
+                                        )
+                                        if (result == SnackbarResult.ActionPerformed) {
+                                            viewModel.restoreItem(item)
+                                        }
                                     }
-                                }
-                            },
-                        )
+                                },
+                            )
+                        }
                     }
                 }
             }
@@ -214,6 +233,8 @@ private fun ShoppingListRow(
     item: ShoppingListItemEntity,
     onCheckedChange: (Boolean) -> Unit,
     onClick: () -> Unit,
+    onIncrease: () -> Unit,
+    onDecrease: () -> Unit,
     onDelete: () -> Unit,
 ) {
     val category = Category.fromStorageKey(item.category)
@@ -226,7 +247,7 @@ private fun ShoppingListRow(
         shape = RoundedCornerShape(16.dp),
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Checkbox(checked = item.isChecked, onCheckedChange = onCheckedChange)
@@ -240,13 +261,19 @@ private fun ShoppingListRow(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = "${category.displayName} · ${item.quantity}x",
+                    text = category.displayName,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+            QuantityStepper(
+                quantity = item.quantity,
+                onDecrease = onDecrease,
+                onIncrease = onIncrease,
+                minQuantity = 1,
+            )
             IconButton(onClick = onDelete) {
                 Icon(
                     Icons.Filled.Delete,
@@ -286,7 +313,7 @@ private fun ShoppingItemAvatar(item: ShoppingListItemEntity, category: Category)
 }
 
 @Composable
-private fun EmptyShoppingList(modifier: Modifier = Modifier) {
+private fun EmptyShoppingList(isFiltered: Boolean, modifier: Modifier = Modifier) {
     Column(
         modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -299,7 +326,7 @@ private fun EmptyShoppingList(modifier: Modifier = Modifier) {
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                 Icon(
-                    imageVector = Icons.Filled.ShoppingCart,
+                    imageVector = if (isFiltered) Icons.Filled.Search else Icons.Filled.ShoppingCart,
                     contentDescription = null,
                     modifier = Modifier.size(48.dp),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
@@ -307,7 +334,7 @@ private fun EmptyShoppingList(modifier: Modifier = Modifier) {
             }
         }
         Text(
-            text = "Je boodschappenlijst is leeg.",
+            text = if (isFiltered) "Geen items gevonden." else "Je boodschappenlijst is leeg.",
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(top = 20.dp),
         )

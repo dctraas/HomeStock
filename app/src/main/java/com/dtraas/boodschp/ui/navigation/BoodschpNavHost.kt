@@ -42,7 +42,7 @@ fun BoodschpApp() {
     ) { padding ->
         NavHost(
             navController = navController,
-            startDestination = Destination.Scan.route,
+            startDestination = Destination.Inventory.route,
             modifier = Modifier.padding(padding),
         ) {
             composable(Destination.Scan.route) {
@@ -82,9 +82,10 @@ fun BoodschpApp() {
                 ScanResultScreen(
                     barcode = barcode,
                     onSaved = {
-                        navController.navigate(Destination.Inventory.route) {
-                            popUpTo(Destination.Scan.route)
-                        }
+                        // Inventory is the app's start destination, so it's always on the
+                        // back stack — popping straight to it discards the scan detour
+                        // (scan_result, and scan itself if it was pushed) in one go.
+                        navController.popBackStack(Destination.Inventory.route, inclusive = false)
                     },
                     onBack = { navController.popBackStack() },
                 )

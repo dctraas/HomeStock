@@ -6,9 +6,10 @@ import com.dtraas.boodschp.data.local.entity.ShoppingListItemEntity
 import com.dtraas.boodschp.data.model.Category
 import com.dtraas.boodschp.data.model.Store
 import com.dtraas.boodschp.data.repository.ShoppingListRepository
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -16,14 +17,23 @@ class ShoppingListViewModel(
     private val shoppingListRepository: ShoppingListRepository,
 ) : ViewModel() {
 
+    private val searchQuery = MutableStateFlow("")
+    val searchQueryState: StateFlow<String> = searchQuery
+
     val groupedByStore: StateFlow<Map<Store, List<ShoppingListItemEntity>>> =
-        shoppingListRepository.observeShoppingList()
-            .map { items ->
-                items
-                    .groupBy { Store.fromStorageKey(it.store) }
-                    .toSortedMap(compareBy { it.sortOrder })
-            }
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+        combine(
+            shoppingListRepository.observeShoppingList(),
+            searchQuery,
+        ) { items, query ->
+            items
+                .filter { query.isBlank() || it.name.contains(query, ignoreCase = true) }
+                .groupBy { Store.fromStorageKey(it.store) }
+                .toSortedMap(compareBy { it.sortOrder })
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    fun onSearchQueryChange(query: String) {
+        searchQuery.value = query
+    }
 
     fun addItem(name: String, category: Category, store: Store, quantity: Int) {
         if (name.isBlank()) return
@@ -37,6 +47,10 @@ class ShoppingListViewModel(
 
     fun setChecked(id: Long, checked: Boolean) {
         viewModelScope.launch { shoppingListRepository.setChecked(id, checked) }
+    }
+
+    fun setQuantity(id: Long, quantity: Int) {
+        viewModelScope.launch { shoppingListRepository.setQuantity(id, quantity) }
     }
 
     fun removeItem(id: Long) {

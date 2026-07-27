@@ -26,11 +26,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -58,49 +62,54 @@ fun NotificationsScreen() {
         },
     )
     val appActivity by viewModel.appActivity.collectAsState()
+    var selectedTab by remember { mutableIntStateOf(0) }
+    val tabTitles = listOf("Van de ontwikkelaar", "Vanuit de app")
 
     Scaffold(
         topBar = { CenterAlignedTopAppBar(title = { Text("Meldingen") }) },
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(16.dp),
-        ) {
-            item {
-                SectionTitle("Van de ontwikkelaar")
-            }
-            items(viewModel.developerNotices) { notice ->
-                DeveloperNoticeRow(notice)
-            }
-
-            item {
-                SectionTitle("Vanuit de app", modifier = Modifier.padding(top = 12.dp))
-            }
-            if (appActivity.isEmpty()) {
-                item {
-                    Text(
-                        text = "Scans en aanpassingen verschijnen hier.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 8.dp),
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            TabRow(selectedTabIndex = selectedTab) {
+                tabTitles.forEachIndexed { index, title ->
+                    Tab(
+                        selected = selectedTab == index,
+                        onClick = { selectedTab = index },
+                        text = { Text(title) },
                     )
                 }
+            }
+
+            if (selectedTab == 0) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                ) {
+                    items(viewModel.developerNotices) { notice ->
+                        DeveloperNoticeRow(notice)
+                    }
+                }
             } else {
-                items(appActivity, key = { it.id }) { entry ->
-                    AppActivityRow(entry)
+                if (appActivity.isEmpty()) {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "Scans en aanpassingen verschijnen hier.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(16.dp),
+                    ) {
+                        items(appActivity, key = { it.id }) { entry ->
+                            AppActivityRow(entry)
+                        }
+                    }
                 }
             }
         }
     }
-}
-
-@Composable
-private fun SectionTitle(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        style = MaterialTheme.typography.titleMedium,
-        modifier = modifier.padding(bottom = 8.dp),
-    )
 }
 
 @Composable

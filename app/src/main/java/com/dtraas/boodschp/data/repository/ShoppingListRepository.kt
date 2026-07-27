@@ -44,6 +44,8 @@ class ShoppingListRepository(
 
     suspend fun setChecked(id: Long, checked: Boolean) = shoppingListDao.setChecked(id, checked)
 
+    suspend fun setQuantity(id: Long, quantity: Int) = shoppingListDao.setQuantity(id, quantity.coerceAtLeast(1))
+
     suspend fun removeItem(id: Long) = shoppingListDao.deleteById(id)
 
     suspend fun clearChecked() = shoppingListDao.deleteChecked()

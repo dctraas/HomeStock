@@ -17,8 +17,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -26,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -81,6 +84,12 @@ fun ScanResultScreen(
                 CircularProgressIndicator()
                 Text("Productgegevens ophalen…", modifier = Modifier.padding(top = 16.dp))
             }
+
+            uiState.networkError -> NetworkErrorView(
+                modifier = Modifier.fillMaxSize().padding(padding),
+                onRetry = viewModel::retry,
+                onContinueManually = viewModel::continueManually,
+            )
 
             else -> Column(
                 modifier = Modifier
@@ -147,6 +156,48 @@ fun ScanResultScreen(
                     Text("Toevoegen aan voorraad")
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun NetworkErrorView(
+    modifier: Modifier = Modifier,
+    onRetry: () -> Unit,
+    onContinueManually: () -> Unit,
+) {
+    Column(
+        modifier = modifier.padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Filled.WifiOff,
+            contentDescription = null,
+            modifier = Modifier.size(64.dp),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = "Geen verbinding",
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 16.dp),
+        )
+        Text(
+            text = "We konden de productgegevens niet ophalen. Controleer je internetverbinding en probeer het opnieuw.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+        Button(
+            onClick = onRetry,
+            modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+        ) {
+            Text("Opnieuw proberen")
+        }
+        TextButton(onClick = onContinueManually) {
+            Text("Toch handmatig invullen")
         }
     }
 }
