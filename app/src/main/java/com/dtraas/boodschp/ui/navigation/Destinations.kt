@@ -27,8 +27,8 @@ data class TopLevelDestination(
 )
 
 val topLevelDestinations = listOf(
-    TopLevelDestination(Destination.Scan, "Scannen", Icons.Filled.CameraAlt),
-    TopLevelDestination(Destination.Inventory, "Voorraad", Icons.Filled.Inventory2),
     TopLevelDestination(Destination.ShoppingList, "Lijstje", Icons.Filled.ShoppingCart),
+    TopLevelDestination(Destination.Inventory, "Voorraad", Icons.Filled.Inventory2),
+    TopLevelDestination(Destination.Scan, "Scannen", Icons.Filled.CameraAlt),
     TopLevelDestination(Destination.Statistics, "Statistieken", Icons.Filled.BarChart),
 )
