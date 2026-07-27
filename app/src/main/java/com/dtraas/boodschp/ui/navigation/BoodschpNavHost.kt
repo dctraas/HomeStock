@@ -18,6 +18,7 @@ import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.compose.runtime.getValue
 import com.dtraas.boodschp.ui.inventory.InventoryScreen
+import com.dtraas.boodschp.ui.more.MoreScreen
 import com.dtraas.boodschp.ui.notifications.NotificationsScreen
 import com.dtraas.boodschp.ui.productdetail.ProductDetailScreen
 import com.dtraas.boodschp.ui.scan.ScanScreen
@@ -63,10 +64,15 @@ fun BoodschpApp() {
                 ShoppingListScreen()
             }
             composable(Destination.Statistics.route) {
-                StatisticsScreen()
+                StatisticsScreen(onBack = { navController.popBackStack() })
             }
             composable(Destination.Notifications.route) {
                 NotificationsScreen()
+            }
+            composable(Destination.More.route) {
+                MoreScreen(
+                    onOpenStatistics = { navController.navigate(Destination.Statistics.route) },
+                )
             }
             composable(
                 route = Destination.ScanResult.route,

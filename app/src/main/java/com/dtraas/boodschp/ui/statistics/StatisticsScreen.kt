@@ -17,6 +17,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.QrCodeScanner
@@ -26,6 +27,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -49,7 +51,7 @@ import com.dtraas.boodschp.ui.components.icon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StatisticsScreen() {
+fun StatisticsScreen(onBack: () -> Unit) {
     val application = LocalContext.current.applicationContext as BoodschpApplication
     val viewModel: StatisticsViewModel = viewModel(
         factory = viewModelFactory {
@@ -59,7 +61,16 @@ fun StatisticsScreen() {
     val uiState by viewModel.uiState.collectAsState()
 
     Scaffold(
-        topBar = { CenterAlignedTopAppBar(title = { Text("Statistieken") }) },
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = { Text("Statistieken") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Terug")
+                    }
+                },
+            )
+        },
     ) { padding ->
         if (uiState.isLoading) {
             Box(
