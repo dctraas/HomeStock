@@ -140,6 +140,7 @@ fun ShoppingListScreen() {
                 initialCategory = Category.fromStorageKey(item.category),
                 initialStore = Store.fromStorageKey(item.store),
                 initialQuantity = item.quantity,
+                imageUrl = item.imageUrl,
                 onDismiss = { editingItem = null },
                 onConfirm = { name, category, store, quantity ->
                     viewModel.updateItem(
@@ -302,6 +303,7 @@ private fun ItemFormDialog(
     initialCategory: Category = Category.OVERIG,
     initialStore: Store = Store.GEEN,
     initialQuantity: Int = 1,
+    imageUrl: String? = null,
     onDismiss: () -> Unit,
     onConfirm: (name: String, category: Category, store: Store, quantity: Int) -> Unit,
 ) {
@@ -312,33 +314,49 @@ private fun ItemFormDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(title) },
+        shape = RoundedCornerShape(28.dp),
+        title = null,
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Naam") },
-                    modifier = Modifier.fillMaxWidth(),
+            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                ItemFormAvatar(imageUrl = imageUrl, category = category)
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(top = 12.dp, bottom = 20.dp),
                 )
-                CategoryDropdown(
-                    selected = category,
-                    onSelected = { category = it },
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier.fillMaxWidth(),
-                )
-                StoreDropdown(
-                    selected = store,
-                    onSelected = { store = it },
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Aantal")
-                    QuantityStepper(
-                        quantity = quantity,
-                        onDecrease = { quantity = (quantity - 1).coerceAtLeast(1) },
-                        onIncrease = { quantity += 1 },
-                        minQuantity = 1,
+                ) {
+                    OutlinedTextField(
+                        value = name,
+                        onValueChange = { name = it },
+                        label = { Text("Naam") },
+                        modifier = Modifier.fillMaxWidth(),
                     )
+                    CategoryDropdown(
+                        selected = category,
+                        onSelected = { category = it },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    StoreDropdown(
+                        selected = store,
+                        onSelected = { store = it },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text("Aantal", style = MaterialTheme.typography.bodyLarge)
+                        QuantityStepper(
+                            quantity = quantity,
+                            onDecrease = { quantity = (quantity - 1).coerceAtLeast(1) },
+                            onIncrease = { quantity += 1 },
+                            minQuantity = 1,
+                        )
+                    }
                 }
             }
         },
@@ -354,4 +372,31 @@ private fun ItemFormDialog(
             TextButton(onClick = onDismiss) { Text("Annuleren") }
         },
     )
+}
+
+@Composable
+private fun ItemFormAvatar(imageUrl: String?, category: Category) {
+    Surface(
+        shape = RoundedCornerShape(24.dp),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        modifier = Modifier.size(88.dp),
+    ) {
+        if (imageUrl != null) {
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Icon(
+                    imageVector = category.icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(40.dp),
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+        }
+    }
 }
