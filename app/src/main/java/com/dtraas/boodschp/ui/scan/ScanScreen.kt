@@ -49,12 +49,11 @@ import androidx.core.content.ContextCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.content.ContextCompat.checkSelfPermission
-import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleEventObserver
 import java.util.concurrent.Executors
 
 @Composable
 fun ScanScreen(
+    isActive: Boolean,
     onBarcodeScanned: (String) -> Unit,
 ) {
     val context = LocalContext.current
@@ -78,6 +77,7 @@ fun ScanScreen(
         if (hasCameraPermission) {
             CameraPreview(
                 padding = padding,
+                isActive = isActive,
                 onBarcodeScanned = onBarcodeScanned,
             )
         } else {
@@ -92,6 +92,7 @@ fun ScanScreen(
 @Composable
 private fun CameraPreview(
     padding: PaddingValues,
+    isActive: Boolean,
     onBarcodeScanned: (String) -> Unit,
 ) {
     val context = LocalContext.current
@@ -99,6 +100,7 @@ private fun CameraPreview(
     var scannedCode by remember { mutableStateOf<String?>(null) }
     val currentOnBarcodeScanned by rememberUpdatedState(onBarcodeScanned)
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
+    val previewView = remember { PreviewView(context) }
 
     DisposableEffect(Unit) {
         onDispose { cameraExecutor.shutdown() }
@@ -106,54 +108,52 @@ private fun CameraPreview(
 
     // "Scan" is the navigation graph's start destination, so switching
     // bottom-nav tabs and back never actually disposes/recreates this
-    // composable (unlike the other tabs) — only its own lifecycle resumes.
-    // Without this, scannedCode would stay set after the first scan and
-    // silently block every scan after that.
-    DisposableEffect(lifecycleOwner) {
-        val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_RESUME) {
-                scannedCode = null
-            }
+    // composable (unlike the other tabs), and CameraX doesn't reliably
+    // resume delivering frames on its own. Rebinding from scratch every
+    // time this tab becomes active — and resetting the "already scanned"
+    // guard with it — is what actually makes scanning work again.
+    DisposableEffect(isActive) {
+        if (isActive) {
+            scannedCode = null
+            val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
+            cameraProviderFuture.addListener({
+                val cameraProvider = cameraProviderFuture.get()
+
+                val preview = Preview.Builder().build().also {
+                    it.surfaceProvider = previewView.surfaceProvider
+                }
+
+                val analysis = ImageAnalysis.Builder()
+                    .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
+                    .build()
+                    .also {
+                        it.setAnalyzer(cameraExecutor, BarcodeAnalyzer { barcode ->
+                            if (scannedCode == null) {
+                                scannedCode = barcode
+                                currentOnBarcodeScanned(barcode)
+                            }
+                        })
+                    }
+
+                cameraProvider.unbindAll()
+                cameraProvider.bindToLifecycle(
+                    lifecycleOwner,
+                    CameraSelector.DEFAULT_BACK_CAMERA,
+                    preview,
+                    analysis,
+                )
+            }, ContextCompat.getMainExecutor(context))
         }
-        lifecycleOwner.lifecycle.addObserver(observer)
-        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+
+        onDispose {
+            runCatching { ProcessCameraProvider.getInstance(context).get().unbindAll() }
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize().padding(padding)) {
         AndroidView(
             modifier = Modifier.fillMaxSize(),
-            factory = { ctx ->
-                val previewView = PreviewView(ctx)
-                val cameraProviderFuture = ProcessCameraProvider.getInstance(ctx)
-                cameraProviderFuture.addListener({
-                    val cameraProvider = cameraProviderFuture.get()
-
-                    val preview = Preview.Builder().build().also {
-                        it.surfaceProvider = previewView.surfaceProvider
-                    }
-
-                    val analysis = ImageAnalysis.Builder()
-                        .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                        .build()
-                        .also {
-                            it.setAnalyzer(cameraExecutor, BarcodeAnalyzer { barcode ->
-                                if (scannedCode == null) {
-                                    scannedCode = barcode
-                                    currentOnBarcodeScanned(barcode)
-                                }
-                            })
-                        }
-
-                    cameraProvider.unbindAll()
-                    cameraProvider.bindToLifecycle(
-                        lifecycleOwner,
-                        CameraSelector.DEFAULT_BACK_CAMERA,
-                        preview,
-                        analysis,
-                    )
-                }, ContextCompat.getMainExecutor(ctx))
-                previewView
-            },
+            factory = { previewView },
         )
 
         ScanOverlay(modifier = Modifier.fillMaxSize())
