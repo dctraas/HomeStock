@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "400748229964",
+    "project_id": "boodschapbeheer",
+    "storage_bucket": "boodschapbeheer.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:400748229964:android:d35fbe32eb14dcaf870be9",
+        "android_client_info": {
+          "package_name": "com.dtraas.boodschapbeheer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmkLTVdt9B4H9sZo8SN0_abKNj-lAqFCM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
