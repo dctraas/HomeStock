@@ -2,27 +2,37 @@ package com.dtraas.boodschp.ui.shoppinglist
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -51,7 +61,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,17 +69,19 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import coil.compose.AsyncImage
 import com.dtraas.boodschp.BoodschpApplication
 import com.dtraas.boodschp.data.local.entity.ShoppingListItemEntity
 import com.dtraas.boodschp.data.model.Category
 import com.dtraas.boodschp.data.model.Store
 import com.dtraas.boodschp.ui.components.CategoryDropdown
+import com.dtraas.boodschp.ui.components.ProductImage
 import com.dtraas.boodschp.ui.components.QuantityStepper
 import com.dtraas.boodschp.ui.components.SearchField
 import com.dtraas.boodschp.ui.components.StoreDropdown
 import com.dtraas.boodschp.ui.components.icon
 import kotlinx.coroutines.launch
+
+private enum class ShoppingListViewMode { LIST, GRID }
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
@@ -83,6 +95,7 @@ fun ShoppingListScreen() {
     val groupedByStore by viewModel.groupedByStore.collectAsState()
     val searchQuery by viewModel.searchQueryState.collectAsState()
     val hasCheckedItems = groupedByStore.values.flatten().any { it.isChecked }
+    var viewMode by remember { mutableStateOf(ShoppingListViewMode.GRID) }
 
     var showAddDialog by remember { mutableStateOf(false) }
     var editingItem by remember { mutableStateOf<ShoppingListItemEntity?>(null) }
@@ -98,6 +111,20 @@ fun ShoppingListScreen() {
                         IconButton(onClick = viewModel::clearChecked) {
                             Icon(Icons.Filled.DeleteSweep, contentDescription = "Wis afgevinkte items")
                         }
+                    }
+                    IconButton(
+                        onClick = {
+                            viewMode = if (viewMode == ShoppingListViewMode.LIST) {
+                                ShoppingListViewMode.GRID
+                            } else {
+                                ShoppingListViewMode.LIST
+                            }
+                        },
+                    ) {
+                        Icon(
+                            imageVector = if (viewMode == ShoppingListViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
+                            contentDescription = if (viewMode == ShoppingListViewMode.LIST) "Toon als tegels" else "Toon als lijst",
+                        )
                     }
                 },
             )
@@ -119,12 +146,25 @@ fun ShoppingListScreen() {
                     .padding(horizontal = 16.dp, vertical = 8.dp),
             )
 
+            fun deleteWithUndo(item: ShoppingListItemEntity) {
+                viewModel.removeItem(item.id)
+                coroutineScope.launch {
+                    val result = snackbarHostState.showSnackbar(
+                        message = "${item.name} verwijderd",
+                        actionLabel = "Ongedaan maken",
+                    )
+                    if (result == SnackbarResult.ActionPerformed) {
+                        viewModel.restoreItem(item)
+                    }
+                }
+            }
+
             if (groupedByStore.isEmpty()) {
                 EmptyShoppingList(
                     isFiltered = searchQuery.isNotBlank(),
                     modifier = Modifier.fillMaxSize(),
                 )
-            } else {
+            } else if (viewMode == ShoppingListViewMode.LIST) {
                 LazyColumn(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(vertical = 8.dp),
@@ -140,18 +180,31 @@ fun ShoppingListScreen() {
                                 onClick = { editingItem = item },
                                 onIncrease = { viewModel.setQuantity(item.id, item.quantity + 1) },
                                 onDecrease = { viewModel.setQuantity(item.id, item.quantity - 1) },
-                                onDelete = {
-                                    viewModel.removeItem(item.id)
-                                    coroutineScope.launch {
-                                        val result = snackbarHostState.showSnackbar(
-                                            message = "${item.name} verwijderd",
-                                            actionLabel = "Ongedaan maken",
-                                        )
-                                        if (result == SnackbarResult.ActionPerformed) {
-                                            viewModel.restoreItem(item)
-                                        }
-                                    }
-                                },
+                                onDelete = { deleteWithUndo(item) },
+                            )
+                        }
+                    }
+                }
+            } else {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(2),
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                ) {
+                    groupedByStore.forEach { (store, itemsInStore) ->
+                        item(span = { GridItemSpan(maxLineSpan) }) {
+                            StoreHeader(store, itemCount = itemsInStore.size)
+                        }
+                        items(itemsInStore, key = { it.id }) { item ->
+                            ShoppingListGridTile(
+                                item = item,
+                                onCheckedChange = { checked -> viewModel.setChecked(item.id, checked) },
+                                onClick = { editingItem = item },
+                                onIncrease = { viewModel.setQuantity(item.id, item.quantity + 1) },
+                                onDecrease = { viewModel.setQuantity(item.id, item.quantity - 1) },
+                                onDelete = { deleteWithUndo(item) },
                             )
                         }
                     }
@@ -252,7 +305,14 @@ private fun ShoppingListRow(
             verticalAlignment = Alignment.Top,
         ) {
             Checkbox(checked = item.isChecked, onCheckedChange = onCheckedChange)
-            ShoppingItemAvatar(item, category)
+            ProductImage(
+                imageUrl = item.imageUrl,
+                fallbackIcon = category.icon,
+                shape = RoundedCornerShape(10.dp),
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(40.dp),
+            )
             Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
                 Text(
                     text = item.name,
@@ -293,28 +353,91 @@ private fun ShoppingListRow(
 }
 
 @Composable
-private fun ShoppingItemAvatar(item: ShoppingListItemEntity, category: Category) {
-    Surface(
-        shape = RoundedCornerShape(10.dp),
-        color = MaterialTheme.colorScheme.secondaryContainer,
-        modifier = Modifier.size(40.dp),
+private fun ShoppingListGridTile(
+    item: ShoppingListItemEntity,
+    onCheckedChange: (Boolean) -> Unit,
+    onClick: () -> Unit,
+    onIncrease: () -> Unit,
+    onDecrease: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    val category = Category.fromStorageKey(item.category)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick),
     ) {
-        if (item.imageUrl != null) {
-            AsyncImage(
-                model = item.imageUrl,
-                contentDescription = item.name,
-                contentScale = ContentScale.Crop,
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
+            ProductImage(
+                imageUrl = item.imageUrl,
+                fallbackIcon = category.icon,
+                shape = RoundedCornerShape(16.dp),
+                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.fillMaxSize(),
             )
-        } else {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Icon(
-                    imageVector = category.icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(6.dp)
+                    .size(36.dp),
+            ) {
+                IconButton(
+                    onClick = { onCheckedChange(!item.isChecked) },
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    Icon(
+                        imageVector = if (item.isChecked) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
+                        contentDescription = if (item.isChecked) "Zet terug als niet afgevinkt" else "Markeer als afgevinkt",
+                        tint = if (item.isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
             }
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp)
+                    .size(36.dp),
+            ) {
+                IconButton(onClick = onDelete, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        Icons.Filled.Delete,
+                        contentDescription = "Verwijderen",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+        }
+        Column(modifier = Modifier.padding(top = 8.dp)) {
+            Text(
+                text = item.name,
+                style = MaterialTheme.typography.titleSmall,
+                textDecoration = if (item.isChecked) TextDecoration.LineThrough else null,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                text = category.displayName,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+            QuantityStepper(
+                quantity = item.quantity,
+                onDecrease = onDecrease,
+                onIncrease = onIncrease,
+                minQuantity = 1,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
     }
 }
@@ -429,27 +552,10 @@ private fun ItemFormDialog(
 
 @Composable
 private fun ItemFormAvatar(imageUrl: String?, category: Category) {
-    Surface(
+    ProductImage(
+        imageUrl = imageUrl,
+        fallbackIcon = category.icon,
         shape = RoundedCornerShape(24.dp),
-        color = MaterialTheme.colorScheme.primaryContainer,
         modifier = Modifier.size(88.dp),
-    ) {
-        if (imageUrl != null) {
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Icon(
-                    imageVector = category.icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(40.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
-        }
-    }
+    )
 }

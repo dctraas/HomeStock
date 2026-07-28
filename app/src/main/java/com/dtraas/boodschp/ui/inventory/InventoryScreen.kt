@@ -2,6 +2,7 @@ package com.dtraas.boodschp.ui.inventory
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -58,18 +59,17 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import coil.compose.AsyncImage
 import com.dtraas.boodschp.BoodschpApplication
 import com.dtraas.boodschp.data.local.dao.InventoryItemWithProduct
 import com.dtraas.boodschp.data.model.Category
+import com.dtraas.boodschp.ui.components.ProductImage
 import com.dtraas.boodschp.ui.components.QuantityStepper
 import com.dtraas.boodschp.ui.components.SearchField
 import com.dtraas.boodschp.ui.components.icon
@@ -95,7 +95,7 @@ fun InventoryScreen(
         },
     )
     val uiState by viewModel.uiState.collectAsState()
-    var viewMode by remember { mutableStateOf(InventoryViewMode.LIST) }
+    var viewMode by remember { mutableStateOf(InventoryViewMode.GRID) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -132,7 +132,7 @@ fun InventoryScreen(
                     ) {
                         Icon(
                             imageVector = if (viewMode == InventoryViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
-                            contentDescription = if (viewMode == InventoryViewMode.LIST) "Toon als kaarten" else "Toon als lijst",
+                            contentDescription = if (viewMode == InventoryViewMode.LIST) "Toon als tegels" else "Toon als lijst",
                         )
                     }
                 },
@@ -185,16 +185,16 @@ fun InventoryScreen(
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    contentPadding = PaddingValues(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
                     uiState.groupedInventory.forEach { (category, itemsInCategory) ->
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             CategoryHeader(category, itemCount = itemsInCategory.size)
                         }
                         items(itemsInCategory, key = { it.barcode }) { item ->
-                            InventoryGridCard(
+                            InventoryGridTile(
                                 item = item,
                                 onClick = { onProductClick(item.barcode) },
                                 onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
@@ -330,7 +330,11 @@ private fun InventoryRow(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.Top,
         ) {
-            ProductAvatar(item, modifier = Modifier.size(52.dp))
+            ProductImage(
+                imageUrl = item.imageUrl,
+                fallbackIcon = Category.fromStorageKey(item.category).icon,
+                modifier = Modifier.size(52.dp),
+            )
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -384,94 +388,68 @@ private fun InventoryRow(
 }
 
 @Composable
-private fun InventoryGridCard(
+private fun InventoryGridTile(
     item: InventoryItemWithProduct,
     onClick: () -> Unit,
     onIncrease: () -> Unit,
     onDecrease: () -> Unit,
     onAddToShoppingList: () -> Unit,
 ) {
-    Card(
-        onClick = onClick,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth(),
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .clickable(onClick = onClick),
     ) {
-        Column {
-            Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
-                ProductAvatar(item, shape = RoundedCornerShape(0.dp), modifier = Modifier.fillMaxSize())
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(6.dp)
-                        .size(44.dp),
-                ) {
-                    IconButton(onClick = onAddToShoppingList, modifier = Modifier.fillMaxSize()) {
-                        Icon(
-                            Icons.Filled.AddShoppingCart,
-                            contentDescription = "Toevoegen aan boodschappenlijst",
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                }
-            }
-            Column(modifier = Modifier.padding(10.dp)) {
-                Text(
-                    text = item.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                val subtitle = listOfNotNull(item.brand, item.unit).joinToString(" · ")
-                if (subtitle.isNotEmpty()) {
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 2.dp),
-                    )
-                }
-                QuantityStepper(
-                    quantity = item.quantity,
-                    onDecrease = onDecrease,
-                    onIncrease = onIncrease,
-                    modifier = Modifier.padding(top = 6.dp),
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun ProductAvatar(
-    item: InventoryItemWithProduct,
-    modifier: Modifier = Modifier,
-    shape: Shape = RoundedCornerShape(12.dp),
-) {
-    Surface(
-        shape = shape,
-        color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = modifier,
-    ) {
-        if (item.imageUrl != null) {
-            AsyncImage(
-                model = item.imageUrl,
-                contentDescription = item.name,
-                contentScale = ContentScale.Crop,
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
+            ProductImage(
+                imageUrl = item.imageUrl,
+                fallbackIcon = Category.fromStorageKey(item.category).icon,
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxSize(),
             )
-        } else {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Icon(
-                    imageVector = Category.fromStorageKey(item.category).icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp)
+                    .size(40.dp),
+            ) {
+                IconButton(onClick = onAddToShoppingList, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        Icons.Filled.AddShoppingCart,
+                        contentDescription = "Toevoegen aan boodschappenlijst",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+        }
+        Column(modifier = Modifier.padding(top = 8.dp)) {
+            Text(
+                text = item.name,
+                style = MaterialTheme.typography.titleSmall,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            val subtitle = listOfNotNull(item.brand, item.unit).joinToString(" · ")
+            if (subtitle.isNotEmpty()) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
+            QuantityStepper(
+                quantity = item.quantity,
+                onDecrease = onDecrease,
+                onIncrease = onIncrease,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
     }
 }
