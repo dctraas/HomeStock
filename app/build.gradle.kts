@@ -70,6 +70,11 @@ dependencies {
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx)
     implementation(libs.kotlinx.coroutines.play.services)
+    // Firestore pulls in gRPC, which drags in a plain (non-Android) Guava that can win
+    // Gradle's version conflict resolution over CameraX's own Guava/ListenableFuture
+    // dependency, leaving ListenableFuture unresolvable. Forcing the Android-flavored
+    // artifact explicitly avoids that.
+    implementation(libs.guava)
 
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.camera2)
