@@ -10,6 +10,11 @@ object DeveloperNotices {
     /** Newest first. Static for now — there's no backend to fetch these from. */
     val all: List<DeveloperNotice> = listOf(
         DeveloperNotice(
+            title = "Delen met huisgenoten",
+            message = "Maak een huishouden aan of sluit aan met een code (via Meer) om je voorraad " +
+                "en boodschappenlijst met huisgenoten te delen.",
+        ),
+        DeveloperNotice(
             title = "Meldingen",
             message = "Alle app- en ontwikkelaarsmeldingen staan voortaan hier bij elkaar.",
         ),

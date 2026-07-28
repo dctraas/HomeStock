@@ -45,15 +45,15 @@ class ShoppingListViewModel(
         viewModelScope.launch { shoppingListRepository.updateItem(item) }
     }
 
-    fun setChecked(id: Long, checked: Boolean) {
+    fun setChecked(id: String, checked: Boolean) {
         viewModelScope.launch { shoppingListRepository.setChecked(id, checked) }
     }
 
-    fun setQuantity(id: Long, quantity: Int) {
+    fun setQuantity(id: String, quantity: Int) {
         viewModelScope.launch { shoppingListRepository.setQuantity(id, quantity) }
     }
 
-    fun removeItem(id: Long) {
+    fun removeItem(id: String) {
         viewModelScope.launch { shoppingListRepository.removeItem(id) }
     }
 

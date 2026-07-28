@@ -1,15 +1,37 @@
 package com.dtraas.boodschp.data.repository
 
-import com.dtraas.boodschp.data.local.dao.ShoppingListDao
 import com.dtraas.boodschp.data.local.entity.ShoppingListItemEntity
 import com.dtraas.boodschp.data.model.Category
 import com.dtraas.boodschp.data.model.Store
+import com.dtraas.boodschp.data.remote.observeSnapshots
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.tasks.await
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ShoppingListRepository(
-    private val shoppingListDao: ShoppingListDao,
+    private val firestore: FirebaseFirestore,
+    private val householdSession: HouseholdSession,
 ) {
-    fun observeShoppingList(): Flow<List<ShoppingListItemEntity>> = shoppingListDao.observeAll()
+    private fun shoppingListCollection(householdId: String) =
+        firestore.collection("households").document(householdId).collection("shoppingList")
+
+    fun observeShoppingList(): Flow<List<ShoppingListItemEntity>> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(emptyList())
+            } else {
+                shoppingListCollection(householdId).observeSnapshots().map { snapshot ->
+                    snapshot.documents
+                        .mapNotNull { ShoppingListItemEntity.fromDocument(it) }
+                        .sortedWith(compareBy<ShoppingListItemEntity> { it.isChecked }.thenByDescending { it.addedAt })
+                }
+            }
+        }
 
     suspend fun addItem(
         name: String,
@@ -19,34 +41,54 @@ class ShoppingListRepository(
         barcode: String? = null,
         imageUrl: String? = null,
     ) {
-        shoppingListDao.insert(
-            ShoppingListItemEntity(
-                barcode = barcode,
-                name = name.trim(),
-                category = category.storageKey,
-                store = store.storageKey,
-                imageUrl = imageUrl,
-                quantity = quantity.coerceAtLeast(1),
-                isChecked = false,
-                addedAt = System.currentTimeMillis(),
-            )
+        val householdId = householdSession.householdId.value ?: return
+        val entity = ShoppingListItemEntity(
+            id = "",
+            barcode = barcode,
+            name = name.trim(),
+            category = category.storageKey,
+            store = store.storageKey,
+            imageUrl = imageUrl,
+            quantity = quantity.coerceAtLeast(1),
+            isChecked = false,
+            addedAt = System.currentTimeMillis(),
         )
+        shoppingListCollection(householdId).add(entity.toMap()).await()
     }
 
     suspend fun updateItem(item: ShoppingListItemEntity) {
-        shoppingListDao.update(item.copy(name = item.name.trim(), quantity = item.quantity.coerceAtLeast(1)))
+        val householdId = householdSession.householdId.value ?: return
+        val updated = item.copy(name = item.name.trim(), quantity = item.quantity.coerceAtLeast(1))
+        shoppingListCollection(householdId).document(updated.id).set(updated.toMap()).await()
     }
 
-    /** Re-inserts a previously removed item (as a new row) after an undo action. */
+    /** Re-adds a previously removed item (as a new document) after an undo action. */
     suspend fun restoreItem(item: ShoppingListItemEntity) {
-        shoppingListDao.insert(item.copy(id = 0))
+        val householdId = householdSession.householdId.value ?: return
+        shoppingListCollection(householdId).add(item.toMap()).await()
     }
 
-    suspend fun setChecked(id: Long, checked: Boolean) = shoppingListDao.setChecked(id, checked)
+    suspend fun setChecked(id: String, checked: Boolean) {
+        val householdId = householdSession.householdId.value ?: return
+        shoppingListCollection(householdId).document(id).update("isChecked", checked).await()
+    }
 
-    suspend fun setQuantity(id: Long, quantity: Int) = shoppingListDao.setQuantity(id, quantity.coerceAtLeast(1))
+    suspend fun setQuantity(id: String, quantity: Int) {
+        val householdId = householdSession.householdId.value ?: return
+        shoppingListCollection(householdId).document(id).update("quantity", quantity.coerceAtLeast(1)).await()
+    }
 
-    suspend fun removeItem(id: Long) = shoppingListDao.deleteById(id)
+    suspend fun removeItem(id: String) {
+        val householdId = householdSession.householdId.value ?: return
+        shoppingListCollection(householdId).document(id).delete().await()
+    }
 
-    suspend fun clearChecked() = shoppingListDao.deleteChecked()
+    suspend fun clearChecked() {
+        val householdId = householdSession.householdId.value ?: return
+        val checkedDocs = shoppingListCollection(householdId).whereEqualTo("isChecked", true).get().await()
+        if (checkedDocs.isEmpty) return
+        val batch = firestore.batch()
+        checkedDocs.documents.forEach { batch.delete(it.reference) }
+        batch.commit().await()
+    }
 }

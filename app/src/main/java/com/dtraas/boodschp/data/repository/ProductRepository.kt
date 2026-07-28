@@ -1,28 +1,54 @@
 package com.dtraas.boodschp.data.repository
 
-import com.dtraas.boodschp.data.local.dao.ProductDao
 import com.dtraas.boodschp.data.local.entity.ProductEntity
 import com.dtraas.boodschp.data.model.Category
 import com.dtraas.boodschp.data.remote.CategoryMapper
 import com.dtraas.boodschp.data.remote.OpenFoodFactsApi
+import com.dtraas.boodschp.data.remote.observeSnapshot
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.tasks.await
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class ProductRepository(
-    private val productDao: ProductDao,
+    private val firestore: FirebaseFirestore,
+    private val householdSession: HouseholdSession,
     private val api: OpenFoodFactsApi,
 ) {
-    fun observeProduct(barcode: String): Flow<ProductEntity?> = productDao.observeByBarcode(barcode)
+    private fun productsCollection(householdId: String) =
+        firestore.collection("households").document(householdId).collection("products")
+
+    fun observeProduct(barcode: String): Flow<ProductEntity?> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(null)
+            } else {
+                productsCollection(householdId).document(barcode).observeSnapshot()
+                    .map { ProductEntity.fromDocument(it) }
+            }
+        }
 
     /** Returns the cached product for [barcode], or null if we've never seen it before. */
-    suspend fun findCached(barcode: String): ProductEntity? = productDao.findByBarcode(barcode)
+    suspend fun findCached(barcode: String): ProductEntity? {
+        val householdId = householdSession.householdId.value ?: return null
+        val snapshot = productsCollection(householdId).document(barcode).get().await()
+        return ProductEntity.fromDocument(snapshot)
+    }
 
     /**
-     * Returns the cached product for [barcode] if we already know it,
-     * otherwise looks it up via Open Food Facts and caches the result.
-     * Never throws: network/parse failures surface as [Result.failure].
+     * Returns the cached product for [barcode] if the household already knows it,
+     * otherwise looks it up via Open Food Facts and caches the result for everyone
+     * in the household. Never throws: network/parse failures surface as [Result.failure].
      */
     suspend fun getOrFetchProduct(barcode: String): Result<ProductEntity> {
-        productDao.findByBarcode(barcode)?.let { return Result.success(it) }
+        val householdId = householdSession.householdId.value
+            ?: return Result.failure(IllegalStateException("Geen huishouden gekoppeld"))
+
+        findCached(barcode)?.let { return Result.success(it) }
 
         return try {
             val response = api.getProduct(barcode)
@@ -44,7 +70,7 @@ class ProductRepository(
                     unit = offProduct.quantity,
                     lastFetchedAt = System.currentTimeMillis(),
                 )
-                productDao.upsert(entity)
+                productsCollection(householdId).document(barcode).set(entity.toMap()).await()
                 Result.success(entity)
             }
         } catch (e: Exception) {
@@ -53,6 +79,7 @@ class ProductRepository(
     }
 
     suspend fun saveManualProduct(barcode: String, name: String, category: Category): ProductEntity {
+        val householdId = householdSession.householdId.value ?: error("Geen huishouden gekoppeld")
         val entity = ProductEntity(
             barcode = barcode,
             name = name.trim(),
@@ -62,12 +89,13 @@ class ProductRepository(
             unit = null,
             lastFetchedAt = System.currentTimeMillis(),
         )
-        productDao.upsert(entity)
+        productsCollection(householdId).document(barcode).set(entity.toMap()).await()
         return entity
     }
 
     suspend fun updateCategory(barcode: String, category: Category) {
-        productDao.updateCategory(barcode, category.storageKey)
+        val householdId = householdSession.householdId.value ?: return
+        productsCollection(householdId).document(barcode).update("category", category.storageKey).await()
     }
 }
 

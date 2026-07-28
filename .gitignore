@@ -12,3 +12,7 @@ app/build/
 app/schemas/
 *.apk
 *.aab
+
+# Firebase project config — contains per-project identifiers, not secrets
+# but still project-specific; each developer/user adds their own.
+app/google-services.json

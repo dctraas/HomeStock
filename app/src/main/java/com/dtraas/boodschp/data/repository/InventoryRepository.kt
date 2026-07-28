@@ -1,62 +1,102 @@
 package com.dtraas.boodschp.data.repository
 
-import androidx.room.withTransaction
-import com.dtraas.boodschp.data.local.AppDatabase
-import com.dtraas.boodschp.data.local.dao.InventoryDao
 import com.dtraas.boodschp.data.local.dao.InventoryItemWithProduct
-import com.dtraas.boodschp.data.local.dao.ScanHistoryDao
 import com.dtraas.boodschp.data.local.entity.InventoryItemEntity
+import com.dtraas.boodschp.data.local.entity.ProductEntity
 import com.dtraas.boodschp.data.local.entity.ScanHistoryEntity
 import com.dtraas.boodschp.data.model.ActivityType
+import com.dtraas.boodschp.data.remote.observeSnapshot
+import com.dtraas.boodschp.data.remote.observeSnapshots
+import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.tasks.await
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class InventoryRepository(
-    private val database: AppDatabase,
-    private val inventoryDao: InventoryDao,
-    private val scanHistoryDao: ScanHistoryDao,
+    private val firestore: FirebaseFirestore,
+    private val householdSession: HouseholdSession,
     private val activityLogRepository: ActivityLogRepository,
 ) {
+    private fun collection(householdId: String, name: String) =
+        firestore.collection("households").document(householdId).collection(name)
+
+    private fun inventoryCollection(householdId: String) = collection(householdId, "inventory")
+    private fun productsCollection(householdId: String) = collection(householdId, "products")
+    private fun scanHistoryCollection(householdId: String) = collection(householdId, "scanHistory")
+
     /** Flat inventory list joined with product data, unsorted into categories. */
     fun observeInventoryWithProduct(): Flow<List<InventoryItemWithProduct>> =
-        inventoryDao.observeInventoryWithProduct()
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(emptyList())
+            } else {
+                combine(
+                    inventoryCollection(householdId).observeSnapshots(),
+                    productsCollection(householdId).observeSnapshots(),
+                ) { inventorySnapshot, productsSnapshot ->
+                    val products = productsSnapshot.documents
+                        .mapNotNull { ProductEntity.fromDocument(it) }
+                        .associateBy { it.barcode }
+                    inventorySnapshot.documents
+                        .mapNotNull { InventoryItemEntity.fromDocument(it) }
+                        .mapNotNull { item ->
+                            val product = products[item.barcode] ?: return@mapNotNull null
+                            InventoryItemWithProduct(
+                                barcode = item.barcode,
+                                name = product.name,
+                                brand = product.brand,
+                                category = product.category,
+                                imageUrl = product.imageUrl,
+                                unit = product.unit,
+                                quantity = item.quantity,
+                                updatedAt = item.updatedAt,
+                            )
+                        }
+                        .sortedBy { it.name.lowercase() }
+                }
+            }
+        }
 
     /**
      * Registers a barcode scan: bumps (or creates) the inventory quantity by
-     * [quantityDelta] and appends a scan-history entry, atomically.
+     * [quantityDelta] and appends a scan-history entry.
      */
     suspend fun recordScan(barcode: String, quantityDelta: Int = 1) {
-        database.withTransaction {
-            val existing = inventoryDao.findByBarcode(barcode)
-            val newQuantity = (existing?.quantity ?: 0) + quantityDelta
-            inventoryDao.upsert(
-                InventoryItemEntity(
-                    barcode = barcode,
-                    quantity = newQuantity.coerceAtLeast(0),
-                    updatedAt = System.currentTimeMillis(),
-                )
+        val householdId = householdSession.householdId.value ?: return
+        val inventoryDoc = inventoryCollection(householdId).document(barcode)
+        val existing = InventoryItemEntity.fromDocument(inventoryDoc.get().await())
+        val newQuantity = (existing?.quantity ?: 0) + quantityDelta
+        inventoryDoc.set(
+            InventoryItemEntity(
+                barcode = barcode,
+                quantity = newQuantity.coerceAtLeast(0),
+                updatedAt = System.currentTimeMillis(),
+            ).toMap()
+        ).await()
+        scanHistoryCollection(householdId).add(
+            mapOf(
+                "barcode" to barcode,
+                "scannedAt" to System.currentTimeMillis(),
+                "quantityDelta" to quantityDelta,
             )
-            scanHistoryDao.insert(
-                ScanHistoryEntity(
-                    barcode = barcode,
-                    scannedAt = System.currentTimeMillis(),
-                    quantityDelta = quantityDelta,
-                )
-            )
-        }
+        ).await()
         val sign = if (quantityDelta >= 0) "+" else ""
         activityLogRepository.log(barcode, ActivityType.SCANNED, "Gescand ($sign$quantityDelta)")
     }
 
     suspend fun updateQuantity(barcode: String, quantity: Int) {
+        val householdId = householdSession.householdId.value ?: return
         val clamped = quantity.coerceAtLeast(0)
-        val previousQuantity = inventoryDao.findByBarcode(barcode)?.quantity ?: 0
-        inventoryDao.upsert(
-            InventoryItemEntity(
-                barcode = barcode,
-                quantity = clamped,
-                updatedAt = System.currentTimeMillis(),
-            )
-        )
+        val inventoryDoc = inventoryCollection(householdId).document(barcode)
+        val previousQuantity = InventoryItemEntity.fromDocument(inventoryDoc.get().await())?.quantity ?: 0
+        inventoryDoc.set(
+            InventoryItemEntity(barcode = barcode, quantity = clamped, updatedAt = System.currentTimeMillis()).toMap()
+        ).await()
         if (previousQuantity != clamped) {
             activityLogRepository.log(
                 barcode,
@@ -67,8 +107,10 @@ class InventoryRepository(
     }
 
     suspend fun removeFromInventory(barcode: String) {
-        val existing = inventoryDao.findByBarcode(barcode)
-        inventoryDao.deleteByBarcode(barcode)
+        val householdId = householdSession.householdId.value ?: return
+        val inventoryDoc = inventoryCollection(householdId).document(barcode)
+        val existing = InventoryItemEntity.fromDocument(inventoryDoc.get().await())
+        inventoryDoc.delete().await()
         if (existing != null) {
             activityLogRepository.log(
                 barcode,
@@ -80,20 +122,41 @@ class InventoryRepository(
 
     /** Re-creates an inventory row after an undo action, without touching the activity log. */
     suspend fun restoreItem(barcode: String, quantity: Int) {
-        inventoryDao.upsert(
+        val householdId = householdSession.householdId.value ?: return
+        inventoryCollection(householdId).document(barcode).set(
             InventoryItemEntity(
                 barcode = barcode,
                 quantity = quantity.coerceAtLeast(0),
                 updatedAt = System.currentTimeMillis(),
-            )
-        )
+            ).toMap()
+        ).await()
     }
 
     fun observeInventoryItem(barcode: String): Flow<InventoryItemEntity?> =
-        inventoryDao.observeByBarcode(barcode)
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(null)
+            } else {
+                inventoryCollection(householdId).document(barcode).observeSnapshot()
+                    .map { InventoryItemEntity.fromDocument(it) }
+            }
+        }
 
     fun observeHistory(barcode: String): Flow<List<ScanHistoryEntity>> =
-        scanHistoryDao.observeHistoryForBarcode(barcode)
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(emptyList())
+            } else {
+                scanHistoryCollection(householdId)
+                    .whereEqualTo("barcode", barcode)
+                    .observeSnapshots()
+                    .map { snapshot ->
+                        snapshot.documents
+                            .mapNotNull { ScanHistoryEntity.fromDocument(it) }
+                            .sortedByDescending { it.scannedAt }
+                    }
+            }
+        }
 
-    fun observeScanCount(barcode: String): Flow<Int> = scanHistoryDao.observeScanCount(barcode)
+    fun observeScanCount(barcode: String): Flow<Int> = observeHistory(barcode).map { it.size }
 }

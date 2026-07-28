@@ -1,0 +1,26 @@
+rules_version = '2';
+
+// Publish these rules in the Firebase console under Firestore Database → Rules
+// (or via `firebase deploy --only firestore:rules` if you use the Firebase CLI).
+//
+// Access model: anyone who is signed in (including anonymously — Boodschp signs
+// every device in anonymously, there is no password login) AND knows a household's
+// code can read and write everything under that household. The household code is
+// the only access control — this is deliberately simple for a small household/family
+// app and is not meant to protect sensitive data.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /households/{householdId} {
+      // Anyone signed in can create a new household (random code) or read one
+      // they already know the code for. Household metadata itself never changes.
+      allow read, create: if request.auth != null;
+      allow update, delete: if false;
+
+      // All data for a household (products, inventory, shopping list, activity
+      // log, scan history) lives in subcollections here.
+      match /{document=**} {
+        allow read, write: if request.auth != null;
+      }
+    }
+  }
+}
