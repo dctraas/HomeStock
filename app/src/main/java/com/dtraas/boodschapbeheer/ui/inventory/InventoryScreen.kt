@@ -193,9 +193,9 @@ fun InventoryScreen(
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                    contentPadding = PaddingValues(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     uiState.groupedInventory.forEach { (category, itemsInCategory) ->
                         item(span = { GridItemSpan(maxLineSpan) }) {
@@ -410,14 +410,14 @@ private fun InventoryGridTile(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(14.dp))
             .clickable(onClick = onClick),
     ) {
-        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1.4f)) {
             ProductImage(
                 imageUrl = item.imageUrl,
                 fallbackIcon = Category.fromStorageKey(item.category).icon,
-                shape = RoundedCornerShape(16.dp),
+                shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxSize(),
             )
             Surface(
@@ -425,42 +425,43 @@ private fun InventoryGridTile(
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(6.dp)
-                    .size(40.dp),
+                    .padding(4.dp)
+                    .size(32.dp),
             ) {
                 IconButton(onClick = onAddToShoppingList, modifier = Modifier.fillMaxSize()) {
                     Icon(
                         Icons.Filled.AddShoppingCart,
                         contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp),
+                        modifier = Modifier.size(16.dp),
                     )
                 }
             }
         }
-        Column(modifier = Modifier.padding(top = 8.dp)) {
+        Column(modifier = Modifier.padding(top = 6.dp)) {
             Text(
                 text = item.name,
-                style = MaterialTheme.typography.titleSmall,
-                maxLines = 2,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
             val subtitle = listOfNotNull(item.brand, item.unit).joinToString(" · ")
             if (subtitle.isNotEmpty()) {
                 Text(
                     text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
+                    style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp),
+                    modifier = Modifier.padding(top = 1.dp),
                 )
             }
             QuantityStepper(
                 quantity = item.quantity,
                 onDecrease = onDecrease,
                 onIncrease = onIncrease,
-                modifier = Modifier.padding(top = 4.dp),
+                dense = true,
+                modifier = Modifier.padding(top = 2.dp),
             )
         }
     }
