@@ -18,6 +18,7 @@ data class ShoppingListItemEntity(
     val quantity: Int,
     val isChecked: Boolean,
     val addedAt: Long,
+    val note: String? = null,
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
         "barcode" to barcode,
@@ -28,6 +29,7 @@ data class ShoppingListItemEntity(
         "quantity" to quantity,
         "isChecked" to isChecked,
         "addedAt" to addedAt,
+        "note" to note,
     )
 
     companion object {
@@ -43,6 +45,7 @@ data class ShoppingListItemEntity(
                 quantity = (document.getLong("quantity") ?: 1L).toInt(),
                 isChecked = document.getBoolean("isChecked") ?: false,
                 addedAt = document.getLong("addedAt") ?: 0L,
+                note = document.getString("note")?.takeIf { it.isNotBlank() },
             )
         }
     }

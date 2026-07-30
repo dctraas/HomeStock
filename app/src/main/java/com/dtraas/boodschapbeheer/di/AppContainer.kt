@@ -6,6 +6,7 @@ import com.dtraas.boodschapbeheer.data.repository.ActivityLogRepository
 import com.dtraas.boodschapbeheer.data.repository.HouseholdRepository
 import com.dtraas.boodschapbeheer.data.repository.HouseholdSession
 import com.dtraas.boodschapbeheer.data.repository.InventoryRepository
+import com.dtraas.boodschapbeheer.data.repository.NotificationPreferences
 import com.dtraas.boodschapbeheer.data.repository.ProductRepository
 import com.dtraas.boodschapbeheer.data.repository.ShoppingListRepository
 import com.dtraas.boodschapbeheer.data.repository.StatisticsRepository
@@ -30,6 +31,7 @@ class AppContainer(context: Context) {
     private val appContext: Context = context.applicationContext
 
     val householdSession: HouseholdSession = HouseholdSession(context)
+    val notificationPreferences: NotificationPreferences = NotificationPreferences(context)
 
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
@@ -57,12 +59,12 @@ class AppContainer(context: Context) {
         ActivityLogRepository(appContext, firestore, householdSession)
     }
 
-    val inventoryRepository: InventoryRepository by lazy {
-        InventoryRepository(firestore, householdSession, activityLogRepository)
-    }
-
     val shoppingListRepository: ShoppingListRepository by lazy {
         ShoppingListRepository(firestore, householdSession)
+    }
+
+    val inventoryRepository: InventoryRepository by lazy {
+        InventoryRepository(firestore, householdSession, activityLogRepository, productRepository, shoppingListRepository)
     }
 
     val statisticsRepository: StatisticsRepository by lazy {

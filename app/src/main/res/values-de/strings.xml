@@ -5,6 +5,7 @@
     <string name="common_back">Zurück</string>
     <string name="common_cancel">Abbrechen</string>
     <string name="common_name">Name</string>
+    <string name="common_ok">OK</string>
     <string name="common_quantity">Menge</string>
     <string name="common_undo">Rückgängig machen</string>
     <string name="quantity_decrease_cd">Weniger</string>
@@ -100,6 +101,8 @@
     <string name="more_leave">Verlassen</string>
     <string name="more_leave_dialog_title">Haushalt verlassen?</string>
     <string name="more_leave_dialog_text">Du siehst den geteilten Vorrat und die Einkaufsliste dann nicht mehr auf diesem Gerät. Du kannst jederzeit mit dem Code wieder beitreten.</string>
+    <string name="more_expiry_notifications_title">Haltbarkeitserinnerungen</string>
+    <string name="more_expiry_notifications_description">Erhalte eine Benachrichtigung, wenn ein Produkt bald abläuft</string>
 
     <!-- Vorrat -->
     <string name="inventory_title">Vorrat</string>
@@ -143,6 +146,11 @@
     <string name="product_detail_nutrition_fiber">Ballaststoffe</string>
     <string name="product_detail_nutrition_proteins">Eiweiß</string>
     <string name="product_detail_nutrition_salt">Salz</string>
+    <string name="product_detail_expiration_label">Haltbar bis</string>
+    <string name="product_detail_expiration_set">Festlegen</string>
+    <string name="product_detail_expiration_clear_cd">Haltbarkeitsdatum löschen</string>
+    <string name="product_detail_min_quantity_label">Mindestmenge</string>
+    <string name="product_detail_min_quantity_hint">Wird automatisch zur Liste hinzugefügt, sobald der Vorrat darunter fällt (0 = aus)</string>
 
     <!-- Scannen -->
     <string name="scan_quick_added_format">%1$s hinzugefügt (+1)</string>
@@ -178,6 +186,14 @@
     <string name="shopping_list_item_edit_title">Artikel bearbeiten</string>
     <string name="shopping_list_add_confirm">Hinzufügen</string>
     <string name="shopping_list_save_confirm">Speichern</string>
+    <string name="shopping_list_note_label">Notiz</string>
+    <string name="shopping_list_note_placeholder">Z. B. Marke oder Größe</string>
+
+    <!-- Benachrichtigungen (Systemmeldungen) -->
+    <string name="notification_channel_name">Haltbarkeit</string>
+    <string name="notification_channel_description">Benachrichtigungen, wenn Produkte in deinem Vorrat bald ablaufen</string>
+    <string name="notification_expiry_title">Läuft bald ab</string>
+    <string name="notification_expiry_body_multiple_format">%1$d Produkte laufen bald ab</string>
 
     <!-- Statistiken -->
     <string name="statistics_title">Statistiken</string>

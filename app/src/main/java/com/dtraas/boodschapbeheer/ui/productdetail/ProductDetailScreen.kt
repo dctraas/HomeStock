@@ -17,12 +17,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -32,9 +35,14 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -55,6 +63,11 @@ import com.dtraas.boodschapbeheer.data.local.entity.ProductEntity
 import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.ui.components.QuantityStepper
 import com.dtraas.boodschapbeheer.ui.components.icon
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -142,6 +155,25 @@ fun ProductDetailScreen(
                                 onIncrease = { viewModel.setQuantity((uiState.quantityInInventory ?: 0) + 1) },
                             )
                         }
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(top = 12.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        )
+                        ExpirationRow(
+                            expirationDate = uiState.expirationDate,
+                            onDateChange = viewModel::setExpirationDate,
+                        )
+
+                        HorizontalDivider(
+                            modifier = Modifier.padding(top = 4.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                        )
+                        MinQuantityRow(
+                            minQuantity = uiState.minQuantity,
+                            onChange = viewModel::setMinQuantity,
+                        )
+
                         OutlinedButton(
                             onClick = {
                                 viewModel.removeFromInventory()
@@ -350,3 +382,93 @@ private fun NutritionRow(label: String, value: String, indented: Boolean = false
 
 private fun formatKcal(value: Double): String = String.format(Locale.getDefault(), "%.0f kcal", value)
 private fun formatGrams(value: Double): String = String.format(Locale.getDefault(), "%.1f g", value)
+
+private fun formatExpirationDate(millis: Long): String {
+    val date = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+    return DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault()).format(date)
+}
+
+private fun daysUntilExpiration(millis: Long): Long {
+    val date = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+    return ChronoUnit.DAYS.between(LocalDate.now(ZoneOffset.UTC), date)
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ExpirationRow(expirationDate: Long?, onDateChange: (Long?) -> Unit) {
+    var showPicker by remember { mutableStateOf(false) }
+    val isNearExpiry = expirationDate != null && daysUntilExpiration(expirationDate) <= 3
+
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(stringResource(R.string.product_detail_expiration_label), style = MaterialTheme.typography.bodyLarge)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            TextButton(onClick = { showPicker = true }) {
+                Text(
+                    text = expirationDate?.let { formatExpirationDate(it) }
+                        ?: stringResource(R.string.product_detail_expiration_set),
+                    color = if (isNearExpiry) MaterialTheme.colorScheme.error else Color.Unspecified,
+                )
+            }
+            if (expirationDate != null) {
+                IconButton(onClick = { onDateChange(null) }, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.product_detail_expiration_clear_cd),
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+        }
+    }
+
+    if (showPicker) {
+        val state = rememberDatePickerState(initialSelectedDateMillis = expirationDate)
+        DatePickerDialog(
+            onDismissRequest = { showPicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    onDateChange(state.selectedDateMillis)
+                    showPicker = false
+                }) { Text(stringResource(R.string.common_ok)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPicker = false }) { Text(stringResource(R.string.common_cancel)) }
+            },
+        ) {
+            DatePicker(state = state)
+        }
+    }
+}
+
+@Composable
+private fun MinQuantityRow(minQuantity: Int?, onChange: (Int?) -> Unit) {
+    Column(modifier = Modifier.padding(top = 12.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(stringResource(R.string.product_detail_min_quantity_label), style = MaterialTheme.typography.bodyLarge)
+            QuantityStepper(
+                quantity = minQuantity ?: 0,
+                onDecrease = {
+                    val next = (minQuantity ?: 0) - 1
+                    onChange(if (next <= 0) null else next)
+                },
+                onIncrease = { onChange((minQuantity ?: 0) + 1) },
+                minQuantity = 0,
+                dense = true,
+            )
+        }
+        Text(
+            text = stringResource(R.string.product_detail_min_quantity_hint),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}

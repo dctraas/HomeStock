@@ -35,9 +35,9 @@ class ShoppingListViewModel(
         searchQuery.value = query
     }
 
-    fun addItem(name: String, category: Category, store: Store, quantity: Int) {
+    fun addItem(name: String, category: Category, store: Store, quantity: Int, note: String? = null) {
         if (name.isBlank()) return
-        viewModelScope.launch { shoppingListRepository.addItem(name, category, store, quantity) }
+        viewModelScope.launch { shoppingListRepository.addItem(name, category, store, quantity, note = note) }
     }
 
     fun updateItem(item: ShoppingListItemEntity) {

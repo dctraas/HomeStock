@@ -5,6 +5,7 @@
     <string name="common_back">Retour</string>
     <string name="common_cancel">Annuler</string>
     <string name="common_name">Nom</string>
+    <string name="common_ok">OK</string>
     <string name="common_quantity">Quantité</string>
     <string name="common_undo">Annuler</string>
     <string name="quantity_decrease_cd">Diminuer</string>
@@ -100,6 +101,8 @@
     <string name="more_leave">Quitter</string>
     <string name="more_leave_dialog_title">Quitter le foyer ?</string>
     <string name="more_leave_dialog_text">Vous ne verrez plus le stock et la liste de courses partagés sur cet appareil. Vous pouvez rejoindre le foyer à tout moment avec le code.</string>
+    <string name="more_expiry_notifications_title">Rappels de péremption</string>
+    <string name="more_expiry_notifications_description">Recevez une notification quand un produit est bientôt périmé</string>
 
     <!-- Stock -->
     <string name="inventory_title">Stock</string>
@@ -143,6 +146,11 @@
     <string name="product_detail_nutrition_fiber">Fibres</string>
     <string name="product_detail_nutrition_proteins">Protéines</string>
     <string name="product_detail_nutrition_salt">Sel</string>
+    <string name="product_detail_expiration_label">À consommer avant</string>
+    <string name="product_detail_expiration_set">Définir</string>
+    <string name="product_detail_expiration_clear_cd">Effacer la date de péremption</string>
+    <string name="product_detail_min_quantity_label">Quantité minimale</string>
+    <string name="product_detail_min_quantity_hint">Ajouté automatiquement à la liste dès que le stock passe en dessous (0 = désactivé)</string>
 
     <!-- Scanner -->
     <string name="scan_quick_added_format">%1$s ajouté (+1)</string>
@@ -178,6 +186,14 @@
     <string name="shopping_list_item_edit_title">Modifier l\'article</string>
     <string name="shopping_list_add_confirm">Ajouter</string>
     <string name="shopping_list_save_confirm">Enregistrer</string>
+    <string name="shopping_list_note_label">Note</string>
+    <string name="shopping_list_note_placeholder">Ex. marque ou taille</string>
+
+    <!-- Notifications (notifications système) -->
+    <string name="notification_channel_name">Péremption</string>
+    <string name="notification_channel_description">Notifications quand des produits de votre stock sont bientôt périmés</string>
+    <string name="notification_expiry_title">Bientôt périmé</string>
+    <string name="notification_expiry_body_multiple_format">%1$d produits sont bientôt périmés</string>
 
     <!-- Statistiques -->
     <string name="statistics_title">Statistiques</string>

@@ -40,6 +40,7 @@ class ShoppingListRepository(
         quantity: Int,
         barcode: String? = null,
         imageUrl: String? = null,
+        note: String? = null,
     ) {
         val householdId = householdSession.householdId.value ?: return
         val entity = ShoppingListItemEntity(
@@ -52,8 +53,20 @@ class ShoppingListRepository(
             quantity = quantity.coerceAtLeast(1),
             isChecked = false,
             addedAt = System.currentTimeMillis(),
+            note = note?.trim()?.takeIf { it.isNotEmpty() },
         )
         shoppingListCollection(householdId).add(entity.toMap()).await()
+    }
+
+    /** True if there's already an unchecked shopping list line for [barcode]. */
+    suspend fun hasOpenItemForBarcode(barcode: String): Boolean {
+        val householdId = householdSession.householdId.value ?: return false
+        val matches = shoppingListCollection(householdId)
+            .whereEqualTo("barcode", barcode)
+            .whereEqualTo("isChecked", false)
+            .get()
+            .await()
+        return !matches.isEmpty
     }
 
     suspend fun updateItem(item: ShoppingListItemEntity) {

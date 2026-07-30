@@ -90,7 +90,9 @@ class InventoryViewModel(
     }
 
     fun restoreItem(item: InventoryItemWithProduct) {
-        viewModelScope.launch { inventoryRepository.restoreItem(item.barcode, item.quantity) }
+        viewModelScope.launch {
+            inventoryRepository.restoreItem(item.barcode, item.quantity, item.expirationDate, item.minQuantity)
+        }
     }
 
     fun addToShoppingList(item: InventoryItemWithProduct) {

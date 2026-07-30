@@ -17,6 +17,8 @@ import kotlinx.coroutines.launch
 data class ProductDetailUiState(
     val product: ProductEntity? = null,
     val quantityInInventory: Int? = null,
+    val expirationDate: Long? = null,
+    val minQuantity: Int? = null,
     val isLoading: Boolean = true,
 )
 
@@ -34,12 +36,22 @@ class ProductDetailViewModel(
         ProductDetailUiState(
             product = product,
             quantityInInventory = inventoryItem?.quantity,
+            expirationDate = inventoryItem?.expirationDate,
+            minQuantity = inventoryItem?.minQuantity,
             isLoading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProductDetailUiState())
 
     fun setQuantity(quantity: Int) {
         viewModelScope.launch { inventoryRepository.updateQuantity(barcode, quantity) }
+    }
+
+    fun setExpirationDate(expirationDate: Long?) {
+        viewModelScope.launch { inventoryRepository.setExpirationDate(barcode, expirationDate) }
+    }
+
+    fun setMinQuantity(minQuantity: Int?) {
+        viewModelScope.launch { inventoryRepository.setMinQuantity(barcode, minQuantity) }
     }
 
     fun removeFromInventory() {

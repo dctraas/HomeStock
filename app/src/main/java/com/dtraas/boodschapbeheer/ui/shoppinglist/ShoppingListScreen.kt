@@ -224,8 +224,8 @@ fun ShoppingListScreen() {
                 title = stringResource(R.string.shopping_list_item_add_title),
                 confirmLabel = stringResource(R.string.shopping_list_add_confirm),
                 onDismiss = { showAddDialog = false },
-                onConfirm = { name, category, store, quantity ->
-                    viewModel.addItem(name, category, store, quantity)
+                onConfirm = { name, category, store, quantity, note ->
+                    viewModel.addItem(name, category, store, quantity, note.trim().ifBlank { null })
                     showAddDialog = false
                 },
             )
@@ -239,15 +239,17 @@ fun ShoppingListScreen() {
                 initialCategory = Category.fromStorageKey(item.category),
                 initialStore = Store.fromStorageKey(item.store),
                 initialQuantity = item.quantity,
+                initialNote = item.note ?: "",
                 imageUrl = item.imageUrl,
                 onDismiss = { editingItem = null },
-                onConfirm = { name, category, store, quantity ->
+                onConfirm = { name, category, store, quantity, note ->
                     viewModel.updateItem(
                         item.copy(
                             name = name,
                             category = category.storageKey,
                             store = store.storageKey,
                             quantity = quantity,
+                            note = note.trim().ifBlank { null },
                         )
                     )
                     editingItem = null
@@ -333,7 +335,7 @@ private fun ShoppingListRow(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = stringResource(category.displayNameRes),
+                    text = listOfNotNull(stringResource(category.displayNameRes), item.note).joinToString(" · "),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -435,7 +437,7 @@ private fun ShoppingListGridTile(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = stringResource(category.displayNameRes),
+                text = listOfNotNull(stringResource(category.displayNameRes), item.note).joinToString(" · "),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -494,14 +496,16 @@ private fun ItemFormDialog(
     initialCategory: Category = Category.OVERIG,
     initialStore: Store = Store.GEEN,
     initialQuantity: Int = 1,
+    initialNote: String = "",
     imageUrl: String? = null,
     onDismiss: () -> Unit,
-    onConfirm: (name: String, category: Category, store: Store, quantity: Int) -> Unit,
+    onConfirm: (name: String, category: Category, store: Store, quantity: Int, note: String) -> Unit,
 ) {
     var name by remember { mutableStateOf(initialName) }
     var category by remember { mutableStateOf(initialCategory) }
     var store by remember { mutableStateOf(initialStore) }
     var quantity by remember { mutableIntStateOf(initialQuantity) }
+    var note by remember { mutableStateOf(initialNote) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -548,12 +552,19 @@ private fun ItemFormDialog(
                             minQuantity = 1,
                         )
                     }
+                    OutlinedTextField(
+                        value = note,
+                        onValueChange = { note = it },
+                        label = { Text(stringResource(R.string.shopping_list_note_label)) },
+                        placeholder = { Text(stringResource(R.string.shopping_list_note_placeholder)) },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(name, category, store, quantity) },
+                onClick = { onConfirm(name, category, store, quantity, note) },
                 enabled = name.isNotBlank(),
             ) {
                 Text(confirmLabel)

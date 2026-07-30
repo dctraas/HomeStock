@@ -5,6 +5,7 @@
     <string name="common_back">Back</string>
     <string name="common_cancel">Cancel</string>
     <string name="common_name">Name</string>
+    <string name="common_ok">OK</string>
     <string name="common_quantity">Quantity</string>
     <string name="common_undo">Undo</string>
     <string name="quantity_decrease_cd">Decrease</string>
@@ -100,6 +101,8 @@
     <string name="more_leave">Leave</string>
     <string name="more_leave_dialog_title">Leave household?</string>
     <string name="more_leave_dialog_text">You\'ll no longer see the shared inventory and shopping list on this device. You can rejoin at any time with the code.</string>
+    <string name="more_expiry_notifications_title">Expiry reminders</string>
+    <string name="more_expiry_notifications_description">Get notified when a product is about to expire</string>
 
     <!-- Inventory -->
     <string name="inventory_title">Inventory</string>
@@ -143,6 +146,11 @@
     <string name="product_detail_nutrition_fiber">Fiber</string>
     <string name="product_detail_nutrition_proteins">Protein</string>
     <string name="product_detail_nutrition_salt">Salt</string>
+    <string name="product_detail_expiration_label">Best before</string>
+    <string name="product_detail_expiration_set">Set</string>
+    <string name="product_detail_expiration_clear_cd">Clear expiration date</string>
+    <string name="product_detail_min_quantity_label">Minimum quantity</string>
+    <string name="product_detail_min_quantity_hint">Automatically added to the list once stock drops below this (0 = off)</string>
 
     <!-- Scan -->
     <string name="scan_quick_added_format">%1$s added (+1)</string>
@@ -178,6 +186,14 @@
     <string name="shopping_list_item_edit_title">Edit item</string>
     <string name="shopping_list_add_confirm">Add</string>
     <string name="shopping_list_save_confirm">Save</string>
+    <string name="shopping_list_note_label">Note</string>
+    <string name="shopping_list_note_placeholder">E.g. brand or size</string>
+
+    <!-- Notifications (system notices) -->
+    <string name="notification_channel_name">Expiry</string>
+    <string name="notification_channel_description">Notifications when products in your inventory are about to expire</string>
+    <string name="notification_expiry_title">About to expire</string>
+    <string name="notification_expiry_body_multiple_format">%1$d products are about to expire</string>
 
     <!-- Statistics -->
     <string name="statistics_title">Statistics</string>

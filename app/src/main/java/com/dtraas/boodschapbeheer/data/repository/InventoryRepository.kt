@@ -3,6 +3,8 @@ package com.dtraas.boodschapbeheer.data.repository
 import com.dtraas.boodschapbeheer.data.local.dao.InventoryItemWithProduct
 import com.dtraas.boodschapbeheer.data.local.entity.InventoryItemEntity
 import com.dtraas.boodschapbeheer.data.local.entity.ProductEntity
+import com.dtraas.boodschapbeheer.data.model.Category
+import com.dtraas.boodschapbeheer.data.model.Store
 import com.dtraas.boodschapbeheer.data.remote.observeSnapshot
 import com.dtraas.boodschapbeheer.data.remote.observeSnapshots
 import com.google.firebase.firestore.FirebaseFirestore
@@ -19,6 +21,8 @@ class InventoryRepository(
     private val firestore: FirebaseFirestore,
     private val householdSession: HouseholdSession,
     private val activityLogRepository: ActivityLogRepository,
+    private val productRepository: ProductRepository,
+    private val shoppingListRepository: ShoppingListRepository,
 ) {
     private fun collection(householdId: String, name: String) =
         firestore.collection("households").document(householdId).collection(name)
@@ -53,6 +57,8 @@ class InventoryRepository(
                                 unit = product.unit,
                                 quantity = item.quantity,
                                 updatedAt = item.updatedAt,
+                                expirationDate = item.expirationDate,
+                                minQuantity = item.minQuantity,
                             )
                         }
                         .sortedBy { it.name.lowercase() }
@@ -69,13 +75,9 @@ class InventoryRepository(
         val inventoryDoc = inventoryCollection(householdId).document(barcode)
         val existing = InventoryItemEntity.fromDocument(inventoryDoc.get().await())
         val newQuantity = (existing?.quantity ?: 0) + quantityDelta
-        inventoryDoc.set(
-            InventoryItemEntity(
-                barcode = barcode,
-                quantity = newQuantity.coerceAtLeast(0),
-                updatedAt = System.currentTimeMillis(),
-            ).toMap()
-        ).await()
+        val updated = (existing ?: InventoryItemEntity(barcode = barcode, quantity = 0, updatedAt = 0L))
+            .copy(quantity = newQuantity.coerceAtLeast(0), updatedAt = System.currentTimeMillis())
+        inventoryDoc.set(updated.toMap()).await()
         scanHistoryCollection(householdId).add(
             mapOf(
                 "barcode" to barcode,
@@ -84,19 +86,51 @@ class InventoryRepository(
             )
         ).await()
         activityLogRepository.logScanned(barcode, quantityDelta)
+        maybeRestockOnLowQuantity(updated)
     }
 
     suspend fun updateQuantity(barcode: String, quantity: Int) {
         val householdId = householdSession.householdId.value ?: return
         val clamped = quantity.coerceAtLeast(0)
         val inventoryDoc = inventoryCollection(householdId).document(barcode)
-        val previousQuantity = InventoryItemEntity.fromDocument(inventoryDoc.get().await())?.quantity ?: 0
-        inventoryDoc.set(
-            InventoryItemEntity(barcode = barcode, quantity = clamped, updatedAt = System.currentTimeMillis()).toMap()
-        ).await()
+        val existing = InventoryItemEntity.fromDocument(inventoryDoc.get().await())
+        val previousQuantity = existing?.quantity ?: 0
+        val updated = (existing ?: InventoryItemEntity(barcode = barcode, quantity = 0, updatedAt = 0L))
+            .copy(quantity = clamped, updatedAt = System.currentTimeMillis())
+        inventoryDoc.set(updated.toMap()).await()
         if (previousQuantity != clamped) {
             activityLogRepository.logQuantityChanged(barcode, previousQuantity, clamped)
         }
+        maybeRestockOnLowQuantity(updated)
+    }
+
+    suspend fun setExpirationDate(barcode: String, expirationDate: Long?) {
+        val householdId = householdSession.householdId.value ?: return
+        inventoryCollection(householdId).document(barcode).update("expirationDate", expirationDate).await()
+    }
+
+    suspend fun setMinQuantity(barcode: String, minQuantity: Int?) {
+        val householdId = householdSession.householdId.value ?: return
+        val inventoryDoc = inventoryCollection(householdId).document(barcode)
+        inventoryDoc.update("minQuantity", minQuantity).await()
+        val updated = InventoryItemEntity.fromDocument(inventoryDoc.get().await()) ?: return
+        maybeRestockOnLowQuantity(updated)
+    }
+
+    /** Auto re-adds [item]'s product to the shopping list once its quantity drops below its minimum. */
+    private suspend fun maybeRestockOnLowQuantity(item: InventoryItemEntity) {
+        val minQuantity = item.minQuantity ?: return
+        if (item.quantity >= minQuantity) return
+        if (shoppingListRepository.hasOpenItemForBarcode(item.barcode)) return
+        val product = productRepository.findCached(item.barcode) ?: return
+        shoppingListRepository.addItem(
+            name = product.name,
+            category = Category.fromStorageKey(product.category),
+            store = Store.GEEN,
+            quantity = 1,
+            barcode = item.barcode,
+            imageUrl = product.imageUrl,
+        )
     }
 
     suspend fun removeFromInventory(barcode: String) {
@@ -110,13 +144,15 @@ class InventoryRepository(
     }
 
     /** Re-creates an inventory row after an undo action, without touching the activity log. */
-    suspend fun restoreItem(barcode: String, quantity: Int) {
+    suspend fun restoreItem(barcode: String, quantity: Int, expirationDate: Long? = null, minQuantity: Int? = null) {
         val householdId = householdSession.householdId.value ?: return
         inventoryCollection(householdId).document(barcode).set(
             InventoryItemEntity(
                 barcode = barcode,
                 quantity = quantity.coerceAtLeast(0),
                 updatedAt = System.currentTimeMillis(),
+                expirationDate = expirationDate,
+                minQuantity = minQuantity,
             ).toMap()
         ).await()
     }

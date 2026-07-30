@@ -1,5 +1,10 @@
 package com.dtraas.boodschapbeheer.ui.more
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -23,6 +29,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -37,18 +44,39 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
 import com.dtraas.boodschapbeheer.R
+import com.dtraas.boodschapbeheer.work.ExpiryCheckWorker
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoreScreen(
     onOpenStatistics: () -> Unit,
 ) {
-    val application = LocalContext.current.applicationContext as BoodschapBeheerApplication
+    val context = LocalContext.current
+    val application = context.applicationContext as BoodschapBeheerApplication
     val householdSession = application.container.householdSession
+    val notificationPreferences = application.container.notificationPreferences
     val householdId by householdSession.householdId.collectAsState()
+    val notificationsEnabled by notificationPreferences.expiryNotificationsEnabled.collectAsState()
     var showLeaveConfirm by remember { mutableStateOf(false) }
+
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission(),
+    ) { /* Whether granted or not, the setting itself stays on; ExpiryCheckWorker re-checks the permission before posting. */ }
+
+    fun setNotificationsEnabled(enabled: Boolean) {
+        notificationPreferences.setExpiryNotificationsEnabled(enabled)
+        if (enabled) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+            ) {
+                permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+            ExpiryCheckWorker.runOnce(context)
+        }
+    }
 
     Scaffold(
         topBar = { CenterAlignedTopAppBar(title = { Text(stringResource(R.string.nav_more)) }) },
@@ -62,6 +90,10 @@ fun MoreScreen(
                 title = stringResource(R.string.more_statistics_title),
                 description = stringResource(R.string.more_statistics_description),
                 onClick = onOpenStatistics,
+            )
+            NotificationSettingsCard(
+                enabled = notificationsEnabled,
+                onEnabledChange = ::setNotificationsEnabled,
             )
             if (householdId != null) {
                 HouseholdCard(
@@ -131,6 +163,47 @@ private fun HouseholdCard(code: String?, onLeave: () -> Unit) {
             TextButton(onClick = onLeave) {
                 Text(stringResource(R.string.more_leave))
             }
+        }
+    }
+}
+
+@Composable
+private fun NotificationSettingsCard(enabled: Boolean, onEnabledChange: (Boolean) -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.size(44.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = Icons.Filled.Notifications,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 12.dp),
+            ) {
+                Text(stringResource(R.string.more_expiry_notifications_title), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = stringResource(R.string.more_expiry_notifications_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(checked = enabled, onCheckedChange = onEnabledChange)
         }
     }
 }
