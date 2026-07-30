@@ -130,11 +130,8 @@
     <!-- Product detail -->
     <string name="product_detail_default_title">Product</string>
     <string name="product_detail_in_stock">In stock</string>
-    <string name="product_detail_remove">Remove from inventory</string>
-    <string name="product_detail_add_to_shopping_list">Add to shopping list</string>
-    <string name="product_detail_history_header_format">History (scanned %1$dx)</string>
-    <string name="product_detail_history_empty">No scans recorded yet.</string>
-    <string name="product_detail_scanned_format">%1$s%2$d item(s) scanned</string>
+    <string name="product_detail_remove">Remove</string>
+    <string name="product_detail_add_to_shopping_list">Add to list</string>
 
     <!-- Scan -->
     <string name="scan_quick_added_format">%1$s added (+1)</string>

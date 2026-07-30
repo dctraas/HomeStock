@@ -3,7 +3,6 @@ package com.dtraas.boodschapbeheer.ui.productdetail
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.boodschapbeheer.data.local.entity.ProductEntity
-import com.dtraas.boodschapbeheer.data.local.entity.ScanHistoryEntity
 import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.data.model.Store
 import com.dtraas.boodschapbeheer.data.repository.InventoryRepository
@@ -18,8 +17,6 @@ import kotlinx.coroutines.launch
 data class ProductDetailUiState(
     val product: ProductEntity? = null,
     val quantityInInventory: Int? = null,
-    val history: List<ScanHistoryEntity> = emptyList(),
-    val scanCount: Int = 0,
     val isLoading: Boolean = true,
 )
 
@@ -33,14 +30,10 @@ class ProductDetailViewModel(
     val uiState: StateFlow<ProductDetailUiState> = combine(
         productRepository.observeProduct(barcode),
         inventoryRepository.observeInventoryItem(barcode),
-        inventoryRepository.observeHistory(barcode),
-        inventoryRepository.observeScanCount(barcode),
-    ) { product, inventoryItem, history, scanCount ->
+    ) { product, inventoryItem ->
         ProductDetailUiState(
             product = product,
             quantityInInventory = inventoryItem?.quantity,
-            history = history,
-            scanCount = scanCount,
             isLoading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProductDetailUiState())

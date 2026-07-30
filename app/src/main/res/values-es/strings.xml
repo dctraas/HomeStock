@@ -130,11 +130,8 @@
     <!-- Detalle del producto -->
     <string name="product_detail_default_title">Producto</string>
     <string name="product_detail_in_stock">En existencia</string>
-    <string name="product_detail_remove">Eliminar del inventario</string>
-    <string name="product_detail_add_to_shopping_list">Añadir a la lista de la compra</string>
-    <string name="product_detail_history_header_format">Historial (escaneado %1$dx)</string>
-    <string name="product_detail_history_empty">Todavía no se han registrado escaneos.</string>
-    <string name="product_detail_scanned_format">%1$s%2$d unidad(es) escaneada(s)</string>
+    <string name="product_detail_remove">Eliminar</string>
+    <string name="product_detail_add_to_shopping_list">Añadir a la lista</string>
 
     <!-- Escanear -->
     <string name="scan_quick_added_format">%1$s añadido (+1)</string>

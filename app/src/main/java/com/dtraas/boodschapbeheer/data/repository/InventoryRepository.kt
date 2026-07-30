@@ -3,7 +3,6 @@ package com.dtraas.boodschapbeheer.data.repository
 import com.dtraas.boodschapbeheer.data.local.dao.InventoryItemWithProduct
 import com.dtraas.boodschapbeheer.data.local.entity.InventoryItemEntity
 import com.dtraas.boodschapbeheer.data.local.entity.ProductEntity
-import com.dtraas.boodschapbeheer.data.local.entity.ScanHistoryEntity
 import com.dtraas.boodschapbeheer.data.remote.observeSnapshot
 import com.dtraas.boodschapbeheer.data.remote.observeSnapshots
 import com.google.firebase.firestore.FirebaseFirestore
@@ -132,21 +131,4 @@ class InventoryRepository(
             }
         }
 
-    fun observeHistory(barcode: String): Flow<List<ScanHistoryEntity>> =
-        householdSession.householdId.flatMapLatest { householdId ->
-            if (householdId == null) {
-                flowOf(emptyList())
-            } else {
-                scanHistoryCollection(householdId)
-                    .whereEqualTo("barcode", barcode)
-                    .observeSnapshots()
-                    .map { snapshot ->
-                        snapshot.documents
-                            .mapNotNull { ScanHistoryEntity.fromDocument(it) }
-                            .sortedByDescending { it.scannedAt }
-                    }
-            }
-        }
-
-    fun observeScanCount(barcode: String): Flow<Int> = observeHistory(barcode).map { it.size }
 }

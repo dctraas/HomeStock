@@ -130,11 +130,8 @@
     <!-- Productdetail -->
     <string name="product_detail_default_title">Product</string>
     <string name="product_detail_in_stock">Op voorraad</string>
-    <string name="product_detail_remove">Verwijderen uit voorraad</string>
-    <string name="product_detail_add_to_shopping_list">Toevoegen aan boodschappenlijst</string>
-    <string name="product_detail_history_header_format">Geschiedenis (%1$dx gescand)</string>
-    <string name="product_detail_history_empty">Nog geen scans geregistreerd.</string>
-    <string name="product_detail_scanned_format">%1$s%2$d stuk(s) gescand</string>
+    <string name="product_detail_remove">Verwijderen</string>
+    <string name="product_detail_add_to_shopping_list">Toevoegen aan lijstje</string>
 
     <!-- Scannen -->
     <string name="scan_quick_added_format">%1$s toegevoegd (+1)</string>

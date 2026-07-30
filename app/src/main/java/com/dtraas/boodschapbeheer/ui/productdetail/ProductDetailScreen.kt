@@ -4,18 +4,18 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -32,7 +32,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -46,14 +45,9 @@ import coil.compose.AsyncImage
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
 import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.entity.ProductEntity
-import com.dtraas.boodschapbeheer.data.local.entity.ScanHistoryEntity
 import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.ui.components.QuantityStepper
 import com.dtraas.boodschapbeheer.ui.components.icon
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,95 +96,59 @@ fun ProductDetailScreen(
 
         val product = uiState.product
         val category = Category.fromStorageKey(product?.category)
-        LazyColumn(modifier = Modifier.fillMaxSize().padding(padding)) {
-            item {
-                Column(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            ProductHero(product = product, category = category)
+
+            CategoryChip(category)
+
+            if (stillInInventory) {
+                Card(
+                    modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                    shape = RoundedCornerShape(16.dp),
                 ) {
-                    ProductHero(product = product, category = category)
-
-                    CategoryChip(category)
-
-                    if (stillInInventory) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                            shape = RoundedCornerShape(16.dp),
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                ) {
-                                    Text(stringResource(R.string.product_detail_in_stock), style = MaterialTheme.typography.titleMedium)
-                                    QuantityStepper(
-                                        quantity = uiState.quantityInInventory ?: 0,
-                                        onDecrease = { viewModel.setQuantity((uiState.quantityInInventory ?: 1) - 1) },
-                                        onIncrease = { viewModel.setQuantity((uiState.quantityInInventory ?: 0) + 1) },
-                                    )
-                                }
-                                OutlinedButton(
-                                    onClick = {
-                                        viewModel.removeFromInventory()
-                                        onBack()
-                                    },
-                                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                                ) {
-                                    Icon(Icons.Filled.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Text(
-                                        " " + stringResource(R.string.product_detail_remove),
-                                        modifier = Modifier.padding(start = 4.dp),
-                                    )
-                                }
-                            }
+                            Text(stringResource(R.string.product_detail_in_stock), style = MaterialTheme.typography.titleMedium)
+                            QuantityStepper(
+                                quantity = uiState.quantityInInventory ?: 0,
+                                onDecrease = { viewModel.setQuantity((uiState.quantityInInventory ?: 1) - 1) },
+                                onIncrease = { viewModel.setQuantity((uiState.quantityInInventory ?: 0) + 1) },
+                            )
                         }
-                    }
-
-                    OutlinedButton(
-                        onClick = viewModel::addToShoppingList,
-                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                    ) {
-                        Icon(Icons.Filled.PlaylistAdd, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Text(
-                            " " + stringResource(R.string.product_detail_add_to_shopping_list),
-                            modifier = Modifier.padding(start = 4.dp),
-                        )
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 28.dp, bottom = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(
-                            Icons.Filled.History,
-                            contentDescription = null,
-                            modifier = Modifier.size(20.dp),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            text = stringResource(R.string.product_detail_history_header_format, uiState.scanCount),
-                            style = MaterialTheme.typography.titleMedium,
-                            modifier = Modifier.padding(start = 8.dp),
-                        )
+                        OutlinedButton(
+                            onClick = {
+                                viewModel.removeFromInventory()
+                                onBack()
+                            },
+                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                        ) {
+                            Icon(Icons.Filled.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.product_detail_remove))
+                        }
                     }
                 }
             }
 
-            if (uiState.history.isEmpty()) {
-                item {
-                    Text(
-                        text = stringResource(R.string.product_detail_history_empty),
-                        modifier = Modifier.padding(horizontal = 16.dp),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            } else {
-                items(uiState.history, key = { it.id }) { entry ->
-                    HistoryRow(entry)
-                }
+            OutlinedButton(
+                onClick = viewModel::addToShoppingList,
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            ) {
+                Icon(Icons.Filled.PlaylistAdd, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(stringResource(R.string.product_detail_add_to_shopping_list))
             }
         }
     }
@@ -255,44 +213,6 @@ private fun CategoryChip(category: Category) {
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.padding(start = 6.dp),
-            )
-        }
-    }
-}
-
-private val historyFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.getDefault())
-
-@Composable
-private fun HistoryRow(entry: ScanHistoryEntity) {
-    val formatted = remember(entry.scannedAt) {
-        historyFormatter.format(Instant.ofEpochMilli(entry.scannedAt).atZone(ZoneId.systemDefault()))
-    }
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.tertiaryContainer,
-            modifier = Modifier.size(32.dp),
-        ) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Icon(
-                    Icons.Filled.History,
-                    contentDescription = null,
-                    modifier = Modifier.size(16.dp),
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                )
-            }
-        }
-        Column(modifier = Modifier.padding(start = 12.dp)) {
-            Text(formatted, style = MaterialTheme.typography.bodyMedium)
-            val sign = if (entry.quantityDelta >= 0) "+" else ""
-            Text(
-                text = stringResource(R.string.product_detail_scanned_format, sign, entry.quantityDelta),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
