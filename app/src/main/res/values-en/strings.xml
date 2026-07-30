@@ -132,6 +132,17 @@
     <string name="product_detail_in_stock">In stock</string>
     <string name="product_detail_remove">Remove</string>
     <string name="product_detail_add_to_shopping_list">Add to list</string>
+    <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
+    <string name="product_detail_ingredients_title">Ingredients</string>
+    <string name="product_detail_nutrition_title">Nutrition per 100 g</string>
+    <string name="product_detail_nutrition_energy">Energy</string>
+    <string name="product_detail_nutrition_fat">Fat</string>
+    <string name="product_detail_nutrition_saturated_fat">of which saturated</string>
+    <string name="product_detail_nutrition_carbohydrates">Carbohydrates</string>
+    <string name="product_detail_nutrition_sugars">of which sugars</string>
+    <string name="product_detail_nutrition_fiber">Fiber</string>
+    <string name="product_detail_nutrition_proteins">Protein</string>
+    <string name="product_detail_nutrition_salt">Salt</string>
 
     <!-- Scan -->
     <string name="scan_quick_added_format">%1$s added (+1)</string>

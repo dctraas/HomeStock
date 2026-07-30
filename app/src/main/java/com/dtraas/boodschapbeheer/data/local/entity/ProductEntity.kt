@@ -16,6 +16,9 @@ data class ProductEntity(
     val imageUrl: String?,
     val unit: String?,
     val lastFetchedAt: Long,
+    val nutriScoreGrade: String? = null,
+    val ingredients: String? = null,
+    val nutrition: NutritionInfo? = null,
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
         "name" to name,
@@ -24,11 +27,16 @@ data class ProductEntity(
         "imageUrl" to imageUrl,
         "unit" to unit,
         "lastFetchedAt" to lastFetchedAt,
+        "nutriScoreGrade" to nutriScoreGrade,
+        "ingredients" to ingredients,
+        "nutrition" to nutrition?.toMap(),
     )
 
     companion object {
         fun fromDocument(document: DocumentSnapshot): ProductEntity? {
             val name = document.getString("name") ?: return null
+            @Suppress("UNCHECKED_CAST")
+            val nutritionMap = document.get("nutrition") as? Map<String, Any?>
             return ProductEntity(
                 barcode = document.id,
                 name = name,
@@ -37,6 +45,9 @@ data class ProductEntity(
                 imageUrl = document.getString("imageUrl"),
                 unit = document.getString("unit"),
                 lastFetchedAt = document.getLong("lastFetchedAt") ?: 0L,
+                nutriScoreGrade = document.getString("nutriScoreGrade"),
+                ingredients = document.getString("ingredients"),
+                nutrition = NutritionInfo.fromMap(nutritionMap),
             )
         }
     }

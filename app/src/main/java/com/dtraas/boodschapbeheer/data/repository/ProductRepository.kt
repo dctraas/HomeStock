@@ -1,5 +1,6 @@
 package com.dtraas.boodschapbeheer.data.repository
 
+import com.dtraas.boodschapbeheer.data.local.entity.NutritionInfo
 import com.dtraas.boodschapbeheer.data.local.entity.ProductEntity
 import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.data.remote.CategoryMapper
@@ -61,6 +62,7 @@ class ProductRepository(
                     categoriesText = offProduct.categories,
                     productName = offProduct.productName,
                 )
+                val nutriments = offProduct.nutriments
                 val entity = ProductEntity(
                     barcode = barcode,
                     name = offProduct.productName.trim(),
@@ -69,6 +71,20 @@ class ProductRepository(
                     imageUrl = offProduct.imageUrl,
                     unit = offProduct.quantity,
                     lastFetchedAt = System.currentTimeMillis(),
+                    nutriScoreGrade = offProduct.nutriscoreGrade?.takeIf { it.isNotBlank() && it != "unknown" },
+                    ingredients = offProduct.ingredientsText?.trim()?.takeIf { it.isNotEmpty() },
+                    nutrition = nutriments?.let {
+                        NutritionInfo(
+                            energyKcal100g = it.energyKcal100g,
+                            fat100g = it.fat100g,
+                            saturatedFat100g = it.saturatedFat100g,
+                            carbohydrates100g = it.carbohydrates100g,
+                            sugars100g = it.sugars100g,
+                            fiber100g = it.fiber100g,
+                            proteins100g = it.proteins100g,
+                            salt100g = it.salt100g,
+                        ).takeIf { info -> !info.isEmpty }
+                    },
                 )
                 productsCollection(householdId).document(barcode).set(entity.toMap()).await()
                 Result.success(entity)

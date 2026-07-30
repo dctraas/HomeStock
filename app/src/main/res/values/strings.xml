@@ -132,6 +132,17 @@
     <string name="product_detail_in_stock">Op voorraad</string>
     <string name="product_detail_remove">Verwijderen</string>
     <string name="product_detail_add_to_shopping_list">Toevoegen aan lijstje</string>
+    <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
+    <string name="product_detail_ingredients_title">Ingrediënten</string>
+    <string name="product_detail_nutrition_title">Voedingswaarden per 100 g</string>
+    <string name="product_detail_nutrition_energy">Energie</string>
+    <string name="product_detail_nutrition_fat">Vet</string>
+    <string name="product_detail_nutrition_saturated_fat">waarvan verzadigd</string>
+    <string name="product_detail_nutrition_carbohydrates">Koolhydraten</string>
+    <string name="product_detail_nutrition_sugars">waarvan suikers</string>
+    <string name="product_detail_nutrition_fiber">Vezels</string>
+    <string name="product_detail_nutrition_proteins">Eiwitten</string>
+    <string name="product_detail_nutrition_salt">Zout</string>
 
     <!-- Scannen -->
     <string name="scan_quick_added_format">%1$s toegevoegd (+1)</string>
