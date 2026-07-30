@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -334,27 +333,24 @@ private fun InventoryRow(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 5.dp),
+            .padding(horizontal = 16.dp, vertical = 3.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(14.dp),
     ) {
         Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.Top,
+            modifier = Modifier.padding(start = 10.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             ProductImage(
                 imageUrl = item.imageUrl,
                 fallbackIcon = Category.fromStorageKey(item.category).icon,
-                modifier = Modifier.size(52.dp),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.size(32.dp),
             )
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 12.dp),
-            ) {
+            Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
                 Text(
                     text = item.name,
-                    style = MaterialTheme.typography.titleSmall,
+                    style = MaterialTheme.typography.bodyMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -362,38 +358,35 @@ private fun InventoryRow(
                 if (subtitle.isNotEmpty()) {
                     Text(
                         text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 2.dp),
+                        modifier = Modifier.padding(top = 1.dp),
                     )
                 }
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(top = 4.dp),
-                ) {
-                    QuantityStepper(
-                        quantity = item.quantity,
-                        onDecrease = onDecrease,
-                        onIncrease = onIncrease,
-                    )
-                    Spacer(modifier = Modifier.weight(1f))
-                    IconButton(onClick = onAddToShoppingList) {
-                        Icon(
-                            Icons.Filled.AddShoppingCart,
-                            contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    IconButton(onClick = onDelete) {
-                        Icon(
-                            Icons.Filled.Delete,
-                            contentDescription = stringResource(R.string.inventory_remove_cd),
-                            tint = MaterialTheme.colorScheme.outline,
-                        )
-                    }
-                }
+            }
+            QuantityStepper(
+                quantity = item.quantity,
+                onDecrease = onDecrease,
+                onIncrease = onIncrease,
+                dense = true,
+            )
+            IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    Icons.Filled.AddShoppingCart,
+                    contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+            IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    Icons.Filled.Delete,
+                    contentDescription = stringResource(R.string.inventory_remove_cd),
+                    tint = MaterialTheme.colorScheme.outline,
+                    modifier = Modifier.size(18.dp),
+                )
             }
         }
     }
