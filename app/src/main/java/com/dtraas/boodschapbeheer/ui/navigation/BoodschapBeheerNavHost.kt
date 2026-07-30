@@ -81,9 +81,7 @@ fun BoodschapBeheerApp() {
                 NotificationsScreen()
             }
             composable(Destination.More.route) {
-                MoreScreen(
-                    onOpenStatistics = { navController.navigate(Destination.Statistics.route) },
-                )
+                MoreScreen()
             }
             composable(
                 route = Destination.ScanResult.route,

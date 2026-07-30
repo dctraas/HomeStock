@@ -94,8 +94,6 @@
     <string name="household_generate_code_failed">Couldn\'t generate a unique household code</string>
 
     <!-- More -->
-    <string name="more_statistics_title">Statistics</string>
-    <string name="more_statistics_description">Most-scanned products and breakdown by category</string>
     <string name="more_household_title">Household</string>
     <string name="more_household_code_format">Code: %1$s</string>
     <string name="more_leave">Leave</string>

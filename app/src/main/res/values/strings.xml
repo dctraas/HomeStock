@@ -94,8 +94,6 @@
     <string name="household_generate_code_failed">Kon geen unieke huishouden-code genereren</string>
 
     <!-- Meer -->
-    <string name="more_statistics_title">Statistieken</string>
-    <string name="more_statistics_description">Meest gescande producten en verdeling per categorie</string>
     <string name="more_household_title">Huishouden</string>
     <string name="more_household_code_format">Code: %1$s</string>
     <string name="more_leave">Verlaten</string>

@@ -94,8 +94,6 @@
     <string name="household_generate_code_failed">Es konnte kein eindeutiger Haushalt-Code erstellt werden</string>
 
     <!-- Mehr -->
-    <string name="more_statistics_title">Statistiken</string>
-    <string name="more_statistics_description">Meistgescannte Produkte und Verteilung nach Kategorie</string>
     <string name="more_household_title">Haushalt</string>
     <string name="more_household_code_format">Code: %1$s</string>
     <string name="more_leave">Verlassen</string>
