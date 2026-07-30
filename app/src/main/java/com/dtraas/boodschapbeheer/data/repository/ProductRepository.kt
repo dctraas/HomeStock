@@ -74,6 +74,7 @@ class ProductRepository(
                     unit = offProduct.quantity,
                     lastFetchedAt = System.currentTimeMillis(),
                     nutriScoreGrade = offProduct.nutriscoreGrade?.takeIf { it.isNotBlank() && it != "unknown" },
+                    ecoScoreGrade = offProduct.ecoscoreGrade?.takeIf { it.isNotBlank() && it != "unknown" && it != "not-applicable" },
                     ingredients = offProduct.ingredientsText?.trim()?.takeIf { it.isNotEmpty() },
                     nutrition = nutriments?.let {
                         NutritionInfo(

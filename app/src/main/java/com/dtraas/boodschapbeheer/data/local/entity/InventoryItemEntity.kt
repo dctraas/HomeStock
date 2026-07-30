@@ -20,12 +20,14 @@ data class InventoryItemEntity(
     val updatedAt: Long,
     val expirationDate: Long? = null,
     val minQuantity: Int? = null,
+    val note: String? = null,
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
         "quantity" to quantity,
         "updatedAt" to updatedAt,
         "expirationDate" to expirationDate,
         "minQuantity" to minQuantity,
+        "note" to note,
     )
 
     companion object {
@@ -37,6 +39,7 @@ data class InventoryItemEntity(
                 updatedAt = document.getLong("updatedAt") ?: 0L,
                 expirationDate = document.getLong("expirationDate"),
                 minQuantity = document.getLong("minQuantity")?.toInt(),
+                note = document.getString("note")?.takeIf { it.isNotBlank() },
             )
         }
     }

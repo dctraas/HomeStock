@@ -59,6 +59,7 @@ class InventoryRepository(
                                 updatedAt = item.updatedAt,
                                 expirationDate = item.expirationDate,
                                 minQuantity = item.minQuantity,
+                                note = item.note,
                             )
                         }
                         .sortedBy { it.name.lowercase() }
@@ -117,6 +118,11 @@ class InventoryRepository(
         maybeRestockOnLowQuantity(updated)
     }
 
+    suspend fun setNote(barcode: String, note: String?) {
+        val householdId = householdSession.householdId.value ?: return
+        inventoryCollection(householdId).document(barcode).update("note", note).await()
+    }
+
     /** Auto re-adds [item]'s product to the shopping list once its quantity drops below its minimum. */
     private suspend fun maybeRestockOnLowQuantity(item: InventoryItemEntity) {
         val minQuantity = item.minQuantity ?: return
@@ -144,7 +150,13 @@ class InventoryRepository(
     }
 
     /** Re-creates an inventory row after an undo action, without touching the activity log. */
-    suspend fun restoreItem(barcode: String, quantity: Int, expirationDate: Long? = null, minQuantity: Int? = null) {
+    suspend fun restoreItem(
+        barcode: String,
+        quantity: Int,
+        expirationDate: Long? = null,
+        minQuantity: Int? = null,
+        note: String? = null,
+    ) {
         val householdId = householdSession.householdId.value ?: return
         inventoryCollection(householdId).document(barcode).set(
             InventoryItemEntity(
@@ -153,6 +165,7 @@ class InventoryRepository(
                 updatedAt = System.currentTimeMillis(),
                 expirationDate = expirationDate,
                 minQuantity = minQuantity,
+                note = note,
             ).toMap()
         ).await()
     }

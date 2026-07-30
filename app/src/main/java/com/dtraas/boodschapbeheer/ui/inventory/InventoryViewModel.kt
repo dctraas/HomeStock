@@ -91,7 +91,9 @@ class InventoryViewModel(
 
     fun restoreItem(item: InventoryItemWithProduct) {
         viewModelScope.launch {
-            inventoryRepository.restoreItem(item.barcode, item.quantity, item.expirationDate, item.minQuantity)
+            inventoryRepository.restoreItem(
+                item.barcode, item.quantity, item.expirationDate, item.minQuantity, item.note,
+            )
         }
     }
 

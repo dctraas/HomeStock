@@ -130,10 +130,15 @@
 
     <!-- Productdetail -->
     <string name="product_detail_default_title">Product</string>
+    <string name="section_stock">Voorraad</string>
+    <string name="section_nutrition_info">Voedingsinformatie</string>
+    <string name="section_inspiration">Inspiratie</string>
     <string name="product_detail_in_stock">Op voorraad</string>
     <string name="product_detail_remove">Verwijderen</string>
     <string name="product_detail_add_to_shopping_list">Toevoegen aan lijstje</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
+    <string name="product_detail_ecoscore_format">Eco-Score %1$s</string>
+    <string name="product_detail_stock_chip_format">%1$d op voorraad</string>
     <string name="product_detail_ingredients_title">Ingrediënten</string>
     <string name="product_detail_nutrition_title">Voedingswaarden per 100 g</string>
     <string name="product_detail_nutrition_energy">Energie</string>
@@ -144,13 +149,22 @@
     <string name="product_detail_nutrition_fiber">Vezels</string>
     <string name="product_detail_nutrition_proteins">Eiwitten</string>
     <string name="product_detail_nutrition_salt">Zout</string>
-    <string name="product_detail_expiration_label">Houdbaar tot</string>
+    <string name="product_detail_expiration_label">Verwachte einddatum</string>
     <string name="product_detail_expiration_set">Instellen</string>
     <string name="product_detail_expiration_clear_cd">Houdbaarheidsdatum wissen</string>
+    <string name="product_detail_status_label">Houdbaarheidsstatus</string>
+    <string name="product_detail_status_not_set">Niet ingesteld</string>
+    <string name="product_detail_status_expired">Verlopen</string>
+    <string name="product_detail_status_today">Vandaag over datum</string>
+    <string name="product_detail_status_one_day">Nog 1 dag houdbaar</string>
+    <string name="product_detail_status_days_format">Nog %1$d dagen houdbaar</string>
+    <string name="product_detail_status_fresh">Vers</string>
     <string name="product_detail_min_quantity_label">Minimum aantal</string>
     <string name="product_detail_min_quantity_hint">Wordt automatisch aan het lijstje toegevoegd zodra de voorraad hieronder komt (0 = uit)</string>
     <string name="product_detail_allergens_title">Allergenen</string>
     <string name="product_detail_diet_labels_title">Dieetlabels</string>
+    <string name="product_detail_note_title">Persoonlijke notitie</string>
+    <string name="product_detail_note_placeholder">Bijv. een recept-idee, favoriete bereidingswijze of waar je dit hebt gekocht</string>
 
     <!-- Allergenen (EU-lijst van 14) -->
     <string name="allergen_gluten">Gluten</string>

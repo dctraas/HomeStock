@@ -130,10 +130,15 @@
 
     <!-- Detalle del producto -->
     <string name="product_detail_default_title">Producto</string>
+    <string name="section_stock">Existencias</string>
+    <string name="section_nutrition_info">Información nutricional</string>
+    <string name="section_inspiration">Inspiración</string>
     <string name="product_detail_in_stock">En existencia</string>
     <string name="product_detail_remove">Eliminar</string>
     <string name="product_detail_add_to_shopping_list">Añadir a la lista</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
+    <string name="product_detail_ecoscore_format">Eco-Score %1$s</string>
+    <string name="product_detail_stock_chip_format">%1$d en existencia</string>
     <string name="product_detail_ingredients_title">Ingredientes</string>
     <string name="product_detail_nutrition_title">Valores nutricionales por 100 g</string>
     <string name="product_detail_nutrition_energy">Energía</string>
@@ -144,13 +149,22 @@
     <string name="product_detail_nutrition_fiber">Fibra</string>
     <string name="product_detail_nutrition_proteins">Proteínas</string>
     <string name="product_detail_nutrition_salt">Sal</string>
-    <string name="product_detail_expiration_label">Caduca el</string>
+    <string name="product_detail_expiration_label">Fecha de caducidad prevista</string>
     <string name="product_detail_expiration_set">Establecer</string>
     <string name="product_detail_expiration_clear_cd">Borrar fecha de caducidad</string>
+    <string name="product_detail_status_label">Estado de caducidad</string>
+    <string name="product_detail_status_not_set">Sin establecer</string>
+    <string name="product_detail_status_expired">Caducado</string>
+    <string name="product_detail_status_today">Caduca hoy</string>
+    <string name="product_detail_status_one_day">Queda 1 día</string>
+    <string name="product_detail_status_days_format">Quedan %1$d días</string>
+    <string name="product_detail_status_fresh">Fresco</string>
     <string name="product_detail_min_quantity_label">Cantidad mínima</string>
     <string name="product_detail_min_quantity_hint">Se añade automáticamente a la lista cuando las existencias bajen de este número (0 = desactivado)</string>
     <string name="product_detail_allergens_title">Alérgenos</string>
     <string name="product_detail_diet_labels_title">Etiquetas dietéticas</string>
+    <string name="product_detail_note_title">Nota personal</string>
+    <string name="product_detail_note_placeholder">Por ejemplo, una idea de receta, tu forma favorita de prepararlo o dónde lo compraste</string>
 
     <!-- Alérgenos (lista UE de 14) -->
     <string name="allergen_gluten">Gluten</string>

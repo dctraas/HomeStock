@@ -22,6 +22,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -35,6 +36,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -48,12 +50,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -122,6 +126,11 @@ fun ProductDetailScreen(
 
         val product = uiState.product
         val category = Category.fromStorageKey(product?.category)
+        val allergens = product?.allergens?.mapNotNull { name -> Allergen.entries.find { it.name == name } }.orEmpty()
+        val dietLabels = product?.dietLabels?.mapNotNull { name -> DietLabel.entries.find { it.name == name } }.orEmpty()
+        val hasNutritionInfo = product?.nutrition != null || product?.ingredients != null ||
+            allergens.isNotEmpty() || dietLabels.isNotEmpty()
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -130,20 +139,44 @@ fun ProductDetailScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            // Header
             ProductHero(product = product, category = category)
-
+            Text(
+                text = product?.name ?: stringResource(R.string.product_detail_default_title),
+                style = MaterialTheme.typography.titleLarge,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(top = 12.dp),
+            )
+            product?.brand?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
             Row(
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 CategoryChip(category)
-                product?.nutriScoreGrade?.let { NutriScoreBadge(grade = it) }
+                product?.nutriScoreGrade?.let {
+                    GradeBadge(it, stringResource(R.string.product_detail_nutriscore_format, it.uppercase(Locale.ROOT)))
+                }
+                product?.ecoScoreGrade?.let {
+                    GradeBadge(it, stringResource(R.string.product_detail_ecoscore_format, it.uppercase(Locale.ROOT)))
+                }
+            }
+            uiState.quantityInInventory?.let { quantity ->
+                StockChip(quantity, modifier = Modifier.padding(top = 10.dp))
             }
 
+            // Voorraad
             if (stillInInventory) {
+                SectionHeader(stringResource(R.string.section_stock), modifier = Modifier.padding(top = 28.dp))
                 Card(
-                    modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                     shape = RoundedCornerShape(16.dp),
                 ) {
@@ -161,19 +194,16 @@ fun ProductDetailScreen(
                             )
                         }
 
-                        HorizontalDivider(
-                            modifier = Modifier.padding(top = 12.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                        )
+                        SubtleDivider(top = 12.dp)
+                        ExpirationStatusRow(expirationDate = uiState.expirationDate)
+
+                        SubtleDivider(top = 12.dp)
                         ExpirationRow(
                             expirationDate = uiState.expirationDate,
                             onDateChange = viewModel::setExpirationDate,
                         )
 
-                        HorizontalDivider(
-                            modifier = Modifier.padding(top = 4.dp),
-                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                        )
+                        SubtleDivider(top = 12.dp)
                         MinQuantityRow(
                             minQuantity = uiState.minQuantity,
                             onChange = viewModel::setMinQuantity,
@@ -203,25 +233,53 @@ fun ProductDetailScreen(
                 Text(stringResource(R.string.product_detail_add_to_shopping_list))
             }
 
-            val allergens = product?.allergens?.mapNotNull { name -> Allergen.entries.find { it.name == name } }.orEmpty()
-            if (allergens.isNotEmpty()) {
-                AllergensCard(allergens, modifier = Modifier.padding(top = 20.dp))
+            // Voedingsinformatie
+            if (hasNutritionInfo) {
+                SectionHeader(stringResource(R.string.section_nutrition_info), modifier = Modifier.padding(top = 28.dp))
+
+                product?.nutrition?.let { nutrition ->
+                    NutritionCard(nutrition, modifier = Modifier.padding(top = 12.dp))
+                }
+                product?.ingredients?.let { ingredients ->
+                    IngredientsCard(ingredients, modifier = Modifier.padding(top = 12.dp))
+                }
+                if (allergens.isNotEmpty()) {
+                    AllergensCard(allergens, modifier = Modifier.padding(top = 12.dp))
+                }
+                if (dietLabels.isNotEmpty()) {
+                    DietLabelsCard(dietLabels, modifier = Modifier.padding(top = 12.dp))
+                }
             }
 
-            product?.nutrition?.let { nutrition ->
-                NutritionCard(nutrition, modifier = Modifier.padding(top = 20.dp))
-            }
-
-            val dietLabels = product?.dietLabels?.mapNotNull { name -> DietLabel.entries.find { it.name == name } }.orEmpty()
-            if (dietLabels.isNotEmpty()) {
-                DietLabelsCard(dietLabels, modifier = Modifier.padding(top = 20.dp))
-            }
-
-            product?.ingredients?.let { ingredients ->
-                IngredientsCard(ingredients, modifier = Modifier.padding(top = 20.dp))
+            // Inspiratie
+            if (stillInInventory) {
+                SectionHeader(stringResource(R.string.section_inspiration), modifier = Modifier.padding(top = 28.dp))
+                NoteCard(
+                    note = uiState.note,
+                    onNoteChange = viewModel::setNote,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
             }
         }
     }
+}
+
+@Composable
+private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = modifier.fillMaxWidth(),
+    )
+}
+
+@Composable
+private fun SubtleDivider(top: androidx.compose.ui.unit.Dp) {
+    HorizontalDivider(
+        modifier = Modifier.padding(top = top),
+        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+    )
 }
 
 @Composable
@@ -230,7 +288,7 @@ private fun ProductHero(product: ProductEntity?, category: Category) {
     Surface(
         shape = RoundedCornerShape(28.dp),
         color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = Modifier.size(140.dp),
+        modifier = Modifier.size(160.dp),
     ) {
         if (imageUrl != null) {
             AsyncImage(
@@ -244,21 +302,38 @@ private fun ProductHero(product: ProductEntity?, category: Category) {
                 Icon(
                     imageVector = category.icon,
                     contentDescription = null,
-                    modifier = Modifier.size(56.dp),
+                    modifier = Modifier.size(64.dp),
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
         }
     }
+}
 
-    val subtitle = listOfNotNull(product?.brand, product?.unit).joinToString(" · ")
-    if (subtitle.isNotEmpty()) {
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = 12.dp),
-        )
+@Composable
+private fun StockChip(quantity: Int, modifier: Modifier = Modifier) {
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        modifier = modifier,
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Inventory2,
+                contentDescription = null,
+                modifier = Modifier.size(16.dp),
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+            Text(
+                text = stringResource(R.string.product_detail_stock_chip_format, quantity),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(start = 6.dp),
+            )
+        }
     }
 }
 
@@ -288,7 +363,8 @@ private fun CategoryChip(category: Category) {
     }
 }
 
-private fun nutriScoreColor(grade: String): Color = when (grade.uppercase(Locale.ROOT)) {
+/** Both Nutri-Score and Eco-Score use the same A (best) to E (worst) grading scale. */
+private fun gradeColor(grade: String): Color = when (grade.uppercase(Locale.ROOT)) {
     "A" -> Color(0xFF038141)
     "B" -> Color(0xFF85BB2F)
     "C" -> Color(0xFFFECB02)
@@ -298,11 +374,10 @@ private fun nutriScoreColor(grade: String): Color = when (grade.uppercase(Locale
 }
 
 @Composable
-private fun NutriScoreBadge(grade: String) {
-    val contentDescription = stringResource(R.string.product_detail_nutriscore_format, grade.uppercase(Locale.ROOT))
+private fun GradeBadge(grade: String, contentDescription: String) {
     Surface(
         shape = CircleShape,
-        color = nutriScoreColor(grade),
+        color = gradeColor(grade),
         modifier = Modifier
             .size(32.dp)
             .semantics { this.contentDescription = contentDescription },
@@ -473,6 +548,31 @@ private fun daysUntilExpiration(millis: Long): Long {
     return ChronoUnit.DAYS.between(LocalDate.now(ZoneOffset.UTC), date)
 }
 
+@Composable
+private fun ExpirationStatusRow(expirationDate: Long?) {
+    val days = expirationDate?.let { daysUntilExpiration(it) }
+    val (label, isWarning) = when {
+        days == null -> stringResource(R.string.product_detail_status_not_set) to false
+        days < 0 -> stringResource(R.string.product_detail_status_expired) to true
+        days == 0L -> stringResource(R.string.product_detail_status_today) to true
+        days == 1L -> stringResource(R.string.product_detail_status_one_day) to true
+        days <= 3 -> stringResource(R.string.product_detail_status_days_format, days) to true
+        else -> stringResource(R.string.product_detail_status_fresh) to false
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(stringResource(R.string.product_detail_status_label), style = MaterialTheme.typography.bodyLarge)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (isWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ExpirationRow(expirationDate: Long?, onDateChange: (Long?) -> Unit) {
@@ -550,5 +650,33 @@ private fun MinQuantityRow(minQuantity: Int?, onChange: (Int?) -> Unit) {
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+@Composable
+private fun NoteCard(note: String?, onNoteChange: (String?) -> Unit, modifier: Modifier = Modifier) {
+    var text by remember(note) { mutableStateOf(note ?: "") }
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(stringResource(R.string.product_detail_note_title), style = MaterialTheme.typography.titleMedium)
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                placeholder = { Text(stringResource(R.string.product_detail_note_placeholder)) },
+                minLines = 3,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+                    .onFocusChanged { focusState ->
+                        if (!focusState.isFocused && text != (note ?: "")) {
+                            onNoteChange(text.trim().ifBlank { null })
+                        }
+                    },
+            )
+        }
     }
 }

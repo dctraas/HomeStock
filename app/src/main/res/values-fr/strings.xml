@@ -130,10 +130,15 @@
 
     <!-- Détail du produit -->
     <string name="product_detail_default_title">Produit</string>
+    <string name="section_stock">Stock</string>
+    <string name="section_nutrition_info">Informations nutritionnelles</string>
+    <string name="section_inspiration">Inspiration</string>
     <string name="product_detail_in_stock">En stock</string>
     <string name="product_detail_remove">Retirer</string>
     <string name="product_detail_add_to_shopping_list">Ajouter à la liste</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
+    <string name="product_detail_ecoscore_format">Eco-Score %1$s</string>
+    <string name="product_detail_stock_chip_format">%1$d en stock</string>
     <string name="product_detail_ingredients_title">Ingrédients</string>
     <string name="product_detail_nutrition_title">Valeurs nutritionnelles pour 100 g</string>
     <string name="product_detail_nutrition_energy">Énergie</string>
@@ -144,13 +149,22 @@
     <string name="product_detail_nutrition_fiber">Fibres</string>
     <string name="product_detail_nutrition_proteins">Protéines</string>
     <string name="product_detail_nutrition_salt">Sel</string>
-    <string name="product_detail_expiration_label">À consommer avant</string>
+    <string name="product_detail_expiration_label">Date de fin prévue</string>
     <string name="product_detail_expiration_set">Définir</string>
     <string name="product_detail_expiration_clear_cd">Effacer la date de péremption</string>
+    <string name="product_detail_status_label">Statut de péremption</string>
+    <string name="product_detail_status_not_set">Non défini</string>
+    <string name="product_detail_status_expired">Périmé</string>
+    <string name="product_detail_status_today">Périme aujourd\'hui</string>
+    <string name="product_detail_status_one_day">Encore 1 jour</string>
+    <string name="product_detail_status_days_format">Encore %1$d jours</string>
+    <string name="product_detail_status_fresh">Frais</string>
     <string name="product_detail_min_quantity_label">Quantité minimale</string>
     <string name="product_detail_min_quantity_hint">Ajouté automatiquement à la liste dès que le stock passe en dessous (0 = désactivé)</string>
     <string name="product_detail_allergens_title">Allergènes</string>
     <string name="product_detail_diet_labels_title">Labels alimentaires</string>
+    <string name="product_detail_note_title">Note personnelle</string>
+    <string name="product_detail_note_placeholder">Par ex. une idée de recette, votre façon préférée de le préparer, ou où vous l\'avez acheté</string>
 
     <!-- Allergènes (liste UE des 14) -->
     <string name="allergen_gluten">Gluten</string>

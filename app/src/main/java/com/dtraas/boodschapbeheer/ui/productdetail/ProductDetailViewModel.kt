@@ -19,6 +19,7 @@ data class ProductDetailUiState(
     val quantityInInventory: Int? = null,
     val expirationDate: Long? = null,
     val minQuantity: Int? = null,
+    val note: String? = null,
     val isLoading: Boolean = true,
 )
 
@@ -38,6 +39,7 @@ class ProductDetailViewModel(
             quantityInInventory = inventoryItem?.quantity,
             expirationDate = inventoryItem?.expirationDate,
             minQuantity = inventoryItem?.minQuantity,
+            note = inventoryItem?.note,
             isLoading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProductDetailUiState())
@@ -52,6 +54,10 @@ class ProductDetailViewModel(
 
     fun setMinQuantity(minQuantity: Int?) {
         viewModelScope.launch { inventoryRepository.setMinQuantity(barcode, minQuantity) }
+    }
+
+    fun setNote(note: String?) {
+        viewModelScope.launch { inventoryRepository.setNote(barcode, note) }
     }
 
     fun removeFromInventory() {
