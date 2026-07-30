@@ -1,3 +1,184 @@
 <resources>
     <string name="app_name">BoodschapBeheer</string>
+
+    <!-- Common -->
+    <string name="common_back">Terug</string>
+    <string name="common_cancel">Annuleren</string>
+    <string name="common_name">Naam</string>
+    <string name="common_quantity">Aantal</string>
+    <string name="common_undo">Ongedaan maken</string>
+    <string name="quantity_decrease_cd">Minder</string>
+    <string name="quantity_increase_cd">Meer</string>
+    <string name="search_clear_cd">Zoekopdracht wissen</string>
+    <string name="search_placeholder_default">Zoeken…</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_shopping_list">Lijstje</string>
+    <string name="nav_inventory">Voorraad</string>
+    <string name="nav_scan">Scannen</string>
+    <string name="nav_news">Nieuws</string>
+    <string name="nav_more">Meer</string>
+
+    <!-- Category display names -->
+    <string name="category_zuivel">Zuivel</string>
+    <string name="category_groente_fruit">Groente &amp; Fruit</string>
+    <string name="category_vlees_vis">Vlees &amp; Vis</string>
+    <string name="category_brood_bakkerij">Brood &amp; Bakkerij</string>
+    <string name="category_voorraadkast">Voorraadkast</string>
+    <string name="category_diepvries">Diepvries</string>
+    <string name="category_dranken">Dranken</string>
+    <string name="category_snoep_snacks">Snoep &amp; Snacks</string>
+    <string name="category_huishouden">Huishouden</string>
+    <string name="category_verzorging">Verzorging</string>
+    <string name="category_overig">Overig</string>
+    <string name="category_dropdown_label">Categorie</string>
+
+    <!-- Store display names (brand names stay the same across languages) -->
+    <string name="store_ah">Albert Heijn</string>
+    <string name="store_jumbo">Jumbo</string>
+    <string name="store_nettorama">Nettorama</string>
+    <string name="store_kruidvat">Kruidvat</string>
+    <string name="store_hema">Hema</string>
+    <string name="store_etos">Etos</string>
+    <string name="store_action">Action</string>
+    <string name="store_geen">Geen winkel</string>
+    <string name="store_dropdown_label">Winkel</string>
+
+    <!-- Activity type labels (Meldingen/Geschiedenis) -->
+    <string name="activity_type_scanned">Gescand</string>
+    <string name="activity_type_quantity_changed">Aantal aangepast</string>
+    <string name="activity_type_removed">Verwijderd uit voorraad</string>
+    <string name="activity_type_added_to_shopping_list">Toegevoegd aan boodschappenlijst</string>
+
+    <!-- Activity log detail text, rendered on the writer's device at the moment of the action -->
+    <string name="activity_detail_scanned">Gescand (%1$s%2$d)</string>
+    <string name="activity_detail_quantity_changed">Aantal aangepast van %1$d naar %2$d</string>
+    <string name="activity_detail_removed">Verwijderd uit voorraad (%1$dx)</string>
+
+    <!-- Developer notices (Nieuws -> Meldingen tab, newest first) -->
+    <string name="notice_household_sharing_title">Delen met huisgenoten</string>
+    <string name="notice_household_sharing_message">Maak een huishouden aan of sluit aan met een code (via Meer) om je voorraad en boodschappenlijst met huisgenoten te delen.</string>
+    <string name="notice_notifications_title">Meldingen</string>
+    <string name="notice_notifications_message">Alle app- en ontwikkelaarsmeldingen staan voortaan hier bij elkaar.</string>
+    <string name="notice_color_palette_title">Nieuw kleurenpalet</string>
+    <string name="notice_color_palette_message">De app heeft een frisser kleurenpalet gekregen: groen, terracotta en bosbessenblauw.</string>
+    <string name="notice_sort_options_title">Sorteeropties in Voorraad</string>
+    <string name="notice_sort_options_message">Sorteer je voorraad op naam, aantal of laatst toegevoegd.</string>
+    <string name="notice_faster_scanning_title">Sneller scannen</string>
+    <string name="notice_faster_scanning_message">Bekende producten worden nu direct toegevoegd tijdens het scannen, zonder tussenstap.</string>
+    <string name="notice_undo_title">Ongedaan maken</string>
+    <string name="notice_undo_message">Per ongeluk iets verwijderd? Zet het direct terug via de melding onderin het scherm.</string>
+    <string name="notice_inventory_cards_title">Voorraad als kaarten</string>
+    <string name="notice_inventory_cards_message">Schakel in Voorraad tussen lijst- en kaartweergave (2 per rij).</string>
+    <string name="notice_shopping_list_stores_title">Boodschappenlijst per winkel</string>
+    <string name="notice_shopping_list_stores_message">Je boodschappenlijst is ingedeeld per winkel, met bewerken en productfoto\'s.</string>
+    <string name="notice_statistics_title">Statistieken toegevoegd</string>
+    <string name="notice_statistics_message">Bekijk je meest gescande producten en de verdeling per categorie.</string>
+
+    <!-- Household (onboarding, before joining a household) -->
+    <string name="household_welcome_title">Welkom bij BoodschapBeheer</string>
+    <string name="household_welcome_subtitle">Deel je voorraad en boodschappenlijst met je huisgenoten. Maak een nieuw huishouden aan, of sluit aan bij een bestaand huishouden met een code.</string>
+    <string name="household_create_button">Nieuw huishouden starten</string>
+    <string name="household_join_button">Ik heb al een huishouden-code</string>
+    <string name="household_creating">Huishouden aanmaken…</string>
+    <string name="household_retry">Probeer opnieuw</string>
+    <string name="household_created_title">Huishouden aangemaakt!</string>
+    <string name="household_created_subtitle">Deel deze code met je huisgenoten zodat zij ook kunnen aansluiten.</string>
+    <string name="household_copy_code">Kopieer code</string>
+    <string name="household_continue">Doorgaan</string>
+    <string name="household_join_title">Huishouden koppelen</string>
+    <string name="household_code_label">Huishouden-code</string>
+    <string name="household_join_action">Aansluiten</string>
+    <string name="household_not_found_format">Huishouden met code %1$s niet gevonden</string>
+    <string name="household_generate_code_failed">Kon geen unieke huishouden-code genereren</string>
+
+    <!-- Meer -->
+    <string name="more_statistics_title">Statistieken</string>
+    <string name="more_statistics_description">Meest gescande producten en verdeling per categorie</string>
+    <string name="more_household_title">Huishouden</string>
+    <string name="more_household_code_format">Code: %1$s</string>
+    <string name="more_leave">Verlaten</string>
+    <string name="more_leave_dialog_title">Huishouden verlaten?</string>
+    <string name="more_leave_dialog_text">Je ziet de gedeelde voorraad en boodschappenlijst dan niet meer op dit toestel. Je kunt op elk moment weer aansluiten met de code.</string>
+
+    <!-- Voorraad -->
+    <string name="inventory_title">Voorraad</string>
+    <string name="inventory_show_as_tiles_cd">Toon als tegels</string>
+    <string name="inventory_show_as_list_cd">Toon als lijst</string>
+    <string name="inventory_search_placeholder">Zoek in voorraad…</string>
+    <string name="inventory_filter_all">Alles</string>
+    <string name="inventory_sort_cd">Sorteren</string>
+    <string name="inventory_sort_active_cd_format">Sorteren (actief: %1$s)</string>
+    <string name="inventory_removed_snackbar_format">%1$s verwijderd</string>
+    <string name="inventory_add_to_shopping_list_cd">Toevoegen aan boodschappenlijst</string>
+    <string name="inventory_remove_cd">Verwijderen uit voorraad</string>
+    <string name="inventory_empty_filtered_title">Geen producten gevonden.</string>
+    <string name="inventory_empty_filtered_subtitle">Pas je zoekopdracht of filter aan.</string>
+    <string name="inventory_empty_title">Nog geen producten in voorraad.</string>
+    <string name="inventory_empty_subtitle">Scan een barcode om te beginnen.</string>
+
+    <!-- Voorraad sort options -->
+    <string name="sort_option_name">Naam</string>
+    <string name="sort_option_quantity">Aantal</string>
+    <string name="sort_option_recently_updated">Laatst toegevoegd</string>
+
+    <!-- Nieuws -->
+    <string name="notifications_tab_notices">Meldingen</string>
+    <string name="notifications_tab_history">Geschiedenis</string>
+    <string name="notifications_history_empty">Scans en aanpassingen verschijnen hier.</string>
+
+    <!-- Productdetail -->
+    <string name="product_detail_default_title">Product</string>
+    <string name="product_detail_in_stock">Op voorraad</string>
+    <string name="product_detail_remove">Verwijderen uit voorraad</string>
+    <string name="product_detail_add_to_shopping_list">Toevoegen aan boodschappenlijst</string>
+    <string name="product_detail_history_header_format">Geschiedenis (%1$dx gescand)</string>
+    <string name="product_detail_history_empty">Nog geen scans geregistreerd.</string>
+    <string name="product_detail_scanned_format">%1$s%2$d stuk(s) gescand</string>
+
+    <!-- Scannen -->
+    <string name="scan_quick_added_format">%1$s toegevoegd (+1)</string>
+    <string name="scan_overlay_hint">Richt de camera op de barcode van een product</string>
+    <string name="scan_permission_rationale">BoodschapBeheer heeft toegang tot de camera nodig om barcodes te kunnen scannen.</string>
+    <string name="scan_permission_button">Geef toegang tot camera</string>
+
+    <!-- Scanresultaat -->
+    <string name="scan_result_title">Product toevoegen</string>
+    <string name="scan_result_loading">Productgegevens ophalen…</string>
+    <string name="scan_result_not_found">Dit product is niet gevonden in de database. Vul de gegevens handmatig in.</string>
+    <string name="scan_result_barcode_format">Barcode: %1$s</string>
+    <string name="scan_result_brand_format">Merk: %1$s</string>
+    <string name="scan_result_unit_format">Inhoud: %1$s</string>
+    <string name="scan_result_confirm">Toevoegen aan voorraad</string>
+    <string name="scan_result_network_error_title">Geen verbinding</string>
+    <string name="scan_result_network_error_message">We konden de productgegevens niet ophalen. Controleer je internetverbinding en probeer het opnieuw.</string>
+    <string name="scan_result_retry">Opnieuw proberen</string>
+    <string name="scan_result_continue_manually">Toch handmatig invullen</string>
+
+    <!-- Boodschappenlijst -->
+    <string name="shopping_list_title">Boodschappenlijst</string>
+    <string name="shopping_list_clear_checked_cd">Wis afgevinkte items</string>
+    <string name="shopping_list_add_item_cd">Item toevoegen</string>
+    <string name="shopping_list_search_placeholder">Zoek in boodschappenlijst…</string>
+    <string name="shopping_list_removed_format">%1$s verwijderd</string>
+    <string name="shopping_list_delete_cd">Verwijderen</string>
+    <string name="shopping_list_mark_unchecked_cd">Zet terug als niet afgevinkt</string>
+    <string name="shopping_list_mark_checked_cd">Markeer als afgevinkt</string>
+    <string name="shopping_list_empty_filtered">Geen items gevonden.</string>
+    <string name="shopping_list_empty">Je boodschappenlijst is leeg.</string>
+    <string name="shopping_list_item_add_title">Item toevoegen</string>
+    <string name="shopping_list_item_edit_title">Item bewerken</string>
+    <string name="shopping_list_add_confirm">Toevoegen</string>
+    <string name="shopping_list_save_confirm">Opslaan</string>
+
+    <!-- Statistieken -->
+    <string name="statistics_title">Statistieken</string>
+    <string name="statistics_most_scanned">Meest gescand</string>
+    <string name="statistics_no_scans_yet">Nog geen scans om te tonen.</string>
+    <string name="statistics_category_distribution">Verdeling per categorie</string>
+    <string name="statistics_no_products_yet">Nog geen producten in voorraad.</string>
+    <string name="statistics_in_stock">In voorraad</string>
+    <string name="statistics_total_scans">Scans totaal</string>
+    <string name="statistics_this_week">Deze week</string>
+    <string name="statistics_scan_count_format">%1$dx</string>
 </resources>

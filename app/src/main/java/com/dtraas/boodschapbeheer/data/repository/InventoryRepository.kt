@@ -4,7 +4,6 @@ import com.dtraas.boodschapbeheer.data.local.dao.InventoryItemWithProduct
 import com.dtraas.boodschapbeheer.data.local.entity.InventoryItemEntity
 import com.dtraas.boodschapbeheer.data.local.entity.ProductEntity
 import com.dtraas.boodschapbeheer.data.local.entity.ScanHistoryEntity
-import com.dtraas.boodschapbeheer.data.model.ActivityType
 import com.dtraas.boodschapbeheer.data.remote.observeSnapshot
 import com.dtraas.boodschapbeheer.data.remote.observeSnapshots
 import com.google.firebase.firestore.FirebaseFirestore
@@ -85,8 +84,7 @@ class InventoryRepository(
                 "quantityDelta" to quantityDelta,
             )
         ).await()
-        val sign = if (quantityDelta >= 0) "+" else ""
-        activityLogRepository.log(barcode, ActivityType.SCANNED, "Gescand ($sign$quantityDelta)")
+        activityLogRepository.logScanned(barcode, quantityDelta)
     }
 
     suspend fun updateQuantity(barcode: String, quantity: Int) {
@@ -98,11 +96,7 @@ class InventoryRepository(
             InventoryItemEntity(barcode = barcode, quantity = clamped, updatedAt = System.currentTimeMillis()).toMap()
         ).await()
         if (previousQuantity != clamped) {
-            activityLogRepository.log(
-                barcode,
-                ActivityType.QUANTITY_CHANGED,
-                "Aantal aangepast van $previousQuantity naar $clamped",
-            )
+            activityLogRepository.logQuantityChanged(barcode, previousQuantity, clamped)
         }
     }
 
@@ -112,11 +106,7 @@ class InventoryRepository(
         val existing = InventoryItemEntity.fromDocument(inventoryDoc.get().await())
         inventoryDoc.delete().await()
         if (existing != null) {
-            activityLogRepository.log(
-                barcode,
-                ActivityType.REMOVED,
-                "Verwijderd uit voorraad (${existing.quantity}x)",
-            )
+            activityLogRepository.logRemoved(barcode, existing.quantity)
         }
     }
 

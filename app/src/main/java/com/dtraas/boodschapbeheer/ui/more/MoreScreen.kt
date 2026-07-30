@@ -35,8 +35,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
+import com.dtraas.boodschapbeheer.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,7 +51,7 @@ fun MoreScreen(
     var showLeaveConfirm by remember { mutableStateOf(false) }
 
     Scaffold(
-        topBar = { CenterAlignedTopAppBar(title = { Text("Meer") }) },
+        topBar = { CenterAlignedTopAppBar(title = { Text(stringResource(R.string.nav_more)) }) },
     ) { padding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
@@ -57,8 +59,8 @@ fun MoreScreen(
         ) {
             MoreMenuRow(
                 icon = Icons.Filled.BarChart,
-                title = "Statistieken",
-                description = "Meest gescande producten en verdeling per categorie",
+                title = stringResource(R.string.more_statistics_title),
+                description = stringResource(R.string.more_statistics_description),
                 onClick = onOpenStatistics,
             )
             if (householdId != null) {
@@ -73,23 +75,18 @@ fun MoreScreen(
     if (showLeaveConfirm) {
         AlertDialog(
             onDismissRequest = { showLeaveConfirm = false },
-            title = { Text("Huishouden verlaten?") },
-            text = {
-                Text(
-                    "Je ziet de gedeelde voorraad en boodschappenlijst dan niet meer op dit " +
-                        "toestel. Je kunt op elk moment weer aansluiten met de code.",
-                )
-            },
+            title = { Text(stringResource(R.string.more_leave_dialog_title)) },
+            text = { Text(stringResource(R.string.more_leave_dialog_text)) },
             confirmButton = {
                 TextButton(
                     onClick = {
                         showLeaveConfirm = false
                         householdSession.leaveHousehold()
                     },
-                ) { Text("Verlaten") }
+                ) { Text(stringResource(R.string.more_leave)) }
             },
             dismissButton = {
-                TextButton(onClick = { showLeaveConfirm = false }) { Text("Annuleren") }
+                TextButton(onClick = { showLeaveConfirm = false }) { Text(stringResource(R.string.common_cancel)) }
             },
         )
     }
@@ -124,15 +121,15 @@ private fun HouseholdCard(code: String?, onLeave: () -> Unit) {
                     .weight(1f)
                     .padding(horizontal = 12.dp),
             ) {
-                Text("Huishouden", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.more_household_title), style = MaterialTheme.typography.titleSmall)
                 Text(
-                    text = "Code: ${code ?: "—"}",
+                    text = stringResource(R.string.more_household_code_format, code ?: "—"),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             TextButton(onClick = onLeave) {
-                Text("Verlaten")
+                Text(stringResource(R.string.more_leave))
             }
         }
     }

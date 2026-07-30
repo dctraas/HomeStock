@@ -39,11 +39,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
+import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.dao.ActivityLogWithProduct
 import com.dtraas.boodschapbeheer.data.model.ActivityType
 import com.dtraas.boodschapbeheer.data.model.DeveloperNotice
@@ -63,10 +65,13 @@ fun NotificationsScreen() {
     )
     val appActivity by viewModel.appActivity.collectAsState()
     var selectedTab by remember { mutableIntStateOf(0) }
-    val tabTitles = listOf("Meldingen", "Geschiedenis")
+    val tabTitles = listOf(
+        stringResource(R.string.notifications_tab_notices),
+        stringResource(R.string.notifications_tab_history),
+    )
 
     Scaffold(
-        topBar = { CenterAlignedTopAppBar(title = { Text("Nieuws") }) },
+        topBar = { CenterAlignedTopAppBar(title = { Text(stringResource(R.string.nav_news)) }) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             TabRow(selectedTabIndex = selectedTab) {
@@ -92,7 +97,7 @@ fun NotificationsScreen() {
                 if (appActivity.isEmpty()) {
                     Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                         Text(
-                            text = "Scans en aanpassingen verschijnen hier.",
+                            text = stringResource(R.string.notifications_history_empty),
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
@@ -138,9 +143,9 @@ private fun DeveloperNoticeRow(notice: DeveloperNotice) {
                 }
             }
             Column(modifier = Modifier.padding(start = 12.dp)) {
-                Text(notice.title, style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(notice.titleRes), style = MaterialTheme.typography.titleSmall)
                 Text(
-                    text = notice.message,
+                    text = stringResource(notice.messageRes),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 2.dp),
@@ -151,7 +156,7 @@ private fun DeveloperNoticeRow(notice: DeveloperNotice) {
 }
 
 private val timestampFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.forLanguageTag("nl-NL"))
+    DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.getDefault())
 
 private fun activityIcon(type: ActivityType): ImageVector = when (type) {
     ActivityType.SCANNED -> Icons.Filled.QrCodeScanner

@@ -28,6 +28,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -35,6 +36,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import coil.compose.AsyncImage
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
+import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.ui.components.CategoryDropdown
 import com.dtraas.boodschapbeheer.ui.components.QuantityStepper
 
@@ -66,10 +68,10 @@ fun ScanResultScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Product toevoegen") },
+                title = { Text(stringResource(R.string.scan_result_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Terug")
+                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
             )
@@ -82,7 +84,7 @@ fun ScanResultScreen(
                 verticalArrangement = Arrangement.Center,
             ) {
                 CircularProgressIndicator()
-                Text("Productgegevens ophalen…", modifier = Modifier.padding(top = 16.dp))
+                Text(stringResource(R.string.scan_result_loading), modifier = Modifier.padding(top = 16.dp))
             }
 
             uiState.networkError -> NetworkErrorView(
@@ -100,7 +102,7 @@ fun ScanResultScreen(
             ) {
                 if (!uiState.wasFoundOnline) {
                     Text(
-                        text = "Dit product is niet gevonden in de database. Vul de gegevens handmatig in.",
+                        text = stringResource(R.string.scan_result_not_found),
                         color = MaterialTheme.colorScheme.secondary,
                     )
                 }
@@ -115,21 +117,21 @@ fun ScanResultScreen(
                     )
                 }
 
-                Text(text = "Barcode: $barcode", style = MaterialTheme.typography.bodySmall)
+                Text(text = stringResource(R.string.scan_result_barcode_format, barcode), style = MaterialTheme.typography.bodySmall)
 
                 OutlinedTextField(
                     value = uiState.name,
                     onValueChange = viewModel::onNameChange,
-                    label = { Text("Naam") },
+                    label = { Text(stringResource(R.string.common_name)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
 
                 uiState.brand?.let { brand ->
-                    Text(text = "Merk: $brand", style = MaterialTheme.typography.bodyMedium)
+                    Text(text = stringResource(R.string.scan_result_brand_format, brand), style = MaterialTheme.typography.bodyMedium)
                 }
 
                 uiState.unit?.let { unit ->
-                    Text(text = "Inhoud: $unit", style = MaterialTheme.typography.bodyMedium)
+                    Text(text = stringResource(R.string.scan_result_unit_format, unit), style = MaterialTheme.typography.bodyMedium)
                 }
 
                 CategoryDropdown(
@@ -139,7 +141,7 @@ fun ScanResultScreen(
                 )
 
                 Column {
-                    Text("Aantal")
+                    Text(stringResource(R.string.common_quantity))
                     QuantityStepper(
                         quantity = uiState.quantity,
                         onDecrease = { viewModel.onQuantityChange(uiState.quantity - 1) },
@@ -153,7 +155,7 @@ fun ScanResultScreen(
                     enabled = uiState.name.isNotBlank(),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text("Toevoegen aan voorraad")
+                    Text(stringResource(R.string.scan_result_confirm))
                 }
             }
         }
@@ -178,13 +180,13 @@ private fun NetworkErrorView(
             tint = MaterialTheme.colorScheme.primary,
         )
         Text(
-            text = "Geen verbinding",
+            text = stringResource(R.string.scan_result_network_error_title),
             style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 16.dp),
         )
         Text(
-            text = "We konden de productgegevens niet ophalen. Controleer je internetverbinding en probeer het opnieuw.",
+            text = stringResource(R.string.scan_result_network_error_message),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
@@ -194,10 +196,10 @@ private fun NetworkErrorView(
             onClick = onRetry,
             modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
         ) {
-            Text("Opnieuw proberen")
+            Text(stringResource(R.string.scan_result_retry))
         }
         TextButton(onClick = onContinueManually) {
-            Text("Toch handmatig invullen")
+            Text(stringResource(R.string.scan_result_continue_manually))
         }
     }
 }

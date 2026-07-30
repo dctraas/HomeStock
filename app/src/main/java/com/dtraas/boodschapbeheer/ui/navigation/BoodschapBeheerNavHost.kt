@@ -17,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
@@ -119,6 +120,7 @@ private fun BoodschapBeheerBottomBar(navController: NavHostController, currentRo
     NavigationBar {
         topLevelDestinations.forEach { destination ->
             val isScan = destination.destination == Destination.Scan
+            val label = stringResource(destination.labelRes)
             NavigationBarItem(
                 selected = currentRoute == destination.destination.route,
                 onClick = {
@@ -154,17 +156,17 @@ private fun BoodschapBeheerBottomBar(navController: NavHostController, currentRo
                             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                                 Icon(
                                     imageVector = destination.icon,
-                                    contentDescription = destination.label,
+                                    contentDescription = label,
                                     tint = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(24.dp),
                                 )
                             }
                         }
                     } else {
-                        Icon(destination.icon, contentDescription = destination.label)
+                        Icon(destination.icon, contentDescription = label)
                     }
                 },
-                label = { Text(destination.label) },
+                label = { Text(label) },
                 colors = if (isScan) {
                     NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
                 } else {

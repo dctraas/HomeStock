@@ -1,5 +1,7 @@
 package com.dtraas.boodschapbeheer.data.repository
 
+import android.content.Context
+import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.dao.ActivityLogWithProduct
 import com.dtraas.boodschapbeheer.data.local.entity.ProductEntity
 import com.dtraas.boodschapbeheer.data.model.ActivityType
@@ -12,8 +14,16 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.tasks.await
 
+/**
+ * Human-readable "detail" text for each activity log entry is rendered once, at
+ * write time, using whichever device/locale performed the action — not re-rendered
+ * per viewer. For a small household app that's a reasonable simplification: it
+ * avoids storing structured per-locale data in Firestore, at the cost of history
+ * entries staying in the writer's language rather than adapting per reader.
+ */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ActivityLogRepository(
+    private val context: Context,
     private val firestore: FirebaseFirestore,
     private val householdSession: HouseholdSession,
 ) {
@@ -56,7 +66,28 @@ class ActivityLogRepository(
             }
         }
 
-    suspend fun log(barcode: String, type: ActivityType, detail: String) {
+    suspend fun logScanned(barcode: String, quantityDelta: Int) {
+        val sign = if (quantityDelta >= 0) "+" else ""
+        log(barcode, ActivityType.SCANNED, context.getString(R.string.activity_detail_scanned, sign, quantityDelta))
+    }
+
+    suspend fun logQuantityChanged(barcode: String, previousQuantity: Int, newQuantity: Int) {
+        log(
+            barcode,
+            ActivityType.QUANTITY_CHANGED,
+            context.getString(R.string.activity_detail_quantity_changed, previousQuantity, newQuantity),
+        )
+    }
+
+    suspend fun logRemoved(barcode: String, quantity: Int) {
+        log(barcode, ActivityType.REMOVED, context.getString(R.string.activity_detail_removed, quantity))
+    }
+
+    suspend fun logAddedToShoppingList(barcode: String) {
+        log(barcode, ActivityType.ADDED_TO_SHOPPING_LIST, context.getString(R.string.activity_type_added_to_shopping_list))
+    }
+
+    private suspend fun log(barcode: String, type: ActivityType, detail: String) {
         val householdId = householdSession.householdId.value ?: return
         activityLogCollection(householdId).add(
             mapOf(

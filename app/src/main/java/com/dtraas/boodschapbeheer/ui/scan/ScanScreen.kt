@@ -45,6 +45,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -56,6 +57,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
+import com.dtraas.boodschapbeheer.R
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
@@ -95,6 +97,7 @@ fun ScanScreen(
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val quickAddedFormat = stringResource(R.string.scan_quick_added_format)
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -107,7 +110,7 @@ fun ScanScreen(
                     when (val outcome = viewModel.handleScannedBarcode(barcode)) {
                         is ScanOutcome.QuickAdded -> {
                             coroutineScope.launch {
-                                snackbarHostState.showSnackbar("${outcome.productName} toegevoegd (+1)")
+                                snackbarHostState.showSnackbar(quickAddedFormat.format(outcome.productName))
                             }
                             true
                         }
@@ -226,7 +229,7 @@ private fun CameraPreview(
                     modifier = Modifier.size(20.dp),
                 )
                 Text(
-                    text = "Richt de camera op de barcode van een product",
+                    text = stringResource(R.string.scan_overlay_hint),
                     color = Color.White,
                     textAlign = TextAlign.Center,
                     style = MaterialTheme.typography.bodyMedium,
@@ -315,12 +318,12 @@ private fun PermissionRationale(
             tint = MaterialTheme.colorScheme.primary,
         )
         Text(
-            text = "BoodschapBeheer heeft toegang tot de camera nodig om barcodes te kunnen scannen.",
+            text = stringResource(R.string.scan_permission_rationale),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(vertical = 16.dp),
         )
         Button(onClick = onRequestPermission) {
-            Text("Geef toegang tot camera")
+            Text(stringResource(R.string.scan_permission_button))
         }
     }
 }

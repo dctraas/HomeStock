@@ -39,12 +39,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
+import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.dao.TopScannedProduct
 import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.ui.components.icon
@@ -63,10 +65,10 @@ fun StatisticsScreen(onBack: () -> Unit) {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Statistieken") },
+                title = { Text(stringResource(R.string.statistics_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Terug")
+                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
             )
@@ -90,12 +92,12 @@ fun StatisticsScreen(onBack: () -> Unit) {
             item { SummaryRow(uiState) }
 
             item {
-                Text("Meest gescand", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.statistics_most_scanned), style = MaterialTheme.typography.titleMedium)
             }
             if (uiState.topScannedProducts.isEmpty()) {
                 item {
                     Text(
-                        text = "Nog geen scans om te tonen.",
+                        text = stringResource(R.string.statistics_no_scans_yet),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -108,12 +110,12 @@ fun StatisticsScreen(onBack: () -> Unit) {
             }
 
             item {
-                Text("Verdeling per categorie", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.statistics_category_distribution), style = MaterialTheme.typography.titleMedium)
             }
             if (uiState.categoryDistribution.isEmpty()) {
                 item {
                     Text(
-                        text = "Nog geen producten in voorraad.",
+                        text = stringResource(R.string.statistics_no_products_yet),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -134,19 +136,19 @@ private fun SummaryRow(uiState: StatisticsUiState) {
         StatCard(
             icon = Icons.Filled.Inventory2,
             value = uiState.totalInInventory.toString(),
-            label = "In voorraad",
+            label = stringResource(R.string.statistics_in_stock),
             modifier = Modifier.weight(1f),
         )
         StatCard(
             icon = Icons.Filled.QrCodeScanner,
             value = uiState.totalScansAllTime.toString(),
-            label = "Scans totaal",
+            label = stringResource(R.string.statistics_total_scans),
             modifier = Modifier.weight(1f),
         )
         StatCard(
             icon = Icons.Filled.CalendarToday,
             value = uiState.scansThisWeek.toString(),
-            label = "Deze week",
+            label = stringResource(R.string.statistics_this_week),
             modifier = Modifier.weight(1f),
         )
     }
@@ -220,7 +222,7 @@ private fun TopScannedRow(rank: Int, product: TopScannedProduct, maxCount: Int) 
                 )
             }
             Text(
-                text = "${product.scanCount}x",
+                text = stringResource(R.string.statistics_scan_count_format, product.scanCount),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -249,7 +251,7 @@ private fun CategoryDistributionCard(distribution: List<Pair<Category, Int>>) {
                         modifier = Modifier.size(18.dp),
                     )
                     Column(modifier = Modifier.weight(1f).padding(horizontal = 10.dp)) {
-                        Text(category.displayName, style = MaterialTheme.typography.bodySmall)
+                        Text(stringResource(category.displayNameRes), style = MaterialTheme.typography.bodySmall)
                         ProportionalBar(
                             fraction = count.toFloat() / maxCount.toFloat(),
                             modifier = Modifier.padding(top = 4.dp),

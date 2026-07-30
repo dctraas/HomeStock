@@ -63,6 +63,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -70,6 +71,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
+import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.entity.ShoppingListItemEntity
 import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.data.model.Store
@@ -101,15 +103,17 @@ fun ShoppingListScreen() {
     var editingItem by remember { mutableStateOf<ShoppingListItemEntity?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val removedFormat = stringResource(R.string.shopping_list_removed_format)
+    val undoLabel = stringResource(R.string.common_undo)
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Boodschappenlijst") },
+                title = { Text(stringResource(R.string.shopping_list_title)) },
                 actions = {
                     if (hasCheckedItems) {
                         IconButton(onClick = viewModel::clearChecked) {
-                            Icon(Icons.Filled.DeleteSweep, contentDescription = "Wis afgevinkte items")
+                            Icon(Icons.Filled.DeleteSweep, contentDescription = stringResource(R.string.shopping_list_clear_checked_cd))
                         }
                     }
                     IconButton(
@@ -123,7 +127,11 @@ fun ShoppingListScreen() {
                     ) {
                         Icon(
                             imageVector = if (viewMode == ShoppingListViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
-                            contentDescription = if (viewMode == ShoppingListViewMode.LIST) "Toon als tegels" else "Toon als lijst",
+                            contentDescription = if (viewMode == ShoppingListViewMode.LIST) {
+                                stringResource(R.string.inventory_show_as_tiles_cd)
+                            } else {
+                                stringResource(R.string.inventory_show_as_list_cd)
+                            },
                         )
                     }
                 },
@@ -131,7 +139,7 @@ fun ShoppingListScreen() {
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Filled.Add, contentDescription = "Item toevoegen")
+                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.shopping_list_add_item_cd))
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -140,7 +148,7 @@ fun ShoppingListScreen() {
             SearchField(
                 query = searchQuery,
                 onQueryChange = viewModel::onSearchQueryChange,
-                placeholder = "Zoek in boodschappenlijst…",
+                placeholder = stringResource(R.string.shopping_list_search_placeholder),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -150,8 +158,8 @@ fun ShoppingListScreen() {
                 viewModel.removeItem(item.id)
                 coroutineScope.launch {
                     val result = snackbarHostState.showSnackbar(
-                        message = "${item.name} verwijderd",
-                        actionLabel = "Ongedaan maken",
+                        message = removedFormat.format(item.name),
+                        actionLabel = undoLabel,
                     )
                     if (result == SnackbarResult.ActionPerformed) {
                         viewModel.restoreItem(item)
@@ -214,8 +222,8 @@ fun ShoppingListScreen() {
 
         if (showAddDialog) {
             ItemFormDialog(
-                title = "Item toevoegen",
-                confirmLabel = "Toevoegen",
+                title = stringResource(R.string.shopping_list_item_add_title),
+                confirmLabel = stringResource(R.string.shopping_list_add_confirm),
                 onDismiss = { showAddDialog = false },
                 onConfirm = { name, category, store, quantity ->
                     viewModel.addItem(name, category, store, quantity)
@@ -226,8 +234,8 @@ fun ShoppingListScreen() {
 
         editingItem?.let { item ->
             ItemFormDialog(
-                title = "Item bewerken",
-                confirmLabel = "Opslaan",
+                title = stringResource(R.string.shopping_list_item_edit_title),
+                confirmLabel = stringResource(R.string.shopping_list_save_confirm),
                 initialName = item.name,
                 initialCategory = Category.fromStorageKey(item.category),
                 initialStore = Store.fromStorageKey(item.store),
@@ -268,7 +276,7 @@ private fun StoreHeader(store: Store, itemCount: Int) {
                 modifier = Modifier.size(20.dp),
             )
             Text(
-                text = store.displayName,
+                text = stringResource(store.displayNameRes),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(start = 8.dp),
@@ -322,7 +330,7 @@ private fun ShoppingListRow(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = category.displayName,
+                    text = stringResource(category.displayNameRes),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -342,7 +350,7 @@ private fun ShoppingListRow(
                     IconButton(onClick = onDelete) {
                         Icon(
                             Icons.Filled.Delete,
-                            contentDescription = "Verwijderen",
+                            contentDescription = stringResource(R.string.shopping_list_delete_cd),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
@@ -391,7 +399,11 @@ private fun ShoppingListGridTile(
                 ) {
                     Icon(
                         imageVector = if (item.isChecked) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
-                        contentDescription = if (item.isChecked) "Zet terug als niet afgevinkt" else "Markeer als afgevinkt",
+                        contentDescription = if (item.isChecked) {
+                            stringResource(R.string.shopping_list_mark_unchecked_cd)
+                        } else {
+                            stringResource(R.string.shopping_list_mark_checked_cd)
+                        },
                         tint = if (item.isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(20.dp),
                     )
@@ -408,7 +420,7 @@ private fun ShoppingListGridTile(
                 IconButton(onClick = onDelete, modifier = Modifier.fillMaxSize()) {
                     Icon(
                         Icons.Filled.Delete,
-                        contentDescription = "Verwijderen",
+                        contentDescription = stringResource(R.string.shopping_list_delete_cd),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp),
                     )
@@ -424,7 +436,7 @@ private fun ShoppingListGridTile(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = category.displayName,
+                text = stringResource(category.displayNameRes),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -464,7 +476,11 @@ private fun EmptyShoppingList(isFiltered: Boolean, modifier: Modifier = Modifier
             }
         }
         Text(
-            text = if (isFiltered) "Geen items gevonden." else "Je boodschappenlijst is leeg.",
+            text = if (isFiltered) {
+                stringResource(R.string.shopping_list_empty_filtered)
+            } else {
+                stringResource(R.string.shopping_list_empty)
+            },
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(top = 20.dp),
         )
@@ -507,7 +523,7 @@ private fun ItemFormDialog(
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = { Text("Naam") },
+                        label = { Text(stringResource(R.string.common_name)) },
                         modifier = Modifier.fillMaxWidth(),
                     )
                     CategoryDropdown(
@@ -525,7 +541,7 @@ private fun ItemFormDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
-                        Text("Aantal", style = MaterialTheme.typography.bodyLarge)
+                        Text(stringResource(R.string.common_quantity), style = MaterialTheme.typography.bodyLarge)
                         QuantityStepper(
                             quantity = quantity,
                             onDecrease = { quantity = (quantity - 1).coerceAtLeast(1) },
@@ -545,7 +561,7 @@ private fun ItemFormDialog(
             }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("Annuleren") }
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
         },
     )
 }

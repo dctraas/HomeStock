@@ -37,12 +37,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import coil.compose.AsyncImage
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
+import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.entity.ProductEntity
 import com.dtraas.boodschapbeheer.data.local.entity.ScanHistoryEntity
 import com.dtraas.boodschapbeheer.data.model.Category
@@ -78,10 +80,10 @@ fun ProductDetailScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(uiState.product?.name ?: "Product") },
+                title = { Text(uiState.product?.name ?: stringResource(R.string.product_detail_default_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = "Terug")
+                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
             )
@@ -122,7 +124,7 @@ fun ProductDetailScreen(
                                     verticalAlignment = Alignment.CenterVertically,
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                 ) {
-                                    Text("Op voorraad", style = MaterialTheme.typography.titleMedium)
+                                    Text(stringResource(R.string.product_detail_in_stock), style = MaterialTheme.typography.titleMedium)
                                     QuantityStepper(
                                         quantity = uiState.quantityInInventory ?: 0,
                                         onDecrease = { viewModel.setQuantity((uiState.quantityInInventory ?: 1) - 1) },
@@ -137,7 +139,10 @@ fun ProductDetailScreen(
                                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                                 ) {
                                     Icon(Icons.Filled.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
-                                    Text(" Verwijderen uit voorraad", modifier = Modifier.padding(start = 4.dp))
+                                    Text(
+                                        " " + stringResource(R.string.product_detail_remove),
+                                        modifier = Modifier.padding(start = 4.dp),
+                                    )
                                 }
                             }
                         }
@@ -148,7 +153,10 @@ fun ProductDetailScreen(
                         modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     ) {
                         Icon(Icons.Filled.PlaylistAdd, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Text(" Toevoegen aan boodschappenlijst", modifier = Modifier.padding(start = 4.dp))
+                        Text(
+                            " " + stringResource(R.string.product_detail_add_to_shopping_list),
+                            modifier = Modifier.padding(start = 4.dp),
+                        )
                     }
 
                     Row(
@@ -162,7 +170,7 @@ fun ProductDetailScreen(
                             tint = MaterialTheme.colorScheme.primary,
                         )
                         Text(
-                            text = "Geschiedenis (${uiState.scanCount}x gescand)",
+                            text = stringResource(R.string.product_detail_history_header_format, uiState.scanCount),
                             style = MaterialTheme.typography.titleMedium,
                             modifier = Modifier.padding(start = 8.dp),
                         )
@@ -173,7 +181,7 @@ fun ProductDetailScreen(
             if (uiState.history.isEmpty()) {
                 item {
                     Text(
-                        text = "Nog geen scans geregistreerd.",
+                        text = stringResource(R.string.product_detail_history_empty),
                         modifier = Modifier.padding(horizontal = 16.dp),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -243,7 +251,7 @@ private fun CategoryChip(category: Category) {
                 tint = MaterialTheme.colorScheme.onSecondaryContainer,
             )
             Text(
-                text = category.displayName,
+                text = stringResource(category.displayNameRes),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.padding(start = 6.dp),
@@ -253,7 +261,7 @@ private fun CategoryChip(category: Category) {
 }
 
 private val historyFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.forLanguageTag("nl-NL"))
+    DateTimeFormatter.ofPattern("d MMM yyyy, HH:mm", Locale.getDefault())
 
 @Composable
 private fun HistoryRow(entry: ScanHistoryEntity) {
@@ -282,7 +290,7 @@ private fun HistoryRow(entry: ScanHistoryEntity) {
             Text(formatted, style = MaterialTheme.typography.bodyMedium)
             val sign = if (entry.quantityDelta >= 0) "+" else ""
             Text(
-                text = "$sign${entry.quantityDelta} stuk(s) gescand",
+                text = stringResource(R.string.product_detail_scanned_format, sign, entry.quantityDelta),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

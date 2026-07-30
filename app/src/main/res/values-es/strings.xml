@@ -1,0 +1,184 @@
+<resources>
+    <string name="app_name">BoodschapBeheer</string>
+
+    <!-- Common -->
+    <string name="common_back">Atrás</string>
+    <string name="common_cancel">Cancelar</string>
+    <string name="common_name">Nombre</string>
+    <string name="common_quantity">Cantidad</string>
+    <string name="common_undo">Deshacer</string>
+    <string name="quantity_decrease_cd">Menos</string>
+    <string name="quantity_increase_cd">Más</string>
+    <string name="search_clear_cd">Borrar búsqueda</string>
+    <string name="search_placeholder_default">Buscar…</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_shopping_list">Lista</string>
+    <string name="nav_inventory">Inventario</string>
+    <string name="nav_scan">Escanear</string>
+    <string name="nav_news">Novedades</string>
+    <string name="nav_more">Más</string>
+
+    <!-- Category display names -->
+    <string name="category_zuivel">Lácteos</string>
+    <string name="category_groente_fruit">Frutas &amp; Verduras</string>
+    <string name="category_vlees_vis">Carne &amp; Pescado</string>
+    <string name="category_brood_bakkerij">Pan &amp; Panadería</string>
+    <string name="category_voorraadkast">Despensa</string>
+    <string name="category_diepvries">Congelados</string>
+    <string name="category_dranken">Bebidas</string>
+    <string name="category_snoep_snacks">Dulces &amp; Snacks</string>
+    <string name="category_huishouden">Hogar</string>
+    <string name="category_verzorging">Cuidado personal</string>
+    <string name="category_overig">Otros</string>
+    <string name="category_dropdown_label">Categoría</string>
+
+    <!-- Store display names (brand names stay the same across languages) -->
+    <string name="store_ah">Albert Heijn</string>
+    <string name="store_jumbo">Jumbo</string>
+    <string name="store_nettorama">Nettorama</string>
+    <string name="store_kruidvat">Kruidvat</string>
+    <string name="store_hema">Hema</string>
+    <string name="store_etos">Etos</string>
+    <string name="store_action">Action</string>
+    <string name="store_geen">Sin tienda</string>
+    <string name="store_dropdown_label">Tienda</string>
+
+    <!-- Activity type labels (Novedades/Historial) -->
+    <string name="activity_type_scanned">Escaneado</string>
+    <string name="activity_type_quantity_changed">Cantidad modificada</string>
+    <string name="activity_type_removed">Eliminado del inventario</string>
+    <string name="activity_type_added_to_shopping_list">Añadido a la lista de la compra</string>
+
+    <!-- Activity log detail text, rendered on the writer's device at the moment of the action -->
+    <string name="activity_detail_scanned">Escaneado (%1$s%2$d)</string>
+    <string name="activity_detail_quantity_changed">Cantidad modificada de %1$d a %2$d</string>
+    <string name="activity_detail_removed">Eliminado del inventario (%1$dx)</string>
+
+    <!-- Developer notices (Novedades -> Avisos tab, newest first) -->
+    <string name="notice_household_sharing_title">Compartir con convivientes</string>
+    <string name="notice_household_sharing_message">Crea un hogar o únete con un código (desde Más) para compartir tu inventario y lista de la compra con tus convivientes.</string>
+    <string name="notice_notifications_title">Notificaciones</string>
+    <string name="notice_notifications_message">Todos los avisos de la app y del desarrollador ahora se encuentran aquí juntos.</string>
+    <string name="notice_color_palette_title">Nueva paleta de colores</string>
+    <string name="notice_color_palette_message">La app tiene una paleta de colores más fresca: verde, terracota y azul arándano.</string>
+    <string name="notice_sort_options_title">Opciones de orden en Inventario</string>
+    <string name="notice_sort_options_message">Ordena tu inventario por nombre, cantidad o añadido recientemente.</string>
+    <string name="notice_faster_scanning_title">Escaneo más rápido</string>
+    <string name="notice_faster_scanning_message">Los productos conocidos ahora se añaden al instante al escanear, sin ningún paso intermedio.</string>
+    <string name="notice_undo_title">Deshacer</string>
+    <string name="notice_undo_message">¿Eliminaste algo por accidente? Recupéralo al instante desde el aviso en la parte inferior de la pantalla.</string>
+    <string name="notice_inventory_cards_title">Inventario en tarjetas</string>
+    <string name="notice_inventory_cards_message">Cambia entre vista de lista y de tarjetas (2 por fila) en Inventario.</string>
+    <string name="notice_shopping_list_stores_title">Lista de la compra por tienda</string>
+    <string name="notice_shopping_list_stores_message">Tu lista de la compra está organizada por tienda, con edición y fotos de productos.</string>
+    <string name="notice_statistics_title">Estadísticas añadidas</string>
+    <string name="notice_statistics_message">Consulta tus productos más escaneados y la distribución por categoría.</string>
+
+    <!-- Household (onboarding, before joining a household) -->
+    <string name="household_welcome_title">Bienvenido a BoodschapBeheer</string>
+    <string name="household_welcome_subtitle">Comparte tu inventario y lista de la compra con tus convivientes. Crea un hogar nuevo o únete a uno existente con un código.</string>
+    <string name="household_create_button">Iniciar un nuevo hogar</string>
+    <string name="household_join_button">Ya tengo un código de hogar</string>
+    <string name="household_creating">Creando hogar…</string>
+    <string name="household_retry">Reintentar</string>
+    <string name="household_created_title">¡Hogar creado!</string>
+    <string name="household_created_subtitle">Comparte este código con tus convivientes para que también puedan unirse.</string>
+    <string name="household_copy_code">Copiar código</string>
+    <string name="household_continue">Continuar</string>
+    <string name="household_join_title">Unirse a un hogar</string>
+    <string name="household_code_label">Código de hogar</string>
+    <string name="household_join_action">Unirse</string>
+    <string name="household_not_found_format">No se encontró ningún hogar con el código %1$s</string>
+    <string name="household_generate_code_failed">No se pudo generar un código de hogar único</string>
+
+    <!-- Más -->
+    <string name="more_statistics_title">Estadísticas</string>
+    <string name="more_statistics_description">Productos más escaneados y distribución por categoría</string>
+    <string name="more_household_title">Hogar</string>
+    <string name="more_household_code_format">Código: %1$s</string>
+    <string name="more_leave">Abandonar</string>
+    <string name="more_leave_dialog_title">¿Abandonar el hogar?</string>
+    <string name="more_leave_dialog_text">Dejarás de ver el inventario y la lista de la compra compartidos en este dispositivo. Puedes volver a unirte en cualquier momento con el código.</string>
+
+    <!-- Inventario -->
+    <string name="inventory_title">Inventario</string>
+    <string name="inventory_show_as_tiles_cd">Mostrar como tarjetas</string>
+    <string name="inventory_show_as_list_cd">Mostrar como lista</string>
+    <string name="inventory_search_placeholder">Buscar en el inventario…</string>
+    <string name="inventory_filter_all">Todo</string>
+    <string name="inventory_sort_cd">Ordenar</string>
+    <string name="inventory_sort_active_cd_format">Ordenar (activo: %1$s)</string>
+    <string name="inventory_removed_snackbar_format">%1$s eliminado</string>
+    <string name="inventory_add_to_shopping_list_cd">Añadir a la lista de la compra</string>
+    <string name="inventory_remove_cd">Eliminar del inventario</string>
+    <string name="inventory_empty_filtered_title">No se encontraron productos.</string>
+    <string name="inventory_empty_filtered_subtitle">Ajusta tu búsqueda o filtro.</string>
+    <string name="inventory_empty_title">Todavía no hay productos en el inventario.</string>
+    <string name="inventory_empty_subtitle">Escanea un código de barras para empezar.</string>
+
+    <!-- Inventario sort options -->
+    <string name="sort_option_name">Nombre</string>
+    <string name="sort_option_quantity">Cantidad</string>
+    <string name="sort_option_recently_updated">Añadido recientemente</string>
+
+    <!-- Novedades -->
+    <string name="notifications_tab_notices">Avisos</string>
+    <string name="notifications_tab_history">Historial</string>
+    <string name="notifications_history_empty">Los escaneos y cambios aparecerán aquí.</string>
+
+    <!-- Detalle del producto -->
+    <string name="product_detail_default_title">Producto</string>
+    <string name="product_detail_in_stock">En existencia</string>
+    <string name="product_detail_remove">Eliminar del inventario</string>
+    <string name="product_detail_add_to_shopping_list">Añadir a la lista de la compra</string>
+    <string name="product_detail_history_header_format">Historial (escaneado %1$dx)</string>
+    <string name="product_detail_history_empty">Todavía no se han registrado escaneos.</string>
+    <string name="product_detail_scanned_format">%1$s%2$d unidad(es) escaneada(s)</string>
+
+    <!-- Escanear -->
+    <string name="scan_quick_added_format">%1$s añadido (+1)</string>
+    <string name="scan_overlay_hint">Apunta la cámara al código de barras de un producto</string>
+    <string name="scan_permission_rationale">BoodschapBeheer necesita acceso a la cámara para poder escanear códigos de barras.</string>
+    <string name="scan_permission_button">Conceder acceso a la cámara</string>
+
+    <!-- Resultado del escaneo -->
+    <string name="scan_result_title">Añadir producto</string>
+    <string name="scan_result_loading">Obteniendo datos del producto…</string>
+    <string name="scan_result_not_found">Este producto no se encontró en la base de datos. Completa los datos manualmente.</string>
+    <string name="scan_result_barcode_format">Código de barras: %1$s</string>
+    <string name="scan_result_brand_format">Marca: %1$s</string>
+    <string name="scan_result_unit_format">Contenido: %1$s</string>
+    <string name="scan_result_confirm">Añadir al inventario</string>
+    <string name="scan_result_network_error_title">Sin conexión</string>
+    <string name="scan_result_network_error_message">No pudimos obtener los datos del producto. Comprueba tu conexión a internet e inténtalo de nuevo.</string>
+    <string name="scan_result_retry">Intentar de nuevo</string>
+    <string name="scan_result_continue_manually">Completar manualmente de todos modos</string>
+
+    <!-- Lista de la compra -->
+    <string name="shopping_list_title">Lista de la compra</string>
+    <string name="shopping_list_clear_checked_cd">Borrar artículos marcados</string>
+    <string name="shopping_list_add_item_cd">Añadir artículo</string>
+    <string name="shopping_list_search_placeholder">Buscar en la lista de la compra…</string>
+    <string name="shopping_list_removed_format">%1$s eliminado</string>
+    <string name="shopping_list_delete_cd">Eliminar</string>
+    <string name="shopping_list_mark_unchecked_cd">Marcar como no marcado</string>
+    <string name="shopping_list_mark_checked_cd">Marcar como completado</string>
+    <string name="shopping_list_empty_filtered">No se encontraron artículos.</string>
+    <string name="shopping_list_empty">Tu lista de la compra está vacía.</string>
+    <string name="shopping_list_item_add_title">Añadir artículo</string>
+    <string name="shopping_list_item_edit_title">Editar artículo</string>
+    <string name="shopping_list_add_confirm">Añadir</string>
+    <string name="shopping_list_save_confirm">Guardar</string>
+
+    <!-- Estadísticas -->
+    <string name="statistics_title">Estadísticas</string>
+    <string name="statistics_most_scanned">Más escaneados</string>
+    <string name="statistics_no_scans_yet">Todavía no hay escaneos que mostrar.</string>
+    <string name="statistics_category_distribution">Distribución por categoría</string>
+    <string name="statistics_no_products_yet">Todavía no hay productos en el inventario.</string>
+    <string name="statistics_in_stock">En existencia</string>
+    <string name="statistics_total_scans">Escaneos totales</string>
+    <string name="statistics_this_week">Esta semana</string>
+    <string name="statistics_scan_count_format">%1$dx</string>
+</resources>

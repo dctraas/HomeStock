@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -37,6 +38,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
+import com.dtraas.boodschapbeheer.R
 
 /**
  * Shown before the main app whenever this device isn't part of a household yet.
@@ -101,24 +103,23 @@ private fun ChooseContent(
         tint = MaterialTheme.colorScheme.primary,
     )
     Text(
-        text = "Welkom bij BoodschapBeheer",
+        text = stringResource(R.string.household_welcome_title),
         style = MaterialTheme.typography.headlineSmall,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(top = 20.dp),
     )
     Text(
-        text = "Deel je voorraad en boodschappenlijst met je huisgenoten. Maak een nieuw huishouden aan, " +
-            "of sluit aan bij een bestaand huishouden met een code.",
+        text = stringResource(R.string.household_welcome_subtitle),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(top = 8.dp, bottom = 32.dp),
     )
     Button(onClick = onCreate, modifier = Modifier.fillMaxWidth()) {
-        Text("Nieuw huishouden starten")
+        Text(stringResource(R.string.household_create_button))
     }
     OutlinedButton(onClick = onJoin, modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
-        Text("Ik heb al een huishouden-code")
+        Text(stringResource(R.string.household_join_button))
     }
 }
 
@@ -133,7 +134,7 @@ private fun CreateContent(
         uiState.isLoading -> {
             CircularProgressIndicator()
             Text(
-                text = "Huishouden aanmaken…",
+                text = stringResource(R.string.household_creating),
                 modifier = Modifier.padding(top = 16.dp),
             )
         }
@@ -145,9 +146,9 @@ private fun CreateContent(
                 textAlign = TextAlign.Center,
             )
             Button(onClick = onRetry, modifier = Modifier.fillMaxWidth().padding(top = 16.dp)) {
-                Text("Probeer opnieuw")
+                Text(stringResource(R.string.household_retry))
             }
-            TextButton(onClick = onBack) { Text("Terug") }
+            TextButton(onClick = onBack) { Text(stringResource(R.string.common_back)) }
         }
         uiState.createdCode != null -> {
             val code = uiState.createdCode
@@ -159,12 +160,12 @@ private fun CreateContent(
                 tint = MaterialTheme.colorScheme.primary,
             )
             Text(
-                text = "Huishouden aangemaakt!",
+                text = stringResource(R.string.household_created_title),
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(top = 16.dp),
             )
             Text(
-                text = "Deel deze code met je huisgenoten zodat zij ook kunnen aansluiten.",
+                text = stringResource(R.string.household_created_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
@@ -188,10 +189,10 @@ private fun CreateContent(
                 modifier = Modifier.padding(top = 8.dp),
             ) {
                 Icon(Icons.Filled.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
-                Text(" Kopieer code", modifier = Modifier.padding(start = 4.dp))
+                Text(" " + stringResource(R.string.household_copy_code), modifier = Modifier.padding(start = 4.dp))
             }
             Button(onClick = onConfirm, modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
-                Text("Doorgaan")
+                Text(stringResource(R.string.household_continue))
             }
         }
     }
@@ -212,14 +213,14 @@ private fun JoinContent(
         tint = MaterialTheme.colorScheme.primary,
     )
     Text(
-        text = "Huishouden koppelen",
+        text = stringResource(R.string.household_join_title),
         style = MaterialTheme.typography.titleLarge,
         modifier = Modifier.padding(top = 16.dp, bottom = 20.dp),
     )
     OutlinedTextField(
         value = uiState.joinCodeInput,
         onValueChange = { onCodeChange(it.uppercase()) },
-        label = { Text("Huishouden-code") },
+        label = { Text(stringResource(R.string.household_code_label)) },
         singleLine = true,
         textStyle = TextStyle(fontSize = 24.sp, letterSpacing = 4.sp, textAlign = TextAlign.Center),
         isError = uiState.errorMessage != null,
@@ -238,10 +239,10 @@ private fun JoinContent(
                 color = MaterialTheme.colorScheme.onPrimary,
             )
         } else {
-            Text("Aansluiten")
+            Text(stringResource(R.string.household_join_action))
         }
     }
     TextButton(onClick = onBack, modifier = Modifier.padding(top = 4.dp)) {
-        Text("Terug")
+        Text(stringResource(R.string.common_back))
     }
 }

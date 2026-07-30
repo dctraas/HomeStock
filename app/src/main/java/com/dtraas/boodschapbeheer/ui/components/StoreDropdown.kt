@@ -16,6 +16,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.model.Store
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -24,7 +26,7 @@ fun StoreDropdown(
     selected: Store,
     onSelected: (Store) -> Unit,
     modifier: Modifier = Modifier,
-    label: String = "Winkel",
+    label: String = stringResource(R.string.store_dropdown_label),
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -36,7 +38,7 @@ fun StoreDropdown(
         OutlinedTextField(
             modifier = Modifier.menuAnchor(MenuAnchorType.PrimaryNotEditable),
             readOnly = true,
-            value = selected.displayName,
+            value = stringResource(selected.displayNameRes),
             onValueChange = {},
             label = { Text(label) },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
@@ -47,7 +49,7 @@ fun StoreDropdown(
         ) {
             Store.entries.sortedBy { it.sortOrder }.forEach { store ->
                 DropdownMenuItem(
-                    text = { Text(store.displayName) },
+                    text = { Text(stringResource(store.displayNameRes)) },
                     leadingIcon = { Icon(Icons.Filled.Storefront, contentDescription = null) },
                     onClick = {
                         onSelected(store)

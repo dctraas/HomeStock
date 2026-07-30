@@ -13,7 +13,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dtraas.boodschapbeheer.R
 
 @Composable
 fun QuantityStepper(
@@ -25,7 +27,7 @@ fun QuantityStepper(
 ) {
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onDecrease, enabled = quantity > minQuantity) {
-            Icon(Icons.Filled.Remove, contentDescription = "Minder")
+            Icon(Icons.Filled.Remove, contentDescription = stringResource(R.string.quantity_decrease_cd))
         }
         Text(
             text = quantity.toString(),
@@ -34,7 +36,7 @@ fun QuantityStepper(
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
         IconButton(onClick = onIncrease) {
-            Icon(Icons.Filled.Add, contentDescription = "Meer")
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.quantity_increase_cd))
         }
     }
 }

@@ -1,9 +1,10 @@
 package com.dtraas.boodschapbeheer.ui.inventory
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.dao.InventoryItemWithProduct
-import com.dtraas.boodschapbeheer.data.model.ActivityType
 import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.data.model.Store
 import com.dtraas.boodschapbeheer.data.repository.ActivityLogRepository
@@ -17,10 +18,10 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /** How items are ordered within each category group in the Voorraad overview. */
-enum class InventorySortOption(val label: String) {
-    NAME("Naam"),
-    QUANTITY("Aantal"),
-    RECENTLY_UPDATED("Laatst toegevoegd"),
+enum class InventorySortOption(@StringRes val labelRes: Int) {
+    NAME(R.string.sort_option_name),
+    QUANTITY(R.string.sort_option_quantity),
+    RECENTLY_UPDATED(R.string.sort_option_recently_updated),
 }
 
 data class InventoryUiState(
@@ -102,11 +103,7 @@ class InventoryViewModel(
                 barcode = item.barcode,
                 imageUrl = item.imageUrl,
             )
-            activityLogRepository.log(
-                item.barcode,
-                ActivityType.ADDED_TO_SHOPPING_LIST,
-                "Toegevoegd aan boodschappenlijst",
-            )
+            activityLogRepository.logAddedToShoppingList(item.barcode)
         }
     }
 }

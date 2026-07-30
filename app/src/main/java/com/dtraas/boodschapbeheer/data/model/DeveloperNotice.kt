@@ -1,50 +1,52 @@
 package com.dtraas.boodschapbeheer.data.model
 
+import androidx.annotation.StringRes
+import com.dtraas.boodschapbeheer.R
+
 /** A short "what's new" style message from the app's developer, shown on the Nieuws screen. */
 data class DeveloperNotice(
-    val title: String,
-    val message: String,
+    @StringRes val titleRes: Int,
+    @StringRes val messageRes: Int,
 )
 
 object DeveloperNotices {
     /** Newest first. Static for now — there's no backend to fetch these from. */
     val all: List<DeveloperNotice> = listOf(
         DeveloperNotice(
-            title = "Delen met huisgenoten",
-            message = "Maak een huishouden aan of sluit aan met een code (via Meer) om je voorraad " +
-                "en boodschappenlijst met huisgenoten te delen.",
+            titleRes = R.string.notice_household_sharing_title,
+            messageRes = R.string.notice_household_sharing_message,
         ),
         DeveloperNotice(
-            title = "Meldingen",
-            message = "Alle app- en ontwikkelaarsmeldingen staan voortaan hier bij elkaar.",
+            titleRes = R.string.notice_notifications_title,
+            messageRes = R.string.notice_notifications_message,
         ),
         DeveloperNotice(
-            title = "Nieuw kleurenpalet",
-            message = "De app heeft een frisser kleurenpalet gekregen: groen, terracotta en bosbessenblauw.",
+            titleRes = R.string.notice_color_palette_title,
+            messageRes = R.string.notice_color_palette_message,
         ),
         DeveloperNotice(
-            title = "Sorteeropties in Voorraad",
-            message = "Sorteer je voorraad op naam, aantal of laatst toegevoegd.",
+            titleRes = R.string.notice_sort_options_title,
+            messageRes = R.string.notice_sort_options_message,
         ),
         DeveloperNotice(
-            title = "Sneller scannen",
-            message = "Bekende producten worden nu direct toegevoegd tijdens het scannen, zonder tussenstap.",
+            titleRes = R.string.notice_faster_scanning_title,
+            messageRes = R.string.notice_faster_scanning_message,
         ),
         DeveloperNotice(
-            title = "Ongedaan maken",
-            message = "Per ongeluk iets verwijderd? Zet het direct terug via de melding onderin het scherm.",
+            titleRes = R.string.notice_undo_title,
+            messageRes = R.string.notice_undo_message,
         ),
         DeveloperNotice(
-            title = "Voorraad als kaarten",
-            message = "Schakel in Voorraad tussen lijst- en kaartweergave (2 per rij).",
+            titleRes = R.string.notice_inventory_cards_title,
+            messageRes = R.string.notice_inventory_cards_message,
         ),
         DeveloperNotice(
-            title = "Boodschappenlijst per winkel",
-            message = "Je boodschappenlijst is ingedeeld per winkel, met bewerken en productfoto's.",
+            titleRes = R.string.notice_shopping_list_stores_title,
+            messageRes = R.string.notice_shopping_list_stores_message,
         ),
         DeveloperNotice(
-            title = "Statistieken toegevoegd",
-            message = "Bekijk je meest gescande producten en de verdeling per categorie.",
+            titleRes = R.string.notice_statistics_title,
+            messageRes = R.string.notice_statistics_message,
         ),
     )
 }

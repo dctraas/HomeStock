@@ -1,11 +1,14 @@
 package com.dtraas.boodschapbeheer.data.model
 
-/** Kind of change recorded in the activity log, shown on the "Wijzigingen" screen. */
-enum class ActivityType(val storageKey: String, val label: String) {
-    SCANNED("scanned", "Gescand"),
-    QUANTITY_CHANGED("quantity_changed", "Aantal aangepast"),
-    REMOVED("removed", "Verwijderd uit voorraad"),
-    ADDED_TO_SHOPPING_LIST("added_to_shopping_list", "Toegevoegd aan boodschappenlijst");
+import androidx.annotation.StringRes
+import com.dtraas.boodschapbeheer.R
+
+/** Kind of change recorded in the activity log, shown on the "Nieuws" screen. */
+enum class ActivityType(val storageKey: String, @StringRes val labelRes: Int) {
+    SCANNED("scanned", R.string.activity_type_scanned),
+    QUANTITY_CHANGED("quantity_changed", R.string.activity_type_quantity_changed),
+    REMOVED("removed", R.string.activity_type_removed),
+    ADDED_TO_SHOPPING_LIST("added_to_shopping_list", R.string.activity_type_added_to_shopping_list);
 
     companion object {
         fun fromStorageKey(key: String): ActivityType =

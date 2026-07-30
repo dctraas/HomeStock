@@ -61,12 +61,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
+import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.dao.InventoryItemWithProduct
 import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.ui.components.ProductImage
@@ -98,13 +100,15 @@ fun InventoryScreen(
     var viewMode by remember { mutableStateOf(InventoryViewMode.GRID) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
+    val removedFormat = stringResource(R.string.inventory_removed_snackbar_format)
+    val undoLabel = stringResource(R.string.common_undo)
 
     fun deleteWithUndo(item: InventoryItemWithProduct) {
         viewModel.removeFromInventory(item.barcode)
         coroutineScope.launch {
             val result = snackbarHostState.showSnackbar(
-                message = "${item.name} verwijderd",
-                actionLabel = "Ongedaan maken",
+                message = removedFormat.format(item.name),
+                actionLabel = undoLabel,
             )
             if (result == SnackbarResult.ActionPerformed) {
                 viewModel.restoreItem(item)
@@ -115,7 +119,7 @@ fun InventoryScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("Voorraad") },
+                title = { Text(stringResource(R.string.inventory_title)) },
                 actions = {
                     SortMenuButton(
                         selected = uiState.sortOption,
@@ -132,7 +136,11 @@ fun InventoryScreen(
                     ) {
                         Icon(
                             imageVector = if (viewMode == InventoryViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
-                            contentDescription = if (viewMode == InventoryViewMode.LIST) "Toon als tegels" else "Toon als lijst",
+                            contentDescription = if (viewMode == InventoryViewMode.LIST) {
+                                stringResource(R.string.inventory_show_as_tiles_cd)
+                            } else {
+                                stringResource(R.string.inventory_show_as_list_cd)
+                            },
                         )
                     }
                 },
@@ -144,7 +152,7 @@ fun InventoryScreen(
             SearchField(
                 query = uiState.searchQuery,
                 onQueryChange = viewModel::onSearchQueryChange,
-                placeholder = "Zoek in voorraad…",
+                placeholder = stringResource(R.string.inventory_search_placeholder),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
@@ -219,17 +227,21 @@ private fun SortMenuButton(
     Box {
         IconButton(onClick = { menuExpanded = true }) {
             if (isCustomSort) {
+                val activeFormat = stringResource(R.string.inventory_sort_active_cd_format)
                 BadgedBox(badge = { Badge() }) {
-                    Icon(Icons.Filled.Sort, contentDescription = "Sorteren (actief: ${selected.label})")
+                    Icon(
+                        Icons.Filled.Sort,
+                        contentDescription = activeFormat.format(stringResource(selected.labelRes)),
+                    )
                 }
             } else {
-                Icon(Icons.Filled.Sort, contentDescription = "Sorteren")
+                Icon(Icons.Filled.Sort, contentDescription = stringResource(R.string.inventory_sort_cd))
             }
         }
         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
             InventorySortOption.entries.forEach { option ->
                 DropdownMenuItem(
-                    text = { Text(option.label) },
+                    text = { Text(stringResource(option.labelRes)) },
                     trailingIcon = {
                         if (option == selected) {
                             Icon(Icons.Filled.Check, contentDescription = null)
@@ -261,14 +273,14 @@ private fun CategoryFilterRow(
             FilterChip(
                 selected = selected == null,
                 onClick = { onSelected(null) },
-                label = { Text("Alles") },
+                label = { Text(stringResource(R.string.inventory_filter_all)) },
             )
         }
         items(Category.entries.sortedBy { it.sortOrder }) { category ->
             FilterChip(
                 selected = selected == category,
                 onClick = { onSelected(if (selected == category) null else category) },
-                label = { Text(category.displayName) },
+                label = { Text(stringResource(category.displayNameRes)) },
                 leadingIcon = {
                     Icon(category.icon, contentDescription = null, modifier = Modifier.size(16.dp))
                 },
@@ -295,7 +307,7 @@ private fun CategoryHeader(category: Category, itemCount: Int) {
                 modifier = Modifier.size(20.dp),
             )
             Text(
-                text = category.displayName,
+                text = stringResource(category.displayNameRes),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(start = 8.dp),
@@ -370,14 +382,14 @@ private fun InventoryRow(
                     IconButton(onClick = onAddToShoppingList) {
                         Icon(
                             Icons.Filled.AddShoppingCart,
-                            contentDescription = "Toevoegen aan boodschappenlijst",
+                            contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
                             tint = MaterialTheme.colorScheme.primary,
                         )
                     }
                     IconButton(onClick = onDelete) {
                         Icon(
                             Icons.Filled.Delete,
-                            contentDescription = "Verwijderen uit voorraad",
+                            contentDescription = stringResource(R.string.inventory_remove_cd),
                             tint = MaterialTheme.colorScheme.outline,
                         )
                     }
@@ -419,7 +431,7 @@ private fun InventoryGridTile(
                 IconButton(onClick = onAddToShoppingList, modifier = Modifier.fillMaxSize()) {
                     Icon(
                         Icons.Filled.AddShoppingCart,
-                        contentDescription = "Toevoegen aan boodschappenlijst",
+                        contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(20.dp),
                     )
@@ -477,24 +489,24 @@ private fun EmptyInventory(isFiltered: Boolean, modifier: Modifier = Modifier) {
         }
         if (isFiltered) {
             Text(
-                text = "Geen producten gevonden.",
+                text = stringResource(R.string.inventory_empty_filtered_title),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(top = 20.dp),
             )
             Text(
-                text = "Pas je zoekopdracht of filter aan.",
+                text = stringResource(R.string.inventory_empty_filtered_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),
             )
         } else {
             Text(
-                text = "Nog geen producten in voorraad.",
+                text = stringResource(R.string.inventory_empty_title),
                 style = MaterialTheme.typography.titleMedium,
                 modifier = Modifier.padding(top = 20.dp),
             )
             Text(
-                text = "Scan een barcode om te beginnen.",
+                text = stringResource(R.string.inventory_empty_subtitle),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp),

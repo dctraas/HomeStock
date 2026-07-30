@@ -1,5 +1,6 @@
 package com.dtraas.boodschapbeheer.ui.navigation
 
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Inventory2
@@ -7,6 +8,7 @@ import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.dtraas.boodschapbeheer.R
 
 sealed class Destination(val route: String) {
     data object Scan : Destination("scan")
@@ -25,14 +27,14 @@ sealed class Destination(val route: String) {
 
 data class TopLevelDestination(
     val destination: Destination,
-    val label: String,
+    @StringRes val labelRes: Int,
     val icon: ImageVector,
 )
 
 val topLevelDestinations = listOf(
-    TopLevelDestination(Destination.ShoppingList, "Lijstje", Icons.Filled.ShoppingCart),
-    TopLevelDestination(Destination.Inventory, "Voorraad", Icons.Filled.Inventory2),
-    TopLevelDestination(Destination.Scan, "Scannen", Icons.Filled.CameraAlt),
-    TopLevelDestination(Destination.Notifications, "Nieuws", Icons.Filled.Notifications),
-    TopLevelDestination(Destination.More, "Meer", Icons.Filled.MoreHoriz),
+    TopLevelDestination(Destination.ShoppingList, R.string.nav_shopping_list, Icons.Filled.ShoppingCart),
+    TopLevelDestination(Destination.Inventory, R.string.nav_inventory, Icons.Filled.Inventory2),
+    TopLevelDestination(Destination.Scan, R.string.nav_scan, Icons.Filled.CameraAlt),
+    TopLevelDestination(Destination.Notifications, R.string.nav_news, Icons.Filled.Notifications),
+    TopLevelDestination(Destination.More, R.string.nav_more, Icons.Filled.MoreHoriz),
 )

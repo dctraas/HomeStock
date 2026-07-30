@@ -11,7 +11,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dtraas.boodschapbeheer.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -19,7 +21,7 @@ fun SearchField(
     query: String,
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    placeholder: String = "Zoeken…",
+    placeholder: String = stringResource(R.string.search_placeholder_default),
 ) {
     OutlinedTextField(
         value = query,
@@ -30,7 +32,7 @@ fun SearchField(
         trailingIcon = {
             if (query.isNotEmpty()) {
                 IconButton(onClick = { onQueryChange("") }) {
-                    Icon(Icons.Filled.Close, contentDescription = "Zoekopdracht wissen")
+                    Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.search_clear_cd))
                 }
             }
         },

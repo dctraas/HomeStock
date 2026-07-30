@@ -1,0 +1,184 @@
+<resources>
+    <string name="app_name">BoodschapBeheer</string>
+
+    <!-- Common -->
+    <string name="common_back">Back</string>
+    <string name="common_cancel">Cancel</string>
+    <string name="common_name">Name</string>
+    <string name="common_quantity">Quantity</string>
+    <string name="common_undo">Undo</string>
+    <string name="quantity_decrease_cd">Decrease</string>
+    <string name="quantity_increase_cd">Increase</string>
+    <string name="search_clear_cd">Clear search</string>
+    <string name="search_placeholder_default">Search…</string>
+
+    <!-- Bottom navigation -->
+    <string name="nav_shopping_list">List</string>
+    <string name="nav_inventory">Inventory</string>
+    <string name="nav_scan">Scan</string>
+    <string name="nav_news">News</string>
+    <string name="nav_more">More</string>
+
+    <!-- Category display names -->
+    <string name="category_zuivel">Dairy</string>
+    <string name="category_groente_fruit">Fruit &amp; Vegetables</string>
+    <string name="category_vlees_vis">Meat &amp; Fish</string>
+    <string name="category_brood_bakkerij">Bread &amp; Bakery</string>
+    <string name="category_voorraadkast">Pantry</string>
+    <string name="category_diepvries">Frozen</string>
+    <string name="category_dranken">Drinks</string>
+    <string name="category_snoep_snacks">Snacks &amp; Sweets</string>
+    <string name="category_huishouden">Household</string>
+    <string name="category_verzorging">Personal Care</string>
+    <string name="category_overig">Other</string>
+    <string name="category_dropdown_label">Category</string>
+
+    <!-- Store display names (brand names stay the same across languages) -->
+    <string name="store_ah">Albert Heijn</string>
+    <string name="store_jumbo">Jumbo</string>
+    <string name="store_nettorama">Nettorama</string>
+    <string name="store_kruidvat">Kruidvat</string>
+    <string name="store_hema">Hema</string>
+    <string name="store_etos">Etos</string>
+    <string name="store_action">Action</string>
+    <string name="store_geen">No store</string>
+    <string name="store_dropdown_label">Store</string>
+
+    <!-- Activity type labels (News/History) -->
+    <string name="activity_type_scanned">Scanned</string>
+    <string name="activity_type_quantity_changed">Quantity changed</string>
+    <string name="activity_type_removed">Removed from inventory</string>
+    <string name="activity_type_added_to_shopping_list">Added to shopping list</string>
+
+    <!-- Activity log detail text, rendered on the writer's device at the moment of the action -->
+    <string name="activity_detail_scanned">Scanned (%1$s%2$d)</string>
+    <string name="activity_detail_quantity_changed">Quantity changed from %1$d to %2$d</string>
+    <string name="activity_detail_removed">Removed from inventory (%1$dx)</string>
+
+    <!-- Developer notices (News -> Notices tab, newest first) -->
+    <string name="notice_household_sharing_title">Sharing with housemates</string>
+    <string name="notice_household_sharing_message">Create a household or join one with a code (via More) to share your inventory and shopping list with housemates.</string>
+    <string name="notice_notifications_title">Notifications</string>
+    <string name="notice_notifications_message">All app and developer notices now live together here.</string>
+    <string name="notice_color_palette_title">New color palette</string>
+    <string name="notice_color_palette_message">The app has a fresher color palette: green, terracotta and blueberry blue.</string>
+    <string name="notice_sort_options_title">Sort options in Inventory</string>
+    <string name="notice_sort_options_message">Sort your inventory by name, quantity or recently added.</string>
+    <string name="notice_faster_scanning_title">Faster scanning</string>
+    <string name="notice_faster_scanning_message">Known products are now added instantly while scanning, without an extra step.</string>
+    <string name="notice_undo_title">Undo</string>
+    <string name="notice_undo_message">Accidentally removed something? Restore it right away via the notice at the bottom of the screen.</string>
+    <string name="notice_inventory_cards_title">Inventory as cards</string>
+    <string name="notice_inventory_cards_message">Switch between list and card view (2 per row) in Inventory.</string>
+    <string name="notice_shopping_list_stores_title">Shopping list by store</string>
+    <string name="notice_shopping_list_stores_message">Your shopping list is grouped by store, with editing and product photos.</string>
+    <string name="notice_statistics_title">Statistics added</string>
+    <string name="notice_statistics_message">View your most-scanned products and the breakdown by category.</string>
+
+    <!-- Household (onboarding, before joining a household) -->
+    <string name="household_welcome_title">Welcome to BoodschapBeheer</string>
+    <string name="household_welcome_subtitle">Share your inventory and shopping list with your housemates. Create a new household, or join an existing one with a code.</string>
+    <string name="household_create_button">Start a new household</string>
+    <string name="household_join_button">I already have a household code</string>
+    <string name="household_creating">Creating household…</string>
+    <string name="household_retry">Try again</string>
+    <string name="household_created_title">Household created!</string>
+    <string name="household_created_subtitle">Share this code with your housemates so they can join too.</string>
+    <string name="household_copy_code">Copy code</string>
+    <string name="household_continue">Continue</string>
+    <string name="household_join_title">Join household</string>
+    <string name="household_code_label">Household code</string>
+    <string name="household_join_action">Join</string>
+    <string name="household_not_found_format">No household found with code %1$s</string>
+    <string name="household_generate_code_failed">Couldn\'t generate a unique household code</string>
+
+    <!-- More -->
+    <string name="more_statistics_title">Statistics</string>
+    <string name="more_statistics_description">Most-scanned products and breakdown by category</string>
+    <string name="more_household_title">Household</string>
+    <string name="more_household_code_format">Code: %1$s</string>
+    <string name="more_leave">Leave</string>
+    <string name="more_leave_dialog_title">Leave household?</string>
+    <string name="more_leave_dialog_text">You\'ll no longer see the shared inventory and shopping list on this device. You can rejoin at any time with the code.</string>
+
+    <!-- Inventory -->
+    <string name="inventory_title">Inventory</string>
+    <string name="inventory_show_as_tiles_cd">Show as tiles</string>
+    <string name="inventory_show_as_list_cd">Show as list</string>
+    <string name="inventory_search_placeholder">Search inventory…</string>
+    <string name="inventory_filter_all">All</string>
+    <string name="inventory_sort_cd">Sort</string>
+    <string name="inventory_sort_active_cd_format">Sort (active: %1$s)</string>
+    <string name="inventory_removed_snackbar_format">%1$s removed</string>
+    <string name="inventory_add_to_shopping_list_cd">Add to shopping list</string>
+    <string name="inventory_remove_cd">Remove from inventory</string>
+    <string name="inventory_empty_filtered_title">No products found.</string>
+    <string name="inventory_empty_filtered_subtitle">Adjust your search or filter.</string>
+    <string name="inventory_empty_title">No products in inventory yet.</string>
+    <string name="inventory_empty_subtitle">Scan a barcode to get started.</string>
+
+    <!-- Inventory sort options -->
+    <string name="sort_option_name">Name</string>
+    <string name="sort_option_quantity">Quantity</string>
+    <string name="sort_option_recently_updated">Recently added</string>
+
+    <!-- News -->
+    <string name="notifications_tab_notices">Notices</string>
+    <string name="notifications_tab_history">History</string>
+    <string name="notifications_history_empty">Scans and changes will appear here.</string>
+
+    <!-- Product detail -->
+    <string name="product_detail_default_title">Product</string>
+    <string name="product_detail_in_stock">In stock</string>
+    <string name="product_detail_remove">Remove from inventory</string>
+    <string name="product_detail_add_to_shopping_list">Add to shopping list</string>
+    <string name="product_detail_history_header_format">History (scanned %1$dx)</string>
+    <string name="product_detail_history_empty">No scans recorded yet.</string>
+    <string name="product_detail_scanned_format">%1$s%2$d item(s) scanned</string>
+
+    <!-- Scan -->
+    <string name="scan_quick_added_format">%1$s added (+1)</string>
+    <string name="scan_overlay_hint">Point the camera at a product\'s barcode</string>
+    <string name="scan_permission_rationale">BoodschapBeheer needs camera access to scan barcodes.</string>
+    <string name="scan_permission_button">Grant camera access</string>
+
+    <!-- Scan result -->
+    <string name="scan_result_title">Add product</string>
+    <string name="scan_result_loading">Fetching product data…</string>
+    <string name="scan_result_not_found">This product wasn\'t found in the database. Fill in the details manually.</string>
+    <string name="scan_result_barcode_format">Barcode: %1$s</string>
+    <string name="scan_result_brand_format">Brand: %1$s</string>
+    <string name="scan_result_unit_format">Content: %1$s</string>
+    <string name="scan_result_confirm">Add to inventory</string>
+    <string name="scan_result_network_error_title">No connection</string>
+    <string name="scan_result_network_error_message">We couldn\'t fetch the product data. Check your internet connection and try again.</string>
+    <string name="scan_result_retry">Try again</string>
+    <string name="scan_result_continue_manually">Fill in manually instead</string>
+
+    <!-- Shopping list -->
+    <string name="shopping_list_title">Shopping list</string>
+    <string name="shopping_list_clear_checked_cd">Clear checked items</string>
+    <string name="shopping_list_add_item_cd">Add item</string>
+    <string name="shopping_list_search_placeholder">Search shopping list…</string>
+    <string name="shopping_list_removed_format">%1$s removed</string>
+    <string name="shopping_list_delete_cd">Delete</string>
+    <string name="shopping_list_mark_unchecked_cd">Mark as not checked</string>
+    <string name="shopping_list_mark_checked_cd">Mark as checked</string>
+    <string name="shopping_list_empty_filtered">No items found.</string>
+    <string name="shopping_list_empty">Your shopping list is empty.</string>
+    <string name="shopping_list_item_add_title">Add item</string>
+    <string name="shopping_list_item_edit_title">Edit item</string>
+    <string name="shopping_list_add_confirm">Add</string>
+    <string name="shopping_list_save_confirm">Save</string>
+
+    <!-- Statistics -->
+    <string name="statistics_title">Statistics</string>
+    <string name="statistics_most_scanned">Most scanned</string>
+    <string name="statistics_no_scans_yet">No scans to show yet.</string>
+    <string name="statistics_category_distribution">Breakdown by category</string>
+    <string name="statistics_no_products_yet">No products in inventory yet.</string>
+    <string name="statistics_in_stock">In stock</string>
+    <string name="statistics_total_scans">Total scans</string>
+    <string name="statistics_this_week">This week</string>
+    <string name="statistics_scan_count_format">%1$dx</string>
+</resources>

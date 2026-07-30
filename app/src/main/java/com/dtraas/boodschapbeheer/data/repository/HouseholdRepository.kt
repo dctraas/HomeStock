@@ -1,11 +1,13 @@
 package com.dtraas.boodschapbeheer.data.repository
 
+import android.content.Context
+import com.dtraas.boodschapbeheer.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
 /** Something went wrong that isn't a plain network/Firestore exception. */
-class HouseholdNotFoundException(code: String) : Exception("Huishouden met code $code niet gevonden")
+class HouseholdNotFoundException(message: String) : Exception(message)
 
 /**
  * Creates and joins households — the mechanism by which multiple devices share the
@@ -13,6 +15,7 @@ class HouseholdNotFoundException(code: String) : Exception("Huishouden met code 
  * the code is the only thing needed to join, there is no separate invite flow.
  */
 class HouseholdRepository(
+    private val context: Context,
     private val firestore: FirebaseFirestore,
     private val auth: FirebaseAuth,
 ) {
@@ -37,7 +40,7 @@ class HouseholdRepository(
                 }
             }
             createdCode?.let { Result.success(it) }
-                ?: Result.failure(IllegalStateException("Kon geen unieke huishouden-code genereren"))
+                ?: Result.failure(IllegalStateException(context.getString(R.string.household_generate_code_failed)))
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -48,10 +51,12 @@ class HouseholdRepository(
         return try {
             ensureSignedIn()
             val normalized = code.trim().uppercase()
-            if (normalized.isEmpty()) return Result.failure(HouseholdNotFoundException(normalized))
+            if (normalized.isEmpty()) {
+                return Result.failure(HouseholdNotFoundException(context.getString(R.string.household_not_found_format, normalized)))
+            }
             val snapshot = firestore.collection(HOUSEHOLDS_COLLECTION).document(normalized).get().await()
             if (!snapshot.exists()) {
-                Result.failure(HouseholdNotFoundException(normalized))
+                Result.failure(HouseholdNotFoundException(context.getString(R.string.household_not_found_format, normalized)))
             } else {
                 Result.success(normalized)
             }

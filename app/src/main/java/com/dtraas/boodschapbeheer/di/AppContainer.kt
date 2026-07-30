@@ -27,13 +27,15 @@ import retrofit2.converter.gson.GsonConverterFactory
  */
 class AppContainer(context: Context) {
 
+    private val appContext: Context = context.applicationContext
+
     val householdSession: HouseholdSession = HouseholdSession(context)
 
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     val householdRepository: HouseholdRepository by lazy {
-        HouseholdRepository(firestore, auth)
+        HouseholdRepository(appContext, firestore, auth)
     }
 
     private val okHttpClient: OkHttpClient = OkHttpClient.Builder()
@@ -52,7 +54,7 @@ class AppContainer(context: Context) {
     }
 
     val activityLogRepository: ActivityLogRepository by lazy {
-        ActivityLogRepository(firestore, householdSession)
+        ActivityLogRepository(appContext, firestore, householdSession)
     }
 
     val inventoryRepository: InventoryRepository by lazy {
