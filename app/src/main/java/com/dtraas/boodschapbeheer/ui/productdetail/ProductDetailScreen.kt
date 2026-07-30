@@ -3,6 +3,7 @@ package com.dtraas.boodschapbeheer.ui.productdetail
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -11,6 +12,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -60,7 +63,9 @@ import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
 import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.entity.NutritionInfo
 import com.dtraas.boodschapbeheer.data.local.entity.ProductEntity
+import com.dtraas.boodschapbeheer.data.model.Allergen
 import com.dtraas.boodschapbeheer.data.model.Category
+import com.dtraas.boodschapbeheer.data.model.DietLabel
 import com.dtraas.boodschapbeheer.ui.components.QuantityStepper
 import com.dtraas.boodschapbeheer.ui.components.icon
 import java.time.Instant
@@ -198,8 +203,18 @@ fun ProductDetailScreen(
                 Text(stringResource(R.string.product_detail_add_to_shopping_list))
             }
 
+            val allergens = product?.allergens?.mapNotNull { name -> Allergen.entries.find { it.name == name } }.orEmpty()
+            if (allergens.isNotEmpty()) {
+                AllergensCard(allergens, modifier = Modifier.padding(top = 20.dp))
+            }
+
             product?.nutrition?.let { nutrition ->
                 NutritionCard(nutrition, modifier = Modifier.padding(top = 20.dp))
+            }
+
+            val dietLabels = product?.dietLabels?.mapNotNull { name -> DietLabel.entries.find { it.name == name } }.orEmpty()
+            if (dietLabels.isNotEmpty()) {
+                DietLabelsCard(dietLabels, modifier = Modifier.padding(top = 20.dp))
             }
 
             product?.ingredients?.let { ingredients ->
@@ -299,6 +314,71 @@ private fun NutriScoreBadge(grade: String) {
                 color = Color.White,
             )
         }
+    }
+}
+
+@Composable
+private fun AllergensCard(allergens: List<Allergen>, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(stringResource(R.string.product_detail_allergens_title), style = MaterialTheme.typography.titleMedium)
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(top = 8.dp),
+            ) {
+                items(allergens) { allergen ->
+                    TagChip(
+                        label = stringResource(allergen.labelRes),
+                        color = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DietLabelsCard(labels: List<DietLabel>, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(stringResource(R.string.product_detail_diet_labels_title), style = MaterialTheme.typography.titleMedium)
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(top = 8.dp),
+            ) {
+                items(labels) { label ->
+                    TagChip(
+                        label = stringResource(label.labelRes),
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TagChip(label: String, color: Color, contentColor: Color) {
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = color,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = contentColor,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        )
     }
 }
 

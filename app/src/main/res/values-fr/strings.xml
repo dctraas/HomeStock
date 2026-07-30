@@ -149,6 +149,34 @@
     <string name="product_detail_expiration_clear_cd">Effacer la date de péremption</string>
     <string name="product_detail_min_quantity_label">Quantité minimale</string>
     <string name="product_detail_min_quantity_hint">Ajouté automatiquement à la liste dès que le stock passe en dessous (0 = désactivé)</string>
+    <string name="product_detail_allergens_title">Allergènes</string>
+    <string name="product_detail_diet_labels_title">Labels alimentaires</string>
+
+    <!-- Allergènes (liste UE des 14) -->
+    <string name="allergen_gluten">Gluten</string>
+    <string name="allergen_crustaceans">Crustacés</string>
+    <string name="allergen_eggs">Œufs</string>
+    <string name="allergen_fish">Poisson</string>
+    <string name="allergen_peanuts">Arachides</string>
+    <string name="allergen_soybeans">Soja</string>
+    <string name="allergen_milk">Lait</string>
+    <string name="allergen_nuts">Fruits à coque</string>
+    <string name="allergen_celery">Céleri</string>
+    <string name="allergen_mustard">Moutarde</string>
+    <string name="allergen_sesame">Graines de sésame</string>
+    <string name="allergen_sulphites">Sulfites</string>
+    <string name="allergen_lupin">Lupin</string>
+    <string name="allergen_molluscs">Mollusques</string>
+
+    <!-- Labels alimentaires -->
+    <string name="diet_label_vegan">Végétalien</string>
+    <string name="diet_label_vegetarian">Végétarien</string>
+    <string name="diet_label_gluten_free">Sans gluten</string>
+    <string name="diet_label_lactose_free">Sans lactose</string>
+    <string name="diet_label_organic">Bio</string>
+    <string name="diet_label_palm_oil_free">Sans huile de palme</string>
+    <string name="diet_label_halal">Halal</string>
+    <string name="diet_label_kosher">Casher</string>
 
     <!-- Scanner -->
     <string name="scan_quick_added_format">%1$s ajouté (+1)</string>

@@ -149,6 +149,34 @@
     <string name="product_detail_expiration_clear_cd">Haltbarkeitsdatum löschen</string>
     <string name="product_detail_min_quantity_label">Mindestmenge</string>
     <string name="product_detail_min_quantity_hint">Wird automatisch zur Liste hinzugefügt, sobald der Vorrat darunter fällt (0 = aus)</string>
+    <string name="product_detail_allergens_title">Allergene</string>
+    <string name="product_detail_diet_labels_title">Ernährungslabel</string>
+
+    <!-- Allergene (EU-Liste der 14) -->
+    <string name="allergen_gluten">Gluten</string>
+    <string name="allergen_crustaceans">Krebstiere</string>
+    <string name="allergen_eggs">Eier</string>
+    <string name="allergen_fish">Fisch</string>
+    <string name="allergen_peanuts">Erdnüsse</string>
+    <string name="allergen_soybeans">Soja</string>
+    <string name="allergen_milk">Milch</string>
+    <string name="allergen_nuts">Schalenfrüchte</string>
+    <string name="allergen_celery">Sellerie</string>
+    <string name="allergen_mustard">Senf</string>
+    <string name="allergen_sesame">Sesamsamen</string>
+    <string name="allergen_sulphites">Sulfite</string>
+    <string name="allergen_lupin">Lupinen</string>
+    <string name="allergen_molluscs">Weichtiere</string>
+
+    <!-- Ernährungslabel -->
+    <string name="diet_label_vegan">Vegan</string>
+    <string name="diet_label_vegetarian">Vegetarisch</string>
+    <string name="diet_label_gluten_free">Glutenfrei</string>
+    <string name="diet_label_lactose_free">Laktosefrei</string>
+    <string name="diet_label_organic">Bio</string>
+    <string name="diet_label_palm_oil_free">Palmölfrei</string>
+    <string name="diet_label_halal">Halal</string>
+    <string name="diet_label_kosher">Koscher</string>
 
     <!-- Scannen -->
     <string name="scan_quick_added_format">%1$s hinzugefügt (+1)</string>

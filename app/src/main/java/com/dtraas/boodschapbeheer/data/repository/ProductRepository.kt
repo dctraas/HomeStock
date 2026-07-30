@@ -2,7 +2,9 @@ package com.dtraas.boodschapbeheer.data.repository
 
 import com.dtraas.boodschapbeheer.data.local.entity.NutritionInfo
 import com.dtraas.boodschapbeheer.data.local.entity.ProductEntity
+import com.dtraas.boodschapbeheer.data.model.Allergen
 import com.dtraas.boodschapbeheer.data.model.Category
+import com.dtraas.boodschapbeheer.data.model.DietLabel
 import com.dtraas.boodschapbeheer.data.remote.CategoryMapper
 import com.dtraas.boodschapbeheer.data.remote.OpenFoodFactsApi
 import com.dtraas.boodschapbeheer.data.remote.observeSnapshot
@@ -85,6 +87,8 @@ class ProductRepository(
                             salt100g = it.salt100g,
                         ).takeIf { info -> !info.isEmpty }
                     },
+                    allergens = Allergen.fromTags(offProduct.allergensTags.orEmpty()).map { it.name },
+                    dietLabels = DietLabel.fromTags(offProduct.labelsTags.orEmpty()).map { it.name },
                 )
                 productsCollection(householdId).document(barcode).set(entity.toMap()).await()
                 Result.success(entity)

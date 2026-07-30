@@ -19,6 +19,8 @@ data class ProductEntity(
     val nutriScoreGrade: String? = null,
     val ingredients: String? = null,
     val nutrition: NutritionInfo? = null,
+    val allergens: List<String> = emptyList(),
+    val dietLabels: List<String> = emptyList(),
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
         "name" to name,
@@ -30,6 +32,8 @@ data class ProductEntity(
         "nutriScoreGrade" to nutriScoreGrade,
         "ingredients" to ingredients,
         "nutrition" to nutrition?.toMap(),
+        "allergens" to allergens,
+        "dietLabels" to dietLabels,
     )
 
     companion object {
@@ -37,6 +41,10 @@ data class ProductEntity(
             val name = document.getString("name") ?: return null
             @Suppress("UNCHECKED_CAST")
             val nutritionMap = document.get("nutrition") as? Map<String, Any?>
+            @Suppress("UNCHECKED_CAST")
+            val allergens = document.get("allergens") as? List<String> ?: emptyList()
+            @Suppress("UNCHECKED_CAST")
+            val dietLabels = document.get("dietLabels") as? List<String> ?: emptyList()
             return ProductEntity(
                 barcode = document.id,
                 name = name,
@@ -48,6 +56,8 @@ data class ProductEntity(
                 nutriScoreGrade = document.getString("nutriScoreGrade"),
                 ingredients = document.getString("ingredients"),
                 nutrition = NutritionInfo.fromMap(nutritionMap),
+                allergens = allergens,
+                dietLabels = dietLabels,
             )
         }
     }

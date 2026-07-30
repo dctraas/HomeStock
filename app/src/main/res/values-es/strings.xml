@@ -149,6 +149,34 @@
     <string name="product_detail_expiration_clear_cd">Borrar fecha de caducidad</string>
     <string name="product_detail_min_quantity_label">Cantidad mínima</string>
     <string name="product_detail_min_quantity_hint">Se añade automáticamente a la lista cuando las existencias bajen de este número (0 = desactivado)</string>
+    <string name="product_detail_allergens_title">Alérgenos</string>
+    <string name="product_detail_diet_labels_title">Etiquetas dietéticas</string>
+
+    <!-- Alérgenos (lista UE de 14) -->
+    <string name="allergen_gluten">Gluten</string>
+    <string name="allergen_crustaceans">Crustáceos</string>
+    <string name="allergen_eggs">Huevos</string>
+    <string name="allergen_fish">Pescado</string>
+    <string name="allergen_peanuts">Cacahuetes</string>
+    <string name="allergen_soybeans">Soja</string>
+    <string name="allergen_milk">Leche</string>
+    <string name="allergen_nuts">Frutos de cáscara</string>
+    <string name="allergen_celery">Apio</string>
+    <string name="allergen_mustard">Mostaza</string>
+    <string name="allergen_sesame">Sésamo</string>
+    <string name="allergen_sulphites">Sulfitos</string>
+    <string name="allergen_lupin">Altramuces</string>
+    <string name="allergen_molluscs">Moluscos</string>
+
+    <!-- Etiquetas dietéticas -->
+    <string name="diet_label_vegan">Vegano</string>
+    <string name="diet_label_vegetarian">Vegetariano</string>
+    <string name="diet_label_gluten_free">Sin gluten</string>
+    <string name="diet_label_lactose_free">Sin lactosa</string>
+    <string name="diet_label_organic">Ecológico</string>
+    <string name="diet_label_palm_oil_free">Sin aceite de palma</string>
+    <string name="diet_label_halal">Halal</string>
+    <string name="diet_label_kosher">Kosher</string>
 
     <!-- Escanear -->
     <string name="scan_quick_added_format">%1$s añadido (+1)</string>

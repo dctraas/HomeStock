@@ -149,6 +149,34 @@
     <string name="product_detail_expiration_clear_cd">Clear expiration date</string>
     <string name="product_detail_min_quantity_label">Minimum quantity</string>
     <string name="product_detail_min_quantity_hint">Automatically added to the list once stock drops below this (0 = off)</string>
+    <string name="product_detail_allergens_title">Allergens</string>
+    <string name="product_detail_diet_labels_title">Diet labels</string>
+
+    <!-- Allergens (EU list of 14) -->
+    <string name="allergen_gluten">Gluten</string>
+    <string name="allergen_crustaceans">Crustaceans</string>
+    <string name="allergen_eggs">Eggs</string>
+    <string name="allergen_fish">Fish</string>
+    <string name="allergen_peanuts">Peanuts</string>
+    <string name="allergen_soybeans">Soybeans</string>
+    <string name="allergen_milk">Milk</string>
+    <string name="allergen_nuts">Tree nuts</string>
+    <string name="allergen_celery">Celery</string>
+    <string name="allergen_mustard">Mustard</string>
+    <string name="allergen_sesame">Sesame seeds</string>
+    <string name="allergen_sulphites">Sulphites</string>
+    <string name="allergen_lupin">Lupin</string>
+    <string name="allergen_molluscs">Molluscs</string>
+
+    <!-- Diet labels -->
+    <string name="diet_label_vegan">Vegan</string>
+    <string name="diet_label_vegetarian">Vegetarian</string>
+    <string name="diet_label_gluten_free">Gluten-free</string>
+    <string name="diet_label_lactose_free">Lactose-free</string>
+    <string name="diet_label_organic">Organic</string>
+    <string name="diet_label_palm_oil_free">Palm oil-free</string>
+    <string name="diet_label_halal">Halal</string>
+    <string name="diet_label_kosher">Kosher</string>
 
     <!-- Scan -->
     <string name="scan_quick_added_format">%1$s added (+1)</string>

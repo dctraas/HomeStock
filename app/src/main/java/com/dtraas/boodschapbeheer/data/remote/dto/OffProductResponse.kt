@@ -18,6 +18,8 @@ data class OffProduct(
     @SerializedName("nutriscore_grade") val nutriscoreGrade: String?,
     @SerializedName("ingredients_text") val ingredientsText: String?,
     @SerializedName("nutriments") val nutriments: OffNutriments?,
+    @SerializedName("allergens_tags") val allergensTags: List<String>?,
+    @SerializedName("labels_tags") val labelsTags: List<String>?,
 )
 
 /** Nutritional values per 100g/100ml, as reported by Open Food Facts. */

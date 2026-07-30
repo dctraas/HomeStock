@@ -149,6 +149,34 @@
     <string name="product_detail_expiration_clear_cd">Houdbaarheidsdatum wissen</string>
     <string name="product_detail_min_quantity_label">Minimum aantal</string>
     <string name="product_detail_min_quantity_hint">Wordt automatisch aan het lijstje toegevoegd zodra de voorraad hieronder komt (0 = uit)</string>
+    <string name="product_detail_allergens_title">Allergenen</string>
+    <string name="product_detail_diet_labels_title">Dieetlabels</string>
+
+    <!-- Allergenen (EU-lijst van 14) -->
+    <string name="allergen_gluten">Gluten</string>
+    <string name="allergen_crustaceans">Schaaldieren</string>
+    <string name="allergen_eggs">Eieren</string>
+    <string name="allergen_fish">Vis</string>
+    <string name="allergen_peanuts">Pinda\'s</string>
+    <string name="allergen_soybeans">Soja</string>
+    <string name="allergen_milk">Melk</string>
+    <string name="allergen_nuts">Noten</string>
+    <string name="allergen_celery">Selderij</string>
+    <string name="allergen_mustard">Mosterd</string>
+    <string name="allergen_sesame">Sesamzaad</string>
+    <string name="allergen_sulphites">Sulfiet</string>
+    <string name="allergen_lupin">Lupine</string>
+    <string name="allergen_molluscs">Weekdieren</string>
+
+    <!-- Dieetlabels -->
+    <string name="diet_label_vegan">Veganistisch</string>
+    <string name="diet_label_vegetarian">Vegetarisch</string>
+    <string name="diet_label_gluten_free">Glutenvrij</string>
+    <string name="diet_label_lactose_free">Lactosevrij</string>
+    <string name="diet_label_organic">Biologisch</string>
+    <string name="diet_label_palm_oil_free">Palmolievrij</string>
+    <string name="diet_label_halal">Halal</string>
+    <string name="diet_label_kosher">Koosjer</string>
 
     <!-- Scannen -->
     <string name="scan_quick_added_format">%1$s toegevoegd (+1)</string>
