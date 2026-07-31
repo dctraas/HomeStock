@@ -32,8 +32,8 @@ data class TopLevelDestination(
 )
 
 val topLevelDestinations = listOf(
-    TopLevelDestination(Destination.ShoppingList, R.string.nav_shopping_list, Icons.Filled.ShoppingCart),
     TopLevelDestination(Destination.Inventory, R.string.nav_inventory, Icons.Filled.Inventory2),
+    TopLevelDestination(Destination.ShoppingList, R.string.nav_shopping_list, Icons.Filled.ShoppingCart),
     TopLevelDestination(Destination.Scan, R.string.nav_scan, Icons.Filled.CameraAlt),
     TopLevelDestination(Destination.Notifications, R.string.nav_news, Icons.Filled.Notifications),
     TopLevelDestination(Destination.More, R.string.nav_more, Icons.Filled.MoreHoriz),

@@ -16,7 +16,7 @@
 
     <!-- Bottom navigation -->
     <string name="nav_shopping_list">List</string>
-    <string name="nav_inventory">Inventory</string>
+    <string name="nav_inventory">Home</string>
     <string name="nav_scan">Scan</string>
     <string name="nav_news">News</string>
     <string name="nav_more">More</string>
@@ -110,12 +110,15 @@
     <string name="more_expiry_notifications_description">Get notified when a product is about to expire</string>
 
     <!-- Inventory -->
-    <string name="inventory_title">Inventory</string>
     <string name="inventory_show_as_tiles_cd">Show as tiles</string>
     <string name="inventory_show_as_list_cd">Show as list</string>
     <string name="inventory_search_placeholder">Search inventory…</string>
     <string name="inventory_filter_all">All</string>
     <string name="inventory_sort_cd">Sort</string>
+    <string name="inventory_filter_cd">Filter</string>
+    <string name="inventory_filter_active_cd_format">Filter (active: %1$s)</string>
+    <string name="inventory_search_cd">Search</string>
+    <string name="inventory_search_close_cd">Close search</string>
     <string name="inventory_sort_active_cd_format">Sort (active: %1$s)</string>
     <string name="inventory_removed_snackbar_format">%1$s removed</string>
     <string name="inventory_add_to_shopping_list_cd">Add to shopping list</string>

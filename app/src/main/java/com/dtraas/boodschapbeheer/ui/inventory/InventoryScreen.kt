@@ -1,6 +1,7 @@
 package com.dtraas.boodschapbeheer.ui.inventory
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -14,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -25,7 +25,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Search
@@ -39,7 +41,6 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -61,6 +62,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -103,6 +105,7 @@ fun InventoryScreen(
     )
     val uiState by viewModel.uiState.collectAsState()
     var viewMode by remember { mutableStateOf(InventoryViewMode.GRID) }
+    var searchActive by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val removedFormat = stringResource(R.string.inventory_removed_snackbar_format)
@@ -139,28 +142,18 @@ fun InventoryScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(stringResource(R.string.inventory_title)) },
-                actions = {
-                    SortMenuButton(
-                        selected = uiState.sortOption,
-                        onSelected = viewModel::onSortOptionChange,
-                    )
-                    IconButton(
-                        onClick = {
-                            viewMode = if (viewMode == InventoryViewMode.LIST) {
-                                InventoryViewMode.GRID
-                            } else {
-                                InventoryViewMode.LIST
-                            }
-                        },
-                    ) {
-                        Icon(
-                            imageVector = if (viewMode == InventoryViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
-                            contentDescription = if (viewMode == InventoryViewMode.LIST) {
-                                stringResource(R.string.inventory_show_as_tiles_cd)
-                            } else {
-                                stringResource(R.string.inventory_show_as_list_cd)
-                            },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Image(
+                            painter = painterResource(R.drawable.ic_app_logo),
+                            contentDescription = null,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .clip(RoundedCornerShape(8.dp)),
+                        )
+                        Text(
+                            text = stringResource(R.string.app_name),
+                            modifier = Modifier.padding(start = 8.dp),
                         )
                     }
                 },
@@ -169,19 +162,69 @@ fun InventoryScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            SearchField(
-                query = uiState.searchQuery,
-                onQueryChange = viewModel::onSearchQueryChange,
-                placeholder = stringResource(R.string.inventory_search_placeholder),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            )
-            CategoryFilterRow(
-                selected = uiState.selectedCategory,
-                onSelected = viewModel::onCategoryFilterChange,
-                modifier = Modifier.padding(bottom = 8.dp),
-            )
+            if (searchActive) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+                ) {
+                    SearchField(
+                        query = uiState.searchQuery,
+                        onQueryChange = viewModel::onSearchQueryChange,
+                        placeholder = stringResource(R.string.inventory_search_placeholder),
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(
+                        onClick = {
+                            searchActive = false
+                            viewModel.onSearchQueryChange("")
+                        },
+                    ) {
+                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.inventory_search_close_cd))
+                    }
+                }
+            } else {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        FilterMenuButton(
+                            selected = uiState.selectedCategory,
+                            onSelected = viewModel::onCategoryFilterChange,
+                        )
+                        SortMenuButton(
+                            selected = uiState.sortOption,
+                            onSelected = viewModel::onSortOptionChange,
+                        )
+                        IconButton(
+                            onClick = {
+                                viewMode = if (viewMode == InventoryViewMode.LIST) {
+                                    InventoryViewMode.GRID
+                                } else {
+                                    InventoryViewMode.LIST
+                                }
+                            },
+                        ) {
+                            Icon(
+                                imageVector = if (viewMode == InventoryViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
+                                contentDescription = if (viewMode == InventoryViewMode.LIST) {
+                                    stringResource(R.string.inventory_show_as_tiles_cd)
+                                } else {
+                                    stringResource(R.string.inventory_show_as_list_cd)
+                                },
+                            )
+                        }
+                    }
+                    IconButton(onClick = { searchActive = true }) {
+                        Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.inventory_search_cd))
+                    }
+                }
+            }
 
             if (uiState.groupedInventory.isEmpty()) {
                 EmptyInventory(
@@ -277,34 +320,56 @@ private fun SortMenuButton(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun CategoryFilterRow(
+private fun FilterMenuButton(
     selected: Category?,
     onSelected: (Category?) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
-    LazyRow(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 16.dp),
-    ) {
-        item {
-            FilterChip(
-                selected = selected == null,
-                onClick = { onSelected(null) },
-                label = { Text(stringResource(R.string.inventory_filter_all)) },
-            )
+    var menuExpanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { menuExpanded = true }) {
+            if (selected != null) {
+                val activeFormat = stringResource(R.string.inventory_filter_active_cd_format)
+                BadgedBox(badge = { Badge() }) {
+                    Icon(
+                        Icons.Filled.FilterList,
+                        contentDescription = activeFormat.format(stringResource(selected.displayNameRes)),
+                    )
+                }
+            } else {
+                Icon(Icons.Filled.FilterList, contentDescription = stringResource(R.string.inventory_filter_cd))
+            }
         }
-        items(Category.entries.sortedBy { it.sortOrder }) { category ->
-            FilterChip(
-                selected = selected == category,
-                onClick = { onSelected(if (selected == category) null else category) },
-                label = { Text(stringResource(category.displayNameRes)) },
-                leadingIcon = {
-                    Icon(category.icon, contentDescription = null, modifier = Modifier.size(16.dp))
+        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.inventory_filter_all)) },
+                trailingIcon = {
+                    if (selected == null) {
+                        Icon(Icons.Filled.Check, contentDescription = null)
+                    }
+                },
+                onClick = {
+                    onSelected(null)
+                    menuExpanded = false
                 },
             )
+            Category.entries.sortedBy { it.sortOrder }.forEach { category ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(category.displayNameRes)) },
+                    leadingIcon = {
+                        Icon(category.icon, contentDescription = null, modifier = Modifier.size(20.dp))
+                    },
+                    trailingIcon = {
+                        if (selected == category) {
+                            Icon(Icons.Filled.Check, contentDescription = null)
+                        }
+                    },
+                    onClick = {
+                        onSelected(if (selected == category) null else category)
+                        menuExpanded = false
+                    },
+                )
+            }
         }
     }
 }

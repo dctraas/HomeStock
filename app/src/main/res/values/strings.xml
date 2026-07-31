@@ -15,8 +15,8 @@
     <string name="search_placeholder_default">Zoeken…</string>
 
     <!-- Bottom navigation -->
-    <string name="nav_shopping_list">Lijstje</string>
-    <string name="nav_inventory">Voorraad</string>
+    <string name="nav_shopping_list">Lijst</string>
+    <string name="nav_inventory">Home</string>
     <string name="nav_scan">Scannen</string>
     <string name="nav_news">Nieuws</string>
     <string name="nav_more">Meer</string>
@@ -110,12 +110,15 @@
     <string name="more_expiry_notifications_description">Krijg een melding als een product bijna over de datum is</string>
 
     <!-- Voorraad -->
-    <string name="inventory_title">Voorraad</string>
     <string name="inventory_show_as_tiles_cd">Toon als tegels</string>
     <string name="inventory_show_as_list_cd">Toon als lijst</string>
     <string name="inventory_search_placeholder">Zoek in voorraad…</string>
     <string name="inventory_filter_all">Alles</string>
     <string name="inventory_sort_cd">Sorteren</string>
+    <string name="inventory_filter_cd">Filteren</string>
+    <string name="inventory_filter_active_cd_format">Filteren (actief: %1$s)</string>
+    <string name="inventory_search_cd">Zoeken</string>
+    <string name="inventory_search_close_cd">Zoeken sluiten</string>
     <string name="inventory_sort_active_cd_format">Sorteren (actief: %1$s)</string>
     <string name="inventory_removed_snackbar_format">%1$s verwijderd</string>
     <string name="inventory_add_to_shopping_list_cd">Toevoegen aan boodschappenlijst</string>

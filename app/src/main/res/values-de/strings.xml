@@ -16,7 +16,7 @@
 
     <!-- Bottom navigation -->
     <string name="nav_shopping_list">Liste</string>
-    <string name="nav_inventory">Vorrat</string>
+    <string name="nav_inventory">Home</string>
     <string name="nav_scan">Scannen</string>
     <string name="nav_news">Neuigkeiten</string>
     <string name="nav_more">Mehr</string>
@@ -110,12 +110,15 @@
     <string name="more_expiry_notifications_description">Erhalte eine Benachrichtigung, wenn ein Produkt bald abläuft</string>
 
     <!-- Vorrat -->
-    <string name="inventory_title">Vorrat</string>
     <string name="inventory_show_as_tiles_cd">Als Kacheln anzeigen</string>
     <string name="inventory_show_as_list_cd">Als Liste anzeigen</string>
     <string name="inventory_search_placeholder">Vorrat durchsuchen…</string>
     <string name="inventory_filter_all">Alle</string>
     <string name="inventory_sort_cd">Sortieren</string>
+    <string name="inventory_filter_cd">Filtern</string>
+    <string name="inventory_filter_active_cd_format">Filtern (aktiv: %1$s)</string>
+    <string name="inventory_search_cd">Suchen</string>
+    <string name="inventory_search_close_cd">Suche schließen</string>
     <string name="inventory_sort_active_cd_format">Sortieren (aktiv: %1$s)</string>
     <string name="inventory_removed_snackbar_format">%1$s entfernt</string>
     <string name="inventory_add_to_shopping_list_cd">Zur Einkaufsliste hinzufügen</string>

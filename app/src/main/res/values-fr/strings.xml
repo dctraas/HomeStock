@@ -16,7 +16,7 @@
 
     <!-- Bottom navigation -->
     <string name="nav_shopping_list">Liste</string>
-    <string name="nav_inventory">Stock</string>
+    <string name="nav_inventory">Home</string>
     <string name="nav_scan">Scanner</string>
     <string name="nav_news">Actualités</string>
     <string name="nav_more">Plus</string>
@@ -110,12 +110,15 @@
     <string name="more_expiry_notifications_description">Recevez une notification quand un produit est bientôt périmé</string>
 
     <!-- Stock -->
-    <string name="inventory_title">Stock</string>
     <string name="inventory_show_as_tiles_cd">Afficher en cartes</string>
     <string name="inventory_show_as_list_cd">Afficher en liste</string>
     <string name="inventory_search_placeholder">Rechercher dans le stock…</string>
     <string name="inventory_filter_all">Tout</string>
     <string name="inventory_sort_cd">Trier</string>
+    <string name="inventory_filter_cd">Filtrer</string>
+    <string name="inventory_filter_active_cd_format">Filtrer (actif : %1$s)</string>
+    <string name="inventory_search_cd">Rechercher</string>
+    <string name="inventory_search_close_cd">Fermer la recherche</string>
     <string name="inventory_sort_active_cd_format">Trier (actif : %1$s)</string>
     <string name="inventory_removed_snackbar_format">%1$s supprimé</string>
     <string name="inventory_add_to_shopping_list_cd">Ajouter à la liste de courses</string>
