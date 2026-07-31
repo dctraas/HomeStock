@@ -47,6 +47,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -173,6 +174,10 @@ fun ShoppingListScreen() {
                     val result = snackbarHostState.showSnackbar(
                         message = removedFormat.format(item.name),
                         actionLabel = undoLabel,
+                        // showSnackbar defaults to SnackbarDuration.Indefinite whenever an
+                        // actionLabel is set, so without this the "ongedaan maken" snackbar
+                        // would never auto-dismiss.
+                        duration = SnackbarDuration.Long,
                     )
                     if (result == SnackbarResult.ActionPerformed) {
                         viewModel.restoreItem(item)
