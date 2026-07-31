@@ -7,6 +7,7 @@
     <string name="common_name">Name</string>
     <string name="common_ok">OK</string>
     <string name="common_quantity">Quantity</string>
+    <string name="common_save">Save</string>
     <string name="common_undo">Undo</string>
     <string name="quantity_decrease_cd">Decrease</string>
     <string name="quantity_increase_cd">Increase</string>
@@ -55,6 +56,8 @@
     <string name="activity_detail_scanned">Scanned (%1$s%2$d)</string>
     <string name="activity_detail_quantity_changed">Quantity changed from %1$d to %2$d</string>
     <string name="activity_detail_removed">Removed from inventory (%1$dx)</string>
+    <string name="activity_actor_unknown">Unknown</string>
+    <string name="activity_actor_detail_format">%1$s · %2$s</string>
 
     <!-- Developer notices (News -> Notices tab, newest first) -->
     <string name="notice_household_sharing_title">Sharing with housemates</string>
@@ -99,6 +102,10 @@
     <string name="more_leave">Leave</string>
     <string name="more_leave_dialog_title">Leave household?</string>
     <string name="more_leave_dialog_text">You\'ll no longer see the shared inventory and shopping list on this device. You can rejoin at any time with the code.</string>
+    <string name="more_profile_title">Your name</string>
+    <string name="more_profile_placeholder">Not set</string>
+    <string name="more_profile_dialog_title">Set your name</string>
+    <string name="more_profile_name_placeholder">E.g. Mom, Alex</string>
     <string name="more_expiry_notifications_title">Expiry reminders</string>
     <string name="more_expiry_notifications_description">Get notified when a product is about to expire</string>
 
@@ -224,6 +231,8 @@
     <string name="shopping_list_save_confirm">Save</string>
     <string name="shopping_list_note_label">Note</string>
     <string name="shopping_list_note_placeholder">E.g. brand or size</string>
+    <string name="shopping_list_move_up_cd">Move up</string>
+    <string name="shopping_list_move_down_cd">Move down</string>
 
     <!-- Notifications (system notices) -->
     <string name="notification_channel_name">Expiry</string>

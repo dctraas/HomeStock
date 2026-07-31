@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -27,6 +28,8 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -180,7 +183,13 @@ fun ShoppingListScreen() {
                         stickyHeader {
                             StoreHeader(store, itemCount = itemsInStore.size)
                         }
-                        items(itemsInStore, key = { it.id }) { item ->
+                        itemsIndexed(itemsInStore, key = { _, item -> item.id }) { index, item ->
+                            // Reordering only makes sense within the checked/unchecked group an
+                            // item is displayed in (isChecked is the primary sort key), so a move
+                            // is only enabled when the neighbor in that direction shares it.
+                            val canMoveUp = index > 0 && itemsInStore[index - 1].isChecked == item.isChecked
+                            val canMoveDown = index < itemsInStore.lastIndex &&
+                                itemsInStore[index + 1].isChecked == item.isChecked
                             ShoppingListRow(
                                 item = item,
                                 onCheckedChange = { checked -> viewModel.setChecked(item.id, checked) },
@@ -188,6 +197,10 @@ fun ShoppingListScreen() {
                                 onIncrease = { viewModel.setQuantity(item.id, item.quantity + 1) },
                                 onDecrease = { viewModel.setQuantity(item.id, item.quantity - 1) },
                                 onDelete = { deleteWithUndo(item) },
+                                canMoveUp = canMoveUp,
+                                canMoveDown = canMoveDown,
+                                onMoveUp = { viewModel.moveItem(itemsInStore, index, index - 1) },
+                                onMoveDown = { viewModel.moveItem(itemsInStore, index, index + 1) },
                             )
                         }
                     }
@@ -299,6 +312,10 @@ private fun ShoppingListRow(
     onIncrease: () -> Unit,
     onDecrease: () -> Unit,
     onDelete: () -> Unit,
+    canMoveUp: Boolean,
+    canMoveDown: Boolean,
+    onMoveUp: () -> Unit,
+    onMoveDown: () -> Unit,
 ) {
     val category = Category.fromStorageKey(item.category)
     Card(
@@ -310,9 +327,25 @@ private fun ShoppingListRow(
         shape = RoundedCornerShape(14.dp),
     ) {
         Row(
-            modifier = Modifier.padding(start = 4.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
+            modifier = Modifier.padding(start = 0.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            Column {
+                IconButton(onClick = onMoveUp, enabled = canMoveUp, modifier = Modifier.size(24.dp)) {
+                    Icon(
+                        Icons.Filled.KeyboardArrowUp,
+                        contentDescription = stringResource(R.string.shopping_list_move_up_cd),
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+                IconButton(onClick = onMoveDown, enabled = canMoveDown, modifier = Modifier.size(24.dp)) {
+                    Icon(
+                        Icons.Filled.KeyboardArrowDown,
+                        contentDescription = stringResource(R.string.shopping_list_move_down_cd),
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
             Checkbox(
                 checked = item.isChecked,
                 onCheckedChange = onCheckedChange,

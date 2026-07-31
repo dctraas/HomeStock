@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -25,6 +26,7 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -53,9 +55,12 @@ fun MoreScreen() {
     val application = context.applicationContext as BoodschapBeheerApplication
     val householdSession = application.container.householdSession
     val notificationPreferences = application.container.notificationPreferences
+    val deviceProfile = application.container.deviceProfile
     val householdId by householdSession.householdId.collectAsState()
     val notificationsEnabled by notificationPreferences.expiryNotificationsEnabled.collectAsState()
+    val displayName by deviceProfile.displayName.collectAsState()
     var showLeaveConfirm by remember { mutableStateOf(false) }
+    var showEditNameDialog by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -86,6 +91,10 @@ fun MoreScreen() {
                     onLeave = { showLeaveConfirm = true },
                 )
             }
+            ProfileCard(
+                displayName = displayName,
+                onClick = { showEditNameDialog = true },
+            )
             NotificationSettingsCard(
                 enabled = notificationsEnabled,
                 onEnabledChange = ::setNotificationsEnabled,
@@ -108,6 +117,34 @@ fun MoreScreen() {
             },
             dismissButton = {
                 TextButton(onClick = { showLeaveConfirm = false }) { Text(stringResource(R.string.common_cancel)) }
+            },
+        )
+    }
+
+    if (showEditNameDialog) {
+        var nameInput by remember { mutableStateOf(displayName ?: "") }
+        AlertDialog(
+            onDismissRequest = { showEditNameDialog = false },
+            title = { Text(stringResource(R.string.more_profile_dialog_title)) },
+            text = {
+                OutlinedTextField(
+                    value = nameInput,
+                    onValueChange = { nameInput = it },
+                    placeholder = { Text(stringResource(R.string.more_profile_name_placeholder)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        deviceProfile.setDisplayName(nameInput)
+                        showEditNameDialog = false
+                    },
+                ) { Text(stringResource(R.string.common_save)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditNameDialog = false }) { Text(stringResource(R.string.common_cancel)) }
             },
         )
     }
@@ -151,6 +188,47 @@ private fun HouseholdCard(code: String?, onLeave: () -> Unit) {
             }
             TextButton(onClick = onLeave) {
                 Text(stringResource(R.string.more_leave))
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProfileCard(displayName: String?, onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = RoundedCornerShape(16.dp),
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.size(44.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = Icons.Filled.Person,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 12.dp),
+            ) {
+                Text(stringResource(R.string.more_profile_title), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = displayName ?: stringResource(R.string.more_profile_placeholder),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }

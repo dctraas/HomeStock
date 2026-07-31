@@ -7,6 +7,7 @@
     <string name="common_name">Nom</string>
     <string name="common_ok">OK</string>
     <string name="common_quantity">Quantité</string>
+    <string name="common_save">Enregistrer</string>
     <string name="common_undo">Annuler</string>
     <string name="quantity_decrease_cd">Diminuer</string>
     <string name="quantity_increase_cd">Augmenter</string>
@@ -55,6 +56,8 @@
     <string name="activity_detail_scanned">Scanné (%1$s%2$d)</string>
     <string name="activity_detail_quantity_changed">Quantité modifiée de %1$d à %2$d</string>
     <string name="activity_detail_removed">Retiré du stock (%1$dx)</string>
+    <string name="activity_actor_unknown">Inconnu</string>
+    <string name="activity_actor_detail_format">%1$s · %2$s</string>
 
     <!-- Developer notices (Actualités -> onglet Notifications, newest first) -->
     <string name="notice_household_sharing_title">Partage avec les colocataires</string>
@@ -99,6 +102,10 @@
     <string name="more_leave">Quitter</string>
     <string name="more_leave_dialog_title">Quitter le foyer ?</string>
     <string name="more_leave_dialog_text">Vous ne verrez plus le stock et la liste de courses partagés sur cet appareil. Vous pouvez rejoindre le foyer à tout moment avec le code.</string>
+    <string name="more_profile_title">Ton nom</string>
+    <string name="more_profile_placeholder">Non défini</string>
+    <string name="more_profile_dialog_title">Définir ton nom</string>
+    <string name="more_profile_name_placeholder">P. ex. Maman, Alex</string>
     <string name="more_expiry_notifications_title">Rappels de péremption</string>
     <string name="more_expiry_notifications_description">Recevez une notification quand un produit est bientôt périmé</string>
 
@@ -224,6 +231,8 @@
     <string name="shopping_list_save_confirm">Enregistrer</string>
     <string name="shopping_list_note_label">Note</string>
     <string name="shopping_list_note_placeholder">Ex. marque ou taille</string>
+    <string name="shopping_list_move_up_cd">Déplacer vers le haut</string>
+    <string name="shopping_list_move_down_cd">Déplacer vers le bas</string>
 
     <!-- Notifications (notifications système) -->
     <string name="notification_channel_name">Péremption</string>

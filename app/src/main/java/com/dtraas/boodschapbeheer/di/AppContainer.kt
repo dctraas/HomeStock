@@ -4,6 +4,7 @@ import android.content.Context
 import com.dtraas.boodschapbeheer.BuildConfig
 import com.dtraas.boodschapbeheer.data.remote.OpenFoodFactsApi
 import com.dtraas.boodschapbeheer.data.repository.ActivityLogRepository
+import com.dtraas.boodschapbeheer.data.repository.DeviceProfile
 import com.dtraas.boodschapbeheer.data.repository.HouseholdRepository
 import com.dtraas.boodschapbeheer.data.repository.HouseholdSession
 import com.dtraas.boodschapbeheer.data.repository.InventoryRepository
@@ -33,6 +34,7 @@ class AppContainer(context: Context) {
 
     val householdSession: HouseholdSession = HouseholdSession(context)
     val notificationPreferences: NotificationPreferences = NotificationPreferences(context)
+    val deviceProfile: DeviceProfile = DeviceProfile(context)
 
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
@@ -64,7 +66,7 @@ class AppContainer(context: Context) {
     }
 
     val activityLogRepository: ActivityLogRepository by lazy {
-        ActivityLogRepository(appContext, firestore, householdSession)
+        ActivityLogRepository(appContext, firestore, householdSession, deviceProfile)
     }
 
     val shoppingListRepository: ShoppingListRepository by lazy {

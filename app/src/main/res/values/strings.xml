@@ -7,6 +7,7 @@
     <string name="common_name">Naam</string>
     <string name="common_ok">OK</string>
     <string name="common_quantity">Aantal</string>
+    <string name="common_save">Opslaan</string>
     <string name="common_undo">Ongedaan maken</string>
     <string name="quantity_decrease_cd">Minder</string>
     <string name="quantity_increase_cd">Meer</string>
@@ -55,6 +56,8 @@
     <string name="activity_detail_scanned">Gescand (%1$s%2$d)</string>
     <string name="activity_detail_quantity_changed">Aantal aangepast van %1$d naar %2$d</string>
     <string name="activity_detail_removed">Verwijderd uit voorraad (%1$dx)</string>
+    <string name="activity_actor_unknown">Onbekend</string>
+    <string name="activity_actor_detail_format">%1$s · %2$s</string>
 
     <!-- Developer notices (Nieuws -> Meldingen tab, newest first) -->
     <string name="notice_household_sharing_title">Delen met huisgenoten</string>
@@ -99,6 +102,10 @@
     <string name="more_leave">Verlaten</string>
     <string name="more_leave_dialog_title">Huishouden verlaten?</string>
     <string name="more_leave_dialog_text">Je ziet de gedeelde voorraad en boodschappenlijst dan niet meer op dit toestel. Je kunt op elk moment weer aansluiten met de code.</string>
+    <string name="more_profile_title">Jouw naam</string>
+    <string name="more_profile_placeholder">Niet ingesteld</string>
+    <string name="more_profile_dialog_title">Naam instellen</string>
+    <string name="more_profile_name_placeholder">Bijv. Mama, Jip</string>
     <string name="more_expiry_notifications_title">Houdbaarheidsmeldingen</string>
     <string name="more_expiry_notifications_description">Krijg een melding als een product bijna over de datum is</string>
 
@@ -224,6 +231,8 @@
     <string name="shopping_list_save_confirm">Opslaan</string>
     <string name="shopping_list_note_label">Opmerking</string>
     <string name="shopping_list_note_placeholder">Bijv. merk of maat</string>
+    <string name="shopping_list_move_up_cd">Omhoog verplaatsen</string>
+    <string name="shopping_list_move_down_cd">Omlaag verplaatsen</string>
 
     <!-- Notificaties (systeemmeldingen) -->
     <string name="notification_channel_name">Houdbaarheid</string>

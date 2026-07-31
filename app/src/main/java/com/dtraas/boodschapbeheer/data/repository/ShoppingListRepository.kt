@@ -28,7 +28,7 @@ class ShoppingListRepository(
                 shoppingListCollection(householdId).observeSnapshots().map { snapshot ->
                     snapshot.documents
                         .mapNotNull { ShoppingListItemEntity.fromDocument(it) }
-                        .sortedWith(compareBy<ShoppingListItemEntity> { it.isChecked }.thenByDescending { it.addedAt })
+                        .sortedWith(compareBy<ShoppingListItemEntity> { it.isChecked }.thenBy { it.sortOrder })
                 }
             }
         }
@@ -94,6 +94,16 @@ class ShoppingListRepository(
     suspend fun removeItem(id: String) {
         val householdId = householdSession.householdId.value ?: return
         shoppingListCollection(householdId).document(id).delete().await()
+    }
+
+    /** Swaps the manual sort position of two adjacent items (used by the up/down move buttons). */
+    suspend fun swapSortOrder(a: ShoppingListItemEntity, b: ShoppingListItemEntity) {
+        val householdId = householdSession.householdId.value ?: return
+        val collection = shoppingListCollection(householdId)
+        val batch = firestore.batch()
+        batch.update(collection.document(a.id), "sortOrder", b.sortOrder)
+        batch.update(collection.document(b.id), "sortOrder", a.sortOrder)
+        batch.commit().await()
     }
 
     suspend fun clearChecked() {

@@ -26,6 +26,7 @@ class ActivityLogRepository(
     private val context: Context,
     private val firestore: FirebaseFirestore,
     private val householdSession: HouseholdSession,
+    private val deviceProfile: DeviceProfile,
 ) {
     private fun collection(householdId: String, name: String) =
         firestore.collection("households").document(householdId).collection(name)
@@ -58,6 +59,7 @@ class ActivityLogRepository(
                                 type = type,
                                 detail = detail,
                                 timestamp = timestamp,
+                                actorName = doc.getString("actorName"),
                             )
                         }
                         .sortedByDescending { it.timestamp }
@@ -95,6 +97,7 @@ class ActivityLogRepository(
                 "type" to type.storageKey,
                 "detail" to detail,
                 "timestamp" to System.currentTimeMillis(),
+                "actorName" to deviceProfile.displayName.value,
             )
         ).await()
     }

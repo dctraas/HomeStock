@@ -19,6 +19,10 @@ data class ShoppingListItemEntity(
     val isChecked: Boolean,
     val addedAt: Long,
     val note: String? = null,
+    // Ascending sort key for manual reordering. Defaults to -addedAt so freshly added
+    // items sort first without a migration or extra read; moving an item just swaps
+    // this value with a neighbor's, so reordering is an O(1) two-document write.
+    val sortOrder: Double = -addedAt.toDouble(),
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
         "barcode" to barcode,
@@ -30,11 +34,13 @@ data class ShoppingListItemEntity(
         "isChecked" to isChecked,
         "addedAt" to addedAt,
         "note" to note,
+        "sortOrder" to sortOrder,
     )
 
     companion object {
         fun fromDocument(document: DocumentSnapshot): ShoppingListItemEntity? {
             val name = document.getString("name") ?: return null
+            val addedAt = document.getLong("addedAt") ?: 0L
             return ShoppingListItemEntity(
                 id = document.id,
                 barcode = document.getString("barcode"),
@@ -44,8 +50,9 @@ data class ShoppingListItemEntity(
                 imageUrl = document.getString("imageUrl"),
                 quantity = (document.getLong("quantity") ?: 1L).toInt(),
                 isChecked = document.getBoolean("isChecked") ?: false,
-                addedAt = document.getLong("addedAt") ?: 0L,
+                addedAt = addedAt,
                 note = document.getString("note")?.takeIf { it.isNotBlank() },
+                sortOrder = document.getDouble("sortOrder") ?: -addedAt.toDouble(),
             )
         }
     }

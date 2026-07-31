@@ -7,6 +7,7 @@
     <string name="common_name">Name</string>
     <string name="common_ok">OK</string>
     <string name="common_quantity">Menge</string>
+    <string name="common_save">Speichern</string>
     <string name="common_undo">Rückgängig machen</string>
     <string name="quantity_decrease_cd">Weniger</string>
     <string name="quantity_increase_cd">Mehr</string>
@@ -55,6 +56,8 @@
     <string name="activity_detail_scanned">Gescannt (%1$s%2$d)</string>
     <string name="activity_detail_quantity_changed">Menge geändert von %1$d auf %2$d</string>
     <string name="activity_detail_removed">Aus dem Vorrat entfernt (%1$dx)</string>
+    <string name="activity_actor_unknown">Unbekannt</string>
+    <string name="activity_actor_detail_format">%1$s · %2$s</string>
 
     <!-- Developer notices (Neuigkeiten -> Meldungen tab, newest first) -->
     <string name="notice_household_sharing_title">Teilen mit Mitbewohnern</string>
@@ -99,6 +102,10 @@
     <string name="more_leave">Verlassen</string>
     <string name="more_leave_dialog_title">Haushalt verlassen?</string>
     <string name="more_leave_dialog_text">Du siehst den geteilten Vorrat und die Einkaufsliste dann nicht mehr auf diesem Gerät. Du kannst jederzeit mit dem Code wieder beitreten.</string>
+    <string name="more_profile_title">Dein Name</string>
+    <string name="more_profile_placeholder">Nicht eingestellt</string>
+    <string name="more_profile_dialog_title">Namen einstellen</string>
+    <string name="more_profile_name_placeholder">Z. B. Mama, Alex</string>
     <string name="more_expiry_notifications_title">Haltbarkeitserinnerungen</string>
     <string name="more_expiry_notifications_description">Erhalte eine Benachrichtigung, wenn ein Produkt bald abläuft</string>
 
@@ -224,6 +231,8 @@
     <string name="shopping_list_save_confirm">Speichern</string>
     <string name="shopping_list_note_label">Notiz</string>
     <string name="shopping_list_note_placeholder">Z. B. Marke oder Größe</string>
+    <string name="shopping_list_move_up_cd">Nach oben verschieben</string>
+    <string name="shopping_list_move_down_cd">Nach unten verschieben</string>
 
     <!-- Benachrichtigungen (Systemmeldungen) -->
     <string name="notification_channel_name">Haltbarkeit</string>

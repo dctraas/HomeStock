@@ -53,6 +53,14 @@ class ShoppingListViewModel(
         viewModelScope.launch { shoppingListRepository.setQuantity(id, quantity) }
     }
 
+    /** Swaps [item] with its neighbor at [otherIndex] within [itemsInStore] to reorder the list. */
+    fun moveItem(itemsInStore: List<ShoppingListItemEntity>, index: Int, otherIndex: Int) {
+        if (otherIndex !in itemsInStore.indices) return
+        val a = itemsInStore[index]
+        val b = itemsInStore[otherIndex]
+        viewModelScope.launch { shoppingListRepository.swapSortOrder(a, b) }
+    }
+
     fun removeItem(id: String) {
         viewModelScope.launch { shoppingListRepository.removeItem(id) }
     }

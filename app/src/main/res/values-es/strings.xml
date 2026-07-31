@@ -7,6 +7,7 @@
     <string name="common_name">Nombre</string>
     <string name="common_ok">Aceptar</string>
     <string name="common_quantity">Cantidad</string>
+    <string name="common_save">Guardar</string>
     <string name="common_undo">Deshacer</string>
     <string name="quantity_decrease_cd">Menos</string>
     <string name="quantity_increase_cd">Más</string>
@@ -55,6 +56,8 @@
     <string name="activity_detail_scanned">Escaneado (%1$s%2$d)</string>
     <string name="activity_detail_quantity_changed">Cantidad modificada de %1$d a %2$d</string>
     <string name="activity_detail_removed">Eliminado del inventario (%1$dx)</string>
+    <string name="activity_actor_unknown">Desconocido</string>
+    <string name="activity_actor_detail_format">%1$s · %2$s</string>
 
     <!-- Developer notices (Novedades -> Avisos tab, newest first) -->
     <string name="notice_household_sharing_title">Compartir con convivientes</string>
@@ -99,6 +102,10 @@
     <string name="more_leave">Abandonar</string>
     <string name="more_leave_dialog_title">¿Abandonar el hogar?</string>
     <string name="more_leave_dialog_text">Dejarás de ver el inventario y la lista de la compra compartidos en este dispositivo. Puedes volver a unirte en cualquier momento con el código.</string>
+    <string name="more_profile_title">Tu nombre</string>
+    <string name="more_profile_placeholder">No establecido</string>
+    <string name="more_profile_dialog_title">Establecer tu nombre</string>
+    <string name="more_profile_name_placeholder">P. ej. Mamá, Alex</string>
     <string name="more_expiry_notifications_title">Avisos de caducidad</string>
     <string name="more_expiry_notifications_description">Recibe un aviso cuando un producto esté a punto de caducar</string>
 
@@ -224,6 +231,8 @@
     <string name="shopping_list_save_confirm">Guardar</string>
     <string name="shopping_list_note_label">Nota</string>
     <string name="shopping_list_note_placeholder">P. ej. marca o talla</string>
+    <string name="shopping_list_move_up_cd">Mover arriba</string>
+    <string name="shopping_list_move_down_cd">Mover abajo</string>
 
     <!-- Notificaciones (avisos del sistema) -->
     <string name="notification_channel_name">Caducidad</string>

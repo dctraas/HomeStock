@@ -8,4 +8,5 @@ data class ActivityLogWithProduct(
     val type: String,
     val detail: String,
     val timestamp: Long,
+    val actorName: String? = null,
 )

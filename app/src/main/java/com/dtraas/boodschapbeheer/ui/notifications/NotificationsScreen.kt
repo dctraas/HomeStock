@@ -196,8 +196,9 @@ private fun AppActivityRow(entry: ActivityLogWithProduct) {
             }
             Column(modifier = Modifier.padding(start = 12.dp)) {
                 Text(entry.productName, style = MaterialTheme.typography.titleSmall)
+                val actorLabel = entry.actorName ?: stringResource(R.string.activity_actor_unknown)
                 Text(
-                    text = entry.detail,
+                    text = stringResource(R.string.activity_actor_detail_format, actorLabel, entry.detail),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
