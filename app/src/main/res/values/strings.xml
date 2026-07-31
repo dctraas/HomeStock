@@ -249,4 +249,9 @@
     <string name="statistics_total_scans">Scans totaal</string>
     <string name="statistics_this_week">Deze week</string>
     <string name="statistics_scan_count_format">%1$dx</string>
+
+    <!-- Home screen widget -->
+    <string name="widget_shopping_list_title">Boodschappenlijst</string>
+    <string name="widget_shopping_list_empty">Niets op je lijstje!</string>
+    <string name="widget_shopping_list_more_format">+%1$d meer</string>
 </resources>
