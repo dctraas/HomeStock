@@ -11,9 +11,14 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     match /households/{householdId} {
-      // Anyone signed in can create a new household (random code) or read one
-      // they already know the code for. Household metadata itself never changes.
-      allow read, create: if request.auth != null;
+      // Anyone signed in can look up a household by its code ("get") or create a
+      // new one. Listing the collection ("list") is explicitly denied — without
+      // this split, any signed-in client could enumerate every household code
+      // in the database in one unfiltered query, making the code meaningless as
+      // an access control. The app itself never lists this collection, only
+      // ever .document(code).get(), so this doesn't affect normal usage.
+      allow get, create: if request.auth != null;
+      allow list: if false;
       allow update, delete: if false;
 
       // All data for a household (products, inventory, shopping list, activity

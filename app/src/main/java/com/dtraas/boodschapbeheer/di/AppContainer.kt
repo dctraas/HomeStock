@@ -1,6 +1,7 @@
 package com.dtraas.boodschapbeheer.di
 
 import android.content.Context
+import com.dtraas.boodschapbeheer.BuildConfig
 import com.dtraas.boodschapbeheer.data.remote.OpenFoodFactsApi
 import com.dtraas.boodschapbeheer.data.repository.ActivityLogRepository
 import com.dtraas.boodschapbeheer.data.repository.HouseholdRepository
@@ -40,8 +41,15 @@ class AppContainer(context: Context) {
         HouseholdRepository(appContext, firestore, auth)
     }
 
+    // Logging is debug-only: even at BASIC level, release builds shouldn't write network
+    // activity (which barcodes were scanned, when) to logcat, which other apps or anyone
+    // with physical/adb access to the device could otherwise read.
     private val okHttpClient: OkHttpClient = OkHttpClient.Builder()
-        .addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC })
+        .apply {
+            if (BuildConfig.DEBUG) {
+                addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC })
+            }
+        }
         .build()
 
     private val api: OpenFoodFactsApi = Retrofit.Builder()

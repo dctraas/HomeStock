@@ -73,6 +73,11 @@ class HouseholdRepository(
         const val CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
         const val CODE_LENGTH = 6
 
-        fun generateCode(): String = (1..CODE_LENGTH).map { CODE_CHARS.random() }.joinToString("")
+        // The code is the household's only access control (see firestore.rules), so it's
+        // generated with a CSPRNG rather than Kotlin's non-cryptographic default Random.
+        val secureRandom = java.security.SecureRandom()
+
+        fun generateCode(): String =
+            (1..CODE_LENGTH).map { CODE_CHARS[secureRandom.nextInt(CODE_CHARS.length)] }.joinToString("")
     }
 }
