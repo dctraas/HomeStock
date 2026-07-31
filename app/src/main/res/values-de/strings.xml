@@ -135,6 +135,7 @@
     <string name="notifications_tab_notices">Meldungen</string>
     <string name="notifications_tab_history">Verlauf</string>
     <string name="notifications_history_empty">Scans und Änderungen erscheinen hier.</string>
+    <string name="notice_dismiss_cd">Löschen</string>
 
     <!-- Produktdetail -->
     <string name="product_detail_default_title">Produkt</string>

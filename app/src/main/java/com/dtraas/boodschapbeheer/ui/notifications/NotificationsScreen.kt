@@ -1,5 +1,6 @@
 package com.dtraas.boodschapbeheer.ui.notifications
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -25,10 +26,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -37,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -60,9 +65,15 @@ fun NotificationsScreen() {
     val application = LocalContext.current.applicationContext as BoodschapBeheerApplication
     val viewModel: NotificationsViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { NotificationsViewModel(application.container.activityLogRepository) }
+            initializer {
+                NotificationsViewModel(
+                    application.container.activityLogRepository,
+                    application.container.dismissedNoticesStore,
+                )
+            }
         },
     )
+    val developerNotices by viewModel.developerNotices.collectAsState()
     val appActivity by viewModel.appActivity.collectAsState()
     var selectedTab by remember { mutableIntStateOf(0) }
     val tabTitles = listOf(
@@ -89,8 +100,12 @@ fun NotificationsScreen() {
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(16.dp),
                 ) {
-                    items(viewModel.developerNotices) { notice ->
-                        DeveloperNoticeRow(notice)
+                    items(developerNotices, key = { it.id }) { notice ->
+                        DeveloperNoticeRow(
+                            notice = notice,
+                            onDismiss = { viewModel.dismissNotice(notice.id) },
+                            modifier = Modifier.animateItem(),
+                        )
                     }
                 }
             } else {
@@ -117,39 +132,71 @@ fun NotificationsScreen() {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun DeveloperNoticeRow(notice: DeveloperNotice) {
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(14.dp),
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.tertiaryContainer,
-                modifier = Modifier.size(36.dp),
+private fun DeveloperNoticeRow(notice: DeveloperNotice, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value != SwipeToDismissBoxValue.Settled) onDismiss()
+            true
+        },
+    )
+    SwipeToDismissBox(
+        state = dismissState,
+        modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
+                    Alignment.CenterStart
+                } else {
+                    Alignment.CenterEnd
+                },
             ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        imageVector = Icons.Filled.Campaign,
-                        contentDescription = null,
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                Icon(
+                    imageVector = Icons.Filled.Delete,
+                    contentDescription = stringResource(R.string.notice_dismiss_cd),
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                )
+            }
+        },
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            shape = RoundedCornerShape(14.dp),
+        ) {
+            Row(
+                modifier = Modifier.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    modifier = Modifier.size(36.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            imageVector = Icons.Filled.Campaign,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                        )
+                    }
+                }
+                Column(modifier = Modifier.padding(start = 12.dp)) {
+                    Text(stringResource(notice.titleRes), style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        text = stringResource(notice.messageRes),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp),
                     )
                 }
-            }
-            Column(modifier = Modifier.padding(start = 12.dp)) {
-                Text(stringResource(notice.titleRes), style = MaterialTheme.typography.titleSmall)
-                Text(
-                    text = stringResource(notice.messageRes),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
             }
         }
     }
