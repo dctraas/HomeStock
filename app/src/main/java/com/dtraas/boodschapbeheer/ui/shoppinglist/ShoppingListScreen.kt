@@ -83,12 +83,15 @@ import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
 import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.entity.ShoppingListItemEntity
 import com.dtraas.boodschapbeheer.data.model.Category
+import com.dtraas.boodschapbeheer.data.model.MeasurementUnit
 import com.dtraas.boodschapbeheer.data.model.Store
 import com.dtraas.boodschapbeheer.ui.components.CategoryDropdown
+import com.dtraas.boodschapbeheer.ui.components.MeasurementUnitDropdown
 import com.dtraas.boodschapbeheer.ui.components.ProductImage
 import com.dtraas.boodschapbeheer.ui.components.QuantityStepper
 import com.dtraas.boodschapbeheer.ui.components.SearchField
 import com.dtraas.boodschapbeheer.ui.components.StoreDropdown
+import com.dtraas.boodschapbeheer.ui.components.formatQuantityWithUnit
 import com.dtraas.boodschapbeheer.ui.components.icon
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
@@ -187,8 +190,14 @@ fun ShoppingListScreen() {
                     groupedByStore = groupedByStore,
                     onCheckedChange = { item, checked -> viewModel.setChecked(item.id, checked) },
                     onItemClick = { editingItem = it },
-                    onIncrease = { viewModel.setQuantity(it.id, it.quantity + 1) },
-                    onDecrease = { viewModel.setQuantity(it.id, it.quantity - 1) },
+                    onIncrease = {
+                        val step = MeasurementUnit.fromStorageKey(it.unit).step
+                        viewModel.setQuantity(it.id, it.quantity + step)
+                    },
+                    onDecrease = {
+                        val step = MeasurementUnit.fromStorageKey(it.unit).step
+                        viewModel.setQuantity(it.id, (it.quantity - step).coerceAtLeast(1))
+                    },
                     onDelete = { deleteWithUndo(it) },
                     onMove = viewModel::moveItem,
                 )
@@ -205,12 +214,13 @@ fun ShoppingListScreen() {
                             StoreHeader(store, itemCount = itemsInStore.size)
                         }
                         items(itemsInStore, key = { it.id }) { item ->
+                            val step = MeasurementUnit.fromStorageKey(item.unit).step
                             ShoppingListGridTile(
                                 item = item,
                                 onCheckedChange = { checked -> viewModel.setChecked(item.id, checked) },
                                 onClick = { editingItem = item },
-                                onIncrease = { viewModel.setQuantity(item.id, item.quantity + 1) },
-                                onDecrease = { viewModel.setQuantity(item.id, item.quantity - 1) },
+                                onIncrease = { viewModel.setQuantity(item.id, item.quantity + step) },
+                                onDecrease = { viewModel.setQuantity(item.id, (item.quantity - step).coerceAtLeast(1)) },
                                 onDelete = { deleteWithUndo(item) },
                             )
                         }
@@ -224,8 +234,8 @@ fun ShoppingListScreen() {
                 title = stringResource(R.string.shopping_list_item_add_title),
                 confirmLabel = stringResource(R.string.shopping_list_add_confirm),
                 onDismiss = { showAddDialog = false },
-                onConfirm = { name, category, store, quantity, note ->
-                    viewModel.addItem(name, category, store, quantity, note.trim().ifBlank { null })
+                onConfirm = { name, category, store, quantity, note, unit ->
+                    viewModel.addItem(name, category, store, quantity, note.trim().ifBlank { null }, unit)
                     showAddDialog = false
                 },
             )
@@ -240,9 +250,10 @@ fun ShoppingListScreen() {
                 initialStore = Store.fromStorageKey(item.store),
                 initialQuantity = item.quantity,
                 initialNote = item.note ?: "",
+                initialUnit = MeasurementUnit.fromStorageKey(item.unit),
                 imageUrl = item.imageUrl,
                 onDismiss = { editingItem = null },
-                onConfirm = { name, category, store, quantity, note ->
+                onConfirm = { name, category, store, quantity, note, unit ->
                     viewModel.updateItem(
                         item.copy(
                             name = name,
@@ -250,6 +261,7 @@ fun ShoppingListScreen() {
                             store = store.storageKey,
                             quantity = quantity,
                             note = note.trim().ifBlank { null },
+                            unit = unit.storageKey,
                         )
                     )
                     editingItem = null
@@ -521,6 +533,7 @@ private fun ShoppingListRow(
                 onIncrease = onIncrease,
                 minQuantity = 1,
                 dense = true,
+                displayText = formatQuantityWithUnit(item.quantity, MeasurementUnit.fromStorageKey(item.unit)),
             )
             IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                 Icon(
@@ -623,6 +636,7 @@ private fun ShoppingListGridTile(
                 onIncrease = onIncrease,
                 minQuantity = 1,
                 modifier = Modifier.padding(top = 4.dp),
+                displayText = formatQuantityWithUnit(item.quantity, MeasurementUnit.fromStorageKey(item.unit)),
             )
         }
     }
@@ -670,15 +684,17 @@ private fun ItemFormDialog(
     initialStore: Store = Store.GEEN,
     initialQuantity: Int = 1,
     initialNote: String = "",
+    initialUnit: MeasurementUnit = MeasurementUnit.STUKS,
     imageUrl: String? = null,
     onDismiss: () -> Unit,
-    onConfirm: (name: String, category: Category, store: Store, quantity: Int, note: String) -> Unit,
+    onConfirm: (name: String, category: Category, store: Store, quantity: Int, note: String, unit: MeasurementUnit) -> Unit,
 ) {
     var name by remember { mutableStateOf(initialName) }
     var category by remember { mutableStateOf(initialCategory) }
     var store by remember { mutableStateOf(initialStore) }
     var quantity by remember { mutableIntStateOf(initialQuantity) }
     var note by remember { mutableStateOf(initialNote) }
+    var unit by remember { mutableStateOf(initialUnit) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -712,6 +728,11 @@ private fun ItemFormDialog(
                         onSelected = { store = it },
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    MeasurementUnitDropdown(
+                        selected = unit,
+                        onSelected = { unit = it },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
@@ -720,9 +741,10 @@ private fun ItemFormDialog(
                         Text(stringResource(R.string.common_quantity), style = MaterialTheme.typography.bodyLarge)
                         QuantityStepper(
                             quantity = quantity,
-                            onDecrease = { quantity = (quantity - 1).coerceAtLeast(1) },
-                            onIncrease = { quantity += 1 },
+                            onDecrease = { quantity = (quantity - unit.step).coerceAtLeast(1) },
+                            onIncrease = { quantity += unit.step },
                             minQuantity = 1,
+                            displayText = formatQuantityWithUnit(quantity, unit),
                         )
                     }
                     OutlinedTextField(
@@ -737,7 +759,7 @@ private fun ItemFormDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(name, category, store, quantity, note) },
+                onClick = { onConfirm(name, category, store, quantity, note, unit) },
                 enabled = name.isNotBlank(),
             ) {
                 Text(confirmLabel)

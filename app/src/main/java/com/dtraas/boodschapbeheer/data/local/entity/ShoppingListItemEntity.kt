@@ -1,5 +1,6 @@
 package com.dtraas.boodschapbeheer.data.local.entity
 
+import com.dtraas.boodschapbeheer.data.model.MeasurementUnit
 import com.google.firebase.firestore.DocumentSnapshot
 
 /**
@@ -24,6 +25,8 @@ data class ShoppingListItemEntity(
     // this to the midpoint between its new neighbors' values, so reordering is an O(1)
     // single-document write regardless of how far an item moves.
     val sortOrder: Double = -addedAt.toDouble(),
+    // Storage key of the MeasurementUnit quantity is expressed in (stuks/gram/kg/ml/L).
+    val unit: String = MeasurementUnit.STUKS.storageKey,
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
         "barcode" to barcode,
@@ -36,6 +39,7 @@ data class ShoppingListItemEntity(
         "addedAt" to addedAt,
         "note" to note,
         "sortOrder" to sortOrder,
+        "unit" to unit,
     )
 
     companion object {
@@ -54,6 +58,7 @@ data class ShoppingListItemEntity(
                 addedAt = addedAt,
                 note = document.getString("note")?.takeIf { it.isNotBlank() },
                 sortOrder = document.getDouble("sortOrder") ?: -addedAt.toDouble(),
+                unit = document.getString("unit") ?: MeasurementUnit.STUKS.storageKey,
             )
         }
     }

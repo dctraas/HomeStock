@@ -232,6 +232,12 @@
     <string name="shopping_list_note_label">Notiz</string>
     <string name="shopping_list_note_placeholder">Z. B. Marke oder Größe</string>
     <string name="shopping_list_drag_handle_cd">Ziehen zum Verschieben</string>
+    <string name="unit_dropdown_label">Einheit</string>
+    <string name="unit_stuks">Stück</string>
+    <string name="unit_gram">g</string>
+    <string name="unit_kilogram">kg</string>
+    <string name="unit_milliliter">ml</string>
+    <string name="unit_liter">L</string>
 
     <!-- Benachrichtigungen (Systemmeldungen) -->
     <string name="notification_channel_name">Haltbarkeit</string>

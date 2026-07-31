@@ -3,6 +3,7 @@ package com.dtraas.boodschapbeheer.data.repository
 import android.content.Context
 import com.dtraas.boodschapbeheer.data.local.entity.ShoppingListItemEntity
 import com.dtraas.boodschapbeheer.data.model.Category
+import com.dtraas.boodschapbeheer.data.model.MeasurementUnit
 import com.dtraas.boodschapbeheer.data.model.Store
 import com.dtraas.boodschapbeheer.data.remote.observeSnapshots
 import com.dtraas.boodschapbeheer.widget.updateShoppingListWidget
@@ -58,6 +59,7 @@ class ShoppingListRepository(
         barcode: String? = null,
         imageUrl: String? = null,
         note: String? = null,
+        unit: MeasurementUnit = MeasurementUnit.STUKS,
     ) {
         val householdId = householdSession.householdId.value ?: return
         val entity = ShoppingListItemEntity(
@@ -71,6 +73,7 @@ class ShoppingListRepository(
             isChecked = false,
             addedAt = System.currentTimeMillis(),
             note = note?.trim()?.takeIf { it.isNotEmpty() },
+            unit = unit.storageKey,
         )
         shoppingListCollection(householdId).add(entity.toMap()).await()
         refreshWidget()

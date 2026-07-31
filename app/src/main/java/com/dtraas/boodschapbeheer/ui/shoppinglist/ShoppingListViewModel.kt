@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.boodschapbeheer.data.local.entity.ShoppingListItemEntity
 import com.dtraas.boodschapbeheer.data.model.Category
+import com.dtraas.boodschapbeheer.data.model.MeasurementUnit
 import com.dtraas.boodschapbeheer.data.model.Store
 import com.dtraas.boodschapbeheer.data.repository.ShoppingListRepository
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -35,9 +36,16 @@ class ShoppingListViewModel(
         searchQuery.value = query
     }
 
-    fun addItem(name: String, category: Category, store: Store, quantity: Int, note: String? = null) {
+    fun addItem(
+        name: String,
+        category: Category,
+        store: Store,
+        quantity: Int,
+        note: String? = null,
+        unit: MeasurementUnit = MeasurementUnit.STUKS,
+    ) {
         if (name.isBlank()) return
-        viewModelScope.launch { shoppingListRepository.addItem(name, category, store, quantity, note = note) }
+        viewModelScope.launch { shoppingListRepository.addItem(name, category, store, quantity, note = note, unit = unit) }
     }
 
     fun updateItem(item: ShoppingListItemEntity) {
