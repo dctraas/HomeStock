@@ -22,7 +22,7 @@ import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
-import androidx.glance.layout.defaultWeight
+import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
@@ -119,17 +119,19 @@ private fun ShoppingListWidgetContent(
                 )
             }
         } else {
-            LazyColumn(modifier = GlanceModifier.fillMaxWidth().defaultWeight()) {
+            LazyColumn(modifier = GlanceModifier.fillMaxWidth().fillMaxHeight()) {
                 items(shoppingItems, itemId = { it.id.hashCode().toLong() }) { item ->
                     ShoppingListWidgetRow(item)
                 }
-            }
-            if (moreLabel != null) {
-                Text(
-                    text = moreLabel,
-                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp),
-                    modifier = GlanceModifier.padding(top = 4.dp),
-                )
+                if (moreLabel != null) {
+                    item {
+                        Text(
+                            text = moreLabel,
+                            style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp),
+                            modifier = GlanceModifier.padding(top = 4.dp),
+                        )
+                    }
+                }
             }
         }
     }
