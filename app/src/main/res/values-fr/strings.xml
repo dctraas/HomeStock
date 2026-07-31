@@ -110,6 +110,7 @@
     <string name="more_expiry_notifications_description">Recevez une notification quand un produit est bientôt périmé</string>
 
     <!-- Stock -->
+    <string name="inventory_title">Stock</string>
     <string name="inventory_show_as_tiles_cd">Afficher en cartes</string>
     <string name="inventory_show_as_list_cd">Afficher en liste</string>
     <string name="inventory_search_placeholder">Rechercher dans le stock…</string>

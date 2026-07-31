@@ -110,6 +110,7 @@
     <string name="more_expiry_notifications_description">Get notified when a product is about to expire</string>
 
     <!-- Inventory -->
+    <string name="inventory_title">Inventory</string>
     <string name="inventory_show_as_tiles_cd">Show as tiles</string>
     <string name="inventory_show_as_list_cd">Show as list</string>
     <string name="inventory_search_placeholder">Search inventory…</string>

@@ -110,6 +110,7 @@
     <string name="more_expiry_notifications_description">Recibe un aviso cuando un producto esté a punto de caducar</string>
 
     <!-- Inventario -->
+    <string name="inventory_title">Inventario</string>
     <string name="inventory_show_as_tiles_cd">Mostrar como tarjetas</string>
     <string name="inventory_show_as_list_cd">Mostrar como lista</string>
     <string name="inventory_search_placeholder">Buscar en el inventario…</string>

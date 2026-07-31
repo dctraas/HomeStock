@@ -110,6 +110,7 @@
     <string name="more_expiry_notifications_description">Krijg een melding als een product bijna over de datum is</string>
 
     <!-- Voorraad -->
+    <string name="inventory_title">Voorraad</string>
     <string name="inventory_show_as_tiles_cd">Toon als tegels</string>
     <string name="inventory_show_as_list_cd">Toon als lijst</string>
     <string name="inventory_search_placeholder">Zoek in voorraad…</string>

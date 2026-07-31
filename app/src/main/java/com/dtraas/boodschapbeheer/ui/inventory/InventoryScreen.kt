@@ -1,7 +1,6 @@
 package com.dtraas.boodschapbeheer.ui.inventory
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,7 +26,7 @@ import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Search
@@ -62,7 +61,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -142,21 +140,7 @@ fun InventoryScreen(
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Image(
-                            painter = painterResource(R.drawable.ic_app_logo),
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(32.dp)
-                                .clip(RoundedCornerShape(8.dp)),
-                        )
-                        Text(
-                            text = stringResource(R.string.app_name),
-                            modifier = Modifier.padding(start = 8.dp),
-                        )
-                    }
-                },
+                title = { Text(stringResource(R.string.inventory_title)) },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -180,8 +164,13 @@ fun InventoryScreen(
                             searchActive = false
                             viewModel.onSearchQueryChange("")
                         },
+                        modifier = Modifier.size(56.dp),
                     ) {
-                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.inventory_search_close_cd))
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.inventory_search_close_cd),
+                            modifier = Modifier.size(28.dp),
+                        )
                     }
                 }
             } else {
@@ -192,6 +181,13 @@ fun InventoryScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 4.dp),
                 ) {
+                    IconButton(onClick = { searchActive = true }, modifier = Modifier.size(56.dp)) {
+                        Icon(
+                            Icons.Filled.Search,
+                            contentDescription = stringResource(R.string.inventory_search_cd),
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         FilterMenuButton(
                             selected = uiState.selectedCategory,
@@ -209,6 +205,7 @@ fun InventoryScreen(
                                     InventoryViewMode.LIST
                                 }
                             },
+                            modifier = Modifier.size(56.dp),
                         ) {
                             Icon(
                                 imageVector = if (viewMode == InventoryViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
@@ -217,11 +214,9 @@ fun InventoryScreen(
                                 } else {
                                     stringResource(R.string.inventory_show_as_list_cd)
                                 },
+                                modifier = Modifier.size(28.dp),
                             )
                         }
-                    }
-                    IconButton(onClick = { searchActive = true }) {
-                        Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.inventory_search_cd))
                     }
                 }
             }
@@ -288,17 +283,22 @@ private fun SortMenuButton(
     var menuExpanded by remember { mutableStateOf(false) }
     val isCustomSort = selected != InventorySortOption.NAME
     Box {
-        IconButton(onClick = { menuExpanded = true }) {
+        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(56.dp)) {
             if (isCustomSort) {
                 val activeFormat = stringResource(R.string.inventory_sort_active_cd_format)
                 BadgedBox(badge = { Badge() }) {
                     Icon(
                         Icons.Filled.Sort,
                         contentDescription = activeFormat.format(stringResource(selected.labelRes)),
+                        modifier = Modifier.size(28.dp),
                     )
                 }
             } else {
-                Icon(Icons.Filled.Sort, contentDescription = stringResource(R.string.inventory_sort_cd))
+                Icon(
+                    Icons.Filled.Sort,
+                    contentDescription = stringResource(R.string.inventory_sort_cd),
+                    modifier = Modifier.size(28.dp),
+                )
             }
         }
         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
@@ -327,17 +327,22 @@ private fun FilterMenuButton(
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
     Box {
-        IconButton(onClick = { menuExpanded = true }) {
+        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(56.dp)) {
             if (selected != null) {
                 val activeFormat = stringResource(R.string.inventory_filter_active_cd_format)
                 BadgedBox(badge = { Badge() }) {
                     Icon(
-                        Icons.Filled.FilterList,
+                        Icons.Filled.FilterAlt,
                         contentDescription = activeFormat.format(stringResource(selected.displayNameRes)),
+                        modifier = Modifier.size(28.dp),
                     )
                 }
             } else {
-                Icon(Icons.Filled.FilterList, contentDescription = stringResource(R.string.inventory_filter_cd))
+                Icon(
+                    Icons.Filled.FilterAlt,
+                    contentDescription = stringResource(R.string.inventory_filter_cd),
+                    modifier = Modifier.size(28.dp),
+                )
             }
         }
         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
