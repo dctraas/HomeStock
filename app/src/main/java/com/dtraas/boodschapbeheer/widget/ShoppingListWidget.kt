@@ -2,6 +2,7 @@ package com.dtraas.boodschapbeheer.widget
 
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -26,10 +27,10 @@ import androidx.glance.layout.fillMaxHeight
 import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.padding
-import androidx.glance.material3.GlanceTheme
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
+import androidx.glance.unit.ColorProvider
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
 import com.dtraas.boodschapbeheer.MainActivity
 import com.dtraas.boodschapbeheer.R
@@ -44,6 +45,11 @@ import com.dtraas.boodschapbeheer.data.repository.ShoppingListRepository
  * [updateShoppingListWidget] below is called by the repository after every shopping
  * list write so the widget doesn't have to wait for the OS's own (infrequent)
  * update schedule to catch up.
+ *
+ * Colors are fixed day/night pairs rather than Material You dynamic theming
+ * (which would need the glance-material3 artifact) to keep this widget's only
+ * dependency on the base glance/glance-appwidget modules that the rest of the
+ * app's Gradle setup already resolves cleanly.
  */
 class ShoppingListWidget : GlanceAppWidget() {
 
@@ -62,14 +68,12 @@ class ShoppingListWidget : GlanceAppWidget() {
         }
 
         provideContent {
-            GlanceTheme {
-                ShoppingListWidgetContent(
-                    shoppingItems = visibleItems,
-                    title = title,
-                    emptyMessage = emptyMessage,
-                    moreLabel = moreLabel,
-                )
-            }
+            ShoppingListWidgetContent(
+                shoppingItems = visibleItems,
+                title = title,
+                emptyMessage = emptyMessage,
+                moreLabel = moreLabel,
+            )
         }
     }
 
@@ -82,6 +86,10 @@ suspend fun updateShoppingListWidget(context: Context) {
     ShoppingListWidget().updateAll(context)
 }
 
+private val WidgetBackground = ColorProvider(day = Color(0xFFFFFBFE), night = Color(0xFF1C1B1F))
+private val WidgetOnSurface = ColorProvider(day = Color(0xFF1C1B1F), night = Color(0xFFE6E1E5))
+private val WidgetOnSurfaceVariant = ColorProvider(day = Color(0xFF49454F), night = Color(0xFFCAC4D0))
+
 @Composable
 private fun ShoppingListWidgetContent(
     shoppingItems: List<ShoppingListItemEntity>,
@@ -92,7 +100,7 @@ private fun ShoppingListWidgetContent(
     Column(
         modifier = GlanceModifier
             .fillMaxSize()
-            .background(GlanceTheme.colors.widgetBackground)
+            .background(WidgetBackground)
             .cornerRadius(16.dp)
             .padding(12.dp),
     ) {
@@ -101,11 +109,11 @@ private fun ShoppingListWidgetContent(
             style = TextStyle(
                 fontWeight = FontWeight.Medium,
                 fontSize = 16.sp,
-                color = GlanceTheme.colors.onSurface,
+                color = WidgetOnSurface,
             ),
             modifier = GlanceModifier
                 .fillMaxWidth()
-                .clickable(actionStartActivity<MainActivity>()),
+                .clickable(actionStartActivity(MainActivity::class.java)),
         )
 
         if (shoppingItems.isEmpty()) {
@@ -115,7 +123,7 @@ private fun ShoppingListWidgetContent(
             ) {
                 Text(
                     text = emptyMessage,
-                    style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 13.sp),
+                    style = TextStyle(color = WidgetOnSurfaceVariant, fontSize = 13.sp),
                 )
             }
         } else {
@@ -127,7 +135,7 @@ private fun ShoppingListWidgetContent(
                     item {
                         Text(
                             text = moreLabel,
-                            style = TextStyle(color = GlanceTheme.colors.onSurfaceVariant, fontSize = 12.sp),
+                            style = TextStyle(color = WidgetOnSurfaceVariant, fontSize = 12.sp),
                             modifier = GlanceModifier.padding(top = 4.dp),
                         )
                     }
@@ -151,7 +159,7 @@ private fun ShoppingListWidgetRow(item: ShoppingListItemEntity) {
         )
         Text(
             text = item.name,
-            style = TextStyle(color = GlanceTheme.colors.onSurface, fontSize = 14.sp),
+            style = TextStyle(color = WidgetOnSurface, fontSize = 14.sp),
             maxLines = 1,
             modifier = GlanceModifier.padding(start = 4.dp),
         )
