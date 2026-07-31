@@ -171,13 +171,13 @@ fun ShoppingListScreen() {
             fun deleteWithUndo(item: ShoppingListItemEntity) {
                 viewModel.removeItem(item.id)
                 coroutineScope.launch {
+                    // showSnackbar defaults to SnackbarDuration.Indefinite whenever an
+                    // actionLabel is set, so without an explicit duration the "ongedaan
+                    // maken" snackbar would never auto-dismiss.
                     val result = snackbarHostState.showSnackbar(
                         message = removedFormat.format(item.name),
                         actionLabel = undoLabel,
-                        // showSnackbar defaults to SnackbarDuration.Indefinite whenever an
-                        // actionLabel is set, so without this the "ongedaan maken" snackbar
-                        // would never auto-dismiss.
-                        duration = SnackbarDuration.Long,
+                        duration = SnackbarDuration.Short,
                     )
                     if (result == SnackbarResult.ActionPerformed) {
                         viewModel.restoreItem(item)

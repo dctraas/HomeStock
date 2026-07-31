@@ -112,7 +112,7 @@ fun InventoryScreen(
                 // showSnackbar defaults to SnackbarDuration.Indefinite whenever an
                 // actionLabel is set, so without this the "ongedaan maken" snackbar
                 // would never auto-dismiss.
-                duration = SnackbarDuration.Long,
+                duration = SnackbarDuration.Short,
             )
             if (result == SnackbarResult.ActionPerformed) {
                 viewModel.restoreItem(item)
