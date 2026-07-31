@@ -146,20 +146,17 @@ private fun BoodschapBeheerBottomBar(navController: NavHostController, currentRo
                     if (isScan) {
                         // The scan action is the app's primary action, so it gets a
                         // filled circular badge to stand out from the plain icons.
-                        // Sized to match the other items' default icon+indicator area
-                        // (roughly 24dp icon in a 32dp tall slot) so all five labels
-                        // stay aligned on the same line.
                         Surface(
                             shape = CircleShape,
                             color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(32.dp),
+                            modifier = Modifier.size(44.dp),
                         ) {
                             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                                 Icon(
                                     imageVector = destination.icon,
                                     contentDescription = label,
                                     tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(18.dp),
+                                    modifier = Modifier.size(24.dp),
                                 )
                             }
                         }
