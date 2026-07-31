@@ -132,13 +132,10 @@
     <string name="product_detail_default_title">Product</string>
     <string name="section_stock">Voorraad</string>
     <string name="section_nutrition_info">Voedingsinformatie</string>
-    <string name="section_inspiration">Inspiratie</string>
     <string name="product_detail_in_stock">Op voorraad</string>
     <string name="product_detail_remove">Verwijderen</string>
     <string name="product_detail_add_to_shopping_list">Toevoegen aan lijstje</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
-    <string name="product_detail_ecoscore_format">Eco-Score %1$s</string>
-    <string name="product_detail_stock_chip_format">%1$d op voorraad</string>
     <string name="product_detail_ingredients_title">Ingrediënten</string>
     <string name="product_detail_nutrition_title">Voedingswaarden per 100 g</string>
     <string name="product_detail_nutrition_energy">Energie</string>
@@ -160,7 +157,6 @@
     <string name="product_detail_status_days_format">Nog %1$d dagen houdbaar</string>
     <string name="product_detail_status_fresh">Vers</string>
     <string name="product_detail_min_quantity_label">Minimum aantal</string>
-    <string name="product_detail_min_quantity_hint">Wordt automatisch aan het lijstje toegevoegd zodra de voorraad hieronder komt (0 = uit)</string>
     <string name="product_detail_allergens_title">Allergenen</string>
     <string name="product_detail_diet_labels_title">Dieetlabels</string>
     <string name="product_detail_note_title">Persoonlijke notitie</string>

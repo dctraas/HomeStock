@@ -1,5 +1,6 @@
 package com.dtraas.boodschapbeheer.ui.productdetail
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,7 +23,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -43,6 +43,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -50,7 +51,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -72,6 +72,7 @@ import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.data.model.DietLabel
 import com.dtraas.boodschapbeheer.ui.components.QuantityStepper
 import com.dtraas.boodschapbeheer.ui.components.icon
+import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -164,12 +165,6 @@ fun ProductDetailScreen(
                 product?.nutriScoreGrade?.let {
                     GradeBadge(it, stringResource(R.string.product_detail_nutriscore_format, it.uppercase(Locale.ROOT)))
                 }
-                product?.ecoScoreGrade?.let {
-                    GradeBadge(it, stringResource(R.string.product_detail_ecoscore_format, it.uppercase(Locale.ROOT)))
-                }
-            }
-            uiState.quantityInInventory?.let { quantity ->
-                StockChip(quantity, modifier = Modifier.padding(top = 10.dp))
             }
 
             // Voorraad
@@ -186,11 +181,12 @@ fun ProductDetailScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
-                            Text(stringResource(R.string.product_detail_in_stock), style = MaterialTheme.typography.titleMedium)
+                            Text(stringResource(R.string.product_detail_in_stock), style = MaterialTheme.typography.bodyLarge)
                             QuantityStepper(
                                 quantity = uiState.quantityInInventory ?: 0,
                                 onDecrease = { viewModel.setQuantity((uiState.quantityInInventory ?: 1) - 1) },
                                 onIncrease = { viewModel.setQuantity((uiState.quantityInInventory ?: 0) + 1) },
+                                dense = true,
                             )
                         }
 
@@ -220,17 +216,17 @@ fun ProductDetailScreen(
                             Spacer(modifier = Modifier.width(8.dp))
                             Text(stringResource(R.string.product_detail_remove))
                         }
+
+                        OutlinedButton(
+                            onClick = viewModel::addToShoppingList,
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        ) {
+                            Icon(Icons.Filled.PlaylistAdd, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.product_detail_add_to_shopping_list))
+                        }
                     }
                 }
-            }
-
-            OutlinedButton(
-                onClick = viewModel::addToShoppingList,
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-            ) {
-                Icon(Icons.Filled.PlaylistAdd, contentDescription = null, modifier = Modifier.size(18.dp))
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.product_detail_add_to_shopping_list))
             }
 
             // Voedingsinformatie
@@ -251,13 +247,11 @@ fun ProductDetailScreen(
                 }
             }
 
-            // Inspiratie
             if (stillInInventory) {
-                SectionHeader(stringResource(R.string.section_inspiration), modifier = Modifier.padding(top = 28.dp))
                 NoteCard(
                     note = uiState.note,
                     onNoteChange = viewModel::setNote,
-                    modifier = Modifier.padding(top = 12.dp),
+                    modifier = Modifier.padding(top = 28.dp),
                 )
             }
         }
@@ -306,33 +300,6 @@ private fun ProductHero(product: ProductEntity?, category: Category) {
                     tint = MaterialTheme.colorScheme.onPrimaryContainer,
                 )
             }
-        }
-    }
-}
-
-@Composable
-private fun StockChip(quantity: Int, modifier: Modifier = Modifier) {
-    Surface(
-        shape = RoundedCornerShape(50),
-        color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = modifier,
-    ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Inventory2,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-            Text(
-                text = stringResource(R.string.product_detail_stock_chip_format, quantity),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.padding(start = 6.dp),
-            )
         }
     }
 }
@@ -586,13 +553,13 @@ private fun ExpirationRow(expirationDate: Long?, onDateChange: (Long?) -> Unit) 
     ) {
         Text(stringResource(R.string.product_detail_expiration_label), style = MaterialTheme.typography.bodyLarge)
         Row(verticalAlignment = Alignment.CenterVertically) {
-            TextButton(onClick = { showPicker = true }) {
-                Text(
-                    text = expirationDate?.let { formatExpirationDate(it) }
-                        ?: stringResource(R.string.product_detail_expiration_set),
-                    color = if (isNearExpiry) MaterialTheme.colorScheme.error else Color.Unspecified,
-                )
-            }
+            Text(
+                text = expirationDate?.let { formatExpirationDate(it) }
+                    ?: stringResource(R.string.product_detail_expiration_set),
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isNearExpiry) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                modifier = Modifier.clickable { showPicker = true },
+            )
             if (expirationDate != null) {
                 IconButton(onClick = { onDateChange(null) }, modifier = Modifier.size(32.dp)) {
                     Icon(
@@ -627,28 +594,21 @@ private fun ExpirationRow(expirationDate: Long?, onDateChange: (Long?) -> Unit) 
 
 @Composable
 private fun MinQuantityRow(minQuantity: Int?, onChange: (Int?) -> Unit) {
-    Column(modifier = Modifier.padding(top = 12.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(stringResource(R.string.product_detail_min_quantity_label), style = MaterialTheme.typography.bodyLarge)
-            QuantityStepper(
-                quantity = minQuantity ?: 0,
-                onDecrease = {
-                    val next = (minQuantity ?: 0) - 1
-                    onChange(if (next <= 0) null else next)
-                },
-                onIncrease = { onChange((minQuantity ?: 0) + 1) },
-                minQuantity = 0,
-                dense = true,
-            )
-        }
-        Text(
-            text = stringResource(R.string.product_detail_min_quantity_hint),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(stringResource(R.string.product_detail_min_quantity_label), style = MaterialTheme.typography.bodyLarge)
+        QuantityStepper(
+            quantity = minQuantity ?: 0,
+            onDecrease = {
+                val next = (minQuantity ?: 0) - 1
+                onChange(if (next <= 0) null else next)
+            },
+            onIncrease = { onChange((minQuantity ?: 0) + 1) },
+            minQuantity = 0,
+            dense = true,
         )
     }
 }
@@ -656,6 +616,17 @@ private fun MinQuantityRow(minQuantity: Int?, onChange: (Int?) -> Unit) {
 @Composable
 private fun NoteCard(note: String?, onNoteChange: (String?) -> Unit, modifier: Modifier = Modifier) {
     var text by remember(note) { mutableStateOf(note ?: "") }
+
+    // Debounced autosave: writes shortly after typing pauses, so the note is
+    // never lost even if the user navigates away without explicitly blurring
+    // the field (which onFocusChanged can't reliably catch on back-navigation).
+    LaunchedEffect(text) {
+        delay(600)
+        if (text != (note ?: "")) {
+            onNoteChange(text.trim().ifBlank { null })
+        }
+    }
+
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -668,14 +639,7 @@ private fun NoteCard(note: String?, onNoteChange: (String?) -> Unit, modifier: M
                 onValueChange = { text = it },
                 placeholder = { Text(stringResource(R.string.product_detail_note_placeholder)) },
                 minLines = 3,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp)
-                    .onFocusChanged { focusState ->
-                        if (!focusState.isFocused && text != (note ?: "")) {
-                            onNoteChange(text.trim().ifBlank { null })
-                        }
-                    },
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             )
         }
     }

@@ -132,13 +132,10 @@
     <string name="product_detail_default_title">Product</string>
     <string name="section_stock">Stock</string>
     <string name="section_nutrition_info">Nutrition information</string>
-    <string name="section_inspiration">Inspiration</string>
     <string name="product_detail_in_stock">In stock</string>
     <string name="product_detail_remove">Remove</string>
     <string name="product_detail_add_to_shopping_list">Add to list</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
-    <string name="product_detail_ecoscore_format">Eco-Score %1$s</string>
-    <string name="product_detail_stock_chip_format">%1$d in stock</string>
     <string name="product_detail_ingredients_title">Ingredients</string>
     <string name="product_detail_nutrition_title">Nutrition per 100 g</string>
     <string name="product_detail_nutrition_energy">Energy</string>
@@ -160,7 +157,6 @@
     <string name="product_detail_status_days_format">%1$d days left</string>
     <string name="product_detail_status_fresh">Fresh</string>
     <string name="product_detail_min_quantity_label">Minimum quantity</string>
-    <string name="product_detail_min_quantity_hint">Automatically added to the list once stock drops below this (0 = off)</string>
     <string name="product_detail_allergens_title">Allergens</string>
     <string name="product_detail_diet_labels_title">Diet labels</string>
     <string name="product_detail_note_title">Personal note</string>
