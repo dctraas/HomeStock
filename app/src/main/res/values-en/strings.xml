@@ -119,6 +119,7 @@
     <string name="inventory_sort_active_cd_format">Sort (active: %1$s)</string>
     <string name="inventory_removed_snackbar_format">%1$s removed</string>
     <string name="inventory_add_to_shopping_list_cd">Add to shopping list</string>
+    <string name="inventory_added_to_shopping_list_snackbar">Added to shopping list</string>
     <string name="inventory_remove_cd">Remove from inventory</string>
     <string name="inventory_empty_filtered_title">No products found.</string>
     <string name="inventory_empty_filtered_subtitle">Adjust your search or filter.</string>

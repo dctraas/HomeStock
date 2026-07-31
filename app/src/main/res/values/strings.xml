@@ -119,6 +119,7 @@
     <string name="inventory_sort_active_cd_format">Sorteren (actief: %1$s)</string>
     <string name="inventory_removed_snackbar_format">%1$s verwijderd</string>
     <string name="inventory_add_to_shopping_list_cd">Toevoegen aan boodschappenlijst</string>
+    <string name="inventory_added_to_shopping_list_snackbar">Toegevoegd aan boodschappenlijst</string>
     <string name="inventory_remove_cd">Verwijderen uit voorraad</string>
     <string name="inventory_empty_filtered_title">Geen producten gevonden.</string>
     <string name="inventory_empty_filtered_subtitle">Pas je zoekopdracht of filter aan.</string>

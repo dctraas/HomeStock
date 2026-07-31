@@ -119,6 +119,7 @@
     <string name="inventory_sort_active_cd_format">Ordenar (activo: %1$s)</string>
     <string name="inventory_removed_snackbar_format">%1$s eliminado</string>
     <string name="inventory_add_to_shopping_list_cd">Añadir a la lista de la compra</string>
+    <string name="inventory_added_to_shopping_list_snackbar">Añadido a la lista de la compra</string>
     <string name="inventory_remove_cd">Eliminar del inventario</string>
     <string name="inventory_empty_filtered_title">No se encontraron productos.</string>
     <string name="inventory_empty_filtered_subtitle">Ajusta tu búsqueda o filtro.</string>

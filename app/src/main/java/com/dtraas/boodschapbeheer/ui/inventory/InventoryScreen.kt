@@ -102,6 +102,7 @@ fun InventoryScreen(
     val coroutineScope = rememberCoroutineScope()
     val removedFormat = stringResource(R.string.inventory_removed_snackbar_format)
     val undoLabel = stringResource(R.string.common_undo)
+    val addedToShoppingListMessage = stringResource(R.string.inventory_added_to_shopping_list_snackbar)
 
     fun deleteWithUndo(item: InventoryItemWithProduct) {
         viewModel.removeFromInventory(item.barcode)
@@ -117,6 +118,16 @@ fun InventoryScreen(
             if (result == SnackbarResult.ActionPerformed) {
                 viewModel.restoreItem(item)
             }
+        }
+    }
+
+    fun addToShoppingListWithFeedback(item: InventoryItemWithProduct) {
+        viewModel.addToShoppingList(item)
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar(
+                message = addedToShoppingListMessage,
+                duration = SnackbarDuration.Short,
+            )
         }
     }
 
@@ -188,7 +199,7 @@ fun InventoryScreen(
                                 onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
                                 onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
                                 onDelete = { deleteWithUndo(item) },
-                                onAddToShoppingList = { viewModel.addToShoppingList(item) },
+                                onAddToShoppingList = { addToShoppingListWithFeedback(item) },
                             )
                         }
                     }
@@ -211,7 +222,7 @@ fun InventoryScreen(
                                 onClick = { onProductClick(item.barcode) },
                                 onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
                                 onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
-                                onAddToShoppingList = { viewModel.addToShoppingList(item) },
+                                onAddToShoppingList = { addToShoppingListWithFeedback(item) },
                             )
                         }
                     }
