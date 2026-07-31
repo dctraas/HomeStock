@@ -125,6 +125,10 @@
     <string name="inventory_empty_filtered_subtitle">Pas je zoekopdracht of filter aan.</string>
     <string name="inventory_empty_title">Nog geen producten in voorraad.</string>
     <string name="inventory_empty_subtitle">Scan een barcode om te beginnen.</string>
+    <string name="inventory_status_sufficient">Genoeg voorraad</string>
+    <string name="inventory_status_low">Lage voorraad</string>
+    <string name="inventory_status_expiring_soon">Houdbaarheid bijna verstreken</string>
+    <string name="inventory_status_out_of_stock">Geen voorraad</string>
 
     <!-- Voorraad sort options -->
     <string name="sort_option_name">Naam</string>

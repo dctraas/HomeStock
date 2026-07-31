@@ -125,6 +125,10 @@
     <string name="inventory_empty_filtered_subtitle">Ajusta tu búsqueda o filtro.</string>
     <string name="inventory_empty_title">Todavía no hay productos en el inventario.</string>
     <string name="inventory_empty_subtitle">Escanea un código de barras para empezar.</string>
+    <string name="inventory_status_sufficient">Existencias suficientes</string>
+    <string name="inventory_status_low">Pocas existencias</string>
+    <string name="inventory_status_expiring_soon">A punto de caducar</string>
+    <string name="inventory_status_out_of_stock">Sin existencias</string>
 
     <!-- Inventario sort options -->
     <string name="sort_option_name">Nombre</string>

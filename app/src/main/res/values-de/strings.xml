@@ -125,6 +125,10 @@
     <string name="inventory_empty_filtered_subtitle">Passe deine Suche oder deinen Filter an.</string>
     <string name="inventory_empty_title">Noch keine Produkte im Vorrat.</string>
     <string name="inventory_empty_subtitle">Scanne einen Barcode, um zu beginnen.</string>
+    <string name="inventory_status_sufficient">Genug Vorrat</string>
+    <string name="inventory_status_low">Wenig Vorrat</string>
+    <string name="inventory_status_expiring_soon">Läuft bald ab</string>
+    <string name="inventory_status_out_of_stock">Kein Vorrat</string>
 
     <!-- Vorrat sort options -->
     <string name="sort_option_name">Name</string>

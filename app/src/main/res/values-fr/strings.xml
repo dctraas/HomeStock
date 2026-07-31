@@ -125,6 +125,10 @@
     <string name="inventory_empty_filtered_subtitle">Ajustez votre recherche ou votre filtre.</string>
     <string name="inventory_empty_title">Aucun produit en stock pour l\'instant.</string>
     <string name="inventory_empty_subtitle">Scannez un code-barres pour commencer.</string>
+    <string name="inventory_status_sufficient">Stock suffisant</string>
+    <string name="inventory_status_low">Stock faible</string>
+    <string name="inventory_status_expiring_soon">Bientôt périmé</string>
+    <string name="inventory_status_out_of_stock">Rupture de stock</string>
 
     <!-- Stock sort options -->
     <string name="sort_option_name">Nom</string>

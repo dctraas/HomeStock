@@ -62,6 +62,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -71,10 +73,13 @@ import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
 import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.dao.InventoryItemWithProduct
 import com.dtraas.boodschapbeheer.data.model.Category
+import com.dtraas.boodschapbeheer.data.model.InventoryStockStatus
 import com.dtraas.boodschapbeheer.ui.components.ProductImage
 import com.dtraas.boodschapbeheer.ui.components.QuantityStepper
 import com.dtraas.boodschapbeheer.ui.components.SearchField
+import com.dtraas.boodschapbeheer.ui.components.color
 import com.dtraas.boodschapbeheer.ui.components.icon
+import com.dtraas.boodschapbeheer.ui.components.labelRes
 import kotlinx.coroutines.launch
 
 private enum class InventoryViewMode { LIST, GRID }
@@ -345,6 +350,7 @@ private fun InventoryRow(
     onDelete: () -> Unit,
     onAddToShoppingList: () -> Unit,
 ) {
+    val stockStatus = InventoryStockStatus.of(item.quantity, item.minQuantity, item.expirationDate)
     Card(
         onClick = onClick,
         modifier = Modifier
@@ -357,12 +363,15 @@ private fun InventoryRow(
             modifier = Modifier.padding(start = 10.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ProductImage(
-                imageUrl = item.imageUrl,
-                fallbackIcon = Category.fromStorageKey(item.category).icon,
-                shape = RoundedCornerShape(8.dp),
-                modifier = Modifier.size(32.dp),
-            )
+            Box(modifier = Modifier.size(32.dp)) {
+                ProductImage(
+                    imageUrl = item.imageUrl,
+                    fallbackIcon = Category.fromStorageKey(item.category).icon,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxSize(),
+                )
+                StockStatusDot(status = stockStatus, modifier = Modifier.align(Alignment.BottomEnd))
+            }
             Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
                 Text(
                     text = item.name,
@@ -416,6 +425,7 @@ private fun InventoryGridTile(
     onDecrease: () -> Unit,
     onAddToShoppingList: () -> Unit,
 ) {
+    val stockStatus = InventoryStockStatus.of(item.quantity, item.minQuantity, item.expirationDate)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -428,6 +438,10 @@ private fun InventoryGridTile(
                 fallbackIcon = Category.fromStorageKey(item.category).icon,
                 shape = RoundedCornerShape(14.dp),
                 modifier = Modifier.fillMaxSize(),
+            )
+            StockStatusDot(
+                status = stockStatus,
+                modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
             )
             Surface(
                 shape = CircleShape,
@@ -474,6 +488,22 @@ private fun InventoryGridTile(
             )
         }
     }
+}
+
+/** Small colored dot (🟢/🟡/🟠/🔴-style) showing an item's stock status at a glance. */
+@Composable
+private fun StockStatusDot(status: InventoryStockStatus, modifier: Modifier = Modifier) {
+    val label = stringResource(status.labelRes)
+    Box(
+        modifier = modifier
+            .size(14.dp)
+            .semantics { contentDescription = label }
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surface)
+            .padding(2.dp)
+            .clip(CircleShape)
+            .background(status.color),
+    )
 }
 
 @Composable

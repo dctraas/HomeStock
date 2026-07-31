@@ -125,6 +125,10 @@
     <string name="inventory_empty_filtered_subtitle">Adjust your search or filter.</string>
     <string name="inventory_empty_title">No products in inventory yet.</string>
     <string name="inventory_empty_subtitle">Scan a barcode to get started.</string>
+    <string name="inventory_status_sufficient">Well stocked</string>
+    <string name="inventory_status_low">Low stock</string>
+    <string name="inventory_status_expiring_soon">Expiring soon</string>
+    <string name="inventory_status_out_of_stock">Out of stock</string>
 
     <!-- Inventory sort options -->
     <string name="sort_option_name">Name</string>
