@@ -96,14 +96,21 @@ class ShoppingListRepository(
         shoppingListCollection(householdId).document(id).delete().await()
     }
 
-    /** Swaps the manual sort position of two adjacent items (used by the up/down move buttons). */
-    suspend fun swapSortOrder(a: ShoppingListItemEntity, b: ShoppingListItemEntity) {
+    /**
+     * Moves [item] to sit between [previous] and [next] (either may be null at a list
+     * boundary) by writing a single new sortOrder value — the midpoint of its new
+     * neighbors, or one past whichever neighbor exists. Used by drag-to-reorder.
+     */
+    suspend fun moveItem(item: ShoppingListItemEntity, previous: ShoppingListItemEntity?, next: ShoppingListItemEntity?) {
         val householdId = householdSession.householdId.value ?: return
-        val collection = shoppingListCollection(householdId)
-        val batch = firestore.batch()
-        batch.update(collection.document(a.id), "sortOrder", b.sortOrder)
-        batch.update(collection.document(b.id), "sortOrder", a.sortOrder)
-        batch.commit().await()
+        val newSortOrder = when {
+            previous != null && next != null -> (previous.sortOrder + next.sortOrder) / 2.0
+            previous != null -> previous.sortOrder - 1.0
+            next != null -> next.sortOrder + 1.0
+            else -> return
+        }
+        if (newSortOrder == item.sortOrder) return
+        shoppingListCollection(householdId).document(item.id).update("sortOrder", newSortOrder).await()
     }
 
     suspend fun clearChecked() {

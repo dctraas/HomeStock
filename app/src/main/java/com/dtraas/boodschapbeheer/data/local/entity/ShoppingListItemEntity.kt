@@ -19,9 +19,10 @@ data class ShoppingListItemEntity(
     val isChecked: Boolean,
     val addedAt: Long,
     val note: String? = null,
-    // Ascending sort key for manual reordering. Defaults to -addedAt so freshly added
-    // items sort first without a migration or extra read; moving an item just swaps
-    // this value with a neighbor's, so reordering is an O(1) two-document write.
+    // Ascending sort key for manual (drag-to-reorder) ordering. Defaults to -addedAt so
+    // freshly added items sort first without a migration or extra read; a drag just sets
+    // this to the midpoint between its new neighbors' values, so reordering is an O(1)
+    // single-document write regardless of how far an item moves.
     val sortOrder: Double = -addedAt.toDouble(),
 ) {
     fun toMap(): Map<String, Any?> = mapOf(

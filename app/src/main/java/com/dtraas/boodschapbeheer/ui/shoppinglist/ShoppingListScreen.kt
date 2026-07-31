@@ -3,6 +3,7 @@ package com.dtraas.boodschapbeheer.ui.shoppinglist
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,11 +12,11 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -27,9 +28,8 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.GridView
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ShoppingCart
@@ -54,9 +54,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -64,11 +67,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -84,6 +91,7 @@ import com.dtraas.boodschapbeheer.ui.components.SearchField
 import com.dtraas.boodschapbeheer.ui.components.StoreDropdown
 import com.dtraas.boodschapbeheer.ui.components.icon
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 private enum class ShoppingListViewMode { LIST, GRID }
 
@@ -175,36 +183,15 @@ fun ShoppingListScreen() {
                     modifier = Modifier.fillMaxSize(),
                 )
             } else if (viewMode == ShoppingListViewMode.LIST) {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(vertical = 8.dp),
-                ) {
-                    groupedByStore.forEach { (store, itemsInStore) ->
-                        stickyHeader {
-                            StoreHeader(store, itemCount = itemsInStore.size)
-                        }
-                        itemsIndexed(itemsInStore, key = { _, item -> item.id }) { index, item ->
-                            // Reordering only makes sense within the checked/unchecked group an
-                            // item is displayed in (isChecked is the primary sort key), so a move
-                            // is only enabled when the neighbor in that direction shares it.
-                            val canMoveUp = index > 0 && itemsInStore[index - 1].isChecked == item.isChecked
-                            val canMoveDown = index < itemsInStore.lastIndex &&
-                                itemsInStore[index + 1].isChecked == item.isChecked
-                            ShoppingListRow(
-                                item = item,
-                                onCheckedChange = { checked -> viewModel.setChecked(item.id, checked) },
-                                onClick = { editingItem = item },
-                                onIncrease = { viewModel.setQuantity(item.id, item.quantity + 1) },
-                                onDecrease = { viewModel.setQuantity(item.id, item.quantity - 1) },
-                                onDelete = { deleteWithUndo(item) },
-                                canMoveUp = canMoveUp,
-                                canMoveDown = canMoveDown,
-                                onMoveUp = { viewModel.moveItem(itemsInStore, index, index - 1) },
-                                onMoveDown = { viewModel.moveItem(itemsInStore, index, index + 1) },
-                            )
-                        }
-                    }
-                }
+                ReorderableShoppingList(
+                    groupedByStore = groupedByStore,
+                    onCheckedChange = { item, checked -> viewModel.setChecked(item.id, checked) },
+                    onItemClick = { editingItem = it },
+                    onIncrease = { viewModel.setQuantity(it.id, it.quantity + 1) },
+                    onDecrease = { viewModel.setQuantity(it.id, it.quantity - 1) },
+                    onDelete = { deleteWithUndo(it) },
+                    onMove = viewModel::moveItem,
+                )
             } else {
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(2),
@@ -272,6 +259,153 @@ fun ShoppingListScreen() {
     }
 }
 
+/**
+ * Renders the list view with drag-to-reorder support. The displayed order is kept in a
+ * local [orderedItems] list that mirrors [groupedByStore] flattened; it's only re-synced
+ * from Firestore while nothing is being dragged, so a snapshot arriving mid-gesture (e.g.
+ * a housemate's edit on another device) can't yank an item out from under the user's
+ * finger — the same class of race this app already avoids for other live-edited fields.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ReorderableShoppingList(
+    groupedByStore: Map<Store, List<ShoppingListItemEntity>>,
+    onCheckedChange: (ShoppingListItemEntity, Boolean) -> Unit,
+    onItemClick: (ShoppingListItemEntity) -> Unit,
+    onIncrease: (ShoppingListItemEntity) -> Unit,
+    onDecrease: (ShoppingListItemEntity) -> Unit,
+    onDelete: (ShoppingListItemEntity) -> Unit,
+    onMove: (item: ShoppingListItemEntity, previous: ShoppingListItemEntity?, next: ShoppingListItemEntity?) -> Unit,
+) {
+    val flattened = remember(groupedByStore) { groupedByStore.values.flatten() }
+    val orderedItems = remember { mutableStateListOf<ShoppingListItemEntity>() }
+    var draggingId by remember { mutableStateOf<String?>(null) }
+    var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+    var draggingRowHeightPx by remember { mutableFloatStateOf(0f) }
+
+    if (draggingId == null) {
+        // Not mid-gesture: reconcile with the latest Firestore data. If it's still the same
+        // set of items (e.g. the snapshot that echoes back the drag we just committed, or an
+        // unrelated field edited on another device), update values in place but keep our
+        // local order — otherwise the moment-old snapshot arriving right after a drop would
+        // briefly show the pre-drag order before the new one catches up. Only fall back to
+        // the server order outright when items were actually added or removed.
+        LaunchedEffect(flattened) {
+            val flattenedById = flattened.associateBy { it.id }
+            if (flattenedById.keys == orderedItems.map { it.id }.toSet()) {
+                for (i in orderedItems.indices) {
+                    val updated = flattenedById.getValue(orderedItems[i].id)
+                    if (updated != orderedItems[i]) orderedItems[i] = updated
+                }
+            } else {
+                orderedItems.clear()
+                orderedItems.addAll(flattened)
+            }
+        }
+    }
+
+    // Two items can only be swapped past each other while dragging if they're in the same
+    // store and the same checked/unchecked group — isChecked is the primary sort key, so
+    // moving across that boundary wouldn't visually do anything but would silently corrupt
+    // the manual order.
+    fun canSwap(a: ShoppingListItemEntity, b: ShoppingListItemEntity) =
+        a.store == b.store && a.isChecked == b.isChecked
+
+    fun handleDrag(deltaY: Float) {
+        val id = draggingId ?: return
+        dragOffsetPx += deltaY
+        val rowHeight = draggingRowHeightPx.takeIf { it > 0f } ?: return
+        while (true) {
+            val index = orderedItems.indexOfFirst { it.id == id }
+            if (index < 0) break
+            if (dragOffsetPx > rowHeight / 2f && index < orderedItems.lastIndex &&
+                canSwap(orderedItems[index], orderedItems[index + 1])
+            ) {
+                orderedItems.add(index, orderedItems.removeAt(index + 1))
+                dragOffsetPx -= rowHeight
+            } else if (dragOffsetPx < -rowHeight / 2f && index > 0 &&
+                canSwap(orderedItems[index], orderedItems[index - 1])
+            ) {
+                orderedItems.add(index - 1, orderedItems.removeAt(index))
+                dragOffsetPx += rowHeight
+            } else {
+                break
+            }
+        }
+    }
+
+    fun commitDrag() {
+        val id = draggingId
+        val index = if (id != null) orderedItems.indexOfFirst { it.id == id } else -1
+        if (index >= 0) {
+            val item = orderedItems[index]
+            val previous = orderedItems.getOrNull(index - 1)?.takeIf { canSwap(item, it) }
+            val next = orderedItems.getOrNull(index + 1)?.takeIf { canSwap(item, it) }
+            if (previous != null || next != null) {
+                onMove(item, previous, next)
+            }
+        }
+        draggingId = null
+        dragOffsetPx = 0f
+        draggingRowHeightPx = 0f
+    }
+
+    // Items of the same store are already contiguous in orderedItems (they come from
+    // groupedByStore, and a drag only ever swaps items within their own store), so
+    // grouping consecutive runs here always yields exactly one run per store.
+    val storeRuns = remember(orderedItems.toList()) {
+        val runs = mutableListOf<Pair<Store, MutableList<ShoppingListItemEntity>>>()
+        for (item in orderedItems) {
+            val store = Store.fromStorageKey(item.store)
+            val lastRun = runs.lastOrNull()
+            if (lastRun != null && lastRun.first == store) {
+                lastRun.second.add(item)
+            } else {
+                runs.add(store to mutableListOf(item))
+            }
+        }
+        runs
+    }
+
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(vertical = 8.dp),
+    ) {
+        storeRuns.forEach { (store, groupItems) ->
+            stickyHeader(key = "header_${store.storageKey}") {
+                StoreHeader(store, itemCount = groupItems.size)
+            }
+            items(groupItems, key = { it.id }) { item ->
+                val isDragging = item.id == draggingId
+                ShoppingListRow(
+                    item = item,
+                    onCheckedChange = { checked -> onCheckedChange(item, checked) },
+                    onClick = { onItemClick(item) },
+                    onIncrease = { onIncrease(item) },
+                    onDecrease = { onDecrease(item) },
+                    onDelete = { onDelete(item) },
+                    onDragStart = { rowHeightPx ->
+                        draggingId = item.id
+                        dragOffsetPx = 0f
+                        draggingRowHeightPx = rowHeightPx
+                    },
+                    onDrag = ::handleDrag,
+                    onDragEnd = ::commitDrag,
+                    modifier = Modifier
+                        .zIndex(if (isDragging) 1f else 0f)
+                        .then(
+                            if (isDragging) {
+                                Modifier.offset { IntOffset(0, dragOffsetPx.roundToInt()) }
+                            } else {
+                                Modifier.animateItem()
+                            }
+                        ),
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun StoreHeader(store: Store, itemCount: Int) {
     Row(
@@ -312,17 +446,20 @@ private fun ShoppingListRow(
     onIncrease: () -> Unit,
     onDecrease: () -> Unit,
     onDelete: () -> Unit,
-    canMoveUp: Boolean,
-    canMoveDown: Boolean,
-    onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit,
+    onDragStart: (rowHeightPx: Float) -> Unit,
+    onDrag: (deltaYPx: Float) -> Unit,
+    onDragEnd: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val category = Category.fromStorageKey(item.category)
+    var rowHeightPx by remember { mutableFloatStateOf(0f) }
+    val dragHandleCd = stringResource(R.string.shopping_list_drag_handle_cd)
     Card(
         onClick = onClick,
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 3.dp),
+            .padding(horizontal = 16.dp, vertical = 3.dp)
+            .onGloballyPositioned { rowHeightPx = it.size.height.toFloat() },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         shape = RoundedCornerShape(14.dp),
     ) {
@@ -330,22 +467,25 @@ private fun ShoppingListRow(
             modifier = Modifier.padding(start = 0.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column {
-                IconButton(onClick = onMoveUp, enabled = canMoveUp, modifier = Modifier.size(24.dp)) {
-                    Icon(
-                        Icons.Filled.KeyboardArrowUp,
-                        contentDescription = stringResource(R.string.shopping_list_move_up_cd),
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-                IconButton(onClick = onMoveDown, enabled = canMoveDown, modifier = Modifier.size(24.dp)) {
-                    Icon(
-                        Icons.Filled.KeyboardArrowDown,
-                        contentDescription = stringResource(R.string.shopping_list_move_down_cd),
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-            }
+            Icon(
+                imageVector = Icons.Filled.DragHandle,
+                contentDescription = dragHandleCd,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier
+                    .size(32.dp)
+                    .padding(4.dp)
+                    .pointerInput(item.id) {
+                        detectDragGestures(
+                            onDragStart = { onDragStart(rowHeightPx) },
+                            onDrag = { change, dragAmount ->
+                                change.consume()
+                                onDrag(dragAmount.y)
+                            },
+                            onDragEnd = onDragEnd,
+                            onDragCancel = onDragEnd,
+                        )
+                    },
+            )
             Checkbox(
                 checked = item.isChecked,
                 onCheckedChange = onCheckedChange,
