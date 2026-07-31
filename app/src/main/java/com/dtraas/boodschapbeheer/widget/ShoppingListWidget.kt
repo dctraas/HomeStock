@@ -1,12 +1,13 @@
 package com.dtraas.boodschapbeheer.widget
 
 import android.content.Context
+import android.content.Intent
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.glance.action.Action
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.CheckBox
@@ -46,10 +47,10 @@ import com.dtraas.boodschapbeheer.data.repository.ShoppingListRepository
  * list write so the widget doesn't have to wait for the OS's own (infrequent)
  * update schedule to catch up.
  *
- * Colors are fixed day/night pairs rather than Material You dynamic theming
- * (which would need the glance-material3 artifact) to keep this widget's only
- * dependency on the base glance/glance-appwidget modules that the rest of the
- * app's Gradle setup already resolves cleanly.
+ * Colors are day/night Android color resources (`res/values/colors.xml` +
+ * `res/values-night/colors.xml`), referenced via `ColorProvider(resId)`, rather than
+ * Material You dynamic theming — that needs the glance-material3 artifact, which isn't
+ * one of this project's dependencies.
  */
 class ShoppingListWidget : GlanceAppWidget() {
 
@@ -66,6 +67,9 @@ class ShoppingListWidget : GlanceAppWidget() {
         } else {
             null
         }
+        // actionStartActivity's Class-based overload expects a plain launch Intent, not a
+        // reified Activity type, so the Intent is built here where a Context is available.
+        val openAppAction = actionStartActivity(Intent(context, MainActivity::class.java))
 
         provideContent {
             ShoppingListWidgetContent(
@@ -73,6 +77,7 @@ class ShoppingListWidget : GlanceAppWidget() {
                 title = title,
                 emptyMessage = emptyMessage,
                 moreLabel = moreLabel,
+                onTitleClick = openAppAction,
             )
         }
     }
@@ -86,9 +91,9 @@ suspend fun updateShoppingListWidget(context: Context) {
     ShoppingListWidget().updateAll(context)
 }
 
-private val WidgetBackground = ColorProvider(day = Color(0xFFFFFBFE), night = Color(0xFF1C1B1F))
-private val WidgetOnSurface = ColorProvider(day = Color(0xFF1C1B1F), night = Color(0xFFE6E1E5))
-private val WidgetOnSurfaceVariant = ColorProvider(day = Color(0xFF49454F), night = Color(0xFFCAC4D0))
+private val WidgetBackground = ColorProvider(R.color.widget_background)
+private val WidgetOnSurface = ColorProvider(R.color.widget_on_surface)
+private val WidgetOnSurfaceVariant = ColorProvider(R.color.widget_on_surface_variant)
 
 @Composable
 private fun ShoppingListWidgetContent(
@@ -96,6 +101,7 @@ private fun ShoppingListWidgetContent(
     title: String,
     emptyMessage: String,
     moreLabel: String?,
+    onTitleClick: Action,
 ) {
     Column(
         modifier = GlanceModifier
@@ -113,7 +119,7 @@ private fun ShoppingListWidgetContent(
             ),
             modifier = GlanceModifier
                 .fillMaxWidth()
-                .clickable(actionStartActivity(MainActivity::class.java)),
+                .clickable(onTitleClick),
         )
 
         if (shoppingItems.isEmpty()) {

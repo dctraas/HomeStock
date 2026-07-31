@@ -1,3 +1,9 @@
 <resources>
     <color name="ic_launcher_background">#2FA84F</color>
+
+    <!-- Home screen widget: day/night pair, referenced via ColorProvider(resId) since
+         glance-material3's dynamic GlanceTheme isn't part of this project's dependencies. -->
+    <color name="widget_background">#FFFFFBFE</color>
+    <color name="widget_on_surface">#FF1C1B1F</color>
+    <color name="widget_on_surface_variant">#FF49454F</color>
 </resources>
