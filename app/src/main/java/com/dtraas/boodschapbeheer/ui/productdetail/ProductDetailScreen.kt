@@ -72,6 +72,7 @@ import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.data.model.DietLabel
 import com.dtraas.boodschapbeheer.ui.components.QuantityStepper
 import com.dtraas.boodschapbeheer.ui.components.icon
+import com.dtraas.boodschapbeheer.ui.theme.SoftCardShape
 import kotlinx.coroutines.delay
 import java.time.Instant
 import java.time.LocalDate
@@ -173,7 +174,7 @@ fun ProductDetailScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                    shape = RoundedCornerShape(16.dp),
+                    shape = SoftCardShape,
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
                         Row(
@@ -364,7 +365,7 @@ private fun AllergensCard(allergens: List<Allergen>, modifier: Modifier = Modifi
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(16.dp),
+        shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.product_detail_allergens_title), style = MaterialTheme.typography.titleMedium)
@@ -389,7 +390,7 @@ private fun DietLabelsCard(labels: List<DietLabel>, modifier: Modifier = Modifie
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(16.dp),
+        shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.product_detail_diet_labels_title), style = MaterialTheme.typography.titleMedium)
@@ -429,7 +430,7 @@ private fun IngredientsCard(ingredients: String, modifier: Modifier = Modifier) 
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(16.dp),
+        shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.product_detail_ingredients_title), style = MaterialTheme.typography.titleMedium)
@@ -448,7 +449,7 @@ private fun NutritionCard(nutrition: NutritionInfo, modifier: Modifier = Modifie
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(16.dp),
+        shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.product_detail_nutrition_title), style = MaterialTheme.typography.titleMedium)
@@ -630,7 +631,7 @@ private fun NoteCard(note: String?, onNoteChange: (String?) -> Unit, modifier: M
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(16.dp),
+        shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(stringResource(R.string.product_detail_note_title), style = MaterialTheme.typography.titleMedium)

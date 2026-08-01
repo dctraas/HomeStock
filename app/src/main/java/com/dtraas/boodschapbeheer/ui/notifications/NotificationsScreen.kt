@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Campaign
@@ -54,6 +52,8 @@ import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.dao.ActivityLogWithProduct
 import com.dtraas.boodschapbeheer.data.model.ActivityType
 import com.dtraas.boodschapbeheer.data.model.DeveloperNotice
+import com.dtraas.boodschapbeheer.ui.theme.SoftBadgeShape
+import com.dtraas.boodschapbeheer.ui.theme.SoftCardShapeCompact
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -148,7 +148,7 @@ private fun DeveloperNoticeRow(notice: DeveloperNotice, onDismiss: () -> Unit, m
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(14.dp))
+                    .clip(SoftCardShapeCompact)
                     .background(MaterialTheme.colorScheme.errorContainer)
                     .padding(horizontal = 20.dp),
                 contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
@@ -168,14 +168,14 @@ private fun DeveloperNoticeRow(notice: DeveloperNotice, onDismiss: () -> Unit, m
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-            shape = RoundedCornerShape(14.dp),
+            shape = SoftCardShapeCompact,
         ) {
             Row(
                 modifier = Modifier.padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Surface(
-                    shape = CircleShape,
+                    shape = SoftBadgeShape,
                     color = MaterialTheme.colorScheme.tertiaryContainer,
                     modifier = Modifier.size(36.dp),
                 ) {
@@ -221,14 +221,14 @@ private fun AppActivityRow(entry: ActivityLogWithProduct) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(14.dp),
+        shape = SoftCardShapeCompact,
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Surface(
-                shape = CircleShape,
+                shape = SoftBadgeShape,
                 color = MaterialTheme.colorScheme.secondaryContainer,
                 modifier = Modifier.size(36.dp),
             ) {

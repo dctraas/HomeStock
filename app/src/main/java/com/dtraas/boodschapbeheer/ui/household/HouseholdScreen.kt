@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Groups
@@ -39,6 +38,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
 import com.dtraas.boodschapbeheer.R
+import com.dtraas.boodschapbeheer.ui.theme.SoftCardShape
 
 /**
  * Shown before the main app whenever this device isn't part of a household yet.
@@ -172,7 +172,7 @@ private fun CreateContent(
                 modifier = Modifier.padding(top = 8.dp, bottom = 20.dp),
             )
             Surface(
-                shape = RoundedCornerShape(16.dp),
+                shape = SoftCardShape,
                 color = MaterialTheme.colorScheme.secondaryContainer,
                 modifier = Modifier.fillMaxWidth(),
             ) {

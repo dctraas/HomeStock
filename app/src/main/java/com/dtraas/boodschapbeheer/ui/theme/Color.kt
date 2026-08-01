@@ -2,46 +2,75 @@ package com.dtraas.boodschapbeheer.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// A "fresh market" palette: leaf green (produce) as primary, warm terracotta
-// (bread, spices, pantry) as secondary, and a soft blueberry blue as tertiary
-// accent — richer and more appetizing than a single flat green.
+// "Keukenlinnen" (kitchen linen) palette: a muted sage ground with cards that sit a
+// shade lighter, like ceramic tiles or folded linen — warm coral for actions/accents,
+// forest green for primary state, muted gold as a third accent for pantry-staple
+// category coding. Every surfaceContainer* tone below is set explicitly: left at
+// Material's defaults, cards silently fall back to stock grey regardless of the rest
+// of the palette, which is a large part of why the app read as generic before.
 
-val GreenPrimary = Color(0xFF2E7D4F)
-val OnGreenPrimary = Color(0xFFFFFFFF)
-val GreenPrimaryContainer = Color(0xFFB7F0C4)
-val OnGreenPrimaryContainer = Color(0xFF002110)
+val SageGreenPrimary = Color(0xFF3F6B4A)
+val OnSageGreenPrimary = Color(0xFFFFFFFF)
+val SageGreenPrimaryContainer = Color(0xFFC6D9C3)
+val OnSageGreenPrimaryContainer = Color(0xFF17301D)
 
-val TerracottaSecondary = Color(0xFF7A5B3A)
-val OnTerracottaSecondary = Color(0xFFFFFFFF)
-val TerracottaSecondaryContainer = Color(0xFFFFDCBB)
-val OnTerracottaSecondaryContainer = Color(0xFF2C1600)
+val CoralSecondary = Color(0xFFD9694E)
+val OnCoralSecondary = Color(0xFFFFFFFF)
+val CoralSecondaryContainer = Color(0xFFF6D9CD)
+val OnCoralSecondaryContainer = Color(0xFF5C2415)
 
-val BlueberryTertiary = Color(0xFF4A5F92)
-val OnBlueberryTertiary = Color(0xFFFFFFFF)
-val BlueberryTertiaryContainer = Color(0xFFD9E2FF)
-val OnBlueberryTertiaryContainer = Color(0xFF001945)
+val GoldTertiary = Color(0xFFA97D2E)
+val OnGoldTertiary = Color(0xFFFFFFFF)
+val GoldTertiaryContainer = Color(0xFFEFE0BE)
+val OnGoldTertiaryContainer = Color(0xFF3D2C08)
 
-val MarketBackground = Color(0xFFFBFDF8)
-val MarketSurfaceVariant = Color(0xFFDEE5D8)
-val OnMarketSurfaceVariant = Color(0xFF424940)
-val MarketOutline = Color(0xFF71796E)
+val LinenInk = Color(0xFF2E3B31)
+val LinenBackground = Color(0xFFDCE3D3)
+val LinenSurfaceVariant = Color(0xFFCBD6C0)
+val OnLinenSurfaceVariant = Color(0xFF4A5B4D)
+val LinenOutline = Color(0xFF8B9686)
+val LinenOutlineVariant = Color(0xFFCBD6C0)
 
-val GreenPrimaryDark = Color(0xFF9CD6AB)
-val OnGreenPrimaryDark = Color(0xFF00391C)
-val GreenPrimaryContainerDark = Color(0xFF00522C)
-val OnGreenPrimaryContainerDark = Color(0xFFB7F0C4)
+val LinenSurfaceContainerLowest = Color(0xFFE8ECE1)
+val LinenSurfaceContainerLow = Color(0xFFE6EAE0)
+val LinenSurfaceContainer = Color(0xFFEAEEE4)
+val LinenSurfaceContainerHigh = Color(0xFFEDF1E7)
+val LinenSurfaceContainerHighest = Color(0xFFF1F4EC)
 
-val TerracottaSecondaryDark = Color(0xFFE9C09B)
-val OnTerracottaSecondaryDark = Color(0xFF452B0D)
-val TerracottaSecondaryContainerDark = Color(0xFF5F4020)
-val OnTerracottaSecondaryContainerDark = Color(0xFFFFDCBB)
+val LinenError = Color(0xFFB3392A)
+val OnLinenError = Color(0xFFFFFFFF)
+val LinenErrorContainer = Color(0xFFF6D3CC)
+val OnLinenErrorContainer = Color(0xFF410E06)
 
-val BlueberryTertiaryDark = Color(0xFFB3C5FF)
-val OnBlueberryTertiaryDark = Color(0xFF1A2E60)
-val BlueberryTertiaryContainerDark = Color(0xFF324578)
-val OnBlueberryTertiaryContainerDark = Color(0xFFD9E2FF)
+val SageGreenPrimaryDark = Color(0xFF9BC79E)
+val OnSageGreenPrimaryDark = Color(0xFF12321B)
+val SageGreenPrimaryContainerDark = Color(0xFF2C4A34)
+val OnSageGreenPrimaryContainerDark = Color(0xFFBEE0BF)
 
-val MarketBackgroundDark = Color(0xFF10140F)
-val MarketSurfaceVariantDark = Color(0xFF42493E)
-val OnMarketSurfaceVariantDark = Color(0xFFC2C9BB)
-val MarketOutlineDark = Color(0xFF8C9388)
+val CoralSecondaryDark = Color(0xFFF0A88F)
+val OnCoralSecondaryDark = Color(0xFF4A200F)
+val CoralSecondaryContainerDark = Color(0xFF6B3521)
+val OnCoralSecondaryContainerDark = Color(0xFFFBD9CB)
+
+val GoldTertiaryDark = Color(0xFFDCB966)
+val OnGoldTertiaryDark = Color(0xFF3D2C08)
+val GoldTertiaryContainerDark = Color(0xFF5A431A)
+val OnGoldTertiaryContainerDark = Color(0xFFF3E2B8)
+
+val LinenInkDark = Color(0xFFE7ECE0)
+val LinenBackgroundDark = Color(0xFF181D15)
+val LinenSurfaceVariantDark = Color(0xFF2B3327)
+val OnLinenSurfaceVariantDark = Color(0xFFC4CFBD)
+val LinenOutlineDark = Color(0xFF8B9686)
+val LinenOutlineVariantDark = Color(0xFF3A4232)
+
+val LinenSurfaceContainerLowestDark = Color(0xFF12160F)
+val LinenSurfaceContainerLowDark = Color(0xFF1D2318)
+val LinenSurfaceContainerDark = Color(0xFF212819)
+val LinenSurfaceContainerHighDark = Color(0xFF2A3220)
+val LinenSurfaceContainerHighestDark = Color(0xFF333C27)
+
+val LinenErrorDark = Color(0xFFF2A08F)
+val OnLinenErrorDark = Color(0xFF4A130A)
+val LinenErrorContainerDark = Color(0xFF6B2216)
+val OnLinenErrorContainerDark = Color(0xFFF9D6CE)

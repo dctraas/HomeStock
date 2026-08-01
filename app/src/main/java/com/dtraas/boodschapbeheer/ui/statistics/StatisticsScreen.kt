@@ -50,6 +50,8 @@ import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.dao.TopScannedProduct
 import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.ui.components.icon
+import com.dtraas.boodschapbeheer.ui.theme.SoftCardShape
+import com.dtraas.boodschapbeheer.ui.theme.SoftCardShapeCompact
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -159,7 +161,7 @@ private fun StatCard(icon: ImageVector, value: String, label: String, modifier: 
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(16.dp),
+        shape = SoftCardShape,
     ) {
         Column(
             modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp, horizontal = 8.dp),
@@ -191,7 +193,7 @@ private fun TopScannedRow(rank: Int, product: TopScannedProduct, maxCount: Int) 
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(14.dp),
+        shape = SoftCardShapeCompact,
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
@@ -236,7 +238,7 @@ private fun CategoryDistributionCard(distribution: List<Pair<Category, Int>>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(16.dp),
+        shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             distribution.forEach { (category, count) ->

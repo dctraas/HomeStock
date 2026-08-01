@@ -1,6 +1,5 @@
 package com.dtraas.boodschapbeheer.ui.components
 
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -12,8 +11,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import com.dtraas.boodschapbeheer.R
+import com.dtraas.boodschapbeheer.ui.theme.SoftCardShape
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,6 +36,6 @@ fun SearchField(
             }
         },
         singleLine = true,
-        shape = RoundedCornerShape(16.dp),
+        shape = SoftCardShape,
     )
 }

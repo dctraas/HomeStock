@@ -21,8 +21,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.DarkMode
@@ -76,6 +74,8 @@ import com.dtraas.boodschapbeheer.BuildConfig
 import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.repository.ThemeMode
 import com.dtraas.boodschapbeheer.ui.components.ProfileEditDialog
+import com.dtraas.boodschapbeheer.ui.theme.SoftBadgeShape
+import com.dtraas.boodschapbeheer.ui.theme.SoftCardShape
 import com.dtraas.boodschapbeheer.work.ExpiryCheckWorker
 import java.io.File
 import kotlinx.coroutines.launch
@@ -309,14 +309,14 @@ private fun AccountCard(displayName: String?, photoPath: String?, onClick: () ->
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(16.dp),
+        shape = SoftCardShape,
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Surface(
-                shape = CircleShape,
+                shape = SoftBadgeShape,
                 color = MaterialTheme.colorScheme.primaryContainer,
                 modifier = Modifier.size(44.dp),
             ) {
@@ -357,14 +357,14 @@ private fun SettingsRow(icon: ImageVector, title: String, subtitle: String? = nu
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(16.dp),
+        shape = SoftCardShape,
     ) {
         Row(
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Surface(
-                shape = CircleShape,
+                shape = SoftBadgeShape,
                 color = MaterialTheme.colorScheme.primaryContainer,
                 modifier = Modifier.size(44.dp),
             ) {

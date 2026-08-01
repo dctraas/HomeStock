@@ -86,6 +86,9 @@ import com.dtraas.boodschapbeheer.ui.components.SearchField
 import com.dtraas.boodschapbeheer.ui.components.color
 import com.dtraas.boodschapbeheer.ui.components.icon
 import com.dtraas.boodschapbeheer.ui.components.labelRes
+import com.dtraas.boodschapbeheer.ui.theme.SoftBadgeShape
+import com.dtraas.boodschapbeheer.ui.theme.SoftCardShapeCompact
+import com.dtraas.boodschapbeheer.ui.theme.SoftImageShape
 import java.io.File
 import kotlinx.coroutines.launch
 
@@ -487,7 +490,7 @@ private fun InventoryRow(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 3.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(14.dp),
+        shape = SoftCardShapeCompact,
     ) {
         Row(
             modifier = Modifier.padding(start = 10.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
@@ -559,14 +562,14 @@ private fun InventoryGridTile(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
+            .clip(SoftCardShapeCompact)
             .clickable(onClick = onClick),
     ) {
         Box(modifier = Modifier.fillMaxWidth().aspectRatio(1.4f)) {
             ProductImage(
                 imageUrl = item.imageUrl,
                 fallbackIcon = Category.fromStorageKey(item.category).icon,
-                shape = RoundedCornerShape(14.dp),
+                shape = SoftImageShape,
                 modifier = Modifier.fillMaxSize(),
             )
             StockStatusDot(
@@ -644,7 +647,7 @@ private fun EmptyInventory(isFiltered: Boolean, modifier: Modifier = Modifier) {
         verticalArrangement = Arrangement.Center,
     ) {
         Surface(
-            shape = CircleShape,
+            shape = SoftBadgeShape,
             color = MaterialTheme.colorScheme.primaryContainer,
             modifier = Modifier.size(96.dp),
         ) {

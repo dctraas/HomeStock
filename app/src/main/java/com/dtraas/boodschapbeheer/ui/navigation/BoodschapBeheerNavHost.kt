@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
@@ -36,6 +35,7 @@ import com.dtraas.boodschapbeheer.ui.scan.ScanScreen
 import com.dtraas.boodschapbeheer.ui.scanresult.ScanResultScreen
 import com.dtraas.boodschapbeheer.ui.shoppinglist.ShoppingListScreen
 import com.dtraas.boodschapbeheer.ui.statistics.StatisticsScreen
+import com.dtraas.boodschapbeheer.ui.theme.SoftBadgeShape
 
 @Composable
 fun BoodschapBeheerApp() {
@@ -147,7 +147,7 @@ private fun BoodschapBeheerBottomBar(navController: NavHostController, currentRo
                         // The scan action is the app's primary action, so it gets a
                         // filled circular badge to stand out from the plain icons.
                         Surface(
-                            shape = CircleShape,
+                            shape = SoftBadgeShape,
                             color = MaterialTheme.colorScheme.primary,
                             modifier = Modifier.size(44.dp),
                         ) {

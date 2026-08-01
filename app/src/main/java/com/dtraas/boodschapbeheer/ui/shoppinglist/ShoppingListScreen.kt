@@ -94,6 +94,9 @@ import com.dtraas.boodschapbeheer.ui.components.SearchField
 import com.dtraas.boodschapbeheer.ui.components.StoreDropdown
 import com.dtraas.boodschapbeheer.ui.components.formatQuantityWithUnit
 import com.dtraas.boodschapbeheer.ui.components.icon
+import com.dtraas.boodschapbeheer.ui.theme.SoftBadgeShape
+import com.dtraas.boodschapbeheer.ui.theme.SoftCardShapeCompact
+import com.dtraas.boodschapbeheer.ui.theme.SoftImageShape
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -478,7 +481,7 @@ private fun ShoppingListRow(
             .padding(horizontal = 16.dp, vertical = 3.dp)
             .onGloballyPositioned { rowHeightPx = it.size.height.toFloat() },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(14.dp),
+        shape = SoftCardShapeCompact,
     ) {
         Row(
             modifier = Modifier.padding(start = 0.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
@@ -565,14 +568,14 @@ private fun ShoppingListGridTile(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
+            .clip(SoftCardShapeCompact)
             .clickable(onClick = onClick),
     ) {
         Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
             ProductImage(
                 imageUrl = item.imageUrl,
                 fallbackIcon = category.icon,
-                shape = RoundedCornerShape(16.dp),
+                shape = SoftImageShape,
                 containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
                 modifier = Modifier.fillMaxSize(),
@@ -655,7 +658,7 @@ private fun EmptyShoppingList(isFiltered: Boolean, modifier: Modifier = Modifier
         verticalArrangement = Arrangement.Center,
     ) {
         Surface(
-            shape = CircleShape,
+            shape = SoftBadgeShape,
             color = MaterialTheme.colorScheme.primaryContainer,
             modifier = Modifier.size(96.dp),
         ) {
