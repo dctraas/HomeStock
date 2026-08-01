@@ -22,6 +22,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
@@ -32,6 +33,7 @@ import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
@@ -40,9 +42,11 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -50,6 +54,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -104,6 +109,11 @@ fun InventoryScreen(
     val uiState by viewModel.uiState.collectAsState()
     var viewMode by remember { mutableStateOf(InventoryViewMode.GRID) }
     var searchActive by remember { mutableStateOf(false) }
+    var showProfileDialog by remember { mutableStateOf(false) }
+    val householdSession = application.container.householdSession
+    val deviceProfile = application.container.deviceProfile
+    val householdId by householdSession.householdId.collectAsState()
+    val displayName by deviceProfile.displayName.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val removedFormat = stringResource(R.string.inventory_removed_snackbar_format)
@@ -141,6 +151,11 @@ fun InventoryScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.inventory_title)) },
+                actions = {
+                    IconButton(onClick = { showProfileDialog = true }) {
+                        Icon(Icons.Filled.AccountCircle, contentDescription = stringResource(R.string.more_profile_title))
+                    }
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -272,6 +287,92 @@ fun InventoryScreen(
                 }
             }
         }
+    }
+
+    if (showProfileDialog) {
+        ProfileDialog(
+            householdCode = householdId,
+            displayName = displayName,
+            onSaveName = { deviceProfile.setDisplayName(it) },
+            onLeaveHousehold = { householdSession.leaveHousehold() },
+            onDismiss = { showProfileDialog = false },
+        )
+    }
+}
+
+@Composable
+private fun ProfileDialog(
+    householdCode: String?,
+    displayName: String?,
+    onSaveName: (String) -> Unit,
+    onLeaveHousehold: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var nameInput by remember { mutableStateOf(displayName ?: "") }
+    var showLeaveConfirm by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.more_profile_dialog_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                OutlinedTextField(
+                    value = nameInput,
+                    onValueChange = { nameInput = it },
+                    label = { Text(stringResource(R.string.more_profile_title)) },
+                    placeholder = { Text(stringResource(R.string.more_profile_name_placeholder)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                HorizontalDivider()
+                Column {
+                    Text(stringResource(R.string.more_household_title), style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        text = stringResource(R.string.more_household_code_format, householdCode ?: "—"),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
+                TextButton(
+                    onClick = { showLeaveConfirm = true },
+                    modifier = Modifier.align(Alignment.End),
+                ) {
+                    Text(stringResource(R.string.more_leave))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    onSaveName(nameInput)
+                    onDismiss()
+                },
+            ) { Text(stringResource(R.string.common_save)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+        },
+    )
+
+    if (showLeaveConfirm) {
+        AlertDialog(
+            onDismissRequest = { showLeaveConfirm = false },
+            title = { Text(stringResource(R.string.more_leave_dialog_title)) },
+            text = { Text(stringResource(R.string.more_leave_dialog_text)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLeaveConfirm = false
+                        onLeaveHousehold()
+                        onDismiss()
+                    },
+                ) { Text(stringResource(R.string.more_leave)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLeaveConfirm = false }) { Text(stringResource(R.string.common_cancel)) }
+            },
+        )
     }
 }
 

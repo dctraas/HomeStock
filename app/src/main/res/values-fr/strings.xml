@@ -103,7 +103,6 @@
     <string name="more_leave_dialog_title">Quitter le foyer ?</string>
     <string name="more_leave_dialog_text">Vous ne verrez plus le stock et la liste de courses partagés sur cet appareil. Vous pouvez rejoindre le foyer à tout moment avec le code.</string>
     <string name="more_profile_title">Ton nom</string>
-    <string name="more_profile_placeholder">Non défini</string>
     <string name="more_profile_dialog_title">Définir ton nom</string>
     <string name="more_profile_name_placeholder">P. ex. Maman, Alex</string>
     <string name="more_expiry_notifications_title">Rappels de péremption</string>

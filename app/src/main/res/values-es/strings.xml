@@ -103,7 +103,6 @@
     <string name="more_leave_dialog_title">¿Abandonar el hogar?</string>
     <string name="more_leave_dialog_text">Dejarás de ver el inventario y la lista de la compra compartidos en este dispositivo. Puedes volver a unirte en cualquier momento con el código.</string>
     <string name="more_profile_title">Tu nombre</string>
-    <string name="more_profile_placeholder">No establecido</string>
     <string name="more_profile_dialog_title">Establecer tu nombre</string>
     <string name="more_profile_name_placeholder">P. ej. Mamá, Alex</string>
     <string name="more_expiry_notifications_title">Avisos de caducidad</string>

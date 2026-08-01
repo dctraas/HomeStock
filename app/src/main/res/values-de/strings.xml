@@ -103,7 +103,6 @@
     <string name="more_leave_dialog_title">Haushalt verlassen?</string>
     <string name="more_leave_dialog_text">Du siehst den geteilten Vorrat und die Einkaufsliste dann nicht mehr auf diesem Gerät. Du kannst jederzeit mit dem Code wieder beitreten.</string>
     <string name="more_profile_title">Dein Name</string>
-    <string name="more_profile_placeholder">Nicht eingestellt</string>
     <string name="more_profile_dialog_title">Namen einstellen</string>
     <string name="more_profile_name_placeholder">Z. B. Mama, Alex</string>
     <string name="more_expiry_notifications_title">Haltbarkeitserinnerungen</string>

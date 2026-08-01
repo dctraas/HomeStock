@@ -103,7 +103,6 @@
     <string name="more_leave_dialog_title">Huishouden verlaten?</string>
     <string name="more_leave_dialog_text">Je ziet de gedeelde voorraad en boodschappenlijst dan niet meer op dit toestel. Je kunt op elk moment weer aansluiten met de code.</string>
     <string name="more_profile_title">Jouw naam</string>
-    <string name="more_profile_placeholder">Niet ingesteld</string>
     <string name="more_profile_dialog_title">Naam instellen</string>
     <string name="more_profile_name_placeholder">Bijv. Mama, Jip</string>
     <string name="more_expiry_notifications_title">Houdbaarheidsmeldingen</string>

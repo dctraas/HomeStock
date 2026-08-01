@@ -103,7 +103,6 @@
     <string name="more_leave_dialog_title">Leave household?</string>
     <string name="more_leave_dialog_text">You\'ll no longer see the shared inventory and shopping list on this device. You can rejoin at any time with the code.</string>
     <string name="more_profile_title">Your name</string>
-    <string name="more_profile_placeholder">Not set</string>
     <string name="more_profile_dialog_title">Set your name</string>
     <string name="more_profile_name_placeholder">E.g. Mom, Alex</string>
     <string name="more_expiry_notifications_title">Expiry reminders</string>
