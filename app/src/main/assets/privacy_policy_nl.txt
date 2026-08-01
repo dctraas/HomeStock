@@ -1,13 +1,11 @@
 PRIVACYVERKLARING BOODSCHAPBEHEER
 
-Laatst bijgewerkt: [DATUM INVULLEN]
+Laatst bijgewerkt: 02-08-2026
 
 Deze privacyverklaring legt uit welke gegevens de app BoodschapBeheer ("de app") verwerkt, waarom, en welke rechten je hebt. BoodschapBeheer is een app voor het bijhouden van een gedeelde voorraad en boodschappenlijst binnen een huishouden.
 
-Verwerkingsverantwoordelijke: [JOUW NAAM OF BEDRIJFSNAAM INVULLEN]
-Contact: [JOUW CONTACT-E-MAILADRES INVULLEN]
-
-Vul bovenstaande gegevens in voordat je dit document publiceert — een privacyverklaring zonder een geldige, bereikbare identiteit voldoet niet aan de AVG.
+Verwerkingsverantwoordelijke: Dennis Traas
+Contact: info@dennistraas.dev
 
 
 1. WELKE GEGEVENS VERZAMELEN WE
@@ -94,4 +92,4 @@ We kunnen deze privacyverklaring van tijd tot tijd bijwerken, bijvoorbeeld bij n
 
 9. CONTACT
 
-Vragen over deze privacyverklaring of je gegevens? Neem contact op via: [JOUW CONTACT-E-MAILADRES INVULLEN]
+Vragen over deze privacyverklaring of je gegevens? Neem contact op via: info@dennistraas.dev

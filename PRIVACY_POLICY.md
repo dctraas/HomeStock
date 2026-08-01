@@ -1,15 +1,13 @@
 # Privacyverklaring BoodschapBeheer
 
-*Laatst bijgewerkt: [DATUM INVULLEN]*
+*Laatst bijgewerkt: 02-08-2026*
 
-> **Voor de ontwikkelaar:** dit is de canonieke, hostbare versie van de privacyverklaring die in de app wordt getoond (`app/src/main/assets/privacy_policy_nl.txt`). Host deze pagina publiek (bijv. via GitHub Pages of Firebase Hosting) en gebruik die URL in de Google Play Console (Store listing + Data safety) — een in-app tekst alleen volstaat niet voor Play Store-publicatie. Vul de placeholders tussen `[...]` in en houd beide bestanden gelijk als je wijzigingen aanbrengt.
+> **Voor de ontwikkelaar:** dit is de canonieke, hostbare versie van de privacyverklaring die in de app wordt getoond (`app/src/main/assets/privacy_policy_nl.txt`) en die live staat op `docs/index.html` (GitHub Pages). Houd alle drie gelijk als je wijzigingen aanbrengt.
 
 Deze privacyverklaring legt uit welke gegevens de app BoodschapBeheer ("de app") verwerkt, waarom, en welke rechten je hebt. BoodschapBeheer is een app voor het bijhouden van een gedeelde voorraad en boodschappenlijst binnen een huishouden.
 
-**Verwerkingsverantwoordelijke:** [JOUW NAAM OF BEDRIJFSNAAM INVULLEN]
-**Contact:** [JOUW CONTACT-E-MAILADRES INVULLEN]
-
-Vul bovenstaande gegevens in voordat je dit document publiceert — een privacyverklaring zonder een geldige, bereikbare identiteit voldoet niet aan de AVG.
+**Verwerkingsverantwoordelijke:** Dennis Traas
+**Contact:** info@dennistraas.dev
 
 ## 1. Welke gegevens verzamelen we
 
@@ -87,4 +85,4 @@ We kunnen deze privacyverklaring van tijd tot tijd bijwerken, bijvoorbeeld bij n
 
 ## 9. Contact
 
-Vragen over deze privacyverklaring of je gegevens? Neem contact op via: [JOUW CONTACT-E-MAILADRES INVULLEN]
+Vragen over deze privacyverklaring of je gegevens? Neem contact op via: info@dennistraas.dev
