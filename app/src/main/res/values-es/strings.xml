@@ -128,6 +128,7 @@
     <string name="more_about_version_format">Versión %1$s</string>
     <string name="more_about_feedback">Comentarios</string>
     <string name="more_about_rate_app">Valorar la app</string>
+    <string name="more_about_privacy_policy">Política de privacidad</string>
     <string name="more_feedback_placeholder">Cuéntanos qué opinas…</string>
     <string name="more_feedback_send">Enviar</string>
     <string name="more_feedback_star_cd">Estrella %1$d</string>

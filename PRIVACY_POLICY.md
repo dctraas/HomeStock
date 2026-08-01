@@ -1,0 +1,90 @@
+# Privacyverklaring BoodschapBeheer
+
+*Laatst bijgewerkt: [DATUM INVULLEN]*
+
+> **Voor de ontwikkelaar:** dit is de canonieke, hostbare versie van de privacyverklaring die in de app wordt getoond (`app/src/main/assets/privacy_policy_nl.txt`). Host deze pagina publiek (bijv. via GitHub Pages of Firebase Hosting) en gebruik die URL in de Google Play Console (Store listing + Data safety) — een in-app tekst alleen volstaat niet voor Play Store-publicatie. Vul de placeholders tussen `[...]` in en houd beide bestanden gelijk als je wijzigingen aanbrengt.
+
+Deze privacyverklaring legt uit welke gegevens de app BoodschapBeheer ("de app") verwerkt, waarom, en welke rechten je hebt. BoodschapBeheer is een app voor het bijhouden van een gedeelde voorraad en boodschappenlijst binnen een huishouden.
+
+**Verwerkingsverantwoordelijke:** [JOUW NAAM OF BEDRIJFSNAAM INVULLEN]
+**Contact:** [JOUW CONTACT-E-MAILADRES INVULLEN]
+
+Vul bovenstaande gegevens in voordat je dit document publiceert — een privacyverklaring zonder een geldige, bereikbare identiteit voldoet niet aan de AVG.
+
+## 1. Welke gegevens verzamelen we
+
+### 1.1 Account
+De app maakt gebruik van Firebase Authentication met anonieme aanmelding. Er wordt geen naam, e-mailadres of wachtwoord gevraagd. Elk toestel krijgt automatisch een uniek, anoniem identificatienummer.
+
+### 1.2 Huishoudengegevens (opgeslagen in de cloud, via Google Firebase/Firestore)
+Zodra je een huishouden aanmaakt of met een code aansluit, worden de volgende gegevens opgeslagen op servers van Google Firebase, gedeeld met alle apparaten die dezelfde huishoudencode gebruiken:
+
+- Productinformatie die je scant of toevoegt (naam, merk, categorie, barcode, eventuele voedings- en Eco-Score-gegevens)
+- Voorraaditems (aantal, houdbaarheidsdatum, minimumvoorraad, persoonlijke notitie)
+- Boodschappenlijstitems (naam, categorie, winkel, aantal, notitie)
+- Een activiteitenlogboek van wijzigingen (bijv. "toegevoegd", "aantal gewijzigd"), inclusief een optioneel zelfgekozen weergavenaam als je die hebt ingesteld
+- Scangeschiedenis (welke barcodes wanneer gescand zijn)
+
+### 1.3 Gegevens die alleen lokaal op je toestel blijven
+De volgende gegevens worden **niet** naar de cloud verstuurd en blijven op je eigen toestel:
+
+- De huishoudencode waarmee dit toestel verbonden is
+- Je voorkeur voor houdbaarheidsmeldingen (aan/uit)
+- Je gekozen weergavenaam en profielfoto (de foto wordt lokaal opgeslagen; alleen de naam die je instelt wordt, indien je die instelt, zichtbaar voor huisgenoten via het activiteitenlogboek)
+- Je voorkeur voor donker/licht thema en app-taal
+
+### 1.4 Camera
+De app gebruikt je camera om barcodes te scannen. Deze herkenning gebeurt volledig op je eigen toestel (via Google's ML Kit). Er worden geen foto's, video's of camerabeelden opgeslagen of verzonden — alleen het herkende barcodenummer wordt gebruikt om productinformatie op te zoeken.
+
+### 1.5 Feedback
+Als je vrijwillig feedback stuurt via Instellingen (een sterbeoordeling en/of tekstbericht), wordt dit los van je huishouden opgeslagen zodat we de app kunnen verbeteren. Vul geen persoonsgegevens in je feedbackbericht in die je niet met ons wilt delen.
+
+### 1.6 Wat we niet verzamelen
+BoodschapBeheer bevat geen advertenties, geen trackingscookies en geen analytics- of crashrapportage-SDK's van derden. We volgen je niet buiten de app en verkopen geen gegevens.
+
+## 2. Waarom verwerken we deze gegevens
+
+We verwerken deze gegevens om de kernfunctionaliteit van de app mogelijk te maken: een gedeelde voorraad en boodschappenlijst tussen huisgenoten. De rechtsgrondslag hiervoor is de uitvoering van de overeenkomst die ontstaat doordat je de app gebruikt (art. 6 lid 1 sub b AVG), en voor optionele onderdelen (zoals feedback) je uitdrukkelijke, vrijwillige handeling.
+
+## 3. Met wie delen we gegevens
+
+**Google Firebase** — Huishoudengegevens en feedback worden opgeslagen bij Google Firebase (Google Cloud). Google kan hierbij als verwerker optreden en gegevens verwerken op servers die zich (mede) buiten de Europese Economische Ruimte kunnen bevinden. Google heeft passende waarborgen (zoals modelcontractbepalingen) voor internationale doorgifte.
+
+**Open Food Facts** — Wanneer je een product scant, stuurt de app het gescande barcodenummer naar Open Food Facts (world.openfoodfacts.org), een open, non-profit productendatabase, om productinformatie op te halen. Dit betreft geen persoonsgegevens van jou — alleen het productnummer. Productgegevens die op deze manier worden opgehaald zijn afkomstig van Open Food Facts en beschikbaar onder de Open Database License (ODbL).
+
+**Google Play Services (lettertypen)** — De app haalt op de achtergrond lettertypen op via Google Play Services (Downloadable Fonts). Hierbij wordt een standaard, niet-persoonlijk verzoek gedaan aan Google's lettertypedienst.
+
+We verkopen jouw gegevens nooit aan derden en gebruiken ze niet voor advertentiedoeleinden.
+
+## 4. Hoe lang bewaren we gegevens
+
+Huishoudengegevens blijven bewaard zolang het huishouden actief is. De knop "Huishouden verlaten" koppelt alléén jouw toestel los van het huishouden — de gedeelde gegevens van het huishouden zelf blijven daarna bewaard (zodat huisgenoten er niet per ongeluk toegang toe verliezen). Wil je dat de gegevens van een heel huishouden verwijderd worden, neem dan contact met ons op via het e-mailadres hierboven.
+
+## 5. Beveiliging
+
+We nemen passende technische en organisatorische maatregelen om je gegevens te beschermen, zoals versleutelde verbindingen (HTTPS/TLS) tussen de app en Firebase. Toegang tot een huishouden is beveiligd met de huishoudencode; deel deze daarom alleen met mensen die je vertrouwt.
+
+## 6. Jouw rechten
+
+Onder de Algemene Verordening Gegevensbescherming (AVG) heb je het recht op:
+
+- Inzage in de gegevens die we van je verwerken
+- Rectificatie van onjuiste gegevens
+- Verwijdering van je gegevens ("recht op vergetelheid")
+- Beperking van de verwerking
+- Bezwaar tegen de verwerking
+- Overdraagbaarheid van je gegevens
+
+Je kunt deze rechten uitoefenen door contact met ons op te nemen via het e-mailadres hierboven. Je hebt ook het recht om een klacht in te dienen bij de [Autoriteit Persoonsgegevens](https://www.autoriteitpersoonsgegevens.nl/).
+
+## 7. Kinderen
+
+BoodschapBeheer is niet specifiek gericht op kinderen jonger dan 16 jaar. We verzamelen niet bewust gegevens van kinderen onder deze leeftijd zonder toestemming van een ouder of voogd.
+
+## 8. Wijzigingen
+
+We kunnen deze privacyverklaring van tijd tot tijd bijwerken, bijvoorbeeld bij nieuwe functionaliteit. De datum bovenaan dit document geeft aan wanneer de verklaring voor het laatst is gewijzigd.
+
+## 9. Contact
+
+Vragen over deze privacyverklaring of je gegevens? Neem contact op via: [JOUW CONTACT-E-MAILADRES INVULLEN]

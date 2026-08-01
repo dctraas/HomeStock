@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -29,6 +30,7 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarRate
 import androidx.compose.material.icons.outlined.StarBorder
@@ -117,6 +119,7 @@ fun MoreScreen() {
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showAboutDialog by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
+    var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
     var showLeaveConfirm by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
@@ -243,8 +246,16 @@ fun MoreScreen() {
                 showFeedbackDialog = true
             },
             onRateClick = { openPlayStoreListing(context) },
+            onPrivacyPolicyClick = {
+                showAboutDialog = false
+                showPrivacyPolicyDialog = true
+            },
             onDismiss = { showAboutDialog = false },
         )
+    }
+
+    if (showPrivacyPolicyDialog) {
+        PrivacyPolicyDialog(onDismiss = { showPrivacyPolicyDialog = false })
     }
 
     if (showFeedbackDialog) {
@@ -512,6 +523,7 @@ private fun AboutDialog(
     versionName: String,
     onFeedbackClick: () -> Unit,
     onRateClick: () -> Unit,
+    onPrivacyPolicyClick: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
@@ -553,6 +565,20 @@ private fun AboutDialog(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(stringResource(R.string.more_about_rate_app), modifier = Modifier.padding(start = 12.dp))
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onPrivacyPolicyClick)
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.PrivacyTip,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(stringResource(R.string.more_about_privacy_policy), modifier = Modifier.padding(start = 12.dp))
                 }
             }
         },
@@ -606,6 +632,34 @@ private fun FeedbackDialog(onSend: (rating: Int, message: String) -> Unit, onDis
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun PrivacyPolicyDialog(onDismiss: () -> Unit) {
+    val context = LocalContext.current
+    // Bundled as a plain-text asset rather than a string resource: it's long-form legal
+    // prose, not UI chrome, and keeping it out of strings.xml avoids bloating that file
+    // and awkward XML-escaping of a multi-paragraph document.
+    val policyText = remember {
+        context.assets.open("privacy_policy_nl.txt").bufferedReader().use { it.readText() }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.more_about_privacy_policy)) },
+        text = {
+            Text(
+                text = policyText,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 420.dp)
+                    .verticalScroll(rememberScrollState()),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) }
         },
     )
 }
