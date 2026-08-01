@@ -28,7 +28,6 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PrivacyTip
@@ -68,6 +67,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
@@ -121,7 +121,6 @@ fun MoreScreen() {
     var showThemeDialog by remember { mutableStateOf(false) }
     var showNotificationsDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
-    var showAboutDialog by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
     var showLicensesDialog by remember { mutableStateOf(false) }
@@ -189,10 +188,37 @@ fun MoreScreen() {
                 subtitle = stringResource(currentLanguage.labelRes),
                 onClick = { showLanguageDialog = true },
             )
+
+            SectionHeader(stringResource(R.string.more_section_about))
             SettingsRow(
-                icon = Icons.Filled.Info,
-                title = stringResource(R.string.more_section_about),
-                onClick = { showAboutDialog = true },
+                icon = Icons.Filled.Feedback,
+                title = stringResource(R.string.more_about_feedback),
+                onClick = { showFeedbackDialog = true },
+            )
+            SettingsRow(
+                icon = Icons.Filled.StarRate,
+                title = stringResource(R.string.more_about_rate_app),
+                onClick = { openPlayStoreListing(context) },
+            )
+            SettingsRow(
+                icon = Icons.Filled.PrivacyTip,
+                title = stringResource(R.string.more_about_privacy_policy),
+                onClick = { showPrivacyPolicyDialog = true },
+            )
+            SettingsRow(
+                icon = Icons.Filled.Description,
+                title = stringResource(R.string.more_about_licenses),
+                onClick = { showLicensesDialog = true },
+            )
+
+            Text(
+                text = stringResource(R.string.more_about_version_format, BuildConfig.VERSION_NAME),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
             )
         }
     }
@@ -246,26 +272,6 @@ fun MoreScreen() {
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(language.tag))
             },
             onDismiss = { showLanguageDialog = false },
-        )
-    }
-
-    if (showAboutDialog) {
-        AboutDialog(
-            versionName = BuildConfig.VERSION_NAME,
-            onFeedbackClick = {
-                showAboutDialog = false
-                showFeedbackDialog = true
-            },
-            onRateClick = { openPlayStoreListing(context) },
-            onPrivacyPolicyClick = {
-                showAboutDialog = false
-                showPrivacyPolicyDialog = true
-            },
-            onLicensesClick = {
-                showAboutDialog = false
-                showLicensesDialog = true
-            },
-            onDismiss = { showAboutDialog = false },
         )
     }
 
@@ -586,91 +592,6 @@ private fun LanguageDialog(selected: AppLanguage, onSelect: (AppLanguage) -> Uni
         },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
-        },
-    )
-}
-
-@Composable
-private fun AboutDialog(
-    versionName: String,
-    onFeedbackClick: () -> Unit,
-    onRateClick: () -> Unit,
-    onPrivacyPolicyClick: () -> Unit,
-    onLicensesClick: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.more_section_about)) },
-        text = {
-            Column {
-                Text(
-                    text = stringResource(R.string.more_about_version_format, versionName),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
-                HorizontalDivider()
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onFeedbackClick)
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Feedback,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(stringResource(R.string.more_about_feedback), modifier = Modifier.padding(start = 12.dp))
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onRateClick)
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.StarRate,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(stringResource(R.string.more_about_rate_app), modifier = Modifier.padding(start = 12.dp))
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onPrivacyPolicyClick)
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.PrivacyTip,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(stringResource(R.string.more_about_privacy_policy), modifier = Modifier.padding(start = 12.dp))
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onLicensesClick)
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Description,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(stringResource(R.string.more_about_licenses), modifier = Modifier.padding(start = 12.dp))
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) }
         },
     )
 }

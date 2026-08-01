@@ -131,7 +131,7 @@
     <string name="more_language_option_fr">Francés</string>
     <string name="more_language_option_es">Español</string>
     <string name="more_section_about">Acerca de</string>
-    <string name="more_about_version_format">Versión %1$s</string>
+    <string name="more_about_version_format">Versión de la app %1$s</string>
     <string name="more_about_feedback">Comentarios</string>
     <string name="more_about_rate_app">Valorar la app</string>
     <string name="more_about_privacy_policy">Política de privacidad</string>
