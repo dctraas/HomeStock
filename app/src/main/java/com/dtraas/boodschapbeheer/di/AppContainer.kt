@@ -13,6 +13,7 @@ import com.dtraas.boodschapbeheer.data.repository.NotificationPreferences
 import com.dtraas.boodschapbeheer.data.repository.ProductRepository
 import com.dtraas.boodschapbeheer.data.repository.ShoppingListRepository
 import com.dtraas.boodschapbeheer.data.repository.StatisticsRepository
+import com.dtraas.boodschapbeheer.data.repository.ThemePreferences
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import okhttp3.OkHttpClient
@@ -37,6 +38,7 @@ class AppContainer(context: Context) {
     val notificationPreferences: NotificationPreferences = NotificationPreferences(context)
     val deviceProfile: DeviceProfile = DeviceProfile(context)
     val dismissedNoticesStore: DismissedNoticesStore = DismissedNoticesStore(context)
+    val themePreferences: ThemePreferences = ThemePreferences(context)
 
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()

@@ -105,8 +105,17 @@
     <string name="more_profile_title">Tu nombre</string>
     <string name="more_profile_dialog_title">Establecer tu nombre</string>
     <string name="more_profile_name_placeholder">P. ej. Mamá, Alex</string>
-    <string name="more_expiry_notifications_title">Avisos de caducidad</string>
+    <string name="more_profile_remove_photo_cd">Eliminar foto</string>
+    <string name="more_expiry_notifications_title">Caducidad</string>
     <string name="more_expiry_notifications_description">Recibe un aviso cuando un producto esté a punto de caducar</string>
+    <string name="more_settings_title">Configuración</string>
+    <string name="more_section_account">Cuenta</string>
+    <string name="more_section_general">General</string>
+    <string name="more_theme_title">Modo oscuro</string>
+    <string name="more_theme_option_system">Predeterminado del sistema</string>
+    <string name="more_theme_option_light">Claro</string>
+    <string name="more_theme_option_dark">Oscuro</string>
+    <string name="more_notifications_row_title">Notificaciones</string>
 
     <!-- Inventario -->
     <string name="inventory_title">Inventario</string>

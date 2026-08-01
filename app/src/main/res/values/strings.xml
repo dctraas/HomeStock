@@ -105,8 +105,17 @@
     <string name="more_profile_title">Jouw naam</string>
     <string name="more_profile_dialog_title">Naam instellen</string>
     <string name="more_profile_name_placeholder">Bijv. Mama, Jip</string>
-    <string name="more_expiry_notifications_title">Houdbaarheidsmeldingen</string>
+    <string name="more_profile_remove_photo_cd">Foto verwijderen</string>
+    <string name="more_expiry_notifications_title">Houdbaarheid</string>
     <string name="more_expiry_notifications_description">Krijg een melding als een product bijna over de datum is</string>
+    <string name="more_settings_title">Instellingen</string>
+    <string name="more_section_account">Account</string>
+    <string name="more_section_general">Algemeen</string>
+    <string name="more_theme_title">Nachtmodus</string>
+    <string name="more_theme_option_system">Systeem standaard</string>
+    <string name="more_theme_option_light">Licht</string>
+    <string name="more_theme_option_dark">Donker</string>
+    <string name="more_notifications_row_title">Meldingen</string>
 
     <!-- Voorraad -->
     <string name="inventory_title">Voorraad</string>

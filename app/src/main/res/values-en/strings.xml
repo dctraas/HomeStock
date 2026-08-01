@@ -105,8 +105,17 @@
     <string name="more_profile_title">Your name</string>
     <string name="more_profile_dialog_title">Set your name</string>
     <string name="more_profile_name_placeholder">E.g. Mom, Alex</string>
-    <string name="more_expiry_notifications_title">Expiry reminders</string>
+    <string name="more_profile_remove_photo_cd">Remove photo</string>
+    <string name="more_expiry_notifications_title">Expiry</string>
     <string name="more_expiry_notifications_description">Get notified when a product is about to expire</string>
+    <string name="more_settings_title">Settings</string>
+    <string name="more_section_account">Account</string>
+    <string name="more_section_general">General</string>
+    <string name="more_theme_title">Dark mode</string>
+    <string name="more_theme_option_system">System default</string>
+    <string name="more_theme_option_light">Light</string>
+    <string name="more_theme_option_dark">Dark</string>
+    <string name="more_notifications_row_title">Notifications</string>
 
     <!-- Inventory -->
     <string name="inventory_title">Inventory</string>

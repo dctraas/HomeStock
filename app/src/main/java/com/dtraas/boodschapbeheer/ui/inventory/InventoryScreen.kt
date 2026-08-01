@@ -33,7 +33,6 @@ import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.ViewList
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
@@ -42,11 +41,9 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -54,7 +51,6 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -65,6 +61,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -74,17 +71,20 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
+import coil.compose.AsyncImage
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
 import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.dao.InventoryItemWithProduct
 import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.data.model.InventoryStockStatus
 import com.dtraas.boodschapbeheer.ui.components.ProductImage
+import com.dtraas.boodschapbeheer.ui.components.ProfileEditDialog
 import com.dtraas.boodschapbeheer.ui.components.QuantityStepper
 import com.dtraas.boodschapbeheer.ui.components.SearchField
 import com.dtraas.boodschapbeheer.ui.components.color
 import com.dtraas.boodschapbeheer.ui.components.icon
 import com.dtraas.boodschapbeheer.ui.components.labelRes
+import java.io.File
 import kotlinx.coroutines.launch
 
 private enum class InventoryViewMode { LIST, GRID }
@@ -110,10 +110,9 @@ fun InventoryScreen(
     var viewMode by remember { mutableStateOf(InventoryViewMode.GRID) }
     var searchActive by remember { mutableStateOf(false) }
     var showProfileDialog by remember { mutableStateOf(false) }
-    val householdSession = application.container.householdSession
     val deviceProfile = application.container.deviceProfile
-    val householdId by householdSession.householdId.collectAsState()
     val displayName by deviceProfile.displayName.collectAsState()
+    val photoPath by deviceProfile.photoPath.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val removedFormat = stringResource(R.string.inventory_removed_snackbar_format)
@@ -153,7 +152,18 @@ fun InventoryScreen(
                 title = { Text(stringResource(R.string.inventory_title)) },
                 actions = {
                     IconButton(onClick = { showProfileDialog = true }) {
-                        Icon(Icons.Filled.AccountCircle, contentDescription = stringResource(R.string.more_profile_title))
+                        if (photoPath != null) {
+                            AsyncImage(
+                                model = File(photoPath),
+                                contentDescription = stringResource(R.string.more_profile_title),
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .clip(CircleShape),
+                            )
+                        } else {
+                            Icon(Icons.Filled.AccountCircle, contentDescription = stringResource(R.string.more_profile_title))
+                        }
                     }
                 },
             )
@@ -290,88 +300,13 @@ fun InventoryScreen(
     }
 
     if (showProfileDialog) {
-        ProfileDialog(
-            householdCode = householdId,
+        ProfileEditDialog(
             displayName = displayName,
+            photoPath = photoPath,
             onSaveName = { deviceProfile.setDisplayName(it) },
-            onLeaveHousehold = { householdSession.leaveHousehold() },
+            onPhotoPicked = { uri -> coroutineScope.launch { deviceProfile.setPhotoFromUri(uri) } },
+            onRemovePhoto = { coroutineScope.launch { deviceProfile.clearPhoto() } },
             onDismiss = { showProfileDialog = false },
-        )
-    }
-}
-
-@Composable
-private fun ProfileDialog(
-    householdCode: String?,
-    displayName: String?,
-    onSaveName: (String) -> Unit,
-    onLeaveHousehold: () -> Unit,
-    onDismiss: () -> Unit,
-) {
-    var nameInput by remember { mutableStateOf(displayName ?: "") }
-    var showLeaveConfirm by remember { mutableStateOf(false) }
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.more_profile_dialog_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedTextField(
-                    value = nameInput,
-                    onValueChange = { nameInput = it },
-                    label = { Text(stringResource(R.string.more_profile_title)) },
-                    placeholder = { Text(stringResource(R.string.more_profile_name_placeholder)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                HorizontalDivider()
-                Column {
-                    Text(stringResource(R.string.more_household_title), style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        text = stringResource(R.string.more_household_code_format, householdCode ?: "—"),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 2.dp),
-                    )
-                }
-                TextButton(
-                    onClick = { showLeaveConfirm = true },
-                    modifier = Modifier.align(Alignment.End),
-                ) {
-                    Text(stringResource(R.string.more_leave))
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    onSaveName(nameInput)
-                    onDismiss()
-                },
-            ) { Text(stringResource(R.string.common_save)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
-        },
-    )
-
-    if (showLeaveConfirm) {
-        AlertDialog(
-            onDismissRequest = { showLeaveConfirm = false },
-            title = { Text(stringResource(R.string.more_leave_dialog_title)) },
-            text = { Text(stringResource(R.string.more_leave_dialog_text)) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        showLeaveConfirm = false
-                        onLeaveHousehold()
-                        onDismiss()
-                    },
-                ) { Text(stringResource(R.string.more_leave)) }
-            },
-            dismissButton = {
-                TextButton(onClick = { showLeaveConfirm = false }) { Text(stringResource(R.string.common_cancel)) }
-            },
         )
     }
 }
