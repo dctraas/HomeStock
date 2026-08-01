@@ -6,6 +6,8 @@
     <string name="common_cancel">Abbrechen</string>
     <string name="common_name">Name</string>
     <string name="common_ok">OK</string>
+    <string name="common_on">Ein</string>
+    <string name="common_off">Aus</string>
     <string name="common_quantity">Menge</string>
     <string name="common_save">Speichern</string>
     <string name="common_undo">Rückgängig machen</string>
@@ -111,11 +113,26 @@
     <string name="more_settings_title">Einstellungen</string>
     <string name="more_section_account">Konto</string>
     <string name="more_section_general">Allgemein</string>
-    <string name="more_theme_title">Dunkelmodus</string>
+    <string name="more_theme_title">Anzeige</string>
     <string name="more_theme_option_system">Systemstandard</string>
     <string name="more_theme_option_light">Hell</string>
     <string name="more_theme_option_dark">Dunkel</string>
     <string name="more_notifications_row_title">Benachrichtigungen</string>
+    <string name="more_language_title">Sprache</string>
+    <string name="more_language_option_nl">Niederländisch</string>
+    <string name="more_language_option_en">Englisch</string>
+    <string name="more_language_option_de">Deutsch</string>
+    <string name="more_language_option_fr">Französisch</string>
+    <string name="more_language_option_es">Spanisch</string>
+    <string name="more_section_about">Über</string>
+    <string name="more_about_version_format">Version %1$s</string>
+    <string name="more_about_feedback">Feedback</string>
+    <string name="more_about_rate_app">App bewerten</string>
+    <string name="more_feedback_placeholder">Erzähl uns, was du denkst…</string>
+    <string name="more_feedback_send">Senden</string>
+    <string name="more_feedback_star_cd">Stern %1$d</string>
+    <string name="more_feedback_sent_confirmation">Danke für dein Feedback!</string>
+    <string name="more_feedback_error">Feedback konnte nicht gesendet werden. Bitte versuche es später erneut.</string>
 
     <!-- Vorrat -->
     <string name="inventory_title">Vorrat</string>

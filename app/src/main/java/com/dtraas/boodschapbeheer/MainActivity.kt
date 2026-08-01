@@ -1,9 +1,9 @@
 package com.dtraas.boodschapbeheer
 
 import android.os.Bundle
-import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
@@ -16,7 +16,10 @@ import com.dtraas.boodschapbeheer.ui.household.HouseholdScreen
 import com.dtraas.boodschapbeheer.ui.navigation.BoodschapBeheerApp
 import com.dtraas.boodschapbeheer.ui.theme.BoodschapBeheerTheme
 
-class MainActivity : ComponentActivity() {
+// AppCompatActivity (rather than plain ComponentActivity) is required for
+// AppCompatDelegate.setApplicationLocales to recreate this activity with the
+// newly chosen language (Instellingen > Algemeen > Taal).
+class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

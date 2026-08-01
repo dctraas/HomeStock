@@ -6,6 +6,8 @@
     <string name="common_cancel">Cancel</string>
     <string name="common_name">Name</string>
     <string name="common_ok">OK</string>
+    <string name="common_on">On</string>
+    <string name="common_off">Off</string>
     <string name="common_quantity">Quantity</string>
     <string name="common_save">Save</string>
     <string name="common_undo">Undo</string>
@@ -111,11 +113,26 @@
     <string name="more_settings_title">Settings</string>
     <string name="more_section_account">Account</string>
     <string name="more_section_general">General</string>
-    <string name="more_theme_title">Dark mode</string>
+    <string name="more_theme_title">Display</string>
     <string name="more_theme_option_system">System default</string>
     <string name="more_theme_option_light">Light</string>
     <string name="more_theme_option_dark">Dark</string>
     <string name="more_notifications_row_title">Notifications</string>
+    <string name="more_language_title">Language</string>
+    <string name="more_language_option_nl">Dutch</string>
+    <string name="more_language_option_en">English</string>
+    <string name="more_language_option_de">German</string>
+    <string name="more_language_option_fr">French</string>
+    <string name="more_language_option_es">Spanish</string>
+    <string name="more_section_about">About</string>
+    <string name="more_about_version_format">Version %1$s</string>
+    <string name="more_about_feedback">Feedback</string>
+    <string name="more_about_rate_app">Rate the app</string>
+    <string name="more_feedback_placeholder">Tell us what you think…</string>
+    <string name="more_feedback_send">Send</string>
+    <string name="more_feedback_star_cd">Star %1$d</string>
+    <string name="more_feedback_sent_confirmation">Thanks for your feedback!</string>
+    <string name="more_feedback_error">Couldn\'t send feedback. Please try again later.</string>
 
     <!-- Inventory -->
     <string name="inventory_title">Inventory</string>

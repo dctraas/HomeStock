@@ -27,5 +27,13 @@ service cloud.firestore {
         allow read, write: if request.auth != null;
       }
     }
+
+    // In-app feedback (Instellingen > Algemeen > Over > Feedback). Write-only from
+    // the client — there's nothing in the app that reads it back, so read/list/update/
+    // delete are all denied to keep other users' feedback private.
+    match /appFeedback/{feedbackId} {
+      allow create: if request.auth != null;
+      allow read, list, update, delete: if false;
+    }
   }
 }

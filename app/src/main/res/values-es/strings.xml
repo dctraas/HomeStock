@@ -6,6 +6,8 @@
     <string name="common_cancel">Cancelar</string>
     <string name="common_name">Nombre</string>
     <string name="common_ok">Aceptar</string>
+    <string name="common_on">Activado</string>
+    <string name="common_off">Desactivado</string>
     <string name="common_quantity">Cantidad</string>
     <string name="common_save">Guardar</string>
     <string name="common_undo">Deshacer</string>
@@ -111,11 +113,26 @@
     <string name="more_settings_title">Configuración</string>
     <string name="more_section_account">Cuenta</string>
     <string name="more_section_general">General</string>
-    <string name="more_theme_title">Modo oscuro</string>
+    <string name="more_theme_title">Pantalla</string>
     <string name="more_theme_option_system">Predeterminado del sistema</string>
     <string name="more_theme_option_light">Claro</string>
     <string name="more_theme_option_dark">Oscuro</string>
     <string name="more_notifications_row_title">Notificaciones</string>
+    <string name="more_language_title">Idioma</string>
+    <string name="more_language_option_nl">Neerlandés</string>
+    <string name="more_language_option_en">Inglés</string>
+    <string name="more_language_option_de">Alemán</string>
+    <string name="more_language_option_fr">Francés</string>
+    <string name="more_language_option_es">Español</string>
+    <string name="more_section_about">Acerca de</string>
+    <string name="more_about_version_format">Versión %1$s</string>
+    <string name="more_about_feedback">Comentarios</string>
+    <string name="more_about_rate_app">Valorar la app</string>
+    <string name="more_feedback_placeholder">Cuéntanos qué opinas…</string>
+    <string name="more_feedback_send">Enviar</string>
+    <string name="more_feedback_star_cd">Estrella %1$d</string>
+    <string name="more_feedback_sent_confirmation">¡Gracias por tus comentarios!</string>
+    <string name="more_feedback_error">No se pudieron enviar los comentarios. Inténtalo de nuevo más tarde.</string>
 
     <!-- Inventario -->
     <string name="inventory_title">Inventario</string>

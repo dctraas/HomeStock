@@ -6,6 +6,7 @@ import com.dtraas.boodschapbeheer.data.remote.OpenFoodFactsApi
 import com.dtraas.boodschapbeheer.data.repository.ActivityLogRepository
 import com.dtraas.boodschapbeheer.data.repository.DeviceProfile
 import com.dtraas.boodschapbeheer.data.repository.DismissedNoticesStore
+import com.dtraas.boodschapbeheer.data.repository.FeedbackRepository
 import com.dtraas.boodschapbeheer.data.repository.HouseholdRepository
 import com.dtraas.boodschapbeheer.data.repository.HouseholdSession
 import com.dtraas.boodschapbeheer.data.repository.InventoryRepository
@@ -83,5 +84,9 @@ class AppContainer(context: Context) {
 
     val statisticsRepository: StatisticsRepository by lazy {
         StatisticsRepository(firestore, householdSession)
+    }
+
+    val feedbackRepository: FeedbackRepository by lazy {
+        FeedbackRepository(firestore, BuildConfig.VERSION_NAME)
     }
 }

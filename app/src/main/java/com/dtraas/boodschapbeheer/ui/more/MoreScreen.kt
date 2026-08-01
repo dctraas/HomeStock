@@ -1,11 +1,15 @@
 package com.dtraas.boodschapbeheer.ui.more
 
 import android.Manifest
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.animation.AnimatedVisibility
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,9 +24,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.DarkMode
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Feedback
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarRate
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -30,9 +39,14 @@ import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -46,19 +60,31 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import androidx.core.os.LocaleListCompat
 import coil.compose.AsyncImage
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
+import com.dtraas.boodschapbeheer.BuildConfig
 import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.repository.ThemeMode
 import com.dtraas.boodschapbeheer.ui.components.ProfileEditDialog
 import com.dtraas.boodschapbeheer.work.ExpiryCheckWorker
 import java.io.File
 import kotlinx.coroutines.launch
+
+private enum class AppLanguage(val tag: String, val labelRes: Int) {
+    NL("nl", R.string.more_language_option_nl),
+    EN("en", R.string.more_language_option_en),
+    DE("de", R.string.more_language_option_de),
+    FR("fr", R.string.more_language_option_fr),
+    ES("es", R.string.more_language_option_es),
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -74,12 +100,22 @@ fun MoreScreen() {
     val deviceProfile = application.container.deviceProfile
     val displayName by deviceProfile.displayName.collectAsState()
     val photoPath by deviceProfile.photoPath.collectAsState()
+    val feedbackRepository = application.container.feedbackRepository
+    val currentLanguage = AppLanguage.entries.find { it.tag == LocalConfiguration.current.locales[0].language } ?: AppLanguage.NL
+
     val coroutineScope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val feedbackSentMessage = stringResource(R.string.more_feedback_sent_confirmation)
+    val feedbackErrorMessage = stringResource(R.string.more_feedback_error)
 
     var showProfileDialog by remember { mutableStateOf(false) }
+    var showHouseholdDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showNotificationsDialog by remember { mutableStateOf(false) }
+    var showLanguageDialog by remember { mutableStateOf(false) }
+    var showAboutDialog by remember { mutableStateOf(false) }
+    var showFeedbackDialog by remember { mutableStateOf(false) }
     var showLeaveConfirm by remember { mutableStateOf(false) }
-    var notificationsExpanded by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -99,6 +135,7 @@ fun MoreScreen() {
 
     Scaffold(
         topBar = { CenterAlignedTopAppBar(title = { Text(stringResource(R.string.more_settings_title)) }) },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(
             modifier = Modifier.fillMaxSize().padding(padding).padding(16.dp),
@@ -110,21 +147,36 @@ fun MoreScreen() {
                 photoPath = photoPath,
                 onClick = { showProfileDialog = true },
             )
-            HouseholdCard(
-                householdCode = householdId,
-                onLeaveClick = { showLeaveConfirm = true },
+            SettingsRow(
+                icon = Icons.Filled.Home,
+                title = stringResource(R.string.more_household_title),
+                subtitle = stringResource(R.string.more_household_code_format, householdId ?: "—"),
+                onClick = { showHouseholdDialog = true },
             )
 
             SectionHeader(stringResource(R.string.more_section_general))
-            ThemeCard(
-                themeMode = themeMode,
+            SettingsRow(
+                icon = Icons.Filled.DarkMode,
+                title = stringResource(R.string.more_theme_title),
+                subtitle = stringResource(themeMode.labelRes()),
                 onClick = { showThemeDialog = true },
             )
-            NotificationsCard(
-                expanded = notificationsExpanded,
-                onToggleExpanded = { notificationsExpanded = !notificationsExpanded },
-                expiryEnabled = notificationsEnabled,
-                onExpiryEnabledChange = ::setNotificationsEnabled,
+            SettingsRow(
+                icon = Icons.Filled.Notifications,
+                title = stringResource(R.string.more_notifications_row_title),
+                subtitle = stringResource(if (notificationsEnabled) R.string.common_on else R.string.common_off),
+                onClick = { showNotificationsDialog = true },
+            )
+            SettingsRow(
+                icon = Icons.Filled.Language,
+                title = stringResource(R.string.more_language_title),
+                subtitle = stringResource(currentLanguage.labelRes),
+                onClick = { showLanguageDialog = true },
+            )
+            SettingsRow(
+                icon = Icons.Filled.Info,
+                title = stringResource(R.string.more_section_about),
+                onClick = { showAboutDialog = true },
             )
         }
     }
@@ -140,11 +192,68 @@ fun MoreScreen() {
         )
     }
 
+    if (showHouseholdDialog) {
+        HouseholdDialog(
+            householdCode = householdId,
+            onLeaveClick = {
+                showHouseholdDialog = false
+                showLeaveConfirm = true
+            },
+            onDismiss = { showHouseholdDialog = false },
+        )
+    }
+
     if (showThemeDialog) {
         ThemeDialog(
             selected = themeMode,
             onSelect = { themePreferences.setThemeMode(it) },
             onDismiss = { showThemeDialog = false },
+        )
+    }
+
+    if (showNotificationsDialog) {
+        NotificationsDialog(
+            expiryEnabled = notificationsEnabled,
+            onExpiryEnabledChange = ::setNotificationsEnabled,
+            onDismiss = { showNotificationsDialog = false },
+        )
+    }
+
+    if (showLanguageDialog) {
+        LanguageDialog(
+            selected = currentLanguage,
+            onSelect = { language ->
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(language.tag))
+            },
+            onDismiss = { showLanguageDialog = false },
+        )
+    }
+
+    if (showAboutDialog) {
+        AboutDialog(
+            versionName = BuildConfig.VERSION_NAME,
+            onFeedbackClick = {
+                showAboutDialog = false
+                showFeedbackDialog = true
+            },
+            onRateClick = { openPlayStoreListing(context) },
+            onDismiss = { showAboutDialog = false },
+        )
+    }
+
+    if (showFeedbackDialog) {
+        FeedbackDialog(
+            onSend = { rating, message ->
+                coroutineScope.launch {
+                    try {
+                        feedbackRepository.submit(rating, message)
+                        snackbarHostState.showSnackbar(feedbackSentMessage, duration = SnackbarDuration.Short)
+                    } catch (e: Exception) {
+                        snackbarHostState.showSnackbar(feedbackErrorMessage, duration = SnackbarDuration.Short)
+                    }
+                }
+            },
+            onDismiss = { showFeedbackDialog = false },
         )
     }
 
@@ -164,6 +273,17 @@ fun MoreScreen() {
             dismissButton = {
                 TextButton(onClick = { showLeaveConfirm = false }) { Text(stringResource(R.string.common_cancel)) }
             },
+        )
+    }
+}
+
+private fun openPlayStoreListing(context: Context) {
+    val uri = Uri.parse("market://details?id=${context.packageName}")
+    try {
+        context.startActivity(Intent(Intent.ACTION_VIEW, uri).apply { setPackage("com.android.vending") })
+    } catch (e: ActivityNotFoundException) {
+        context.startActivity(
+            Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}")),
         )
     }
 }
@@ -225,33 +345,9 @@ private fun AccountCard(displayName: String?, photoPath: String?, onClick: () ->
     }
 }
 
+/** Generic tappable settings row: icon, title, optional subtitle. Opens a dialog on tap. */
 @Composable
-private fun HouseholdCard(householdCode: String?, onLeaveClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(16.dp),
-    ) {
-        Column(modifier = Modifier.padding(12.dp)) {
-            Text(stringResource(R.string.more_household_title), style = MaterialTheme.typography.titleSmall)
-            Text(
-                text = stringResource(R.string.more_household_code_format, householdCode ?: "—"),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp),
-            )
-            TextButton(
-                onClick = onLeaveClick,
-                modifier = Modifier.align(Alignment.End),
-            ) {
-                Text(stringResource(R.string.more_leave))
-            }
-        }
-    }
-}
-
-@Composable
-private fun ThemeCard(themeMode: ThemeMode, onClick: () -> Unit) {
+private fun SettingsRow(icon: ImageVector, title: String, subtitle: String? = null, onClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -268,7 +364,7 @@ private fun ThemeCard(themeMode: ThemeMode, onClick: () -> Unit) {
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
-                        imageVector = Icons.Filled.DarkMode,
+                        imageVector = icon,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
@@ -279,15 +375,37 @@ private fun ThemeCard(themeMode: ThemeMode, onClick: () -> Unit) {
                     .weight(1f)
                     .padding(horizontal = 12.dp),
             ) {
-                Text(stringResource(R.string.more_theme_title), style = MaterialTheme.typography.titleSmall)
-                Text(
-                    text = stringResource(themeMode.labelRes()),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+                Text(title, style = MaterialTheme.typography.titleSmall)
+                if (subtitle != null) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
         }
     }
+}
+
+@Composable
+private fun HouseholdDialog(householdCode: String?, onLeaveClick: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.more_household_title)) },
+        text = {
+            Text(
+                text = stringResource(R.string.more_household_code_format, householdCode ?: "—"),
+                style = MaterialTheme.typography.bodyLarge,
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = onLeaveClick) { Text(stringResource(R.string.more_leave)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) }
+        },
+    )
 }
 
 private fun ThemeMode.labelRes(): Int = when (this) {
@@ -327,72 +445,161 @@ private fun ThemeDialog(selected: ThemeMode, onSelect: (ThemeMode) -> Unit, onDi
 }
 
 @Composable
-private fun NotificationsCard(
-    expanded: Boolean,
-    onToggleExpanded: () -> Unit,
-    expiryEnabled: Boolean,
-    onExpiryEnabledChange: (Boolean) -> Unit,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = RoundedCornerShape(16.dp),
-    ) {
-        Column {
+private fun NotificationsDialog(expiryEnabled: Boolean, onExpiryEnabledChange: (Boolean) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.more_notifications_row_title)) },
+        text = {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(onClick = onToggleExpanded)
-                    .padding(12.dp),
+                modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.primaryContainer,
-                    modifier = Modifier.size(44.dp),
-                ) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        Icon(
-                            imageVector = Icons.Filled.Notifications,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                    }
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.more_expiry_notifications_title), style = MaterialTheme.typography.titleSmall)
+                    Text(
+                        text = stringResource(R.string.more_expiry_notifications_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
-                Text(
-                    text = stringResource(R.string.more_notifications_row_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(horizontal = 12.dp),
-                )
-                Icon(
-                    imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
-                    contentDescription = null,
-                )
+                Switch(checked = expiryEnabled, onCheckedChange = onExpiryEnabledChange)
             }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) }
+        },
+    )
+}
 
-            AnimatedVisibility(visible = expanded) {
-                Column {
-                    HorizontalDivider()
+@Composable
+private fun LanguageDialog(selected: AppLanguage, onSelect: (AppLanguage) -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.more_language_title)) },
+        text = {
+            Column {
+                AppLanguage.entries.forEach { language ->
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(12.dp),
+                            .clickable {
+                                onSelect(language)
+                                onDismiss()
+                            }
+                            .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.more_expiry_notifications_title), style = MaterialTheme.typography.titleSmall)
-                            Text(
-                                text = stringResource(R.string.more_expiry_notifications_description),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        Switch(checked = expiryEnabled, onCheckedChange = onExpiryEnabledChange)
+                        RadioButton(selected = language == selected, onClick = { onSelect(language); onDismiss() })
+                        Text(stringResource(language.labelRes), modifier = Modifier.padding(start = 8.dp))
                     }
                 }
             }
-        }
-    }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun AboutDialog(
+    versionName: String,
+    onFeedbackClick: () -> Unit,
+    onRateClick: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.more_section_about)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.more_about_version_format, versionName),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                HorizontalDivider()
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onFeedbackClick)
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Feedback,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(stringResource(R.string.more_about_feedback), modifier = Modifier.padding(start = 12.dp))
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onRateClick)
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.StarRate,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(stringResource(R.string.more_about_rate_app), modifier = Modifier.padding(start = 12.dp))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) }
+        },
+    )
+}
+
+@Composable
+private fun FeedbackDialog(onSend: (rating: Int, message: String) -> Unit, onDismiss: () -> Unit) {
+    var rating by remember { mutableStateOf(0) }
+    var message by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.more_about_feedback)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    for (star in 1..5) {
+                        IconButton(onClick = { rating = star }) {
+                            Icon(
+                                imageVector = if (star <= rating) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                                contentDescription = stringResource(R.string.more_feedback_star_cd, star),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
+                }
+                OutlinedTextField(
+                    value = message,
+                    onValueChange = { message = it },
+                    placeholder = { Text(stringResource(R.string.more_feedback_placeholder)) },
+                    minLines = 3,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                enabled = rating > 0,
+                onClick = {
+                    onSend(rating, message)
+                    onDismiss()
+                },
+            ) { Text(stringResource(R.string.more_feedback_send)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+        },
+    )
 }

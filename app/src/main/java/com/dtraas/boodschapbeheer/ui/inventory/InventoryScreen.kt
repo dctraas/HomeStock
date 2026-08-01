@@ -1,6 +1,7 @@
 package com.dtraas.boodschapbeheer.ui.inventory
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -63,6 +64,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -150,6 +152,16 @@ fun InventoryScreen(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.inventory_title)) },
+                navigationIcon = {
+                    Image(
+                        painter = painterResource(R.mipmap.ic_launcher),
+                        contentDescription = stringResource(R.string.app_name),
+                        modifier = Modifier
+                            .padding(start = 16.dp)
+                            .size(32.dp)
+                            .clip(CircleShape),
+                    )
+                },
                 actions = {
                     IconButton(onClick = { showProfileDialog = true }) {
                         if (photoPath != null) {

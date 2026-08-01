@@ -57,6 +57,9 @@ dependencies {
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.activity.compose)
+    // Backs AppCompatDelegate.setApplicationLocales for in-app language switching
+    // (with autoStoreLocales handling persistence, see AndroidManifest.xml).
+    implementation(libs.androidx.appcompat)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)
