@@ -153,14 +153,26 @@ fun InventoryScreen(
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.inventory_title)) },
                 navigationIcon = {
-                    Image(
-                        painter = painterResource(R.mipmap.ic_launcher),
-                        contentDescription = stringResource(R.string.app_name),
+                    // R.mipmap.ic_launcher is an <adaptive-icon> XML (background + foreground
+                    // layers); painterResource only supports plain VectorDrawable/raster assets
+                    // and crashes on it, so the two vector layers are composited by hand instead.
+                    Box(
                         modifier = Modifier
                             .padding(start = 16.dp)
                             .size(32.dp)
                             .clip(CircleShape),
-                    )
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.ic_launcher_background),
+                            contentDescription = null,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        Image(
+                            painter = painterResource(R.drawable.ic_launcher_foreground),
+                            contentDescription = stringResource(R.string.app_name),
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    }
                 },
                 actions = {
                     IconButton(onClick = { showProfileDialog = true }) {
