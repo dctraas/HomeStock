@@ -104,6 +104,12 @@
     <string name="more_leave">Verlassen</string>
     <string name="more_leave_dialog_title">Haushalt verlassen?</string>
     <string name="more_leave_dialog_text">Du siehst den geteilten Vorrat und die Einkaufsliste dann nicht mehr auf diesem Gerät. Du kannst jederzeit mit dem Code wieder beitreten.</string>
+    <string name="more_delete_household">Haushalt löschen</string>
+    <string name="more_delete_household_dialog_title">Haushalt endgültig löschen?</string>
+    <string name="more_delete_household_dialog_text">Der gesamte Vorrat, die Einkaufsliste und der Verlauf dieses Haushalts werden für alle Mitglieder endgültig gelöscht. Dies kann nicht rückgängig gemacht werden.</string>
+    <string name="more_delete_household_confirm">Löschen</string>
+    <string name="more_delete_household_success">Haushalt gelöscht</string>
+    <string name="more_delete_household_error">Haushalt konnte nicht gelöscht werden. Bitte versuche es erneut.</string>
     <string name="more_profile_title">Dein Name</string>
     <string name="more_profile_dialog_title">Namen einstellen</string>
     <string name="more_profile_name_placeholder">Z. B. Mama, Alex</string>
@@ -129,6 +135,7 @@
     <string name="more_about_feedback">Feedback</string>
     <string name="more_about_rate_app">App bewerten</string>
     <string name="more_about_privacy_policy">Datenschutzerklärung</string>
+    <string name="more_about_licenses">Lizenzen</string>
     <string name="more_feedback_placeholder">Erzähl uns, was du denkst…</string>
     <string name="more_feedback_send">Senden</string>
     <string name="more_feedback_star_cd">Stern %1$d</string>
@@ -175,6 +182,7 @@
     <string name="product_detail_default_title">Produkt</string>
     <string name="section_stock">Vorrat</string>
     <string name="section_nutrition_info">Nährwertinformationen</string>
+    <string name="product_detail_off_attribution">Produktdaten über Open Food Facts, lizenziert unter der Open Database License (ODbL)</string>
     <string name="product_detail_in_stock">Auf Vorrat</string>
     <string name="product_detail_remove">Entfernen</string>
     <string name="product_detail_add_to_shopping_list">Zur Liste hinzufügen</string>

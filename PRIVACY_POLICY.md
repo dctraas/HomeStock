@@ -58,7 +58,7 @@ We verkopen jouw gegevens nooit aan derden en gebruiken ze niet voor advertentie
 
 ## 4. Hoe lang bewaren we gegevens
 
-Huishoudengegevens blijven bewaard zolang het huishouden actief is. De knop "Huishouden verlaten" koppelt alléén jouw toestel los van het huishouden — de gedeelde gegevens van het huishouden zelf blijven daarna bewaard (zodat huisgenoten er niet per ongeluk toegang toe verliezen). Wil je dat de gegevens van een heel huishouden verwijderd worden, neem dan contact met ons op via het e-mailadres hierboven.
+Huishoudengegevens blijven bewaard zolang het huishouden actief is. De knop "Huishouden verlaten" koppelt alléén jouw toestel los van het huishouden — de gedeelde gegevens van het huishouden zelf blijven daarna bewaard (zodat huisgenoten er niet per ongeluk toegang toe verliezen). Wil je de gegevens van een heel huishouden permanent laten verwijderen, gebruik dan de knop "Huishouden verwijderen" in Instellingen → Huishouden. Dit verwijdert alle gedeelde gegevens definitief voor iedereen in dat huishouden en kan niet ongedaan worden gemaakt. Lukt dit om wat voor reden dan ook niet, neem dan contact met ons op via het e-mailadres hierboven.
 
 ## 5. Beveiliging
 

@@ -104,6 +104,12 @@
     <string name="more_leave">Verlaten</string>
     <string name="more_leave_dialog_title">Huishouden verlaten?</string>
     <string name="more_leave_dialog_text">Je ziet de gedeelde voorraad en boodschappenlijst dan niet meer op dit toestel. Je kunt op elk moment weer aansluiten met de code.</string>
+    <string name="more_delete_household">Huishouden verwijderen</string>
+    <string name="more_delete_household_dialog_title">Huishouden permanent verwijderen?</string>
+    <string name="more_delete_household_dialog_text">Alle voorraad, boodschappenlijst en geschiedenis van dit huishouden worden definitief verwijderd voor alle huisgenoten. Dit kan niet ongedaan worden gemaakt.</string>
+    <string name="more_delete_household_confirm">Verwijderen</string>
+    <string name="more_delete_household_success">Huishouden verwijderd</string>
+    <string name="more_delete_household_error">Kon huishouden niet verwijderen. Probeer het opnieuw.</string>
     <string name="more_profile_title">Jouw naam</string>
     <string name="more_profile_dialog_title">Naam instellen</string>
     <string name="more_profile_name_placeholder">Bijv. Mama, Jip</string>
@@ -129,6 +135,7 @@
     <string name="more_about_feedback">Feedback</string>
     <string name="more_about_rate_app">Beoordeel de app</string>
     <string name="more_about_privacy_policy">Privacyverklaring</string>
+    <string name="more_about_licenses">Licenties</string>
     <string name="more_feedback_placeholder">Vertel ons wat je vindt…</string>
     <string name="more_feedback_send">Verzenden</string>
     <string name="more_feedback_star_cd">Ster %1$d</string>
@@ -175,6 +182,7 @@
     <string name="product_detail_default_title">Product</string>
     <string name="section_stock">Voorraad</string>
     <string name="section_nutrition_info">Voedingsinformatie</string>
+    <string name="product_detail_off_attribution">Productgegevens via Open Food Facts, gelicentieerd onder de Open Database License (ODbL)</string>
     <string name="product_detail_in_stock">Op voorraad</string>
     <string name="product_detail_remove">Verwijderen</string>
     <string name="product_detail_add_to_shopping_list">Toevoegen aan lijstje</string>

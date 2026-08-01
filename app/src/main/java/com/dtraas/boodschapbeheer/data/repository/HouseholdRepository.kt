@@ -3,6 +3,7 @@ package com.dtraas.boodschapbeheer.data.repository
 import android.content.Context
 import com.dtraas.boodschapbeheer.R
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
@@ -65,9 +66,45 @@ class HouseholdRepository(
         }
     }
 
+    /**
+     * Permanently deletes a household and everything under it — irreversible, and it
+     * affects every device sharing the code, not just this one (see the confirmation
+     * copy shown before this is called). Used for the AVG/GDPR right to erasure and
+     * Google Play's data-deletion requirement; "leave household" alone only unlinks
+     * this device, it doesn't remove the shared data.
+     *
+     * The Firestore client SDK has no server-side recursive delete, so each
+     * subcollection is paged through and batch-deleted before the household document
+     * itself. If this is interrupted partway (e.g. lost network), it can simply be
+     * called again — deleting an already-empty collection or missing document is a no-op.
+     */
+    suspend fun deleteHousehold(householdId: String) {
+        val household = firestore.collection(HOUSEHOLDS_COLLECTION).document(householdId)
+        SUBCOLLECTIONS.forEach { name -> deleteCollection(household.collection(name)) }
+        household.delete().await()
+    }
+
+    private suspend fun deleteCollection(collection: CollectionReference) {
+        while (true) {
+            val snapshot = collection.limit(DELETE_BATCH_SIZE.toLong()).get().await()
+            if (snapshot.isEmpty) return
+            val batch = firestore.batch()
+            snapshot.documents.forEach { batch.delete(it.reference) }
+            batch.commit().await()
+            if (snapshot.size() < DELETE_BATCH_SIZE) return
+        }
+    }
+
     private companion object {
         const val HOUSEHOLDS_COLLECTION = "households"
         const val MAX_CODE_ATTEMPTS = 5
+
+        // Kept comfortably under Firestore's 500-write-per-batch limit.
+        const val DELETE_BATCH_SIZE = 400
+
+        // Every subcollection ever written under households/{id} — see each repository's
+        // `collection(householdId, name)` helper. Keep in sync if a new one is added.
+        val SUBCOLLECTIONS = listOf("products", "inventory", "shoppingList", "activityLog", "scanHistory")
 
         // No 0/O or 1/I — easy to misread and easy to misdictate over the phone.
         const val CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"

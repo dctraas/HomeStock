@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.DarkMode
+import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
@@ -105,12 +106,15 @@ fun MoreScreen() {
     val displayName by deviceProfile.displayName.collectAsState()
     val photoPath by deviceProfile.photoPath.collectAsState()
     val feedbackRepository = application.container.feedbackRepository
+    val householdRepository = application.container.householdRepository
     val currentLanguage = AppLanguage.entries.find { it.tag == LocalConfiguration.current.locales[0].language } ?: AppLanguage.NL
 
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val feedbackSentMessage = stringResource(R.string.more_feedback_sent_confirmation)
     val feedbackErrorMessage = stringResource(R.string.more_feedback_error)
+    val deleteHouseholdSuccessMessage = stringResource(R.string.more_delete_household_success)
+    val deleteHouseholdErrorMessage = stringResource(R.string.more_delete_household_error)
 
     var showProfileDialog by remember { mutableStateOf(false) }
     var showHouseholdDialog by remember { mutableStateOf(false) }
@@ -120,7 +124,10 @@ fun MoreScreen() {
     var showAboutDialog by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
+    var showLicensesDialog by remember { mutableStateOf(false) }
     var showLeaveConfirm by remember { mutableStateOf(false) }
+    var showDeleteHouseholdConfirm by remember { mutableStateOf(false) }
+    var isDeletingHousehold by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -208,6 +215,10 @@ fun MoreScreen() {
                 showHouseholdDialog = false
                 showLeaveConfirm = true
             },
+            onDeleteClick = {
+                showHouseholdDialog = false
+                showDeleteHouseholdConfirm = true
+            },
             onDismiss = { showHouseholdDialog = false },
         )
     }
@@ -250,12 +261,20 @@ fun MoreScreen() {
                 showAboutDialog = false
                 showPrivacyPolicyDialog = true
             },
+            onLicensesClick = {
+                showAboutDialog = false
+                showLicensesDialog = true
+            },
             onDismiss = { showAboutDialog = false },
         )
     }
 
     if (showPrivacyPolicyDialog) {
         PrivacyPolicyDialog(onDismiss = { showPrivacyPolicyDialog = false })
+    }
+
+    if (showLicensesDialog) {
+        LicensesDialog(onDismiss = { showLicensesDialog = false })
     }
 
     if (showFeedbackDialog) {
@@ -289,6 +308,46 @@ fun MoreScreen() {
             },
             dismissButton = {
                 TextButton(onClick = { showLeaveConfirm = false }) { Text(stringResource(R.string.common_cancel)) }
+            },
+        )
+    }
+
+    if (showDeleteHouseholdConfirm) {
+        AlertDialog(
+            onDismissRequest = { if (!isDeletingHousehold) showDeleteHouseholdConfirm = false },
+            title = { Text(stringResource(R.string.more_delete_household_dialog_title)) },
+            text = { Text(stringResource(R.string.more_delete_household_dialog_text)) },
+            confirmButton = {
+                TextButton(
+                    enabled = !isDeletingHousehold,
+                    onClick = {
+                        val idToDelete = householdId ?: return@TextButton
+                        isDeletingHousehold = true
+                        coroutineScope.launch {
+                            try {
+                                householdRepository.deleteHousehold(idToDelete)
+                                showDeleteHouseholdConfirm = false
+                                // Shown while this screen (and its SnackbarHost) still exist —
+                                // leaveHousehold() below flips householdId to null, which
+                                // MainActivity reacts to by swapping to HouseholdScreen and
+                                // tearing this composition down, so the snackbar must finish
+                                // first or it would never be seen.
+                                snackbarHostState.showSnackbar(deleteHouseholdSuccessMessage, duration = SnackbarDuration.Short)
+                                householdSession.leaveHousehold()
+                            } catch (e: Exception) {
+                                snackbarHostState.showSnackbar(deleteHouseholdErrorMessage, duration = SnackbarDuration.Short)
+                            } finally {
+                                isDeletingHousehold = false
+                            }
+                        }
+                    },
+                ) { Text(stringResource(R.string.more_delete_household_confirm)) }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !isDeletingHousehold,
+                    onClick = { showDeleteHouseholdConfirm = false },
+                ) { Text(stringResource(R.string.common_cancel)) }
             },
         )
     }
@@ -406,15 +465,28 @@ private fun SettingsRow(icon: ImageVector, title: String, subtitle: String? = nu
 }
 
 @Composable
-private fun HouseholdDialog(householdCode: String?, onLeaveClick: () -> Unit, onDismiss: () -> Unit) {
+private fun HouseholdDialog(
+    householdCode: String?,
+    onLeaveClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+    onDismiss: () -> Unit,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.more_household_title)) },
         text = {
-            Text(
-                text = stringResource(R.string.more_household_code_format, householdCode ?: "—"),
-                style = MaterialTheme.typography.bodyLarge,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Text(
+                    text = stringResource(R.string.more_household_code_format, householdCode ?: "—"),
+                    style = MaterialTheme.typography.bodyLarge,
+                )
+                TextButton(
+                    onClick = onDeleteClick,
+                    modifier = Modifier.align(Alignment.End),
+                ) {
+                    Text(stringResource(R.string.more_delete_household), color = MaterialTheme.colorScheme.error)
+                }
+            }
         },
         confirmButton = {
             TextButton(onClick = onLeaveClick) { Text(stringResource(R.string.more_leave)) }
@@ -524,6 +596,7 @@ private fun AboutDialog(
     onFeedbackClick: () -> Unit,
     onRateClick: () -> Unit,
     onPrivacyPolicyClick: () -> Unit,
+    onLicensesClick: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
@@ -579,6 +652,20 @@ private fun AboutDialog(
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                     Text(stringResource(R.string.more_about_privacy_policy), modifier = Modifier.padding(start = 12.dp))
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onLicensesClick)
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Description,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(stringResource(R.string.more_about_licenses), modifier = Modifier.padding(start = 12.dp))
                 }
             }
         },
@@ -662,4 +749,61 @@ private fun PrivacyPolicyDialog(onDismiss: () -> Unit) {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) }
         },
     )
+}
+
+private data class LicenseEntry(val name: String, val license: String)
+
+// License names are intentionally left untranslated, matching how every OSS-licenses
+// screen (including Android's own Settings > About > Legal information) shows them —
+// these are the licenses' authoritative names, not app copy.
+private val softwareLicenses = listOf(
+    LicenseEntry("Kotlin & kotlinx.coroutines (JetBrains)", "Apache License 2.0"),
+    LicenseEntry("AndroidX Jetpack (Core, Lifecycle, Activity, Compose, Navigation, CameraX, WorkManager, Glance, AppCompat)", "Apache License 2.0"),
+    LicenseEntry("Material Components & Material Icons", "Apache License 2.0"),
+    LicenseEntry("Retrofit, OkHttp & Gson", "Apache License 2.0"),
+    LicenseEntry("Coil", "Apache License 2.0"),
+    LicenseEntry("Guava", "Apache License 2.0"),
+    LicenseEntry("Google ML Kit (Barcode Scanning)", "Google APIs Terms of Service"),
+    LicenseEntry("Firebase SDK (Authentication, Firestore)", "Google APIs Terms of Service"),
+    LicenseEntry("Baloo 2 & Nunito (Google Fonts)", "SIL Open Font License 1.1"),
+)
+
+private val dataLicenses = listOf(
+    LicenseEntry("Open Food Facts", "Open Database License (ODbL)"),
+)
+
+@Composable
+private fun LicensesDialog(onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.more_about_licenses)) },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(max = 420.dp)
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+            ) {
+                softwareLicenses.forEach { entry -> LicenseRow(entry) }
+                HorizontalDivider()
+                dataLicenses.forEach { entry -> LicenseRow(entry) }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) }
+        },
+    )
+}
+
+@Composable
+private fun LicenseRow(entry: LicenseEntry) {
+    Column {
+        Text(entry.name, style = MaterialTheme.typography.bodyMedium)
+        Text(
+            text = entry.license,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }

@@ -104,6 +104,12 @@
     <string name="more_leave">Leave</string>
     <string name="more_leave_dialog_title">Leave household?</string>
     <string name="more_leave_dialog_text">You\'ll no longer see the shared inventory and shopping list on this device. You can rejoin at any time with the code.</string>
+    <string name="more_delete_household">Delete household</string>
+    <string name="more_delete_household_dialog_title">Permanently delete this household?</string>
+    <string name="more_delete_household_dialog_text">All inventory, shopping list and history for this household will be permanently deleted for everyone in it. This can\'t be undone.</string>
+    <string name="more_delete_household_confirm">Delete</string>
+    <string name="more_delete_household_success">Household deleted</string>
+    <string name="more_delete_household_error">Couldn\'t delete the household. Please try again.</string>
     <string name="more_profile_title">Your name</string>
     <string name="more_profile_dialog_title">Set your name</string>
     <string name="more_profile_name_placeholder">E.g. Mom, Alex</string>
@@ -129,6 +135,7 @@
     <string name="more_about_feedback">Feedback</string>
     <string name="more_about_rate_app">Rate the app</string>
     <string name="more_about_privacy_policy">Privacy policy</string>
+    <string name="more_about_licenses">Licenses</string>
     <string name="more_feedback_placeholder">Tell us what you think…</string>
     <string name="more_feedback_send">Send</string>
     <string name="more_feedback_star_cd">Star %1$d</string>
@@ -175,6 +182,7 @@
     <string name="product_detail_default_title">Product</string>
     <string name="section_stock">Stock</string>
     <string name="section_nutrition_info">Nutrition information</string>
+    <string name="product_detail_off_attribution">Product data via Open Food Facts, licensed under the Open Database License (ODbL)</string>
     <string name="product_detail_in_stock">In stock</string>
     <string name="product_detail_remove">Remove</string>
     <string name="product_detail_add_to_shopping_list">Add to list</string>

@@ -104,6 +104,12 @@
     <string name="more_leave">Quitter</string>
     <string name="more_leave_dialog_title">Quitter le foyer ?</string>
     <string name="more_leave_dialog_text">Vous ne verrez plus le stock et la liste de courses partagés sur cet appareil. Vous pouvez rejoindre le foyer à tout moment avec le code.</string>
+    <string name="more_delete_household">Supprimer le foyer</string>
+    <string name="more_delete_household_dialog_title">Supprimer définitivement ce foyer ?</string>
+    <string name="more_delete_household_dialog_text">Tout le stock, la liste de courses et l\'historique de ce foyer seront définitivement supprimés pour tous ses membres. Cette action est irréversible.</string>
+    <string name="more_delete_household_confirm">Supprimer</string>
+    <string name="more_delete_household_success">Foyer supprimé</string>
+    <string name="more_delete_household_error">Impossible de supprimer le foyer. Réessayez.</string>
     <string name="more_profile_title">Ton nom</string>
     <string name="more_profile_dialog_title">Définir ton nom</string>
     <string name="more_profile_name_placeholder">P. ex. Maman, Alex</string>
@@ -129,6 +135,7 @@
     <string name="more_about_feedback">Commentaires</string>
     <string name="more_about_rate_app">Évaluer l\'application</string>
     <string name="more_about_privacy_policy">Politique de confidentialité</string>
+    <string name="more_about_licenses">Licences</string>
     <string name="more_feedback_placeholder">Dites-nous ce que vous en pensez…</string>
     <string name="more_feedback_send">Envoyer</string>
     <string name="more_feedback_star_cd">Étoile %1$d</string>
@@ -175,6 +182,7 @@
     <string name="product_detail_default_title">Produit</string>
     <string name="section_stock">Stock</string>
     <string name="section_nutrition_info">Informations nutritionnelles</string>
+    <string name="product_detail_off_attribution">Données produit via Open Food Facts, sous licence Open Database License (ODbL)</string>
     <string name="product_detail_in_stock">En stock</string>
     <string name="product_detail_remove">Retirer</string>
     <string name="product_detail_add_to_shopping_list">Ajouter à la liste</string>
