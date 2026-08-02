@@ -24,9 +24,8 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.model.MeasurementUnit
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.isActive
+import kotlinx.coroutines.flow.collectLatest
 
 @Composable
 fun QuantityStepper(
@@ -75,6 +74,10 @@ fun QuantityStepper(
  * state via its [MutableInteractionSource] rather than adding a second, competing touch
  * handler — a plain tap releases well before the initial repeat delay elapses, so it
  * still results in exactly the one click [IconButton] already fires on its own.
+ *
+ * [collectLatest] does the cancellation bookkeeping for us: a Release/Cancel interaction
+ * (or another Press) arriving while the block below is still waiting out the initial
+ * delay, or mid-repeat, cancels that in-flight block before starting the next one.
  */
 @Composable
 private fun RepeatingIconButton(
@@ -87,21 +90,12 @@ private fun RepeatingIconButton(
     val currentOnClick by rememberUpdatedState(onClick)
 
     LaunchedEffect(interactionSource) {
-        var repeatJob: Job? = null
-        interactionSource.interactions.collect { interaction ->
-            when (interaction) {
-                is PressInteraction.Press -> {
-                    repeatJob = launch {
-                        delay(450)
-                        while (isActive) {
-                            currentOnClick()
-                            delay(100)
-                        }
-                    }
-                }
-                is PressInteraction.Release, is PressInteraction.Cancel -> {
-                    repeatJob?.cancel()
-                    repeatJob = null
+        interactionSource.interactions.collectLatest { interaction ->
+            if (interaction is PressInteraction.Press) {
+                delay(450)
+                while (true) {
+                    currentOnClick()
+                    delay(100)
                 }
             }
         }
