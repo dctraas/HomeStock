@@ -1,6 +1,5 @@
 package com.dtraas.boodschapbeheer.ui.productdetail
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -38,7 +37,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SelectableDates
@@ -61,12 +59,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -223,7 +219,6 @@ fun ProductDetailScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     shape = SoftCardShape,
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -256,22 +251,22 @@ fun ProductDetailScreen(
                             onChange = viewModel::setMinQuantity,
                         )
 
-                        OutlinedButton(
-                            onClick = { showDeleteConfirm = true },
+                        Row(
                             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                            horizontalArrangement = Arrangement.End,
                         ) {
-                            Icon(Icons.Filled.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.product_detail_remove))
-                        }
-
-                        OutlinedButton(
-                            onClick = viewModel::addToShoppingList,
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        ) {
-                            Icon(Icons.Filled.PlaylistAdd, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.product_detail_add_to_shopping_list))
+                            IconButton(onClick = { showDeleteConfirm = true }) {
+                                Icon(
+                                    Icons.Filled.Delete,
+                                    contentDescription = stringResource(R.string.product_detail_remove),
+                                )
+                            }
+                            IconButton(onClick = viewModel::addToShoppingList) {
+                                Icon(
+                                    Icons.Filled.PlaylistAdd,
+                                    contentDescription = stringResource(R.string.product_detail_add_to_shopping_list),
+                                )
+                            }
                         }
                     }
                 }
@@ -293,17 +288,6 @@ fun ProductDetailScreen(
                 if (dietLabels.isNotEmpty()) {
                     DietLabelsCard(dietLabels, modifier = Modifier.padding(top = 12.dp))
                 }
-
-                val uriHandler = LocalUriHandler.current
-                Text(
-                    text = stringResource(R.string.product_detail_off_attribution),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textDecoration = TextDecoration.Underline,
-                    modifier = Modifier
-                        .padding(top = 12.dp)
-                        .clickable { uriHandler.openUri("https://world.openfoodfacts.org") },
-                )
             }
 
             if (stillInInventory) {
@@ -443,7 +427,6 @@ private fun AllergensCard(allergens: List<Allergen>, modifier: Modifier = Modifi
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -469,7 +452,6 @@ private fun DietLabelsCard(labels: List<DietLabel>, modifier: Modifier = Modifie
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -510,7 +492,6 @@ private fun IngredientsCard(ingredients: String, modifier: Modifier = Modifier) 
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -530,7 +511,6 @@ private fun NutritionCard(nutrition: NutritionInfo, modifier: Modifier = Modifie
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -727,7 +707,6 @@ private fun NoteCard(note: String?, onNoteChange: (String?) -> Unit, modifier: M
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
