@@ -95,26 +95,28 @@ class HouseholdRepository(
         }
     }
 
-    private companion object {
-        const val HOUSEHOLDS_COLLECTION = "households"
-        const val MAX_CODE_ATTEMPTS = 5
+    companion object {
+        private const val HOUSEHOLDS_COLLECTION = "households"
+        private const val MAX_CODE_ATTEMPTS = 5
 
         // Kept comfortably under Firestore's 500-write-per-batch limit.
-        const val DELETE_BATCH_SIZE = 400
+        private const val DELETE_BATCH_SIZE = 400
 
         // Every subcollection ever written under households/{id} — see each repository's
         // `collection(householdId, name)` helper. Keep in sync if a new one is added.
-        val SUBCOLLECTIONS = listOf("products", "inventory", "shoppingList", "activityLog", "scanHistory")
+        private val SUBCOLLECTIONS = listOf("products", "inventory", "shoppingList", "activityLog", "scanHistory")
 
         // No 0/O or 1/I — easy to misread and easy to misdictate over the phone.
-        const val CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        private const val CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+        /** Public so the join-household UI can validate input length before even trying. */
         const val CODE_LENGTH = 6
 
         // The code is the household's only access control (see firestore.rules), so it's
         // generated with a CSPRNG rather than Kotlin's non-cryptographic default Random.
-        val secureRandom = java.security.SecureRandom()
+        private val secureRandom = java.security.SecureRandom()
 
-        fun generateCode(): String =
+        private fun generateCode(): String =
             (1..CODE_LENGTH).map { CODE_CHARS[secureRandom.nextInt(CODE_CHARS.length)] }.joinToString("")
     }
 }

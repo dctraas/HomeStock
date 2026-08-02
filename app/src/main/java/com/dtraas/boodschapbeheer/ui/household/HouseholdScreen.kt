@@ -1,5 +1,6 @@
 package com.dtraas.boodschapbeheer.ui.household
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,6 +10,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,6 +25,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalClipboardManager
@@ -38,6 +43,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
 import com.dtraas.boodschapbeheer.R
+import com.dtraas.boodschapbeheer.data.repository.HouseholdRepository
 import com.dtraas.boodschapbeheer.ui.theme.SoftCardShape
 
 /**
@@ -130,6 +136,16 @@ private fun CreateContent(
     onRetry: () -> Unit,
     onBack: () -> Unit,
 ) {
+    var hasCopiedCode by remember { mutableStateOf(false) }
+    var showBackWarning by remember { mutableStateOf(false) }
+
+    // There's no in-app "Terug" button once a code exists (only "Kopieer" and
+    // "Doorgaan" below) — this is specifically about the system back gesture/button,
+    // which would otherwise silently discard an uncopied code.
+    BackHandler(enabled = uiState.createdCode != null && !hasCopiedCode) {
+        showBackWarning = true
+    }
+
     when {
         uiState.isLoading -> {
             CircularProgressIndicator()
@@ -138,8 +154,8 @@ private fun CreateContent(
                 modifier = Modifier.padding(top = 16.dp),
             )
         }
-        uiState.errorMessage != null -> {
-            val message = uiState.errorMessage
+        uiState.errorMessage != null || uiState.hasGenericError -> {
+            val message = uiState.errorMessage ?: stringResource(R.string.household_generic_error)
             Text(
                 text = message,
                 color = MaterialTheme.colorScheme.error,
@@ -185,7 +201,10 @@ private fun CreateContent(
                 )
             }
             TextButton(
-                onClick = { clipboard.setText(AnnotatedString(code)) },
+                onClick = {
+                    clipboard.setText(AnnotatedString(code))
+                    hasCopiedCode = true
+                },
                 modifier = Modifier.padding(top = 8.dp),
             ) {
                 Icon(Icons.Filled.ContentCopy, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -195,6 +214,25 @@ private fun CreateContent(
                 Text(stringResource(R.string.household_continue))
             }
         }
+    }
+
+    if (showBackWarning) {
+        AlertDialog(
+            onDismissRequest = { showBackWarning = false },
+            title = { Text(stringResource(R.string.household_create_back_warning_title)) },
+            text = { Text(stringResource(R.string.household_create_back_warning_text)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showBackWarning = false
+                        onBack()
+                    },
+                ) { Text(stringResource(R.string.household_create_back_warning_confirm)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBackWarning = false }) { Text(stringResource(R.string.common_cancel)) }
+            },
+        )
     }
 }
 
@@ -217,19 +255,28 @@ private fun JoinContent(
         style = MaterialTheme.typography.titleLarge,
         modifier = Modifier.padding(top = 16.dp, bottom = 20.dp),
     )
+    val isCompleteLength = uiState.joinCodeInput.length == HouseholdRepository.CODE_LENGTH
+    val hasError = uiState.errorMessage != null || uiState.hasGenericError
+    val supportingMessage = when {
+        uiState.errorMessage != null -> uiState.errorMessage
+        uiState.hasGenericError -> stringResource(R.string.household_generic_error)
+        uiState.joinCodeInput.isNotEmpty() && !isCompleteLength ->
+            stringResource(R.string.household_join_code_length_hint, HouseholdRepository.CODE_LENGTH)
+        else -> null
+    }
     OutlinedTextField(
         value = uiState.joinCodeInput,
         onValueChange = { onCodeChange(it.uppercase()) },
         label = { Text(stringResource(R.string.household_code_label)) },
         singleLine = true,
         textStyle = TextStyle(fontSize = 24.sp, letterSpacing = 4.sp, textAlign = TextAlign.Center),
-        isError = uiState.errorMessage != null,
-        supportingText = uiState.errorMessage?.let { message -> { Text(message) } },
+        isError = hasError,
+        supportingText = supportingMessage?.let { message -> { Text(message) } },
         modifier = Modifier.fillMaxWidth(),
     )
     Button(
         onClick = onJoin,
-        enabled = !uiState.isLoading && uiState.joinCodeInput.isNotBlank(),
+        enabled = !uiState.isLoading && isCompleteLength,
         modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
     ) {
         if (uiState.isLoading) {
