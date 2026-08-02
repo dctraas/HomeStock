@@ -1,6 +1,5 @@
 package com.dtraas.boodschapbeheer.ui.shoppinglist
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -27,6 +26,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.DragHandle
@@ -116,6 +116,7 @@ fun ShoppingListScreen() {
     val searchQuery by viewModel.searchQueryState.collectAsState()
     val hasCheckedItems = groupedByStore.values.flatten().any { it.isChecked }
     var viewMode by remember { mutableStateOf(ShoppingListViewMode.LIST) }
+    var searchActive by remember { mutableStateOf(false) }
 
     var showAddDialog by remember { mutableStateOf(false) }
     var editingItem by remember { mutableStateOf<ShoppingListItemEntity?>(null) }
@@ -126,34 +127,7 @@ fun ShoppingListScreen() {
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(stringResource(R.string.shopping_list_title)) },
-                actions = {
-                    if (hasCheckedItems) {
-                        IconButton(onClick = viewModel::clearChecked) {
-                            Icon(Icons.Filled.DeleteSweep, contentDescription = stringResource(R.string.shopping_list_clear_checked_cd))
-                        }
-                    }
-                    IconButton(
-                        onClick = {
-                            viewMode = if (viewMode == ShoppingListViewMode.LIST) {
-                                ShoppingListViewMode.GRID
-                            } else {
-                                ShoppingListViewMode.LIST
-                            }
-                        },
-                    ) {
-                        Icon(
-                            imageVector = if (viewMode == ShoppingListViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
-                            contentDescription = if (viewMode == ShoppingListViewMode.LIST) {
-                                stringResource(R.string.inventory_show_as_tiles_cd)
-                            } else {
-                                stringResource(R.string.inventory_show_as_list_cd)
-                            },
-                        )
-                    }
-                },
-            )
+            CenterAlignedTopAppBar(title = { Text(stringResource(R.string.shopping_list_title)) })
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddDialog = true }) {
@@ -163,14 +137,81 @@ fun ShoppingListScreen() {
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            SearchField(
-                query = searchQuery,
-                onQueryChange = viewModel::onSearchQueryChange,
-                placeholder = stringResource(R.string.shopping_list_search_placeholder),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-            )
+            if (searchActive) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+                ) {
+                    SearchField(
+                        query = searchQuery,
+                        onQueryChange = viewModel::onSearchQueryChange,
+                        placeholder = stringResource(R.string.shopping_list_search_placeholder),
+                        modifier = Modifier.weight(1f),
+                    )
+                    IconButton(
+                        onClick = {
+                            searchActive = false
+                            viewModel.onSearchQueryChange("")
+                        },
+                        modifier = Modifier.size(56.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.inventory_search_close_cd),
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                }
+            } else {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp),
+                ) {
+                    IconButton(onClick = { searchActive = true }, modifier = Modifier.size(56.dp)) {
+                        Icon(
+                            Icons.Filled.Search,
+                            contentDescription = stringResource(R.string.inventory_search_cd),
+                            modifier = Modifier.size(28.dp),
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (hasCheckedItems) {
+                            IconButton(onClick = viewModel::clearChecked, modifier = Modifier.size(56.dp)) {
+                                Icon(
+                                    Icons.Filled.DeleteSweep,
+                                    contentDescription = stringResource(R.string.shopping_list_clear_checked_cd),
+                                    modifier = Modifier.size(28.dp),
+                                )
+                            }
+                        }
+                        IconButton(
+                            onClick = {
+                                viewMode = if (viewMode == ShoppingListViewMode.LIST) {
+                                    ShoppingListViewMode.GRID
+                                } else {
+                                    ShoppingListViewMode.LIST
+                                }
+                            },
+                            modifier = Modifier.size(56.dp),
+                        ) {
+                            Icon(
+                                imageVector = if (viewMode == ShoppingListViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
+                                contentDescription = if (viewMode == ShoppingListViewMode.LIST) {
+                                    stringResource(R.string.inventory_show_as_tiles_cd)
+                                } else {
+                                    stringResource(R.string.inventory_show_as_list_cd)
+                                },
+                                modifier = Modifier.size(28.dp),
+                            )
+                        }
+                    }
+                }
+            }
 
             fun deleteWithUndo(item: ShoppingListItemEntity) {
                 viewModel.removeItem(item.id)
@@ -482,7 +523,6 @@ private fun ShoppingListRow(
             .padding(horizontal = 16.dp, vertical = 3.dp)
             .onGloballyPositioned { rowHeightPx = it.size.height.toFloat() },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = SoftCardShapeCompact,
     ) {
         Row(
