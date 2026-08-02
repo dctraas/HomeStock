@@ -3,6 +3,7 @@ package com.dtraas.boodschapbeheer.di
 import android.content.Context
 import com.dtraas.boodschapbeheer.BuildConfig
 import com.dtraas.boodschapbeheer.data.remote.OpenFoodFactsApi
+import com.dtraas.boodschapbeheer.data.remote.TheMealDbApi
 import com.dtraas.boodschapbeheer.data.repository.ActivityLogRepository
 import com.dtraas.boodschapbeheer.data.repository.DeviceProfile
 import com.dtraas.boodschapbeheer.data.repository.DismissedNoticesStore
@@ -12,6 +13,7 @@ import com.dtraas.boodschapbeheer.data.repository.HouseholdSession
 import com.dtraas.boodschapbeheer.data.repository.InventoryRepository
 import com.dtraas.boodschapbeheer.data.repository.NotificationPreferences
 import com.dtraas.boodschapbeheer.data.repository.ProductRepository
+import com.dtraas.boodschapbeheer.data.repository.RecipeRepository
 import com.dtraas.boodschapbeheer.data.repository.ShoppingListRepository
 import com.dtraas.boodschapbeheer.data.repository.StatisticsRepository
 import com.dtraas.boodschapbeheer.data.repository.ThemePreferences
@@ -88,5 +90,16 @@ class AppContainer(context: Context) {
 
     val feedbackRepository: FeedbackRepository by lazy {
         FeedbackRepository(firestore, BuildConfig.VERSION_NAME)
+    }
+
+    private val mealDbApi: TheMealDbApi = Retrofit.Builder()
+        .baseUrl(TheMealDbApi.BASE_URL)
+        .client(okHttpClient)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+        .create(TheMealDbApi::class.java)
+
+    val recipeRepository: RecipeRepository by lazy {
+        RecipeRepository(mealDbApi, inventoryRepository, shoppingListRepository)
     }
 }

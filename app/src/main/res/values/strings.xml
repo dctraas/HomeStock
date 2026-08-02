@@ -147,6 +147,9 @@
     <string name="more_feedback_star_cd">Ster %1$d</string>
     <string name="more_feedback_sent_confirmation">Bedankt voor je feedback!</string>
     <string name="more_feedback_error">Kon feedback niet verzenden. Probeer het later opnieuw.</string>
+    <string name="more_section_beta">Beta</string>
+    <string name="more_beta_recipes">Recepten</string>
+    <string name="more_beta_receipt_scan">Bonnetje scannen</string>
 
     <!-- Voorraad -->
     <string name="inventory_title">Voorraad</string>
@@ -256,6 +259,7 @@
     <string name="scan_permission_button">Geef toegang tot camera</string>
     <string name="scan_permission_denied_rationale">Je hebt camera-toegang geweigerd. Zet deze aan bij de instellingen van de app om verder te kunnen scannen.</string>
     <string name="scan_permission_open_settings">Open instellingen</string>
+    <string name="scan_search_by_name_cd">Zoeken op naam</string>
 
     <!-- Scanresultaat -->
     <string name="scan_result_title">Product toevoegen</string>
@@ -317,4 +321,40 @@
     <string name="widget_shopping_list_title">Boodschappenlijst</string>
     <string name="widget_shopping_list_empty">Niets op je lijstje!</string>
     <string name="widget_shopping_list_more_format">+%1$d meer</string>
+
+    <!-- Zoeken op naam -->
+    <string name="search_product_title">Zoeken op naam</string>
+    <string name="search_product_placeholder">Zoek een product…</string>
+    <string name="search_product_action">Zoeken</string>
+    <string name="search_product_error_title">Geen verbinding</string>
+    <string name="search_product_error_subtitle">We konden niet zoeken. Controleer je internetverbinding en probeer het opnieuw.</string>
+    <string name="search_product_empty_title">Niets gevonden</string>
+    <string name="search_product_empty_subtitle">Probeer een andere zoekterm.</string>
+
+    <!-- Recepten (Beta) -->
+    <string name="recipes_title">Recepten</string>
+    <string name="recipes_error_title">Geen verbinding</string>
+    <string name="recipes_error_subtitle">We konden geen receptsuggesties ophalen. Controleer je internetverbinding en probeer het opnieuw.</string>
+    <string name="recipes_empty_title">Nog geen suggesties</string>
+    <string name="recipes_empty_subtitle">Voeg producten toe aan je voorraad om receptsuggesties te krijgen.</string>
+    <string name="recipes_beta_notice">Beta: receptsuggesties zijn gebaseerd op een beperkte set herkende ingrediënten en kunnen soms niet kloppen.</string>
+    <string name="recipes_detail_error">Kon dit recept niet laden. Probeer het opnieuw.</string>
+    <string name="recipes_ingredients_title">Ingrediënten</string>
+    <string name="recipes_ingredient_in_inventory_cd">Al in voorraad</string>
+    <string name="recipes_added_to_shopping_list">Ontbrekende ingrediënten toegevoegd aan je boodschappenlijst</string>
+    <string name="recipes_add_missing_to_shopping_list">Ontbrekende ingrediënten toevoegen aan boodschappenlijst</string>
+    <string name="recipes_instructions_title">Instructies</string>
+
+    <!-- Bonnetje scannen (Beta) -->
+    <string name="receipt_scan_title">Bonnetje scannen</string>
+    <string name="receipt_scan_processing">Bonnetje verwerken…</string>
+    <string name="receipt_scan_saving">Producten opslaan…</string>
+    <string name="receipt_scan_saved">Toegevoegd aan voorraad</string>
+    <string name="receipt_scan_hint">Maak een scherpe foto van je kassabon</string>
+    <string name="receipt_scan_capture_cd">Foto maken</string>
+    <string name="receipt_scan_failed">Kon de foto niet verwerken. Probeer het opnieuw.</string>
+    <string name="receipt_scan_retry">Opnieuw proberen</string>
+    <string name="receipt_scan_no_items">Geen producten herkend op dit bonnetje.</string>
+    <string name="receipt_scan_confirm_hint">Controleer en pas de herkende producten aan voor je ze toevoegt.</string>
+    <string name="receipt_scan_confirm_action">Toevoegen aan voorraad</string>
 </resources>

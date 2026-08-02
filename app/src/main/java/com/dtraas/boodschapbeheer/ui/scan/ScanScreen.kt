@@ -19,10 +19,12 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -71,6 +73,7 @@ import java.util.concurrent.Executors
 fun ScanScreen(
     isActive: Boolean,
     onNeedsConfirmation: (String) -> Unit,
+    onSearchClick: () -> Unit,
 ) {
     val application = LocalContext.current.applicationContext as BoodschapBeheerApplication
     val viewModel: ScanViewModel = viewModel(
@@ -121,27 +124,47 @@ fun ScanScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         if (hasCameraPermission) {
-            CameraPreview(
-                padding = padding,
-                isActive = isActive,
-                onBarcodeDetected = { barcode ->
-                    when (val outcome = viewModel.handleScannedBarcode(barcode)) {
-                        is ScanOutcome.QuickAdded -> {
-                            coroutineScope.launch {
-                                snackbarHostState.showSnackbar(quickAddedFormat.format(outcome.productName))
-                                outcome.restockedProductName?.let { name ->
-                                    snackbarHostState.showSnackbar(restockedFormat.format(name))
+            Box(modifier = Modifier.fillMaxSize()) {
+                CameraPreview(
+                    padding = padding,
+                    isActive = isActive,
+                    onBarcodeDetected = { barcode ->
+                        when (val outcome = viewModel.handleScannedBarcode(barcode)) {
+                            is ScanOutcome.QuickAdded -> {
+                                coroutineScope.launch {
+                                    snackbarHostState.showSnackbar(quickAddedFormat.format(outcome.productName))
+                                    outcome.restockedProductName?.let { name ->
+                                        snackbarHostState.showSnackbar(restockedFormat.format(name))
+                                    }
                                 }
+                                true
                             }
-                            true
+                            ScanOutcome.NeedsConfirmation -> {
+                                onNeedsConfirmation(barcode)
+                                false
+                            }
                         }
-                        ScanOutcome.NeedsConfirmation -> {
-                            onNeedsConfirmation(barcode)
-                            false
-                        }
+                    },
+                )
+                Surface(
+                    onClick = onSearchClick,
+                    modifier = Modifier
+                        .padding(padding)
+                        .padding(16.dp)
+                        .align(Alignment.TopEnd)
+                        .size(48.dp),
+                    shape = CircleShape,
+                    color = Color.Black.copy(alpha = 0.6f),
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            imageVector = Icons.Filled.Search,
+                            contentDescription = stringResource(R.string.scan_search_by_name_cd),
+                            tint = Color.White,
+                        )
                     }
-                },
-            )
+                }
+            }
         } else {
             PermissionRationale(
                 padding = padding,

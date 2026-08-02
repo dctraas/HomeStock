@@ -23,6 +23,12 @@ sealed class Destination(val route: String) {
     data object ProductDetail : Destination("product_detail/{barcode}") {
         fun createRoute(barcode: String) = "product_detail/$barcode"
     }
+    data object SearchProduct : Destination("search_product")
+    data object Recipes : Destination("recipes")
+    data object RecipeDetail : Destination("recipe_detail/{mealId}") {
+        fun createRoute(mealId: String) = "recipe_detail/$mealId"
+    }
+    data object ReceiptScan : Destination("receipt_scan")
 }
 
 data class TopLevelDestination(

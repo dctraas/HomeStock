@@ -147,6 +147,9 @@
     <string name="more_feedback_star_cd">Étoile %1$d</string>
     <string name="more_feedback_sent_confirmation">Merci pour vos commentaires !</string>
     <string name="more_feedback_error">Impossible d\'envoyer les commentaires. Réessayez plus tard.</string>
+    <string name="more_section_beta">Bêta</string>
+    <string name="more_beta_recipes">Recettes</string>
+    <string name="more_beta_receipt_scan">Scanner un ticket</string>
 
     <!-- Stock -->
     <string name="inventory_title">Stock</string>
@@ -256,6 +259,7 @@
     <string name="scan_permission_button">Autoriser l\'accès à la caméra</string>
     <string name="scan_permission_denied_rationale">Vous avez refusé l\'accès à la caméra. Activez-le dans les paramètres de l\'application pour continuer à scanner.</string>
     <string name="scan_permission_open_settings">Ouvrir les paramètres</string>
+    <string name="scan_search_by_name_cd">Rechercher par nom</string>
 
     <!-- Résultat du scan -->
     <string name="scan_result_title">Ajouter un produit</string>
@@ -317,4 +321,40 @@
     <string name="widget_shopping_list_title">Liste de courses</string>
     <string name="widget_shopping_list_empty">Rien sur votre liste !</string>
     <string name="widget_shopping_list_more_format">+%1$d de plus</string>
+
+    <!-- Rechercher par nom -->
+    <string name="search_product_title">Rechercher par nom</string>
+    <string name="search_product_placeholder">Rechercher un produit…</string>
+    <string name="search_product_action">Rechercher</string>
+    <string name="search_product_error_title">Pas de connexion</string>
+    <string name="search_product_error_subtitle">La recherche a échoué. Vérifiez votre connexion internet et réessayez.</string>
+    <string name="search_product_empty_title">Aucun résultat</string>
+    <string name="search_product_empty_subtitle">Essayez un autre terme de recherche.</string>
+
+    <!-- Recettes (Bêta) -->
+    <string name="recipes_title">Recettes</string>
+    <string name="recipes_error_title">Pas de connexion</string>
+    <string name="recipes_error_subtitle">Impossible de charger les suggestions de recettes. Vérifiez votre connexion internet et réessayez.</string>
+    <string name="recipes_empty_title">Pas encore de suggestions</string>
+    <string name="recipes_empty_subtitle">Ajoutez des produits à votre inventaire pour obtenir des suggestions de recettes.</string>
+    <string name="recipes_beta_notice">Bêta : les suggestions de recettes reposent sur un ensemble limité d\'ingrédients reconnus et peuvent parfois être inexactes.</string>
+    <string name="recipes_detail_error">Impossible de charger cette recette. Réessayez.</string>
+    <string name="recipes_ingredients_title">Ingrédients</string>
+    <string name="recipes_ingredient_in_inventory_cd">Déjà en stock</string>
+    <string name="recipes_added_to_shopping_list">Ingrédients manquants ajoutés à votre liste de courses</string>
+    <string name="recipes_add_missing_to_shopping_list">Ajouter les ingrédients manquants à la liste de courses</string>
+    <string name="recipes_instructions_title">Instructions</string>
+
+    <!-- Scanner un ticket (Bêta) -->
+    <string name="receipt_scan_title">Scanner un ticket</string>
+    <string name="receipt_scan_processing">Traitement du ticket…</string>
+    <string name="receipt_scan_saving">Enregistrement des produits…</string>
+    <string name="receipt_scan_saved">Ajouté à l\'inventaire</string>
+    <string name="receipt_scan_hint">Prenez une photo nette de votre ticket de caisse</string>
+    <string name="receipt_scan_capture_cd">Prendre une photo</string>
+    <string name="receipt_scan_failed">Impossible de traiter la photo. Réessayez.</string>
+    <string name="receipt_scan_retry">Réessayer</string>
+    <string name="receipt_scan_no_items">Aucun produit reconnu sur ce ticket.</string>
+    <string name="receipt_scan_confirm_hint">Vérifiez et ajustez les produits reconnus avant de les ajouter.</string>
+    <string name="receipt_scan_confirm_action">Ajouter à l\'inventaire</string>
 </resources>

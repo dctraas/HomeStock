@@ -147,6 +147,9 @@
     <string name="more_feedback_star_cd">Estrella %1$d</string>
     <string name="more_feedback_sent_confirmation">¡Gracias por tus comentarios!</string>
     <string name="more_feedback_error">No se pudieron enviar los comentarios. Inténtalo de nuevo más tarde.</string>
+    <string name="more_section_beta">Beta</string>
+    <string name="more_beta_recipes">Recetas</string>
+    <string name="more_beta_receipt_scan">Escanear ticket</string>
 
     <!-- Inventario -->
     <string name="inventory_title">Inventario</string>
@@ -256,6 +259,7 @@
     <string name="scan_permission_button">Conceder acceso a la cámara</string>
     <string name="scan_permission_denied_rationale">Has denegado el acceso a la cámara. Actívalo en los ajustes de la aplicación para seguir escaneando.</string>
     <string name="scan_permission_open_settings">Abrir ajustes</string>
+    <string name="scan_search_by_name_cd">Buscar por nombre</string>
 
     <!-- Resultado del escaneo -->
     <string name="scan_result_title">Añadir producto</string>
@@ -317,4 +321,40 @@
     <string name="widget_shopping_list_title">Lista de la compra</string>
     <string name="widget_shopping_list_empty">¡No hay nada en tu lista!</string>
     <string name="widget_shopping_list_more_format">+%1$d más</string>
+
+    <!-- Buscar por nombre -->
+    <string name="search_product_title">Buscar por nombre</string>
+    <string name="search_product_placeholder">Busca un producto…</string>
+    <string name="search_product_action">Buscar</string>
+    <string name="search_product_error_title">Sin conexión</string>
+    <string name="search_product_error_subtitle">No pudimos buscar. Comprueba tu conexión a internet e inténtalo de nuevo.</string>
+    <string name="search_product_empty_title">No se encontró nada</string>
+    <string name="search_product_empty_subtitle">Prueba con otro término de búsqueda.</string>
+
+    <!-- Recetas (Beta) -->
+    <string name="recipes_title">Recetas</string>
+    <string name="recipes_error_title">Sin conexión</string>
+    <string name="recipes_error_subtitle">No pudimos cargar sugerencias de recetas. Comprueba tu conexión a internet e inténtalo de nuevo.</string>
+    <string name="recipes_empty_title">Aún no hay sugerencias</string>
+    <string name="recipes_empty_subtitle">Añade productos a tu inventario para obtener sugerencias de recetas.</string>
+    <string name="recipes_beta_notice">Beta: las sugerencias de recetas se basan en un conjunto limitado de ingredientes reconocidos y a veces pueden ser inexactas.</string>
+    <string name="recipes_detail_error">No se pudo cargar esta receta. Inténtalo de nuevo.</string>
+    <string name="recipes_ingredients_title">Ingredientes</string>
+    <string name="recipes_ingredient_in_inventory_cd">Ya en el inventario</string>
+    <string name="recipes_added_to_shopping_list">Ingredientes que faltan añadidos a tu lista de la compra</string>
+    <string name="recipes_add_missing_to_shopping_list">Añadir ingredientes que faltan a la lista de la compra</string>
+    <string name="recipes_instructions_title">Instrucciones</string>
+
+    <!-- Escanear ticket (Beta) -->
+    <string name="receipt_scan_title">Escanear ticket</string>
+    <string name="receipt_scan_processing">Procesando ticket…</string>
+    <string name="receipt_scan_saving">Guardando productos…</string>
+    <string name="receipt_scan_saved">Añadido al inventario</string>
+    <string name="receipt_scan_hint">Haz una foto nítida de tu ticket</string>
+    <string name="receipt_scan_capture_cd">Hacer foto</string>
+    <string name="receipt_scan_failed">No se pudo procesar la foto. Inténtalo de nuevo.</string>
+    <string name="receipt_scan_retry">Intentar de nuevo</string>
+    <string name="receipt_scan_no_items">No se reconocieron productos en este ticket.</string>
+    <string name="receipt_scan_confirm_hint">Revisa y ajusta los productos reconocidos antes de añadirlos.</string>
+    <string name="receipt_scan_confirm_action">Añadir al inventario</string>
 </resources>

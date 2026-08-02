@@ -31,6 +31,8 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PrivacyTip
+import androidx.compose.material.icons.filled.Receipt
+import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarRate
 import androidx.compose.material.icons.outlined.StarBorder
@@ -93,7 +95,10 @@ private enum class AppLanguage(val tag: String, val labelRes: Int) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MoreScreen() {
+fun MoreScreen(
+    onNavigateToRecipes: () -> Unit = {},
+    onNavigateToReceiptScan: () -> Unit = {},
+) {
     val context = LocalContext.current
     val application = context.applicationContext as BoodschapBeheerApplication
     val notificationPreferences = application.container.notificationPreferences
@@ -209,6 +214,18 @@ fun MoreScreen() {
                 icon = Icons.Filled.Description,
                 title = stringResource(R.string.more_about_licenses),
                 onClick = { showLicensesDialog = true },
+            )
+
+            SectionHeader(stringResource(R.string.more_section_beta))
+            SettingsRow(
+                icon = Icons.Filled.RestaurantMenu,
+                title = stringResource(R.string.more_beta_recipes),
+                onClick = onNavigateToRecipes,
+            )
+            SettingsRow(
+                icon = Icons.Filled.Receipt,
+                title = stringResource(R.string.more_beta_receipt_scan),
+                onClick = onNavigateToReceiptScan,
             )
 
             Text(

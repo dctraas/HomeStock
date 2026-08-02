@@ -31,8 +31,12 @@ import com.dtraas.boodschapbeheer.ui.inventory.InventoryScreen
 import com.dtraas.boodschapbeheer.ui.more.MoreScreen
 import com.dtraas.boodschapbeheer.ui.notifications.NotificationsScreen
 import com.dtraas.boodschapbeheer.ui.productdetail.ProductDetailScreen
+import com.dtraas.boodschapbeheer.ui.receiptscan.ReceiptScanScreen
+import com.dtraas.boodschapbeheer.ui.recipes.RecipeDetailScreen
+import com.dtraas.boodschapbeheer.ui.recipes.RecipesScreen
 import com.dtraas.boodschapbeheer.ui.scan.ScanScreen
 import com.dtraas.boodschapbeheer.ui.scanresult.ScanResultScreen
+import com.dtraas.boodschapbeheer.ui.searchproduct.SearchProductScreen
 import com.dtraas.boodschapbeheer.ui.shoppinglist.ShoppingListScreen
 import com.dtraas.boodschapbeheer.ui.statistics.StatisticsScreen
 import com.dtraas.boodschapbeheer.ui.theme.SoftBadgeShape
@@ -62,6 +66,7 @@ fun BoodschapBeheerApp() {
                     onNeedsConfirmation = { barcode ->
                         navController.navigate(Destination.ScanResult.createRoute(barcode))
                     },
+                    onSearchClick = { navController.navigate(Destination.SearchProduct.route) },
                 )
             }
             composable(Destination.Inventory.route) {
@@ -81,7 +86,10 @@ fun BoodschapBeheerApp() {
                 NotificationsScreen()
             }
             composable(Destination.More.route) {
-                MoreScreen()
+                MoreScreen(
+                    onNavigateToRecipes = { navController.navigate(Destination.Recipes.route) },
+                    onNavigateToReceiptScan = { navController.navigate(Destination.ReceiptScan.route) },
+                )
             }
             composable(
                 route = Destination.ScanResult.route,
@@ -108,6 +116,35 @@ fun BoodschapBeheerApp() {
                     barcode = barcode,
                     onBack = { navController.popBackStack() },
                 )
+            }
+            composable(Destination.SearchProduct.route) {
+                SearchProductScreen(
+                    onBack = { navController.popBackStack() },
+                    onResultClick = { barcode ->
+                        navController.navigate(Destination.ScanResult.createRoute(barcode))
+                    },
+                )
+            }
+            composable(Destination.Recipes.route) {
+                RecipesScreen(
+                    onBack = { navController.popBackStack() },
+                    onRecipeClick = { mealId ->
+                        navController.navigate(Destination.RecipeDetail.createRoute(mealId))
+                    },
+                )
+            }
+            composable(
+                route = Destination.RecipeDetail.route,
+                arguments = listOf(navArgument("mealId") { type = NavType.StringType }),
+            ) { entry ->
+                val mealId = entry.arguments?.getString("mealId").orEmpty()
+                RecipeDetailScreen(
+                    mealId = mealId,
+                    onBack = { navController.popBackStack() },
+                )
+            }
+            composable(Destination.ReceiptScan.route) {
+                ReceiptScanScreen(onBack = { navController.popBackStack() })
             }
         }
     }

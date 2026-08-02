@@ -1,6 +1,7 @@
 package com.dtraas.boodschapbeheer.data.remote
 
 import com.dtraas.boodschapbeheer.data.remote.dto.OffProductResponse
+import com.dtraas.boodschapbeheer.data.remote.dto.OffSearchResponse
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
@@ -17,6 +18,17 @@ interface OpenFoodFactsApi {
             "product_name,brands,categories_tags,categories,image_front_small_url,quantity,status," +
                 "nutriscore_grade,ingredients_text,nutriments,allergens_tags,labels_tags",
     ): OffProductResponse
+
+    /** Free-text product search, for finding a product by name instead of scanning its barcode. */
+    @GET("cgi/search.pl")
+    suspend fun searchProducts(
+        @Query("search_terms") searchTerms: String,
+        @Query("search_simple") searchSimple: Int = 1,
+        @Query("action") action: String = "process",
+        @Query("json") json: Int = 1,
+        @Query("page_size") pageSize: Int = 20,
+        @Query("fields") fields: String = "code,product_name,brands,image_front_small_url",
+    ): OffSearchResponse
 
     companion object {
         const val BASE_URL = "https://world.openfoodfacts.org/"

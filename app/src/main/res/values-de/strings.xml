@@ -147,6 +147,9 @@
     <string name="more_feedback_star_cd">Stern %1$d</string>
     <string name="more_feedback_sent_confirmation">Danke für dein Feedback!</string>
     <string name="more_feedback_error">Feedback konnte nicht gesendet werden. Bitte versuche es später erneut.</string>
+    <string name="more_section_beta">Beta</string>
+    <string name="more_beta_recipes">Rezepte</string>
+    <string name="more_beta_receipt_scan">Kassenbon scannen</string>
 
     <!-- Vorrat -->
     <string name="inventory_title">Vorrat</string>
@@ -256,6 +259,7 @@
     <string name="scan_permission_button">Kamerazugriff erlauben</string>
     <string name="scan_permission_denied_rationale">Du hast den Kamerazugriff verweigert. Aktiviere ihn in den App-Einstellungen, um weiter zu scannen.</string>
     <string name="scan_permission_open_settings">Einstellungen öffnen</string>
+    <string name="scan_search_by_name_cd">Nach Name suchen</string>
 
     <!-- Scanergebnis -->
     <string name="scan_result_title">Produkt hinzufügen</string>
@@ -317,4 +321,40 @@
     <string name="widget_shopping_list_title">Einkaufsliste</string>
     <string name="widget_shopping_list_empty">Nichts auf deiner Liste!</string>
     <string name="widget_shopping_list_more_format">+%1$d weitere</string>
+
+    <!-- Nach Name suchen -->
+    <string name="search_product_title">Nach Name suchen</string>
+    <string name="search_product_placeholder">Nach einem Produkt suchen…</string>
+    <string name="search_product_action">Suchen</string>
+    <string name="search_product_error_title">Keine Verbindung</string>
+    <string name="search_product_error_subtitle">Wir konnten nicht suchen. Überprüfe deine Internetverbindung und versuche es erneut.</string>
+    <string name="search_product_empty_title">Nichts gefunden</string>
+    <string name="search_product_empty_subtitle">Versuche einen anderen Suchbegriff.</string>
+
+    <!-- Rezepte (Beta) -->
+    <string name="recipes_title">Rezepte</string>
+    <string name="recipes_error_title">Keine Verbindung</string>
+    <string name="recipes_error_subtitle">Wir konnten keine Rezeptvorschläge laden. Überprüfe deine Internetverbindung und versuche es erneut.</string>
+    <string name="recipes_empty_title">Noch keine Vorschläge</string>
+    <string name="recipes_empty_subtitle">Füge Produkte zu deinem Vorrat hinzu, um Rezeptvorschläge zu erhalten.</string>
+    <string name="recipes_beta_notice">Beta: Rezeptvorschläge basieren auf einer begrenzten Anzahl erkannter Zutaten und können manchmal ungenau sein.</string>
+    <string name="recipes_detail_error">Dieses Rezept konnte nicht geladen werden. Bitte versuche es erneut.</string>
+    <string name="recipes_ingredients_title">Zutaten</string>
+    <string name="recipes_ingredient_in_inventory_cd">Bereits vorrätig</string>
+    <string name="recipes_added_to_shopping_list">Fehlende Zutaten zu deiner Einkaufsliste hinzugefügt</string>
+    <string name="recipes_add_missing_to_shopping_list">Fehlende Zutaten zur Einkaufsliste hinzufügen</string>
+    <string name="recipes_instructions_title">Zubereitung</string>
+
+    <!-- Kassenbon scannen (Beta) -->
+    <string name="receipt_scan_title">Kassenbon scannen</string>
+    <string name="receipt_scan_processing">Kassenbon wird verarbeitet…</string>
+    <string name="receipt_scan_saving">Produkte werden gespeichert…</string>
+    <string name="receipt_scan_saved">Zum Vorrat hinzugefügt</string>
+    <string name="receipt_scan_hint">Mach ein scharfes Foto von deinem Kassenbon</string>
+    <string name="receipt_scan_capture_cd">Foto aufnehmen</string>
+    <string name="receipt_scan_failed">Das Foto konnte nicht verarbeitet werden. Bitte versuche es erneut.</string>
+    <string name="receipt_scan_retry">Erneut versuchen</string>
+    <string name="receipt_scan_no_items">Auf diesem Kassenbon wurden keine Produkte erkannt.</string>
+    <string name="receipt_scan_confirm_hint">Überprüfe und passe die erkannten Produkte an, bevor du sie hinzufügst.</string>
+    <string name="receipt_scan_confirm_action">Zum Vorrat hinzufügen</string>
 </resources>

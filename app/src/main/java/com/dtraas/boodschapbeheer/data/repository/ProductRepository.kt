@@ -148,6 +148,35 @@ class ProductRepository(
         val householdId = householdSession.householdId.value ?: return
         productsCollection(householdId).document(barcode).update("category", category.storageKey).await()
     }
+
+    /**
+     * Free-text product search, for finding something to add without scanning its barcode.
+     * Returns lightweight results only — picking one still goes through [getOrFetchProduct]
+     * (via its barcode) to fetch and cache the full product data.
+     */
+    suspend fun searchByName(query: String): Result<List<ProductSearchResult>> = try {
+        val response = api.searchProducts(searchTerms = query)
+        val results = response.products.orEmpty().mapNotNull { product ->
+            val barcode = product.code?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            val name = product.productName?.trim()?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+            ProductSearchResult(
+                barcode = barcode,
+                name = name,
+                brand = product.brands?.substringBefore(',')?.trim()?.takeIf { it.isNotEmpty() },
+                imageUrl = product.imageUrl,
+            )
+        }
+        Result.success(results)
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
 }
+
+data class ProductSearchResult(
+    val barcode: String,
+    val name: String,
+    val brand: String?,
+    val imageUrl: String?,
+)
 
 class ProductNotFoundException(barcode: String) : Exception("Product $barcode not found in Open Food Facts")
