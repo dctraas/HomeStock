@@ -70,9 +70,13 @@ class InventoryRepository(
     /**
      * Registers a barcode scan: bumps (or creates) the inventory quantity by
      * [quantityDelta] and appends a scan-history entry.
+     *
+     * Returns the product name if this scan dropped the quantity below its
+     * minimum and triggered an auto-restock onto the shopping list, so the
+     * caller can tell the user why an item just appeared there.
      */
-    suspend fun recordScan(barcode: String, quantityDelta: Int = 1) {
-        val householdId = householdSession.householdId.value ?: return
+    suspend fun recordScan(barcode: String, quantityDelta: Int = 1): String? {
+        val householdId = householdSession.householdId.value ?: return null
         val inventoryDoc = inventoryCollection(householdId).document(barcode)
         val existing = InventoryItemEntity.fromDocument(inventoryDoc.get().await())
         val newQuantity = (existing?.quantity ?: 0) + quantityDelta
@@ -87,11 +91,12 @@ class InventoryRepository(
             )
         ).await()
         activityLogRepository.logScanned(barcode, quantityDelta)
-        maybeRestockOnLowQuantity(updated)
+        return maybeRestockOnLowQuantity(updated)
     }
 
-    suspend fun updateQuantity(barcode: String, quantity: Int) {
-        val householdId = householdSession.householdId.value ?: return
+    /** Returns the restocked product name — see [recordScan]. */
+    suspend fun updateQuantity(barcode: String, quantity: Int): String? {
+        val householdId = householdSession.householdId.value ?: return null
         val clamped = quantity.coerceAtLeast(0)
         val inventoryDoc = inventoryCollection(householdId).document(barcode)
         val existing = InventoryItemEntity.fromDocument(inventoryDoc.get().await())
@@ -102,7 +107,7 @@ class InventoryRepository(
         if (previousQuantity != clamped) {
             activityLogRepository.logQuantityChanged(barcode, previousQuantity, clamped)
         }
-        maybeRestockOnLowQuantity(updated)
+        return maybeRestockOnLowQuantity(updated)
     }
 
     suspend fun setExpirationDate(barcode: String, expirationDate: Long?) {
@@ -110,12 +115,13 @@ class InventoryRepository(
         inventoryCollection(householdId).document(barcode).update("expirationDate", expirationDate).await()
     }
 
-    suspend fun setMinQuantity(barcode: String, minQuantity: Int?) {
-        val householdId = householdSession.householdId.value ?: return
+    /** Returns the restocked product name — see [recordScan]. */
+    suspend fun setMinQuantity(barcode: String, minQuantity: Int?): String? {
+        val householdId = householdSession.householdId.value ?: return null
         val inventoryDoc = inventoryCollection(householdId).document(barcode)
         inventoryDoc.update("minQuantity", minQuantity).await()
-        val updated = InventoryItemEntity.fromDocument(inventoryDoc.get().await()) ?: return
-        maybeRestockOnLowQuantity(updated)
+        val updated = InventoryItemEntity.fromDocument(inventoryDoc.get().await()) ?: return null
+        return maybeRestockOnLowQuantity(updated)
     }
 
     suspend fun setNote(barcode: String, note: String?) {
@@ -123,12 +129,16 @@ class InventoryRepository(
         inventoryCollection(householdId).document(barcode).update("note", note).await()
     }
 
-    /** Auto re-adds [item]'s product to the shopping list once its quantity drops below its minimum. */
-    private suspend fun maybeRestockOnLowQuantity(item: InventoryItemEntity) {
-        val minQuantity = item.minQuantity ?: return
-        if (item.quantity >= minQuantity) return
-        if (shoppingListRepository.hasOpenItemForBarcode(item.barcode)) return
-        val product = productRepository.findCached(item.barcode) ?: return
+    /**
+     * Auto re-adds [item]'s product to the shopping list once its quantity drops below its
+     * minimum. Returns the product name when it actually added something, so callers can
+     * surface that to the user — this otherwise happens silently.
+     */
+    private suspend fun maybeRestockOnLowQuantity(item: InventoryItemEntity): String? {
+        val minQuantity = item.minQuantity ?: return null
+        if (item.quantity >= minQuantity) return null
+        if (shoppingListRepository.hasOpenItemForBarcode(item.barcode)) return null
+        val product = productRepository.findCached(item.barcode) ?: return null
         shoppingListRepository.addItem(
             name = product.name,
             category = Category.fromStorageKey(product.category),
@@ -137,6 +147,7 @@ class InventoryRepository(
             barcode = item.barcode,
             imageUrl = product.imageUrl,
         )
+        return product.name
     }
 
     suspend fun removeFromInventory(barcode: String) {

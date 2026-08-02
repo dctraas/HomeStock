@@ -25,6 +25,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -39,6 +41,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SelectableDates
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -104,7 +110,26 @@ fun ProductDetailScreen(
         },
     )
     val uiState by viewModel.uiState.collectAsState()
+    val isRetryingLookup by viewModel.isRetryingLookup.collectAsState()
     val stillInInventory = uiState.quantityInInventory != null
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val restockedFormat = stringResource(R.string.inventory_restocked_snackbar_format)
+    val retryLookupSuccessMessage = stringResource(R.string.product_detail_retry_lookup_success)
+    val retryLookupFailureMessage = stringResource(R.string.product_detail_retry_lookup_failure)
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        viewModel.restockEvents.collect { name ->
+            snackbarHostState.showSnackbar(restockedFormat.format(name), duration = SnackbarDuration.Short)
+        }
+    }
+    LaunchedEffect(Unit) {
+        viewModel.retryLookupSucceeded.collect { succeeded ->
+            val message = if (succeeded) retryLookupSuccessMessage else retryLookupFailureMessage
+            snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Short)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -117,6 +142,7 @@ fun ProductDetailScreen(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         if (uiState.isLoading) {
             Column(
@@ -135,6 +161,10 @@ fun ProductDetailScreen(
         val dietLabels = product?.dietLabels?.mapNotNull { name -> DietLabel.entries.find { it.name == name } }.orEmpty()
         val hasNutritionInfo = product?.nutrition != null || product?.ingredients != null ||
             allergens.isNotEmpty() || dietLabels.isNotEmpty()
+        // Products entered manually (barcode not found online) never get a photo or
+        // nutrition data — this is how we tell those apart from a genuine OFF match
+        // that simply doesn't have all fields, to offer a "look it up again" retry.
+        val looksManuallyEntered = product != null && product.imageUrl == null && !hasNutritionInfo
 
         Column(
             modifier = Modifier
@@ -168,6 +198,22 @@ fun ProductDetailScreen(
                 CategoryChip(category)
                 product?.nutriScoreGrade?.let {
                     GradeBadge(it, stringResource(R.string.product_detail_nutriscore_format, it.uppercase(Locale.ROOT)))
+                }
+            }
+
+            if (looksManuallyEntered) {
+                TextButton(
+                    onClick = viewModel::retryLookup,
+                    enabled = !isRetryingLookup,
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    if (isRetryingLookup) {
+                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                    } else {
+                        Icon(Icons.Filled.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.product_detail_retry_lookup))
                 }
             }
 
@@ -211,10 +257,7 @@ fun ProductDetailScreen(
                         )
 
                         OutlinedButton(
-                            onClick = {
-                                viewModel.removeFromInventory()
-                                onBack()
-                            },
+                            onClick = { showDeleteConfirm = true },
                             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                         ) {
                             Icon(Icons.Filled.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -270,6 +313,26 @@ fun ProductDetailScreen(
                     modifier = Modifier.padding(top = 28.dp),
                 )
             }
+        }
+
+        if (showDeleteConfirm) {
+            AlertDialog(
+                onDismissRequest = { showDeleteConfirm = false },
+                title = { Text(stringResource(R.string.product_detail_delete_dialog_title)) },
+                text = { Text(stringResource(R.string.product_detail_delete_dialog_text)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            showDeleteConfirm = false
+                            viewModel.removeFromInventory()
+                            onBack()
+                        },
+                    ) { Text(stringResource(R.string.product_detail_remove), color = MaterialTheme.colorScheme.error) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showDeleteConfirm = false }) { Text(stringResource(R.string.common_cancel)) }
+                },
+            )
         }
     }
 }
@@ -346,7 +409,7 @@ private fun CategoryChip(category: Category) {
     }
 }
 
-/** Both Nutri-Score and Eco-Score use the same A (best) to E (worst) grading scale. */
+/** Nutri-Score uses an A (best) to E (worst) grading scale. */
 private fun gradeColor(grade: String): Color = when (grade.uppercase(Locale.ROOT)) {
     "A" -> Color(0xFF038141)
     "B" -> Color(0xFF85BB2F)
@@ -531,8 +594,12 @@ private fun formatExpirationDate(millis: Long): String {
 }
 
 private fun daysUntilExpiration(millis: Long): Long {
+    // The DatePicker below always encodes the picked calendar day as UTC midnight (a Compose
+    // Material3 convention, unrelated to the device's timezone), so decoding it must stay in
+    // UTC — but "today" has to be the device's actual local date, or this drifts by a day
+    // right around local midnight for anyone not in UTC.
     val date = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
-    return ChronoUnit.DAYS.between(LocalDate.now(ZoneOffset.UTC), date)
+    return ChronoUnit.DAYS.between(LocalDate.now(), date)
 }
 
 @Composable
@@ -594,7 +661,17 @@ private fun ExpirationRow(expirationDate: Long?, onDateChange: (Long?) -> Unit) 
     }
 
     if (showPicker) {
-        val state = rememberDatePickerState(initialSelectedDateMillis = expirationDate)
+        // The picker encodes every candidate date as UTC midnight, so the cutoff below
+        // must be expressed the same way to correctly compare against it.
+        val todayUtcMillis = remember { LocalDate.now().atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli() }
+        val state = rememberDatePickerState(
+            initialSelectedDateMillis = expirationDate,
+            selectableDates = remember {
+                object : SelectableDates {
+                    override fun isSelectableDate(utcTimeMillis: Long): Boolean = utcTimeMillis >= todayUtcMillis
+                }
+            },
+        )
         DatePickerDialog(
             onDismissRequest = { showPicker = false },
             confirmButton = {

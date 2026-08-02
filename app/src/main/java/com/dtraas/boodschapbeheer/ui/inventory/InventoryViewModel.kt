@@ -10,10 +10,13 @@ import com.dtraas.boodschapbeheer.data.model.Store
 import com.dtraas.boodschapbeheer.data.repository.ActivityLogRepository
 import com.dtraas.boodschapbeheer.data.repository.InventoryRepository
 import com.dtraas.boodschapbeheer.data.repository.ShoppingListRepository
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -81,8 +84,16 @@ class InventoryViewModel(
         sortOption.value = option
     }
 
+    private val _restockEvents = Channel<String>(Channel.BUFFERED)
+
+    /** Emits a product name whenever a quantity change here triggers an auto-restock. */
+    val restockEvents: Flow<String> = _restockEvents.receiveAsFlow()
+
     fun setQuantity(barcode: String, quantity: Int) {
-        viewModelScope.launch { inventoryRepository.updateQuantity(barcode, quantity) }
+        viewModelScope.launch {
+            val restockedProductName = inventoryRepository.updateQuantity(barcode, quantity)
+            if (restockedProductName != null) _restockEvents.send(restockedProductName)
+        }
     }
 
     fun removeFromInventory(barcode: String) {

@@ -1,7 +1,11 @@
 package com.dtraas.boodschapbeheer.ui.scan
 
 import android.Manifest
+import android.app.Activity
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
+import android.provider.Settings
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.Preview
@@ -49,6 +53,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -79,15 +84,27 @@ fun ScanScreen(
         },
     )
     val context = LocalContext.current
+    val activity = context as? Activity
     var hasCameraPermission by remember {
         mutableStateOf(
             checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
         )
     }
+    // shouldShowRequestPermissionRationale is false both before the first-ever request and
+    // after the user picks "don't ask again" — the two are only distinguishable by tracking
+    // that we've actually asked once. When it's false *after* a real denial, asking again is
+    // pointless; the only way forward is the app's system settings page.
+    var permanentlyDenied by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
-    ) { granted -> hasCameraPermission = granted }
+    ) { granted ->
+        hasCameraPermission = granted
+        if (!granted) {
+            permanentlyDenied = activity != null &&
+                !ActivityCompat.shouldShowRequestPermissionRationale(activity, Manifest.permission.CAMERA)
+        }
+    }
 
     LaunchedEffect(Unit) {
         if (!hasCameraPermission) {
@@ -98,6 +115,7 @@ fun ScanScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val quickAddedFormat = stringResource(R.string.scan_quick_added_format)
+    val restockedFormat = stringResource(R.string.inventory_restocked_snackbar_format)
 
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -111,6 +129,9 @@ fun ScanScreen(
                         is ScanOutcome.QuickAdded -> {
                             coroutineScope.launch {
                                 snackbarHostState.showSnackbar(quickAddedFormat.format(outcome.productName))
+                                outcome.restockedProductName?.let { name ->
+                                    snackbarHostState.showSnackbar(restockedFormat.format(name))
+                                }
                             }
                             true
                         }
@@ -124,7 +145,13 @@ fun ScanScreen(
         } else {
             PermissionRationale(
                 padding = padding,
+                permanentlyDenied = permanentlyDenied,
                 onRequestPermission = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                onOpenSettings = {
+                    context.startActivity(
+                        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.fromParts("package", context.packageName, null))
+                    )
+                },
             )
         }
     }
@@ -148,12 +175,11 @@ private fun CameraPreview(
         onDispose { cameraExecutor.shutdown() }
     }
 
-    // "Scan" is the navigation graph's start destination, so switching
-    // bottom-nav tabs and back never actually disposes/recreates this
-    // composable (unlike the other tabs), and CameraX doesn't reliably
-    // resume delivering frames on its own. Rebinding from scratch every
-    // time this tab becomes active — and resetting the "already scanned"
-    // guard with it — is what actually makes scanning work again.
+    // Navigation Compose's restoreState/saveState bottom-nav pattern doesn't guarantee this
+    // composable is disposed and recreated on every tab switch, and CameraX doesn't reliably
+    // resume delivering frames on its own either way. Rebinding from scratch every time this
+    // tab becomes active — and resetting the "already scanned" guard with it — is what
+    // actually makes scanning work again.
     DisposableEffect(isActive) {
         if (isActive) {
             scannedCode = null
@@ -302,7 +328,9 @@ private fun DrawScope.drawCornerBrackets(
 @Composable
 private fun PermissionRationale(
     padding: PaddingValues,
+    permanentlyDenied: Boolean,
     onRequestPermission: () -> Unit,
+    onOpenSettings: () -> Unit,
 ) {
     Column(
         modifier = Modifier
@@ -318,12 +346,20 @@ private fun PermissionRationale(
             tint = MaterialTheme.colorScheme.primary,
         )
         Text(
-            text = stringResource(R.string.scan_permission_rationale),
+            text = stringResource(
+                if (permanentlyDenied) R.string.scan_permission_denied_rationale else R.string.scan_permission_rationale
+            ),
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(vertical = 16.dp),
         )
-        Button(onClick = onRequestPermission) {
-            Text(stringResource(R.string.scan_permission_button))
+        if (permanentlyDenied) {
+            Button(onClick = onOpenSettings) {
+                Text(stringResource(R.string.scan_permission_open_settings))
+            }
+        } else {
+            Button(onClick = onRequestPermission) {
+                Text(stringResource(R.string.scan_permission_button))
+            }
         }
     }
 }

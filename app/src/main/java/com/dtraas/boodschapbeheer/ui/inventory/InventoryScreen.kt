@@ -54,6 +54,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -124,6 +125,13 @@ fun InventoryScreen(
     val removedFormat = stringResource(R.string.inventory_removed_snackbar_format)
     val undoLabel = stringResource(R.string.common_undo)
     val addedToShoppingListMessage = stringResource(R.string.inventory_added_to_shopping_list_snackbar)
+    val restockedFormat = stringResource(R.string.inventory_restocked_snackbar_format)
+
+    LaunchedEffect(Unit) {
+        viewModel.restockEvents.collect { name ->
+            snackbarHostState.showSnackbar(restockedFormat.format(name), duration = SnackbarDuration.Short)
+        }
+    }
 
     fun deleteWithUndo(item: InventoryItemWithProduct) {
         viewModel.removeFromInventory(item.barcode)
