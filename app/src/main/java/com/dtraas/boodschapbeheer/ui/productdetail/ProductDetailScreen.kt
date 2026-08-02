@@ -236,16 +236,13 @@ fun ProductDetailScreen(
                             )
                         }
 
-                        SubtleDivider(top = 12.dp)
                         ExpirationStatusRow(expirationDate = uiState.expirationDate)
 
-                        SubtleDivider(top = 12.dp)
                         ExpirationRow(
                             expirationDate = uiState.expirationDate,
                             onDateChange = viewModel::setExpirationDate,
                         )
 
-                        SubtleDivider(top = 12.dp)
                         MinQuantityRow(
                             minQuantity = uiState.minQuantity,
                             onChange = viewModel::setMinQuantity,
@@ -255,16 +252,16 @@ fun ProductDetailScreen(
                             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                             horizontalArrangement = Arrangement.End,
                         ) {
-                            IconButton(onClick = { showDeleteConfirm = true }) {
-                                Icon(
-                                    Icons.Filled.Delete,
-                                    contentDescription = stringResource(R.string.product_detail_remove),
-                                )
-                            }
                             IconButton(onClick = viewModel::addToShoppingList) {
                                 Icon(
                                     Icons.Filled.PlaylistAdd,
                                     contentDescription = stringResource(R.string.product_detail_add_to_shopping_list),
+                                )
+                            }
+                            IconButton(onClick = { showDeleteConfirm = true }) {
+                                Icon(
+                                    Icons.Filled.Delete,
+                                    contentDescription = stringResource(R.string.product_detail_remove),
                                 )
                             }
                         }
@@ -272,29 +269,42 @@ fun ProductDetailScreen(
                 }
             }
 
-            // Voedingsinformatie
-            if (hasNutritionInfo) {
-                SectionHeader(stringResource(R.string.section_nutrition_info), modifier = Modifier.padding(top = 28.dp))
+            // Voedingsinformatie (no group header of its own — each card carries its own).
+            // The first visible card gets more breathing room after the header above it;
+            // the rest sit close together, per how far down this list they land.
+            val hasNutrition = product?.nutrition != null
+            val hasIngredients = product?.ingredients != null
+            val closeGap = 8.dp
+            val openGap = 20.dp
 
-                product?.nutrition?.let { nutrition ->
-                    NutritionCard(nutrition, modifier = Modifier.padding(top = 12.dp))
-                }
-                product?.ingredients?.let { ingredients ->
-                    IngredientsCard(ingredients, modifier = Modifier.padding(top = 12.dp))
-                }
-                if (allergens.isNotEmpty()) {
-                    AllergensCard(allergens, modifier = Modifier.padding(top = 12.dp))
-                }
-                if (dietLabels.isNotEmpty()) {
-                    DietLabelsCard(dietLabels, modifier = Modifier.padding(top = 12.dp))
-                }
+            product?.nutrition?.let { nutrition ->
+                NutritionCard(nutrition, modifier = Modifier.padding(top = openGap))
+            }
+            product?.ingredients?.let { ingredients ->
+                IngredientsCard(ingredients, modifier = Modifier.padding(top = if (hasNutrition) closeGap else openGap))
+            }
+            if (allergens.isNotEmpty()) {
+                AllergensCard(
+                    allergens,
+                    modifier = Modifier.padding(top = if (hasNutrition || hasIngredients) closeGap else openGap),
+                )
+            }
+            if (dietLabels.isNotEmpty()) {
+                DietLabelsCard(
+                    dietLabels,
+                    modifier = Modifier.padding(
+                        top = if (hasNutrition || hasIngredients || allergens.isNotEmpty()) closeGap else openGap,
+                    ),
+                )
             }
 
             if (stillInInventory) {
                 NoteCard(
                     note = uiState.note,
                     onNoteChange = viewModel::setNote,
-                    modifier = Modifier.padding(top = 28.dp),
+                    modifier = Modifier.padding(
+                        top = if (hasNutritionInfo) closeGap else openGap,
+                    ),
                 )
             }
         }
@@ -328,14 +338,6 @@ private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
         style = MaterialTheme.typography.titleMedium,
         color = MaterialTheme.colorScheme.primary,
         modifier = modifier.fillMaxWidth(),
-    )
-}
-
-@Composable
-private fun SubtleDivider(top: androidx.compose.ui.unit.Dp) {
-    HorizontalDivider(
-        modifier = Modifier.padding(top = top),
-        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
     )
 }
 
@@ -430,7 +432,7 @@ private fun AllergensCard(allergens: List<Allergen>, modifier: Modifier = Modifi
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(stringResource(R.string.product_detail_allergens_title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.product_detail_allergens_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(top = 8.dp),
@@ -455,7 +457,7 @@ private fun DietLabelsCard(labels: List<DietLabel>, modifier: Modifier = Modifie
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(stringResource(R.string.product_detail_diet_labels_title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.product_detail_diet_labels_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(top = 8.dp),
@@ -495,7 +497,7 @@ private fun IngredientsCard(ingredients: String, modifier: Modifier = Modifier) 
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(stringResource(R.string.product_detail_ingredients_title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.product_detail_ingredients_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             Text(
                 text = ingredients,
                 style = MaterialTheme.typography.bodyMedium,
@@ -514,7 +516,7 @@ private fun NutritionCard(nutrition: NutritionInfo, modifier: Modifier = Modifie
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(stringResource(R.string.product_detail_nutrition_title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.product_detail_nutrition_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             Spacer(modifier = Modifier.height(4.dp))
 
             nutrition.energyKcal100g?.let {
@@ -710,7 +712,7 @@ private fun NoteCard(note: String?, onNoteChange: (String?) -> Unit, modifier: M
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(stringResource(R.string.product_detail_note_title), style = MaterialTheme.typography.titleMedium)
+            Text(stringResource(R.string.product_detail_note_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },

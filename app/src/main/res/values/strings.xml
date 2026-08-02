@@ -188,7 +188,6 @@
     <!-- Productdetail -->
     <string name="product_detail_default_title">Product</string>
     <string name="section_stock">Voorraad</string>
-    <string name="section_nutrition_info">Voedingsinformatie</string>
     <string name="product_detail_in_stock">Aantal</string>
     <string name="product_detail_remove">Verwijderen</string>
     <string name="product_detail_add_to_shopping_list">Toevoegen aan lijstje</string>
@@ -218,7 +217,7 @@
     <string name="product_detail_status_one_day">Nog 1 dag houdbaar</string>
     <string name="product_detail_status_days_format">Nog %1$d dagen houdbaar</string>
     <string name="product_detail_status_fresh">Vers</string>
-    <string name="product_detail_min_quantity_label">Minimaal</string>
+    <string name="product_detail_min_quantity_label">Minimum</string>
     <string name="product_detail_allergens_title">Allergenen</string>
     <string name="product_detail_diet_labels_title">Dieetlabels</string>
     <string name="product_detail_note_title">Persoonlijke notitie</string>

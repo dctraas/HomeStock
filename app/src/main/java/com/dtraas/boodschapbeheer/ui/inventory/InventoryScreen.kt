@@ -586,23 +586,6 @@ private fun InventoryGridTile(
                 status = stockStatus,
                 modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
             )
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(4.dp)
-                    .size(32.dp),
-            ) {
-                IconButton(onClick = onAddToShoppingList, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        Icons.Filled.AddShoppingCart,
-                        contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-            }
         }
         Column(modifier = Modifier.padding(top = 6.dp)) {
             Text(
@@ -622,13 +605,26 @@ private fun InventoryGridTile(
                     modifier = Modifier.padding(top = 1.dp),
                 )
             }
-            QuantityStepper(
-                quantity = item.quantity,
-                onDecrease = onDecrease,
-                onIncrease = onIncrease,
-                dense = true,
-                modifier = Modifier.padding(top = 2.dp),
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                QuantityStepper(
+                    quantity = item.quantity,
+                    onDecrease = onDecrease,
+                    onIncrease = onIncrease,
+                    dense = true,
+                )
+                IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        Icons.Filled.AddShoppingCart,
+                        contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+            }
         }
     }
 }

@@ -188,7 +188,6 @@
     <!-- Product detail -->
     <string name="product_detail_default_title">Product</string>
     <string name="section_stock">Stock</string>
-    <string name="section_nutrition_info">Nutrition information</string>
     <string name="product_detail_in_stock">Amount</string>
     <string name="product_detail_remove">Remove</string>
     <string name="product_detail_add_to_shopping_list">Add to list</string>

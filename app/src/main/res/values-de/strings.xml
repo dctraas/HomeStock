@@ -188,7 +188,6 @@
     <!-- Produktdetail -->
     <string name="product_detail_default_title">Produkt</string>
     <string name="section_stock">Vorrat</string>
-    <string name="section_nutrition_info">Nährwertinformationen</string>
     <string name="product_detail_in_stock">Anzahl</string>
     <string name="product_detail_remove">Entfernen</string>
     <string name="product_detail_add_to_shopping_list">Zur Liste hinzufügen</string>

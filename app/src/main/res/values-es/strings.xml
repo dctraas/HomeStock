@@ -188,7 +188,6 @@
     <!-- Detalle del producto -->
     <string name="product_detail_default_title">Producto</string>
     <string name="section_stock">Existencias</string>
-    <string name="section_nutrition_info">Información nutricional</string>
     <string name="product_detail_in_stock">Cantidad</string>
     <string name="product_detail_remove">Eliminar</string>
     <string name="product_detail_add_to_shopping_list">Añadir a la lista</string>
