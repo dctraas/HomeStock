@@ -12,8 +12,7 @@ import kotlinx.coroutines.tasks.await
 
 /**
  * The household's custom list of stores — offered as suggestions when adding a shopping
- * list item, and manageable from Meer. Default stores are seeded once, when the
- * household is created (see [HouseholdRepository.createHousehold]).
+ * list item, and manageable from Meer. Starts empty; the household adds its own stores.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class StoreRepository(

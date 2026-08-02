@@ -4,7 +4,6 @@ import android.content.Context
 import com.dtraas.boodschapbeheer.R
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
-import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
 
@@ -38,7 +37,6 @@ class HouseholdRepository(
                 val doc = firestore.collection(HOUSEHOLDS_COLLECTION).document(code)
                 if (!doc.get().await().exists()) {
                     doc.set(mapOf("createdAt" to System.currentTimeMillis())).await()
-                    seedDefaultStores(doc)
                     createdCode = code
                 }
             }
@@ -47,16 +45,6 @@ class HouseholdRepository(
         } catch (e: Exception) {
             Result.failure(e)
         }
-    }
-
-    /** Gives a freshly created household a starting set of stores to pick from. */
-    private suspend fun seedDefaultStores(household: DocumentReference) {
-        val batch = firestore.batch()
-        DEFAULT_STORE_NAMES.forEachIndexed { index, name ->
-            val storeDoc = household.collection("stores").document()
-            batch.set(storeDoc, mapOf("name" to name, "sortOrder" to index.toDouble()))
-        }
-        batch.commit().await()
     }
 
     /** Joins an existing household by its code, failing if no such household exists. */
@@ -117,11 +105,6 @@ class HouseholdRepository(
         // Every subcollection ever written under households/{id} — see each repository's
         // `collection(householdId, name)` helper. Keep in sync if a new one is added.
         private val SUBCOLLECTIONS = listOf("products", "inventory", "shoppingList", "activityLog", "scanHistory", "stores")
-
-        // Brand names, so kept as-is regardless of app language (see Store display comments).
-        private val DEFAULT_STORE_NAMES = listOf(
-            "Albert Heijn", "Jumbo", "Nettorama", "Kruidvat", "Hema", "Etos", "Action",
-        )
 
         // No 0/O or 1/I — easy to misread and easy to misdictate over the phone.
         private const val CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
