@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Description
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarRate
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -101,6 +103,8 @@ private enum class AppLanguage(val tag: String, val labelRes: Int) {
 fun MoreScreen(
     onNavigateToRecipes: () -> Unit = {},
     onNavigateToReceiptScan: () -> Unit = {},
+    onNavigateToStatistics: () -> Unit = {},
+    onNavigateToPremium: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as BoodschapBeheerApplication
@@ -115,6 +119,8 @@ fun MoreScreen(
     val photoPath by deviceProfile.photoPath.collectAsState()
     val feedbackRepository = application.container.feedbackRepository
     val householdRepository = application.container.householdRepository
+    val householdMembersRepository = application.container.householdMembersRepository
+    val isPremium by householdMembersRepository.observeHouseholdIsPremium().collectAsState(initial = false)
     val storeRepository = application.container.storeRepository
     val stores by storeRepository.observeStores().collectAsState(initial = emptyList())
     val currentLanguage = AppLanguage.entries.find { it.tag == LocalConfiguration.current.locales[0].language } ?: AppLanguage.NL
@@ -179,6 +185,12 @@ fun MoreScreen(
                 subtitle = stringResource(R.string.more_household_code_format, householdId ?: "—"),
                 onClick = { showHouseholdDialog = true },
             )
+            SettingsRow(
+                icon = Icons.Filled.WorkspacePremium,
+                title = stringResource(R.string.more_premium_title),
+                subtitle = stringResource(if (isPremium) R.string.more_premium_active else R.string.more_premium_inactive),
+                onClick = onNavigateToPremium,
+            )
 
             SectionHeader(stringResource(R.string.more_section_general))
             SettingsRow(
@@ -204,6 +216,12 @@ fun MoreScreen(
                 title = stringResource(R.string.more_stores_title),
                 subtitle = stringResource(R.string.more_stores_count_format, stores.size),
                 onClick = { showStoresDialog = true },
+            )
+            SettingsRow(
+                icon = Icons.Filled.BarChart,
+                title = stringResource(R.string.more_statistics_title),
+                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                onClick = { if (isPremium) onNavigateToStatistics() else onNavigateToPremium() },
             )
 
             SectionHeader(stringResource(R.string.more_section_about))
@@ -232,12 +250,14 @@ fun MoreScreen(
             SettingsRow(
                 icon = Icons.Filled.RestaurantMenu,
                 title = stringResource(R.string.more_beta_recipes),
-                onClick = onNavigateToRecipes,
+                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                onClick = { if (isPremium) onNavigateToRecipes() else onNavigateToPremium() },
             )
             SettingsRow(
                 icon = Icons.Filled.Receipt,
                 title = stringResource(R.string.more_beta_receipt_scan),
-                onClick = onNavigateToReceiptScan,
+                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                onClick = { if (isPremium) onNavigateToReceiptScan() else onNavigateToPremium() },
             )
 
             Text(
@@ -346,7 +366,10 @@ fun MoreScreen(
                 TextButton(
                     onClick = {
                         showLeaveConfirm = false
-                        householdSession.leaveHousehold()
+                        coroutineScope.launch {
+                            householdMembersRepository.unregisterCurrentDevice()
+                            householdSession.leaveHousehold()
+                        }
                     },
                 ) { Text(stringResource(R.string.more_leave)) }
             },

@@ -2,6 +2,7 @@ package com.dtraas.boodschapbeheer.ui.household
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dtraas.boodschapbeheer.data.repository.HouseholdMembersRepository
 import com.dtraas.boodschapbeheer.data.repository.HouseholdNotFoundException
 import com.dtraas.boodschapbeheer.data.repository.HouseholdRepository
 import com.dtraas.boodschapbeheer.data.repository.HouseholdSession
@@ -19,6 +20,8 @@ data class HouseholdUiState(
     val errorMessage: String? = null,
     /** Set for anything else (network failure, unexpected exception) — the UI shows a generic string for these. */
     val hasGenericError: Boolean = false,
+    /** The household exists and the code is valid, but it's already at the free-tier member limit. */
+    val householdFull: Boolean = false,
     val createdCode: String? = null,
     val joinCodeInput: String = "",
 )
@@ -26,6 +29,7 @@ data class HouseholdUiState(
 class HouseholdViewModel(
     private val householdRepository: HouseholdRepository,
     private val householdSession: HouseholdSession,
+    private val householdMembersRepository: HouseholdMembersRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HouseholdUiState())
@@ -41,7 +45,7 @@ class HouseholdViewModel(
     }
 
     fun selectJoin() {
-        _uiState.update { it.copy(mode = HouseholdMode.JOIN, errorMessage = null, hasGenericError = false) }
+        _uiState.update { it.copy(mode = HouseholdMode.JOIN, errorMessage = null, hasGenericError = false, householdFull = false) }
     }
 
     fun back() {
@@ -49,22 +53,32 @@ class HouseholdViewModel(
     }
 
     fun onJoinCodeChange(value: String) {
-        _uiState.update { it.copy(joinCodeInput = value, errorMessage = null, hasGenericError = false) }
+        _uiState.update { it.copy(joinCodeInput = value, errorMessage = null, hasGenericError = false, householdFull = false) }
     }
 
     /** Called once the user has shared/noted a freshly created household's code. */
     fun confirmCreatedHousehold() {
         val code = _uiState.value.createdCode ?: return
+        // A freshly created household only ever has this one device so far — no need to
+        // check the free-tier limit, just register.
+        viewModelScope.launch { householdMembersRepository.registerCurrentDevice(code) }
         householdSession.setHousehold(code)
     }
 
     fun joinHousehold() {
         val code = _uiState.value.joinCodeInput
         if (code.length != HouseholdRepository.CODE_LENGTH) return
-        _uiState.update { it.copy(isLoading = true, errorMessage = null, hasGenericError = false) }
+        _uiState.update { it.copy(isLoading = true, errorMessage = null, hasGenericError = false, householdFull = false) }
         viewModelScope.launch {
             householdRepository.joinHousehold(code)
-                .onSuccess { joinedCode -> householdSession.setHousehold(joinedCode) }
+                .onSuccess { joinedCode ->
+                    if (householdMembersRepository.canJoin(joinedCode)) {
+                        householdMembersRepository.registerCurrentDevice(joinedCode)
+                        householdSession.setHousehold(joinedCode)
+                    } else {
+                        _uiState.update { it.copy(isLoading = false, householdFull = true) }
+                    }
+                }
                 .onFailure { error -> _uiState.update { it.copy(isLoading = false).withError(error) } }
         }
     }

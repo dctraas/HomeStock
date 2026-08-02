@@ -95,6 +95,7 @@
     <string name="household_generate_code_failed">Impossible de générer un code de foyer unique</string>
     <string name="household_generic_error">Une erreur s\'est produite. Réessayez.</string>
     <string name="household_join_code_length_hint">Un code de foyer comporte %1$d caractères</string>
+    <string name="household_join_full_error">Ce foyer compte déjà 2 membres dans la formule gratuite. Demandez à quelqu\'un du foyer de passer à Premium, ou de le quitter pour vous faire de la place.</string>
     <string name="household_create_back_warning_title">Code pas encore enregistré ?</string>
     <string name="household_create_back_warning_text">Assurez-vous d\'avoir copié le code du foyer avant de revenir en arrière — vous ne pourrez plus le retrouver ensuite.</string>
     <string name="household_create_back_warning_confirm">Revenir quand même</string>
@@ -102,6 +103,10 @@
     <!-- Plus -->
     <string name="more_household_title">Foyer</string>
     <string name="more_household_code_format">Code : %1$s</string>
+    <string name="more_premium_title">Premium</string>
+    <string name="more_premium_active">Actif</string>
+    <string name="more_premium_inactive">Passer à Premium</string>
+    <string name="more_premium_locked_subtitle">Premium</string>
     <string name="more_leave">Quitter</string>
     <string name="more_leave_dialog_title">Quitter le foyer ?</string>
     <string name="more_leave_dialog_text">Vous ne verrez plus le stock et la liste de courses partagés sur cet appareil. Vous pouvez rejoindre le foyer à tout moment avec le code.</string>
@@ -136,6 +141,7 @@
     <string name="more_stores_count_format">%1$d magasins</string>
     <string name="more_stores_empty">Aucun magasin ajouté pour l\'instant.</string>
     <string name="more_stores_remove_format">Supprimer %1$s</string>
+    <string name="more_statistics_title">Statistiques</string>
     <string name="more_section_about">À propos</string>
     <string name="more_about_version_format">Version de l\'app %1$s</string>
     <string name="more_about_feedback">Commentaires</string>
@@ -363,4 +369,21 @@
     <string name="receipt_scan_no_items">Aucun produit reconnu sur ce ticket.</string>
     <string name="receipt_scan_confirm_hint">Vérifiez et ajustez les produits reconnus avant de les ajouter.</string>
     <string name="receipt_scan_confirm_action">Ajouter à l\'inventaire</string>
+
+    <!-- Premium -->
+    <string name="premium_title">Premium</string>
+    <string name="premium_pitch_title">Profitez encore plus de BoodschapBeheer</string>
+    <string name="premium_pitch_subtitle">Débloquez les recettes, le scan de tickets, les statistiques et plus de membres du foyer avec un abonnement annuel.</string>
+    <string name="premium_active_title">Vous êtes Premium</string>
+    <string name="premium_active_subtitle">Merci ! Toutes les fonctionnalités Premium sont accessibles pour tout votre foyer.</string>
+    <string name="premium_benefit_recipes">Suggestions de recettes basées sur votre inventaire</string>
+    <string name="premium_benefit_receipt_scan">Scannez vos tickets et ajoutez les produits automatiquement</string>
+    <string name="premium_benefit_statistics">Statistiques avancées</string>
+    <string name="premium_benefit_household">Plus de 2 membres dans un même foyer</string>
+    <string name="premium_price_loading">Chargement du prix…</string>
+    <string name="premium_price_per_year_format">%1$s par an</string>
+    <string name="premium_subscribe_button">S\'abonner</string>
+    <string name="premium_terms_notice">Abonnement annuel, renouvelé automatiquement. Résiliable à tout moment via Google Play.</string>
+    <string name="premium_restore_action">Restaurer un achat précédent</string>
+    <string name="premium_restore_done">Achats vérifiés</string>
 </resources>

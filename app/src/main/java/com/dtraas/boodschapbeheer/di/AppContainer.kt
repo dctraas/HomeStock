@@ -5,9 +5,11 @@ import com.dtraas.boodschapbeheer.BuildConfig
 import com.dtraas.boodschapbeheer.data.remote.OpenFoodFactsApi
 import com.dtraas.boodschapbeheer.data.remote.TheMealDbApi
 import com.dtraas.boodschapbeheer.data.repository.ActivityLogRepository
+import com.dtraas.boodschapbeheer.data.repository.BillingRepository
 import com.dtraas.boodschapbeheer.data.repository.DeviceProfile
 import com.dtraas.boodschapbeheer.data.repository.DismissedNoticesStore
 import com.dtraas.boodschapbeheer.data.repository.FeedbackRepository
+import com.dtraas.boodschapbeheer.data.repository.HouseholdMembersRepository
 import com.dtraas.boodschapbeheer.data.repository.HouseholdRepository
 import com.dtraas.boodschapbeheer.data.repository.HouseholdSession
 import com.dtraas.boodschapbeheer.data.repository.InventoryRepository
@@ -65,6 +67,14 @@ class AppContainer(context: Context) {
 
     val householdRepository: HouseholdRepository by lazy {
         HouseholdRepository(appContext, firestore, auth)
+    }
+
+    val billingRepository: BillingRepository by lazy {
+        BillingRepository(appContext)
+    }
+
+    val householdMembersRepository: HouseholdMembersRepository by lazy {
+        HouseholdMembersRepository(firestore, householdSession, auth, billingRepository)
     }
 
     // Logging is debug-only: even at BASIC level, release builds shouldn't write network

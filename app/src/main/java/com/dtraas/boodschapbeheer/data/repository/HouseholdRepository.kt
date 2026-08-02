@@ -104,7 +104,7 @@ class HouseholdRepository(
 
         // Every subcollection ever written under households/{id} — see each repository's
         // `collection(householdId, name)` helper. Keep in sync if a new one is added.
-        private val SUBCOLLECTIONS = listOf("products", "inventory", "shoppingList", "activityLog", "scanHistory", "stores")
+        private val SUBCOLLECTIONS = listOf("products", "inventory", "shoppingList", "activityLog", "scanHistory", "stores", "members")
 
         // No 0/O or 1/I — easy to misread and easy to misdictate over the phone.
         private const val CODE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"

@@ -30,6 +30,7 @@ import androidx.compose.runtime.getValue
 import com.dtraas.boodschapbeheer.ui.inventory.InventoryScreen
 import com.dtraas.boodschapbeheer.ui.more.MoreScreen
 import com.dtraas.boodschapbeheer.ui.notifications.NotificationsScreen
+import com.dtraas.boodschapbeheer.ui.premium.PremiumScreen
 import com.dtraas.boodschapbeheer.ui.productdetail.ProductDetailScreen
 import com.dtraas.boodschapbeheer.ui.receiptscan.ReceiptScanScreen
 import com.dtraas.boodschapbeheer.ui.recipes.RecipeDetailScreen
@@ -89,6 +90,8 @@ fun BoodschapBeheerApp() {
                 MoreScreen(
                     onNavigateToRecipes = { navController.navigate(Destination.Recipes.route) },
                     onNavigateToReceiptScan = { navController.navigate(Destination.ReceiptScan.route) },
+                    onNavigateToStatistics = { navController.navigate(Destination.Statistics.route) },
+                    onNavigateToPremium = { navController.navigate(Destination.Premium.route) },
                 )
             }
             composable(
@@ -145,6 +148,9 @@ fun BoodschapBeheerApp() {
             }
             composable(Destination.ReceiptScan.route) {
                 ReceiptScanScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Destination.Premium.route) {
+                PremiumScreen(onBack = { navController.popBackStack() })
             }
         }
     }

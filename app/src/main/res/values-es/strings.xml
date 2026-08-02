@@ -95,6 +95,7 @@
     <string name="household_generate_code_failed">No se pudo generar un código de hogar único</string>
     <string name="household_generic_error">Algo salió mal. Inténtalo de nuevo.</string>
     <string name="household_join_code_length_hint">Un código de hogar tiene %1$d caracteres</string>
+    <string name="household_join_full_error">Este hogar ya tiene 2 miembros en el plan gratuito. Pide a alguien del hogar que se pase a Premium, o que lo abandone para hacerte sitio.</string>
     <string name="household_create_back_warning_title">¿Código aún no guardado?</string>
     <string name="household_create_back_warning_text">Asegúrate de haber copiado el código del hogar antes de volver — después no podrás encontrarlo de nuevo.</string>
     <string name="household_create_back_warning_confirm">Volver de todos modos</string>
@@ -102,6 +103,10 @@
     <!-- Más -->
     <string name="more_household_title">Hogar</string>
     <string name="more_household_code_format">Código: %1$s</string>
+    <string name="more_premium_title">Premium</string>
+    <string name="more_premium_active">Activo</string>
+    <string name="more_premium_inactive">Hazte Premium</string>
+    <string name="more_premium_locked_subtitle">Premium</string>
     <string name="more_leave">Abandonar</string>
     <string name="more_leave_dialog_title">¿Abandonar el hogar?</string>
     <string name="more_leave_dialog_text">Dejarás de ver el inventario y la lista de la compra compartidos en este dispositivo. Puedes volver a unirte en cualquier momento con el código.</string>
@@ -136,6 +141,7 @@
     <string name="more_stores_count_format">%1$d tiendas</string>
     <string name="more_stores_empty">Aún no se han añadido tiendas.</string>
     <string name="more_stores_remove_format">Eliminar %1$s</string>
+    <string name="more_statistics_title">Estadísticas</string>
     <string name="more_section_about">Acerca de</string>
     <string name="more_about_version_format">Versión de la app %1$s</string>
     <string name="more_about_feedback">Comentarios</string>
@@ -363,4 +369,21 @@
     <string name="receipt_scan_no_items">No se reconocieron productos en este ticket.</string>
     <string name="receipt_scan_confirm_hint">Revisa y ajusta los productos reconocidos antes de añadirlos.</string>
     <string name="receipt_scan_confirm_action">Añadir al inventario</string>
+
+    <!-- Premium -->
+    <string name="premium_title">Premium</string>
+    <string name="premium_pitch_title">Saca más partido a BoodschapBeheer</string>
+    <string name="premium_pitch_subtitle">Desbloquea recetas, escaneo de tickets, estadísticas y más miembros del hogar con una suscripción anual.</string>
+    <string name="premium_active_title">Ya eres Premium</string>
+    <string name="premium_active_subtitle">¡Gracias! Todas las funciones Premium están disponibles para todo tu hogar.</string>
+    <string name="premium_benefit_recipes">Sugerencias de recetas según tu inventario</string>
+    <string name="premium_benefit_receipt_scan">Escanea tickets y añade productos automáticamente</string>
+    <string name="premium_benefit_statistics">Estadísticas ampliadas</string>
+    <string name="premium_benefit_household">Más de 2 miembros en un mismo hogar</string>
+    <string name="premium_price_loading">Cargando precio…</string>
+    <string name="premium_price_per_year_format">%1$s al año</string>
+    <string name="premium_subscribe_button">Suscribirse</string>
+    <string name="premium_terms_notice">Suscripción anual, se renueva automáticamente. Cancélala cuando quieras en Google Play.</string>
+    <string name="premium_restore_action">Restaurar una compra anterior</string>
+    <string name="premium_restore_done">Compras comprobadas</string>
 </resources>

@@ -29,6 +29,7 @@ sealed class Destination(val route: String) {
         fun createRoute(mealId: String) = "recipe_detail/$mealId"
     }
     data object ReceiptScan : Destination("receipt_scan")
+    data object Premium : Destination("premium")
 }
 
 data class TopLevelDestination(

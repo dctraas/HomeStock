@@ -95,6 +95,7 @@
     <string name="household_generate_code_failed">Es konnte kein eindeutiger Haushalt-Code erstellt werden</string>
     <string name="household_generic_error">Es ist ein Fehler aufgetreten. Bitte versuche es erneut.</string>
     <string name="household_join_code_length_hint">Ein Haushalts-Code besteht aus %1$d Zeichen</string>
+    <string name="household_join_full_error">Dieser Haushalt hat im kostenlosen Plan bereits 2 Mitglieder. Bitte jemanden im Haushalt, Premium zu holen, oder den Haushalt zu verlassen, um Platz zu machen.</string>
     <string name="household_create_back_warning_title">Code noch nicht gespeichert?</string>
     <string name="household_create_back_warning_text">Stelle sicher, dass du den Haushalts-Code kopiert hast, bevor du zurückgehst — danach kannst du ihn nicht mehr finden.</string>
     <string name="household_create_back_warning_confirm">Trotzdem zurück</string>
@@ -102,6 +103,10 @@
     <!-- Mehr -->
     <string name="more_household_title">Haushalt</string>
     <string name="more_household_code_format">Code: %1$s</string>
+    <string name="more_premium_title">Premium</string>
+    <string name="more_premium_active">Aktiv</string>
+    <string name="more_premium_inactive">Premium holen</string>
+    <string name="more_premium_locked_subtitle">Premium</string>
     <string name="more_leave">Verlassen</string>
     <string name="more_leave_dialog_title">Haushalt verlassen?</string>
     <string name="more_leave_dialog_text">Du siehst den geteilten Vorrat und die Einkaufsliste dann nicht mehr auf diesem Gerät. Du kannst jederzeit mit dem Code wieder beitreten.</string>
@@ -136,6 +141,7 @@
     <string name="more_stores_count_format">%1$d Geschäfte</string>
     <string name="more_stores_empty">Noch keine Geschäfte hinzugefügt.</string>
     <string name="more_stores_remove_format">%1$s entfernen</string>
+    <string name="more_statistics_title">Statistiken</string>
     <string name="more_section_about">Über</string>
     <string name="more_about_version_format">App-Version %1$s</string>
     <string name="more_about_feedback">Feedback</string>
@@ -363,4 +369,21 @@
     <string name="receipt_scan_no_items">Auf diesem Kassenbon wurden keine Produkte erkannt.</string>
     <string name="receipt_scan_confirm_hint">Überprüfe und passe die erkannten Produkte an, bevor du sie hinzufügst.</string>
     <string name="receipt_scan_confirm_action">Zum Vorrat hinzufügen</string>
+
+    <!-- Premium -->
+    <string name="premium_title">Premium</string>
+    <string name="premium_pitch_title">Hol mehr aus BoodschapBeheer heraus</string>
+    <string name="premium_pitch_subtitle">Schalte Rezepte, Kassenbon-Scan, Statistiken und mehr Haushaltsmitglieder mit einem Jahresabo frei.</string>
+    <string name="premium_active_title">Du bist Premium</string>
+    <string name="premium_active_subtitle">Danke! Alle Premium-Funktionen sind für deinen ganzen Haushalt freigeschaltet.</string>
+    <string name="premium_benefit_recipes">Rezeptvorschläge auf Basis deines Vorrats</string>
+    <string name="premium_benefit_receipt_scan">Kassenbons scannen und Produkte automatisch hinzufügen</string>
+    <string name="premium_benefit_statistics">Erweiterte Statistiken</string>
+    <string name="premium_benefit_household">Mehr als 2 Mitglieder in einem Haushalt</string>
+    <string name="premium_price_loading">Preis wird geladen…</string>
+    <string name="premium_price_per_year_format">%1$s pro Jahr</string>
+    <string name="premium_subscribe_button">Abonnieren</string>
+    <string name="premium_terms_notice">Jahresabo, verlängert sich automatisch. Jederzeit über Google Play kündbar.</string>
+    <string name="premium_restore_action">Früheren Kauf wiederherstellen</string>
+    <string name="premium_restore_done">Käufe überprüft</string>
 </resources>

@@ -96,6 +96,7 @@
     <string name="household_generate_code_failed">Kon geen unieke huishouden-code genereren</string>
     <string name="household_generic_error">Er ging iets mis. Probeer het opnieuw.</string>
     <string name="household_join_code_length_hint">Een huishouden-code bestaat uit %1$d tekens</string>
+    <string name="household_join_full_error">Dit huishouden heeft al 2 leden op het gratis abonnement. Vraag iemand in het huishouden om Premium, of laat iemand het huishouden verlaten om plek te maken.</string>
     <string name="household_create_back_warning_title">Code nog niet opgeslagen?</string>
     <string name="household_create_back_warning_text">Zorg dat je de huishouden-code hebt gekopieerd voordat je teruggaat — je kunt hem hierna niet meer terugvinden.</string>
     <string name="household_create_back_warning_confirm">Toch teruggaan</string>
@@ -103,6 +104,10 @@
     <!-- Meer -->
     <string name="more_household_title">Huishouden</string>
     <string name="more_household_code_format">Code: %1$s</string>
+    <string name="more_premium_title">Premium</string>
+    <string name="more_premium_active">Actief</string>
+    <string name="more_premium_inactive">Word Premium</string>
+    <string name="more_premium_locked_subtitle">Premium</string>
     <string name="more_leave">Verlaten</string>
     <string name="more_leave_dialog_title">Huishouden verlaten?</string>
     <string name="more_leave_dialog_text">Je ziet de gedeelde voorraad en boodschappenlijst dan niet meer op dit toestel. Je kunt op elk moment weer aansluiten met de code.</string>
@@ -137,6 +142,7 @@
     <string name="more_stores_count_format">%1$d winkels</string>
     <string name="more_stores_empty">Nog geen winkels toegevoegd.</string>
     <string name="more_stores_remove_format">%1$s verwijderen</string>
+    <string name="more_statistics_title">Statistieken</string>
     <string name="more_section_about">Over</string>
     <string name="more_about_version_format">App versie %1$s</string>
     <string name="more_about_feedback">Feedback</string>
@@ -364,4 +370,21 @@
     <string name="receipt_scan_no_items">Geen producten herkend op dit bonnetje.</string>
     <string name="receipt_scan_confirm_hint">Controleer en pas de herkende producten aan voor je ze toevoegt.</string>
     <string name="receipt_scan_confirm_action">Toevoegen aan voorraad</string>
+
+    <!-- Premium -->
+    <string name="premium_title">Premium</string>
+    <string name="premium_pitch_title">Haal meer uit BoodschapBeheer</string>
+    <string name="premium_pitch_subtitle">Ontgrendel recepten, bonnetje scannen, statistieken en meer huisgenoten met één jaarabonnement.</string>
+    <string name="premium_active_title">Je bent Premium</string>
+    <string name="premium_active_subtitle">Bedankt! Alle Premium-functies staan open voor je hele huishouden.</string>
+    <string name="premium_benefit_recipes">Receptsuggesties op basis van je voorraad</string>
+    <string name="premium_benefit_receipt_scan">Bonnetje scannen en automatisch producten toevoegen</string>
+    <string name="premium_benefit_statistics">Uitgebreide statistieken</string>
+    <string name="premium_benefit_household">Meer dan 2 huisgenoten in één huishouden</string>
+    <string name="premium_price_loading">Prijs laden…</string>
+    <string name="premium_price_per_year_format">%1$s per jaar</string>
+    <string name="premium_subscribe_button">Abonneren</string>
+    <string name="premium_terms_notice">Jaarabonnement, wordt automatisch verlengd. Op elk moment opzegbaar via Google Play.</string>
+    <string name="premium_restore_action">Eerdere aankoop herstellen</string>
+    <string name="premium_restore_done">Aankopen gecontroleerd</string>
 </resources>

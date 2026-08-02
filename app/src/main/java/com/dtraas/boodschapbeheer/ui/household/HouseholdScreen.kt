@@ -60,6 +60,7 @@ fun HouseholdScreen() {
                 HouseholdViewModel(
                     householdRepository = application.container.householdRepository,
                     householdSession = application.container.householdSession,
+                    householdMembersRepository = application.container.householdMembersRepository,
                 )
             }
         },
@@ -256,10 +257,11 @@ private fun JoinContent(
         modifier = Modifier.padding(top = 16.dp, bottom = 20.dp),
     )
     val isCompleteLength = uiState.joinCodeInput.length == HouseholdRepository.CODE_LENGTH
-    val hasError = uiState.errorMessage != null || uiState.hasGenericError
+    val hasError = uiState.errorMessage != null || uiState.hasGenericError || uiState.householdFull
     val supportingMessage = when {
         uiState.errorMessage != null -> uiState.errorMessage
         uiState.hasGenericError -> stringResource(R.string.household_generic_error)
+        uiState.householdFull -> stringResource(R.string.household_join_full_error)
         uiState.joinCodeInput.isNotEmpty() && !isCompleteLength ->
             stringResource(R.string.household_join_code_length_hint, HouseholdRepository.CODE_LENGTH)
         else -> null

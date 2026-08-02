@@ -99,4 +99,6 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
 
     implementation(libs.androidx.glance.appwidget)
+
+    implementation(libs.billing.ktx)
 }

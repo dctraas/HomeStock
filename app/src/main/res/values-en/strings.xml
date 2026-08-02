@@ -95,6 +95,7 @@
     <string name="household_generate_code_failed">Couldn\'t generate a unique household code</string>
     <string name="household_generic_error">Something went wrong. Please try again.</string>
     <string name="household_join_code_length_hint">A household code is %1$d characters</string>
+    <string name="household_join_full_error">This household already has 2 members on the free plan. Ask someone in the household to go Premium, or to leave to make room for you.</string>
     <string name="household_create_back_warning_title">Code not saved yet?</string>
     <string name="household_create_back_warning_text">Make sure you\'ve copied the household code before going back — you won\'t be able to find it again afterwards.</string>
     <string name="household_create_back_warning_confirm">Go back anyway</string>
@@ -102,6 +103,10 @@
     <!-- More -->
     <string name="more_household_title">Household</string>
     <string name="more_household_code_format">Code: %1$s</string>
+    <string name="more_premium_title">Premium</string>
+    <string name="more_premium_active">Active</string>
+    <string name="more_premium_inactive">Go Premium</string>
+    <string name="more_premium_locked_subtitle">Premium</string>
     <string name="more_leave">Leave</string>
     <string name="more_leave_dialog_title">Leave household?</string>
     <string name="more_leave_dialog_text">You\'ll no longer see the shared inventory and shopping list on this device. You can rejoin at any time with the code.</string>
@@ -136,6 +141,7 @@
     <string name="more_stores_count_format">%1$d stores</string>
     <string name="more_stores_empty">No stores added yet.</string>
     <string name="more_stores_remove_format">Remove %1$s</string>
+    <string name="more_statistics_title">Statistics</string>
     <string name="more_section_about">About</string>
     <string name="more_about_version_format">App version %1$s</string>
     <string name="more_about_feedback">Feedback</string>
@@ -363,4 +369,21 @@
     <string name="receipt_scan_no_items">No products recognized on this receipt.</string>
     <string name="receipt_scan_confirm_hint">Check and adjust the recognized products before adding them.</string>
     <string name="receipt_scan_confirm_action">Add to inventory</string>
+
+    <!-- Premium -->
+    <string name="premium_title">Premium</string>
+    <string name="premium_pitch_title">Get more out of BoodschapBeheer</string>
+    <string name="premium_pitch_subtitle">Unlock recipes, receipt scanning, statistics, and more household members with one yearly subscription.</string>
+    <string name="premium_active_title">You\'re Premium</string>
+    <string name="premium_active_subtitle">Thank you! All Premium features are open for your whole household.</string>
+    <string name="premium_benefit_recipes">Recipe suggestions based on your inventory</string>
+    <string name="premium_benefit_receipt_scan">Scan receipts and add products automatically</string>
+    <string name="premium_benefit_statistics">Extended statistics</string>
+    <string name="premium_benefit_household">More than 2 members in one household</string>
+    <string name="premium_price_loading">Loading price…</string>
+    <string name="premium_price_per_year_format">%1$s per year</string>
+    <string name="premium_subscribe_button">Subscribe</string>
+    <string name="premium_terms_notice">Yearly subscription, renews automatically. Cancel any time via Google Play.</string>
+    <string name="premium_restore_action">Restore a previous purchase</string>
+    <string name="premium_restore_done">Purchases checked</string>
 </resources>
