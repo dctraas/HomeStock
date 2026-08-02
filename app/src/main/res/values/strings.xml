@@ -276,7 +276,6 @@
     <string name="shopping_list_save_confirm">Opslaan</string>
     <string name="shopping_list_note_label">Opmerking</string>
     <string name="shopping_list_note_placeholder">Bijv. merk of maat</string>
-    <string name="shopping_list_drag_handle_cd">Sleep om te verplaatsen</string>
     <string name="unit_dropdown_label">Eenheid</string>
     <string name="unit_stuks">stuks</string>
     <string name="unit_gram">g</string>

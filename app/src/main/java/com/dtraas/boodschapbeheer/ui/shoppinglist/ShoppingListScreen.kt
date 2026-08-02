@@ -3,7 +3,7 @@ package com.dtraas.boodschapbeheer.ui.shoppinglist
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,7 +29,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
-import androidx.compose.material.icons.filled.DragHandle
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
@@ -515,39 +514,32 @@ private fun ShoppingListRow(
 ) {
     val category = Category.fromStorageKey(item.category)
     var rowHeightPx by remember { mutableFloatStateOf(0f) }
-    val dragHandleCd = stringResource(R.string.shopping_list_drag_handle_cd)
     Card(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 3.dp)
-            .onGloballyPositioned { rowHeightPx = it.size.height.toFloat() },
+            .onGloballyPositioned { rowHeightPx = it.size.height.toFloat() }
+            // A long press starts the reorder drag; a plain tap falls through to the
+            // Card's own onClick above to open the edit dialog.
+            .pointerInput(item.id) {
+                detectDragGesturesAfterLongPress(
+                    onDragStart = { onDragStart(rowHeightPx) },
+                    onDrag = { change, dragAmount ->
+                        change.consume()
+                        onDrag(dragAmount.y)
+                    },
+                    onDragEnd = onDragEnd,
+                    onDragCancel = onDragEnd,
+                )
+            },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         shape = SoftCardShapeCompact,
     ) {
         Row(
-            modifier = Modifier.padding(start = 0.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
+            modifier = Modifier.padding(start = 12.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Icon(
-                imageVector = Icons.Filled.DragHandle,
-                contentDescription = dragHandleCd,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier
-                    .size(32.dp)
-                    .padding(4.dp)
-                    .pointerInput(item.id) {
-                        detectDragGestures(
-                            onDragStart = { onDragStart(rowHeightPx) },
-                            onDrag = { change, dragAmount ->
-                                change.consume()
-                                onDrag(dragAmount.y)
-                            },
-                            onDragEnd = onDragEnd,
-                            onDragCancel = onDragEnd,
-                        )
-                    },
-            )
             Checkbox(
                 checked = item.isChecked,
                 onCheckedChange = onCheckedChange,
