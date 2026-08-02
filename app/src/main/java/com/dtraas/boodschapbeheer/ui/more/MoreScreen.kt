@@ -154,7 +154,7 @@ fun MoreScreen() {
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             SectionHeader(stringResource(R.string.more_section_account))
             AccountCard(
