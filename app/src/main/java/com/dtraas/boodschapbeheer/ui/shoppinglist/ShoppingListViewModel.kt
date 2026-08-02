@@ -58,11 +58,10 @@ class ShoppingListViewModel(
         quantity: Int,
         note: String? = null,
         unit: MeasurementUnit = MeasurementUnit.STUKS,
-        price: Double? = null,
     ) {
         if (name.isBlank()) return
         viewModelScope.launch {
-            shoppingListRepository.addItem(name, category, store, quantity, note = note, unit = unit, price = price)
+            shoppingListRepository.addItem(name, category, store, quantity, note = note, unit = unit)
         }
     }
 

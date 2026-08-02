@@ -32,8 +32,6 @@ data class ShoppingListItemEntity(
     val sortOrder: Double = -addedAt.toDouble(),
     // Storage key of the MeasurementUnit quantity is expressed in (stuks/gram/kg/ml/L).
     val unit: String = MeasurementUnit.STUKS.storageKey,
-    // What was paid for this item, entered by hand — there's no price API to fetch it from.
-    val price: Double? = null,
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
         "barcode" to barcode,
@@ -47,7 +45,6 @@ data class ShoppingListItemEntity(
         "note" to note,
         "sortOrder" to sortOrder,
         "unit" to unit,
-        "price" to price,
     )
 
     companion object {
@@ -82,7 +79,6 @@ data class ShoppingListItemEntity(
                 note = document.getString("note")?.takeIf { it.isNotBlank() },
                 sortOrder = document.getDouble("sortOrder") ?: -addedAt.toDouble(),
                 unit = document.getString("unit") ?: MeasurementUnit.STUKS.storageKey,
-                price = (document.get("price") as? Number)?.toDouble(),
             )
         }
     }

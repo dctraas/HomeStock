@@ -23,7 +23,6 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
@@ -77,7 +76,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -103,7 +101,6 @@ import com.dtraas.boodschapbeheer.ui.components.icon
 import com.dtraas.boodschapbeheer.ui.theme.SoftBadgeShape
 import com.dtraas.boodschapbeheer.ui.theme.SoftCardShapeCompact
 import com.dtraas.boodschapbeheer.ui.theme.SoftImageShape
-import java.text.NumberFormat
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -305,8 +302,8 @@ fun ShoppingListScreen() {
                 stores = stores,
                 onAddStore = viewModel::addStore,
                 onDismiss = { showAddDialog = false },
-                onConfirm = { name, category, store, quantity, note, unit, price ->
-                    viewModel.addItem(name, category, store, quantity, note.trim().ifBlank { null }, unit, price)
+                onConfirm = { name, category, store, quantity, note, unit ->
+                    viewModel.addItem(name, category, store, quantity, note.trim().ifBlank { null }, unit)
                     showAddDialog = false
                 },
             )
@@ -322,12 +319,11 @@ fun ShoppingListScreen() {
                 initialQuantity = item.quantity,
                 initialNote = item.note ?: "",
                 initialUnit = MeasurementUnit.fromStorageKey(item.unit),
-                initialPrice = item.price,
                 imageUrl = item.imageUrl,
                 stores = stores,
                 onAddStore = viewModel::addStore,
                 onDismiss = { editingItem = null },
-                onConfirm = { name, category, store, quantity, note, unit, price ->
+                onConfirm = { name, category, store, quantity, note, unit ->
                     viewModel.updateItem(
                         item.copy(
                             name = name,
@@ -336,7 +332,6 @@ fun ShoppingListScreen() {
                             quantity = quantity,
                             note = note.trim().ifBlank { null },
                             unit = unit.storageKey,
-                            price = price,
                         )
                     )
                     editingItem = null
@@ -587,8 +582,7 @@ private fun ShoppingListRow(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = listOfNotNull(stringResource(category.displayNameRes), item.note, item.price?.let(::formatPrice))
-                        .joinToString(" · "),
+                    text = listOfNotNull(stringResource(category.displayNameRes), item.note).joinToString(" · "),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -614,8 +608,6 @@ private fun ShoppingListRow(
         }
     }
 }
-
-private fun formatPrice(price: Double): String = NumberFormat.getCurrencyInstance().format(price)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -725,8 +717,7 @@ private fun ShoppingListGridTile(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = listOfNotNull(stringResource(category.displayNameRes), item.note, item.price?.let(::formatPrice))
-                        .joinToString(" · "),
+                    text = listOfNotNull(stringResource(category.displayNameRes), item.note).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -789,7 +780,6 @@ private fun ItemFormDialog(
     initialQuantity: Int = 1,
     initialNote: String = "",
     initialUnit: MeasurementUnit = MeasurementUnit.STUKS,
-    initialPrice: Double? = null,
     imageUrl: String? = null,
     stores: List<StoreEntity>,
     onAddStore: (String) -> Unit,
@@ -801,7 +791,6 @@ private fun ItemFormDialog(
         quantity: Int,
         note: String,
         unit: MeasurementUnit,
-        price: Double?,
     ) -> Unit,
 ) {
     var name by remember { mutableStateOf(initialName) }
@@ -810,7 +799,6 @@ private fun ItemFormDialog(
     var quantity by remember { mutableIntStateOf(initialQuantity) }
     var note by remember { mutableStateOf(initialNote) }
     var unit by remember { mutableStateOf(initialUnit) }
-    var priceText by remember { mutableStateOf(initialPrice?.let { "%.2f".format(it) } ?: "") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -866,15 +854,6 @@ private fun ItemFormDialog(
                         )
                     }
                     OutlinedTextField(
-                        value = priceText,
-                        onValueChange = { input -> if (input.count { it == '.' || it == ',' } <= 1) priceText = input },
-                        label = { Text(stringResource(R.string.shopping_list_price_label)) },
-                        placeholder = { Text(stringResource(R.string.shopping_list_price_placeholder)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    OutlinedTextField(
                         value = note,
                         onValueChange = { note = it },
                         label = { Text(stringResource(R.string.shopping_list_note_label)) },
@@ -886,10 +865,7 @@ private fun ItemFormDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = {
-                    val price = priceText.replace(',', '.').toDoubleOrNull()
-                    onConfirm(name, category, store, quantity, note, unit, price)
-                },
+                onClick = { onConfirm(name, category, store, quantity, note, unit) },
                 enabled = name.isNotBlank(),
             ) {
                 Text(confirmLabel)

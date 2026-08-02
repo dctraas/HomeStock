@@ -59,7 +59,6 @@ class ShoppingListRepository(
         imageUrl: String? = null,
         note: String? = null,
         unit: MeasurementUnit = MeasurementUnit.STUKS,
-        price: Double? = null,
     ) {
         val householdId = householdSession.householdId.value ?: return
         val entity = ShoppingListItemEntity(
@@ -74,7 +73,6 @@ class ShoppingListRepository(
             addedAt = System.currentTimeMillis(),
             note = note?.trim()?.takeIf { it.isNotEmpty() },
             unit = unit.storageKey,
-            price = price,
         )
         shoppingListCollection(householdId).add(entity.toMap()).await()
         refreshWidget()
