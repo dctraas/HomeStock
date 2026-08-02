@@ -15,7 +15,7 @@ interface OpenFoodFactsApi {
         @Path("barcode") barcode: String,
         @Query("fields") fields: String =
             "product_name,brands,categories_tags,categories,image_front_small_url,quantity,status," +
-                "nutriscore_grade,ecoscore_grade,ingredients_text,nutriments,allergens_tags,labels_tags",
+                "nutriscore_grade,ingredients_text,nutriments,allergens_tags,labels_tags",
     ): OffProductResponse
 
     companion object {

@@ -16,7 +16,6 @@ data class OffProduct(
     @SerializedName("image_front_small_url") val imageUrl: String?,
     @SerializedName("quantity") val quantity: String?,
     @SerializedName("nutriscore_grade") val nutriscoreGrade: String?,
-    @SerializedName("ecoscore_grade") val ecoscoreGrade: String?,
     @SerializedName("ingredients_text") val ingredientsText: String?,
     @SerializedName("nutriments") val nutriments: OffNutriments?,
     @SerializedName("allergens_tags") val allergensTags: List<String>?,

@@ -7,6 +7,7 @@ import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.data.model.DietLabel
 import com.dtraas.boodschapbeheer.data.remote.CategoryMapper
 import com.dtraas.boodschapbeheer.data.remote.OpenFoodFactsApi
+import com.dtraas.boodschapbeheer.data.remote.dto.OffProduct
 import com.dtraas.boodschapbeheer.data.remote.observeSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -59,44 +60,73 @@ class ProductRepository(
             if (response.status != 1 || offProduct == null || offProduct.productName.isNullOrBlank()) {
                 Result.failure(ProductNotFoundException(barcode))
             } else {
-                val category = CategoryMapper.guessCategory(
-                    categoriesTags = offProduct.categoriesTags,
-                    categoriesText = offProduct.categories,
-                    productName = offProduct.productName,
-                )
-                val nutriments = offProduct.nutriments
-                val entity = ProductEntity(
-                    barcode = barcode,
-                    name = offProduct.productName.trim(),
-                    brand = offProduct.brands?.substringBefore(',')?.trim(),
-                    category = category.storageKey,
-                    imageUrl = offProduct.imageUrl,
-                    unit = offProduct.quantity,
-                    lastFetchedAt = System.currentTimeMillis(),
-                    nutriScoreGrade = offProduct.nutriscoreGrade?.takeIf { it.isNotBlank() && it != "unknown" },
-                    ecoScoreGrade = offProduct.ecoscoreGrade?.takeIf { it.isNotBlank() && it != "unknown" && it != "not-applicable" },
-                    ingredients = offProduct.ingredientsText?.trim()?.takeIf { it.isNotEmpty() },
-                    nutrition = nutriments?.let {
-                        NutritionInfo(
-                            energyKcal100g = it.energyKcal100g,
-                            fat100g = it.fat100g,
-                            saturatedFat100g = it.saturatedFat100g,
-                            carbohydrates100g = it.carbohydrates100g,
-                            sugars100g = it.sugars100g,
-                            fiber100g = it.fiber100g,
-                            proteins100g = it.proteins100g,
-                            salt100g = it.salt100g,
-                        ).takeIf { info -> !info.isEmpty }
-                    },
-                    allergens = Allergen.fromTags(offProduct.allergensTags.orEmpty()).map { it.name },
-                    dietLabels = DietLabel.fromTags(offProduct.labelsTags.orEmpty()).map { it.name },
-                )
+                val entity = mapOffProduct(barcode, offProduct)
                 productsCollection(householdId).document(barcode).set(entity.toMap()).await()
                 Result.success(entity)
             }
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    /**
+     * Re-fetches [barcode] from Open Food Facts even if it's already cached, so a product that
+     * was originally entered manually (no photo/nutrition/scores) can be filled in later. Keeps
+     * the existing name and category rather than overwriting them with Open Food Facts' values.
+     */
+    suspend fun retryLookup(barcode: String): Result<ProductEntity> {
+        val householdId = householdSession.householdId.value
+            ?: return Result.failure(IllegalStateException("Geen huishouden gekoppeld"))
+
+        return try {
+            val response = api.getProduct(barcode)
+            val offProduct = response.product
+            if (response.status != 1 || offProduct == null || offProduct.productName.isNullOrBlank()) {
+                Result.failure(ProductNotFoundException(barcode))
+            } else {
+                val existing = findCached(barcode)
+                val entity = mapOffProduct(barcode, offProduct, existing)
+                productsCollection(householdId).document(barcode).set(entity.toMap()).await()
+                Result.success(entity)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /** Maps an Open Food Facts response to our entity, optionally preserving [existing]'s name/category. */
+    private fun mapOffProduct(barcode: String, offProduct: OffProduct, existing: ProductEntity? = null): ProductEntity {
+        val category = existing?.let { Category.fromStorageKey(it.category) } ?: CategoryMapper.guessCategory(
+            categoriesTags = offProduct.categoriesTags,
+            categoriesText = offProduct.categories,
+            productName = offProduct.productName,
+        )
+        val nutriments = offProduct.nutriments
+        return ProductEntity(
+            barcode = barcode,
+            name = existing?.name?.takeIf { it.isNotBlank() } ?: offProduct.productName!!.trim(),
+            brand = offProduct.brands?.substringBefore(',')?.trim(),
+            category = category.storageKey,
+            imageUrl = offProduct.imageUrl,
+            unit = offProduct.quantity,
+            lastFetchedAt = System.currentTimeMillis(),
+            nutriScoreGrade = offProduct.nutriscoreGrade?.takeIf { it.isNotBlank() && it != "unknown" },
+            ingredients = offProduct.ingredientsText?.trim()?.takeIf { it.isNotEmpty() },
+            nutrition = nutriments?.let {
+                NutritionInfo(
+                    energyKcal100g = it.energyKcal100g,
+                    fat100g = it.fat100g,
+                    saturatedFat100g = it.saturatedFat100g,
+                    carbohydrates100g = it.carbohydrates100g,
+                    sugars100g = it.sugars100g,
+                    fiber100g = it.fiber100g,
+                    proteins100g = it.proteins100g,
+                    salt100g = it.salt100g,
+                ).takeIf { info -> !info.isEmpty }
+            },
+            allergens = Allergen.fromTags(offProduct.allergensTags.orEmpty()).map { it.name },
+            dietLabels = DietLabel.fromTags(offProduct.labelsTags.orEmpty()).map { it.name },
+        )
     }
 
     suspend fun saveManualProduct(barcode: String, name: String, category: Category): ProductEntity {
