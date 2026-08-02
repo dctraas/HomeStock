@@ -18,7 +18,7 @@
 
     <!-- Bottom navigation -->
     <string name="nav_shopping_list">Liste</string>
-    <string name="nav_inventory">Home</string>
+    <string name="nav_inventory">Stock</string>
     <string name="nav_scan">Scanner</string>
     <string name="nav_news">Notifications</string>
     <string name="nav_more">Plus</string>
@@ -97,6 +97,11 @@
     <string name="household_join_action">Rejoindre</string>
     <string name="household_not_found_format">Aucun foyer trouvé avec le code %1$s</string>
     <string name="household_generate_code_failed">Impossible de générer un code de foyer unique</string>
+    <string name="household_generic_error">Une erreur s\'est produite. Réessayez.</string>
+    <string name="household_join_code_length_hint">Un code de foyer comporte %1$d caractères</string>
+    <string name="household_create_back_warning_title">Code pas encore enregistré ?</string>
+    <string name="household_create_back_warning_text">Assurez-vous d\'avoir copié le code du foyer avant de revenir en arrière — vous ne pourrez plus le retrouver ensuite.</string>
+    <string name="household_create_back_warning_confirm">Revenir quand même</string>
 
     <!-- Plus -->
     <string name="more_household_title">Foyer</string>
@@ -158,6 +163,7 @@
     <string name="inventory_removed_snackbar_format">%1$s supprimé</string>
     <string name="inventory_add_to_shopping_list_cd">Ajouter à la liste de courses</string>
     <string name="inventory_added_to_shopping_list_snackbar">Ajouté à la liste de courses</string>
+    <string name="inventory_restocked_snackbar_format">%1$s a été ajouté automatiquement à votre liste de courses (stock faible)</string>
     <string name="inventory_remove_cd">Retirer du stock</string>
     <string name="inventory_empty_filtered_title">Aucun produit trouvé.</string>
     <string name="inventory_empty_filtered_subtitle">Ajustez votre recherche ou votre filtre.</string>
@@ -187,6 +193,11 @@
     <string name="product_detail_in_stock">En stock</string>
     <string name="product_detail_remove">Retirer</string>
     <string name="product_detail_add_to_shopping_list">Ajouter à la liste</string>
+    <string name="product_detail_retry_lookup">Rechercher à nouveau</string>
+    <string name="product_detail_retry_lookup_success">Informations du produit mises à jour</string>
+    <string name="product_detail_retry_lookup_failure">Échec de la recherche. Réessayez plus tard.</string>
+    <string name="product_detail_delete_dialog_title">Supprimer le produit ?</string>
+    <string name="product_detail_delete_dialog_text">Voulez-vous vraiment supprimer ce produit de votre stock ?</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_ingredients_title">Ingrédients</string>
     <string name="product_detail_nutrition_title">Valeurs nutritionnelles pour 100 g</string>
@@ -245,6 +256,8 @@
     <string name="scan_overlay_hint">Pointez la caméra vers le code-barres d\'un produit</string>
     <string name="scan_permission_rationale">BoodschapBeheer a besoin d\'accéder à la caméra pour scanner les codes-barres.</string>
     <string name="scan_permission_button">Autoriser l\'accès à la caméra</string>
+    <string name="scan_permission_denied_rationale">Vous avez refusé l\'accès à la caméra. Activez-le dans les paramètres de l\'application pour continuer à scanner.</string>
+    <string name="scan_permission_open_settings">Ouvrir les paramètres</string>
 
     <!-- Résultat du scan -->
     <string name="scan_result_title">Ajouter un produit</string>
@@ -298,6 +311,8 @@
     <string name="statistics_in_stock">En stock</string>
     <string name="statistics_total_scans">Total des scans</string>
     <string name="statistics_this_week">Cette semaine</string>
+    <string name="statistics_range_month">Ce mois-ci</string>
+    <string name="statistics_by_actor">Par membre du foyer</string>
     <string name="statistics_scan_count_format">%1$dx</string>
 
     <!-- Home screen widget -->

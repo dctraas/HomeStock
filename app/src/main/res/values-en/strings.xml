@@ -18,7 +18,7 @@
 
     <!-- Bottom navigation -->
     <string name="nav_shopping_list">List</string>
-    <string name="nav_inventory">Home</string>
+    <string name="nav_inventory">Inventory</string>
     <string name="nav_scan">Scan</string>
     <string name="nav_news">Notifications</string>
     <string name="nav_more">More</string>
@@ -97,6 +97,11 @@
     <string name="household_join_action">Join</string>
     <string name="household_not_found_format">No household found with code %1$s</string>
     <string name="household_generate_code_failed">Couldn\'t generate a unique household code</string>
+    <string name="household_generic_error">Something went wrong. Please try again.</string>
+    <string name="household_join_code_length_hint">A household code is %1$d characters</string>
+    <string name="household_create_back_warning_title">Code not saved yet?</string>
+    <string name="household_create_back_warning_text">Make sure you\'ve copied the household code before going back — you won\'t be able to find it again afterwards.</string>
+    <string name="household_create_back_warning_confirm">Go back anyway</string>
 
     <!-- More -->
     <string name="more_household_title">Household</string>
@@ -158,6 +163,7 @@
     <string name="inventory_removed_snackbar_format">%1$s removed</string>
     <string name="inventory_add_to_shopping_list_cd">Add to shopping list</string>
     <string name="inventory_added_to_shopping_list_snackbar">Added to shopping list</string>
+    <string name="inventory_restocked_snackbar_format">%1$s was automatically added to your shopping list (low stock)</string>
     <string name="inventory_remove_cd">Remove from inventory</string>
     <string name="inventory_empty_filtered_title">No products found.</string>
     <string name="inventory_empty_filtered_subtitle">Adjust your search or filter.</string>
@@ -187,6 +193,11 @@
     <string name="product_detail_in_stock">In stock</string>
     <string name="product_detail_remove">Remove</string>
     <string name="product_detail_add_to_shopping_list">Add to list</string>
+    <string name="product_detail_retry_lookup">Look up again</string>
+    <string name="product_detail_retry_lookup_success">Product details updated</string>
+    <string name="product_detail_retry_lookup_failure">Lookup failed. Please try again later.</string>
+    <string name="product_detail_delete_dialog_title">Delete product?</string>
+    <string name="product_detail_delete_dialog_text">Are you sure you want to remove this product from your inventory?</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_ingredients_title">Ingredients</string>
     <string name="product_detail_nutrition_title">Nutrition per 100 g</string>
@@ -245,6 +256,8 @@
     <string name="scan_overlay_hint">Point the camera at a product\'s barcode</string>
     <string name="scan_permission_rationale">BoodschapBeheer needs camera access to scan barcodes.</string>
     <string name="scan_permission_button">Grant camera access</string>
+    <string name="scan_permission_denied_rationale">You\'ve denied camera access. Turn it on in the app\'s settings to keep scanning.</string>
+    <string name="scan_permission_open_settings">Open settings</string>
 
     <!-- Scan result -->
     <string name="scan_result_title">Add product</string>
@@ -298,6 +311,8 @@
     <string name="statistics_in_stock">In stock</string>
     <string name="statistics_total_scans">Total scans</string>
     <string name="statistics_this_week">This week</string>
+    <string name="statistics_range_month">This month</string>
+    <string name="statistics_by_actor">By household member</string>
     <string name="statistics_scan_count_format">%1$dx</string>
 
     <!-- Home screen widget -->

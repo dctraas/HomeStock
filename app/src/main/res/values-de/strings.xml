@@ -18,7 +18,7 @@
 
     <!-- Bottom navigation -->
     <string name="nav_shopping_list">Liste</string>
-    <string name="nav_inventory">Home</string>
+    <string name="nav_inventory">Vorrat</string>
     <string name="nav_scan">Scannen</string>
     <string name="nav_news">Benachrichtigungen</string>
     <string name="nav_more">Mehr</string>
@@ -97,6 +97,11 @@
     <string name="household_join_action">Beitreten</string>
     <string name="household_not_found_format">Kein Haushalt mit Code %1$s gefunden</string>
     <string name="household_generate_code_failed">Es konnte kein eindeutiger Haushalt-Code erstellt werden</string>
+    <string name="household_generic_error">Es ist ein Fehler aufgetreten. Bitte versuche es erneut.</string>
+    <string name="household_join_code_length_hint">Ein Haushalts-Code besteht aus %1$d Zeichen</string>
+    <string name="household_create_back_warning_title">Code noch nicht gespeichert?</string>
+    <string name="household_create_back_warning_text">Stelle sicher, dass du den Haushalts-Code kopiert hast, bevor du zurückgehst — danach kannst du ihn nicht mehr finden.</string>
+    <string name="household_create_back_warning_confirm">Trotzdem zurück</string>
 
     <!-- Mehr -->
     <string name="more_household_title">Haushalt</string>
@@ -158,6 +163,7 @@
     <string name="inventory_removed_snackbar_format">%1$s entfernt</string>
     <string name="inventory_add_to_shopping_list_cd">Zur Einkaufsliste hinzufügen</string>
     <string name="inventory_added_to_shopping_list_snackbar">Zur Einkaufsliste hinzugefügt</string>
+    <string name="inventory_restocked_snackbar_format">%1$s wurde automatisch zu deiner Einkaufsliste hinzugefügt (Bestand niedrig)</string>
     <string name="inventory_remove_cd">Aus dem Vorrat entfernen</string>
     <string name="inventory_empty_filtered_title">Keine Produkte gefunden.</string>
     <string name="inventory_empty_filtered_subtitle">Passe deine Suche oder deinen Filter an.</string>
@@ -187,6 +193,11 @@
     <string name="product_detail_in_stock">Auf Vorrat</string>
     <string name="product_detail_remove">Entfernen</string>
     <string name="product_detail_add_to_shopping_list">Zur Liste hinzufügen</string>
+    <string name="product_detail_retry_lookup">Erneut suchen</string>
+    <string name="product_detail_retry_lookup_success">Produktinformationen aktualisiert</string>
+    <string name="product_detail_retry_lookup_failure">Suche fehlgeschlagen. Versuche es später erneut.</string>
+    <string name="product_detail_delete_dialog_title">Produkt löschen?</string>
+    <string name="product_detail_delete_dialog_text">Möchtest du dieses Produkt wirklich aus deinem Vorrat entfernen?</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_ingredients_title">Zutaten</string>
     <string name="product_detail_nutrition_title">Nährwerte pro 100 g</string>
@@ -245,6 +256,8 @@
     <string name="scan_overlay_hint">Richte die Kamera auf den Barcode eines Produkts</string>
     <string name="scan_permission_rationale">BoodschapBeheer benötigt Kamerazugriff, um Barcodes scannen zu können.</string>
     <string name="scan_permission_button">Kamerazugriff erlauben</string>
+    <string name="scan_permission_denied_rationale">Du hast den Kamerazugriff verweigert. Aktiviere ihn in den App-Einstellungen, um weiter zu scannen.</string>
+    <string name="scan_permission_open_settings">Einstellungen öffnen</string>
 
     <!-- Scanergebnis -->
     <string name="scan_result_title">Produkt hinzufügen</string>
@@ -298,6 +311,8 @@
     <string name="statistics_in_stock">Auf Vorrat</string>
     <string name="statistics_total_scans">Scans insgesamt</string>
     <string name="statistics_this_week">Diese Woche</string>
+    <string name="statistics_range_month">Diesen Monat</string>
+    <string name="statistics_by_actor">Pro Haushaltsmitglied</string>
     <string name="statistics_scan_count_format">%1$dx</string>
 
     <!-- Home screen widget -->

@@ -18,7 +18,7 @@
 
     <!-- Bottom navigation -->
     <string name="nav_shopping_list">Lijst</string>
-    <string name="nav_inventory">Home</string>
+    <string name="nav_inventory">Voorraad</string>
     <string name="nav_scan">Scannen</string>
     <string name="nav_news">Meldingen</string>
     <string name="nav_more">Meer</string>
@@ -97,6 +97,11 @@
     <string name="household_join_action">Aansluiten</string>
     <string name="household_not_found_format">Huishouden met code %1$s niet gevonden</string>
     <string name="household_generate_code_failed">Kon geen unieke huishouden-code genereren</string>
+    <string name="household_generic_error">Er ging iets mis. Probeer het opnieuw.</string>
+    <string name="household_join_code_length_hint">Een huishouden-code bestaat uit %1$d tekens</string>
+    <string name="household_create_back_warning_title">Code nog niet opgeslagen?</string>
+    <string name="household_create_back_warning_text">Zorg dat je de huishouden-code hebt gekopieerd voordat je teruggaat — je kunt hem hierna niet meer terugvinden.</string>
+    <string name="household_create_back_warning_confirm">Toch teruggaan</string>
 
     <!-- Meer -->
     <string name="more_household_title">Huishouden</string>
@@ -158,6 +163,7 @@
     <string name="inventory_removed_snackbar_format">%1$s verwijderd</string>
     <string name="inventory_add_to_shopping_list_cd">Toevoegen aan boodschappenlijst</string>
     <string name="inventory_added_to_shopping_list_snackbar">Toegevoegd aan boodschappenlijst</string>
+    <string name="inventory_restocked_snackbar_format">%1$s is automatisch aan je boodschappenlijst toegevoegd (voorraad laag)</string>
     <string name="inventory_remove_cd">Verwijderen uit voorraad</string>
     <string name="inventory_empty_filtered_title">Geen producten gevonden.</string>
     <string name="inventory_empty_filtered_subtitle">Pas je zoekopdracht of filter aan.</string>
@@ -187,6 +193,11 @@
     <string name="product_detail_in_stock">Op voorraad</string>
     <string name="product_detail_remove">Verwijderen</string>
     <string name="product_detail_add_to_shopping_list">Toevoegen aan lijstje</string>
+    <string name="product_detail_retry_lookup">Opnieuw opzoeken</string>
+    <string name="product_detail_retry_lookup_success">Productgegevens bijgewerkt</string>
+    <string name="product_detail_retry_lookup_failure">Opzoeken mislukt. Probeer het later opnieuw.</string>
+    <string name="product_detail_delete_dialog_title">Product verwijderen?</string>
+    <string name="product_detail_delete_dialog_text">Weet je zeker dat je dit product uit je voorraad wilt verwijderen?</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_ingredients_title">Ingrediënten</string>
     <string name="product_detail_nutrition_title">Voedingswaarden per 100 g</string>
@@ -245,6 +256,8 @@
     <string name="scan_overlay_hint">Richt de camera op de barcode van een product</string>
     <string name="scan_permission_rationale">BoodschapBeheer heeft toegang tot de camera nodig om barcodes te kunnen scannen.</string>
     <string name="scan_permission_button">Geef toegang tot camera</string>
+    <string name="scan_permission_denied_rationale">Je hebt camera-toegang geweigerd. Zet deze aan bij de instellingen van de app om verder te kunnen scannen.</string>
+    <string name="scan_permission_open_settings">Open instellingen</string>
 
     <!-- Scanresultaat -->
     <string name="scan_result_title">Product toevoegen</string>
@@ -298,6 +311,8 @@
     <string name="statistics_in_stock">In voorraad</string>
     <string name="statistics_total_scans">Scans totaal</string>
     <string name="statistics_this_week">Deze week</string>
+    <string name="statistics_range_month">Deze maand</string>
+    <string name="statistics_by_actor">Per huisgenoot</string>
     <string name="statistics_scan_count_format">%1$dx</string>
 
     <!-- Home screen widget -->
