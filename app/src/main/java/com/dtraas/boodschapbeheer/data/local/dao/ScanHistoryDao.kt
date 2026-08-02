@@ -8,3 +8,9 @@ data class TopScannedProduct(
     val imageUrl: String?,
     val scanCount: Int,
 )
+
+/** How many scans a household member is responsible for; null [actorName] means no name was set. */
+data class ActorScanCount(
+    val actorName: String?,
+    val scanCount: Int,
+)

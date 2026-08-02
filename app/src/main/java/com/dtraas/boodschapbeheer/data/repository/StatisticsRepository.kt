@@ -1,10 +1,12 @@
 package com.dtraas.boodschapbeheer.data.repository
 
+import com.dtraas.boodschapbeheer.data.local.dao.ActorScanCount
 import com.dtraas.boodschapbeheer.data.local.dao.CategoryCount
 import com.dtraas.boodschapbeheer.data.local.dao.TopScannedProduct
 import com.dtraas.boodschapbeheer.data.local.entity.InventoryItemEntity
 import com.dtraas.boodschapbeheer.data.local.entity.ProductEntity
 import com.dtraas.boodschapbeheer.data.local.entity.ScanHistoryEntity
+import com.dtraas.boodschapbeheer.data.model.ActivityType
 import com.dtraas.boodschapbeheer.data.remote.observeSnapshots
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -91,6 +93,27 @@ class StatisticsRepository(
                         }
                         .sortedByDescending { it.scanCount }
                         .take(limit)
+                }
+            }
+        }
+
+    /**
+     * Scan counts grouped by who performed them. Reads `activityLog` rather than
+     * `scanHistory` — [ActivityLogRepository] is the only place that stamps a scan
+     * with the acting device's name, `scanHistory` entries don't carry one.
+     */
+    fun observeScansByActor(): Flow<List<ActorScanCount>> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(emptyList())
+            } else {
+                collection(householdId, "activityLog").observeSnapshots().map { snapshot ->
+                    snapshot.documents
+                        .filter { it.getString("type") == ActivityType.SCANNED.storageKey }
+                        .groupingBy { it.getString("actorName") }
+                        .eachCount()
+                        .map { (actorName, count) -> ActorScanCount(actorName, count) }
+                        .sortedByDescending { it.scanCount }
                 }
             }
         }

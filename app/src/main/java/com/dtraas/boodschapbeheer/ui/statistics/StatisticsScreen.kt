@@ -15,18 +15,21 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +51,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
 import com.dtraas.boodschapbeheer.R
+import com.dtraas.boodschapbeheer.data.local.dao.ActorScanCount
 import com.dtraas.boodschapbeheer.data.local.dao.TopScannedProduct
 import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.ui.components.icon
@@ -92,6 +96,9 @@ fun StatisticsScreen(onBack: () -> Unit) {
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
+            item {
+                TimeRangeToggle(selected = uiState.timeRange, onSelect = viewModel::onTimeRangeChange)
+            }
             item { SummaryRow(uiState) }
 
             item {
@@ -126,6 +133,37 @@ fun StatisticsScreen(onBack: () -> Unit) {
             } else {
                 item { CategoryDistributionCard(uiState.categoryDistribution) }
             }
+
+            item {
+                Text(stringResource(R.string.statistics_by_actor), style = MaterialTheme.typography.titleMedium)
+            }
+            if (uiState.scansByActor.isEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(R.string.statistics_no_scans_yet),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                val maxActorScanCount = uiState.scansByActor.maxOf { it.scanCount }
+                items(uiState.scansByActor, key = { it.actorName ?: "" }) { actorCount ->
+                    ActorScanRow(actorCount = actorCount, maxCount = maxActorScanCount)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun TimeRangeToggle(selected: StatisticsTimeRange, onSelect: (StatisticsTimeRange) -> Unit) {
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        StatisticsTimeRange.entries.forEach { range ->
+            FilterChip(
+                selected = range == selected,
+                onClick = { onSelect(range) },
+                label = { Text(stringResource(range.labelRes)) },
+            )
         }
     }
 }
@@ -150,8 +188,8 @@ private fun SummaryRow(uiState: StatisticsUiState) {
         )
         StatCard(
             icon = Icons.Filled.CalendarToday,
-            value = uiState.scansThisWeek.toString(),
-            label = stringResource(R.string.statistics_this_week),
+            value = uiState.scansInRange.toString(),
+            label = stringResource(uiState.timeRange.labelRes),
             modifier = Modifier.weight(1f),
         )
     }
@@ -228,6 +266,45 @@ private fun TopScannedRow(rank: Int, product: TopScannedProduct, maxCount: Int) 
             }
             Text(
                 text = stringResource(R.string.statistics_scan_count_format, product.scanCount),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ActorScanRow(actorCount: ActorScanCount, maxCount: Int) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = SoftCardShapeCompact,
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Person,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
+            Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                Text(
+                    text = actorCount.actorName ?: stringResource(R.string.activity_actor_unknown),
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                ProportionalBar(
+                    fraction = actorCount.scanCount.toFloat() / maxCount.toFloat(),
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+            Text(
+                text = stringResource(R.string.statistics_scan_count_format, actorCount.scanCount),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )

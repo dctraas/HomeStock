@@ -1,5 +1,7 @@
 package com.dtraas.boodschapbeheer.ui.components
 
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -12,12 +14,19 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.model.MeasurementUnit
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 @Composable
 fun QuantityStepper(
@@ -36,7 +45,7 @@ fun QuantityStepper(
     val textWidth = if (dense) 36.dp else 48.dp
 
     Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
-        IconButton(onClick = onDecrease, enabled = quantity > minQuantity, modifier = Modifier.size(buttonSize)) {
+        RepeatingIconButton(onClick = onDecrease, enabled = quantity > minQuantity, modifier = Modifier.size(buttonSize)) {
             Icon(
                 Icons.Filled.Remove,
                 contentDescription = stringResource(R.string.quantity_decrease_cd),
@@ -50,7 +59,7 @@ fun QuantityStepper(
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
             maxLines = 1,
         )
-        IconButton(onClick = onIncrease, modifier = Modifier.size(buttonSize)) {
+        RepeatingIconButton(onClick = onIncrease, enabled = true, modifier = Modifier.size(buttonSize)) {
             Icon(
                 Icons.Filled.Add,
                 contentDescription = stringResource(R.string.quantity_increase_cd),
@@ -58,6 +67,53 @@ fun QuantityStepper(
             )
         }
     }
+}
+
+/**
+ * An [IconButton] that also repeats [onClick] while held down, for quickly running a
+ * quantity up or down instead of tapping one-by-one. Observes the button's own press
+ * state via its [MutableInteractionSource] rather than adding a second, competing touch
+ * handler — a plain tap releases well before the initial repeat delay elapses, so it
+ * still results in exactly the one click [IconButton] already fires on its own.
+ */
+@Composable
+private fun RepeatingIconButton(
+    onClick: () -> Unit,
+    enabled: Boolean,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val currentOnClick by rememberUpdatedState(onClick)
+
+    LaunchedEffect(interactionSource) {
+        var repeatJob: Job? = null
+        interactionSource.interactions.collect { interaction ->
+            when (interaction) {
+                is PressInteraction.Press -> {
+                    repeatJob = launch {
+                        delay(450)
+                        while (isActive) {
+                            currentOnClick()
+                            delay(100)
+                        }
+                    }
+                }
+                is PressInteraction.Release, is PressInteraction.Cancel -> {
+                    repeatJob?.cancel()
+                    repeatJob = null
+                }
+            }
+        }
+    }
+
+    IconButton(
+        onClick = onClick,
+        enabled = enabled,
+        interactionSource = interactionSource,
+        modifier = modifier,
+        content = content,
+    )
 }
 
 /** Formats e.g. 500+GRAM as "500g", 1+LITER as "1L", 6+STUKS as "6 stuks". */
