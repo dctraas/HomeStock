@@ -1,7 +1,6 @@
 package com.dtraas.boodschapbeheer.data.repository
 
 import com.dtraas.boodschapbeheer.data.model.Category
-import com.dtraas.boodschapbeheer.data.model.Store
 import com.dtraas.boodschapbeheer.data.remote.TheMealDbApi
 import com.dtraas.boodschapbeheer.data.remote.dto.MealDbDetail
 import com.dtraas.boodschapbeheer.data.remote.dto.MealDbSummary
@@ -66,7 +65,7 @@ class RecipeRepository(
                 shoppingListRepository.addItem(
                     name = ingredient,
                     category = Category.OVERIG,
-                    store = Store.GEEN,
+                    store = "",
                     quantity = 1,
                 )
             }

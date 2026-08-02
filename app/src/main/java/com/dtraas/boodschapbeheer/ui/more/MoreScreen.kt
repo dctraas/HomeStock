@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Feedback
@@ -35,6 +36,7 @@ import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarRate
+import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -77,6 +79,7 @@ import coil.compose.AsyncImage
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
 import com.dtraas.boodschapbeheer.BuildConfig
 import com.dtraas.boodschapbeheer.R
+import com.dtraas.boodschapbeheer.data.local.entity.StoreEntity
 import com.dtraas.boodschapbeheer.data.repository.ThemeMode
 import com.dtraas.boodschapbeheer.ui.components.ProfileEditDialog
 import com.dtraas.boodschapbeheer.ui.theme.SoftBadgeShape
@@ -112,6 +115,8 @@ fun MoreScreen(
     val photoPath by deviceProfile.photoPath.collectAsState()
     val feedbackRepository = application.container.feedbackRepository
     val householdRepository = application.container.householdRepository
+    val storeRepository = application.container.storeRepository
+    val stores by storeRepository.observeStores().collectAsState(initial = emptyList())
     val currentLanguage = AppLanguage.entries.find { it.tag == LocalConfiguration.current.locales[0].language } ?: AppLanguage.NL
 
     val coroutineScope = rememberCoroutineScope()
@@ -126,6 +131,7 @@ fun MoreScreen(
     var showThemeDialog by remember { mutableStateOf(false) }
     var showNotificationsDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
+    var showStoresDialog by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
     var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
     var showLicensesDialog by remember { mutableStateOf(false) }
@@ -192,6 +198,12 @@ fun MoreScreen(
                 title = stringResource(R.string.more_language_title),
                 subtitle = stringResource(currentLanguage.labelRes),
                 onClick = { showLanguageDialog = true },
+            )
+            SettingsRow(
+                icon = Icons.Filled.Storefront,
+                title = stringResource(R.string.more_stores_title),
+                subtitle = stringResource(R.string.more_stores_count_format, stores.size),
+                onClick = { showStoresDialog = true },
             )
 
             SectionHeader(stringResource(R.string.more_section_about))
@@ -289,6 +301,15 @@ fun MoreScreen(
                 AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(language.tag))
             },
             onDismiss = { showLanguageDialog = false },
+        )
+    }
+
+    if (showStoresDialog) {
+        StoresDialog(
+            stores = stores,
+            onAdd = { name -> coroutineScope.launch { storeRepository.addStore(name) } },
+            onRemove = { id -> coroutineScope.launch { storeRepository.removeStore(id) } },
+            onDismiss = { showStoresDialog = false },
         )
     }
 
@@ -613,6 +634,78 @@ private fun LanguageDialog(selected: AppLanguage, onSelect: (AppLanguage) -> Uni
         },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun StoresDialog(
+    stores: List<StoreEntity>,
+    onAdd: (String) -> Unit,
+    onRemove: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var newStoreName by remember { mutableStateOf("") }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.more_stores_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Column(
+                    modifier = Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                ) {
+                    if (stores.isEmpty()) {
+                        Text(
+                            text = stringResource(R.string.more_stores_empty),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    stores.forEach { store ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(store.name, style = MaterialTheme.typography.bodyLarge)
+                            IconButton(onClick = { onRemove(store.id) }) {
+                                Icon(
+                                    Icons.Filled.Close,
+                                    contentDescription = stringResource(R.string.more_stores_remove_format, store.name),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OutlinedTextField(
+                        value = newStoreName,
+                        onValueChange = { newStoreName = it },
+                        label = { Text(stringResource(R.string.store_add_dialog_title)) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(
+                        enabled = newStoreName.isNotBlank(),
+                        onClick = {
+                            onAdd(newStoreName.trim())
+                            newStoreName = ""
+                        },
+                        modifier = Modifier.padding(start = 4.dp),
+                    ) {
+                        Text(stringResource(R.string.store_add_action))
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) }
         },
     )
 }

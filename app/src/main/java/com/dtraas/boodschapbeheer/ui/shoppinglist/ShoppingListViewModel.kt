@@ -3,10 +3,11 @@ package com.dtraas.boodschapbeheer.ui.shoppinglist
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.boodschapbeheer.data.local.entity.ShoppingListItemEntity
+import com.dtraas.boodschapbeheer.data.local.entity.StoreEntity
 import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.data.model.MeasurementUnit
-import com.dtraas.boodschapbeheer.data.model.Store
 import com.dtraas.boodschapbeheer.data.repository.ShoppingListRepository
+import com.dtraas.boodschapbeheer.data.repository.StoreRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -16,20 +17,34 @@ import kotlinx.coroutines.launch
 
 class ShoppingListViewModel(
     private val shoppingListRepository: ShoppingListRepository,
+    private val storeRepository: StoreRepository,
 ) : ViewModel() {
 
     private val searchQuery = MutableStateFlow("")
     val searchQueryState: StateFlow<String> = searchQuery
 
-    val groupedByStore: StateFlow<Map<Store, List<ShoppingListItemEntity>>> =
+    val stores: StateFlow<List<StoreEntity>> =
+        storeRepository.observeStores().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    // Grouped and ordered by each store's sortOrder (custom store list), with any store
+    // name no longer in that list falling after the known ones and "no store" always last.
+    val groupedByStore: StateFlow<Map<String, List<ShoppingListItemEntity>>> =
         combine(
             shoppingListRepository.observeShoppingList(),
             searchQuery,
-        ) { items, query ->
+            storeRepository.observeStores(),
+        ) { items, query, knownStores ->
+            val sortOrderByName = knownStores.associate { it.name to it.sortOrder }
             items
                 .filter { query.isBlank() || it.name.contains(query, ignoreCase = true) }
-                .groupBy { Store.fromStorageKey(it.store) }
-                .toSortedMap(compareBy { it.sortOrder })
+                .groupBy { it.store }
+                .toSortedMap(
+                    compareBy(
+                        { it.isBlank() },
+                        { sortOrderByName[it] ?: Double.MAX_VALUE / 2 },
+                        { it },
+                    ),
+                )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     fun onSearchQueryChange(query: String) {
@@ -39,13 +54,24 @@ class ShoppingListViewModel(
     fun addItem(
         name: String,
         category: Category,
-        store: Store,
+        store: String,
         quantity: Int,
         note: String? = null,
         unit: MeasurementUnit = MeasurementUnit.STUKS,
+        price: Double? = null,
     ) {
         if (name.isBlank()) return
-        viewModelScope.launch { shoppingListRepository.addItem(name, category, store, quantity, note = note, unit = unit) }
+        viewModelScope.launch {
+            shoppingListRepository.addItem(name, category, store, quantity, note = note, unit = unit, price = price)
+        }
+    }
+
+    fun addStore(name: String) {
+        viewModelScope.launch { storeRepository.addStore(name) }
+    }
+
+    fun removeStore(id: String) {
+        viewModelScope.launch { storeRepository.removeStore(id) }
     }
 
     fun updateItem(item: ShoppingListItemEntity) {
@@ -75,5 +101,9 @@ class ShoppingListViewModel(
 
     fun clearChecked() {
         viewModelScope.launch { shoppingListRepository.clearChecked() }
+    }
+
+    fun checkAll() {
+        viewModelScope.launch { shoppingListRepository.checkAll() }
     }
 }

@@ -4,7 +4,6 @@ import com.dtraas.boodschapbeheer.data.local.dao.InventoryItemWithProduct
 import com.dtraas.boodschapbeheer.data.local.entity.InventoryItemEntity
 import com.dtraas.boodschapbeheer.data.local.entity.ProductEntity
 import com.dtraas.boodschapbeheer.data.model.Category
-import com.dtraas.boodschapbeheer.data.model.Store
 import com.dtraas.boodschapbeheer.data.remote.observeSnapshot
 import com.dtraas.boodschapbeheer.data.remote.observeSnapshots
 import com.google.firebase.firestore.FirebaseFirestore
@@ -142,7 +141,7 @@ class InventoryRepository(
         shoppingListRepository.addItem(
             name = product.name,
             category = Category.fromStorageKey(product.category),
-            store = Store.GEEN,
+            store = "",
             quantity = 1,
             barcode = item.barcode,
             imageUrl = product.imageUrl,

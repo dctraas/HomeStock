@@ -16,9 +16,12 @@ import com.dtraas.boodschapbeheer.data.repository.ProductRepository
 import com.dtraas.boodschapbeheer.data.repository.RecipeRepository
 import com.dtraas.boodschapbeheer.data.repository.ShoppingListRepository
 import com.dtraas.boodschapbeheer.data.repository.StatisticsRepository
+import com.dtraas.boodschapbeheer.data.repository.StoreRepository
 import com.dtraas.boodschapbeheer.data.repository.ThemePreferences
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.google.firebase.firestore.PersistentCacheSettings
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -43,7 +46,21 @@ class AppContainer(context: Context) {
     val dismissedNoticesStore: DismissedNoticesStore = DismissedNoticesStore(context)
     val themePreferences: ThemePreferences = ThemePreferences(context)
 
-    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    // Firestore persists writes to disk by default on Android, but the cache size is
+    // capped (~100MB) unless set explicitly — for a household's full inventory/shopping
+    // history that cap can be reached, silently evicting older data. Unlimited keeps
+    // everything available offline; the household's data isn't large enough for this to
+    // matter for disk space. Reads and writes work the same offline either way — Firestore
+    // queues writes locally and syncs automatically once the connection returns.
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance().apply {
+        firestoreSettings = FirebaseFirestoreSettings.Builder()
+            .setLocalCacheSettings(
+                PersistentCacheSettings.newBuilder()
+                    .setSizeBytes(FirebaseFirestoreSettings.CACHE_SIZE_UNLIMITED)
+                    .build(),
+            )
+            .build()
+    }
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     val householdRepository: HouseholdRepository by lazy {
@@ -78,6 +95,10 @@ class AppContainer(context: Context) {
 
     val shoppingListRepository: ShoppingListRepository by lazy {
         ShoppingListRepository(appContext, firestore, householdSession)
+    }
+
+    val storeRepository: StoreRepository by lazy {
+        StoreRepository(firestore, householdSession)
     }
 
     val inventoryRepository: InventoryRepository by lazy {

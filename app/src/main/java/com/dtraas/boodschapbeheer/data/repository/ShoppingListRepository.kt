@@ -4,7 +4,6 @@ import android.content.Context
 import com.dtraas.boodschapbeheer.data.local.entity.ShoppingListItemEntity
 import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.data.model.MeasurementUnit
-import com.dtraas.boodschapbeheer.data.model.Store
 import com.dtraas.boodschapbeheer.data.remote.observeSnapshots
 import com.dtraas.boodschapbeheer.widget.updateShoppingListWidget
 import com.google.firebase.firestore.FirebaseFirestore
@@ -48,18 +47,19 @@ class ShoppingListRepository(
         val snapshot = shoppingListCollection(householdId).whereEqualTo("isChecked", false).get().await()
         return snapshot.documents
             .mapNotNull { ShoppingListItemEntity.fromDocument(it) }
-            .sortedWith(compareBy({ Store.fromStorageKey(it.store).sortOrder }, { it.sortOrder }))
+            .sortedWith(compareBy({ it.store.isBlank() }, { it.store }, { it.sortOrder }))
     }
 
     suspend fun addItem(
         name: String,
         category: Category,
-        store: Store,
+        store: String,
         quantity: Int,
         barcode: String? = null,
         imageUrl: String? = null,
         note: String? = null,
         unit: MeasurementUnit = MeasurementUnit.STUKS,
+        price: Double? = null,
     ) {
         val householdId = householdSession.householdId.value ?: return
         val entity = ShoppingListItemEntity(
@@ -67,13 +67,14 @@ class ShoppingListRepository(
             barcode = barcode,
             name = name.trim(),
             category = category.storageKey,
-            store = store.storageKey,
+            store = store.trim(),
             imageUrl = imageUrl,
             quantity = quantity.coerceAtLeast(1),
             isChecked = false,
             addedAt = System.currentTimeMillis(),
             note = note?.trim()?.takeIf { it.isNotEmpty() },
             unit = unit.storageKey,
+            price = price,
         )
         shoppingListCollection(householdId).add(entity.toMap()).await()
         refreshWidget()
@@ -137,6 +138,16 @@ class ShoppingListRepository(
         }
         if (newSortOrder == item.sortOrder) return
         shoppingListCollection(householdId).document(item.id).update("sortOrder", newSortOrder).await()
+        refreshWidget()
+    }
+
+    suspend fun checkAll() {
+        val householdId = householdSession.householdId.value ?: return
+        val uncheckedDocs = shoppingListCollection(householdId).whereEqualTo("isChecked", false).get().await()
+        if (uncheckedDocs.isEmpty) return
+        val batch = firestore.batch()
+        uncheckedDocs.documents.forEach { batch.update(it.reference, "isChecked", true) }
+        batch.commit().await()
         refreshWidget()
     }
 

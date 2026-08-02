@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.boodschapbeheer.data.local.entity.ProductEntity
 import com.dtraas.boodschapbeheer.data.model.Category
-import com.dtraas.boodschapbeheer.data.model.Store
 import com.dtraas.boodschapbeheer.data.repository.InventoryRepository
 import com.dtraas.boodschapbeheer.data.repository.ProductRepository
 import com.dtraas.boodschapbeheer.data.repository.ShoppingListRepository
@@ -101,7 +100,7 @@ class ProductDetailViewModel(
             shoppingListRepository.addItem(
                 name = product.name,
                 category = Category.fromStorageKey(product.category),
-                store = Store.GEEN,
+                store = "",
                 quantity = 1,
                 barcode = barcode,
                 imageUrl = product.imageUrl,

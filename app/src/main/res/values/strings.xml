@@ -37,16 +37,13 @@
     <string name="category_overig">Overig</string>
     <string name="category_dropdown_label">Categorie</string>
 
-    <!-- Store display names (brand names stay the same across languages) -->
-    <string name="store_ah">Albert Heijn</string>
-    <string name="store_jumbo">Jumbo</string>
-    <string name="store_nettorama">Nettorama</string>
-    <string name="store_kruidvat">Kruidvat</string>
-    <string name="store_hema">Hema</string>
-    <string name="store_etos">Etos</string>
-    <string name="store_action">Action</string>
+    <!-- Winkels ("Geen winkel" is a real UI sentinel; other names are free text the
+         household enters themselves, so they have no string resources of their own. -->
     <string name="store_geen">Geen winkel</string>
     <string name="store_dropdown_label">Winkel</string>
+    <string name="store_add_menu_item">Nieuwe winkel toevoegen</string>
+    <string name="store_add_dialog_title">Nieuwe winkel</string>
+    <string name="store_add_action">Toevoegen</string>
 
     <!-- Activity type labels (Meldingen/Geschiedenis) -->
     <string name="activity_type_scanned">Gescand</string>
@@ -136,6 +133,10 @@
     <string name="more_language_option_de">Duits</string>
     <string name="more_language_option_fr">Frans</string>
     <string name="more_language_option_es">Spaans</string>
+    <string name="more_stores_title">Winkels</string>
+    <string name="more_stores_count_format">%1$d winkels</string>
+    <string name="more_stores_empty">Nog geen winkels toegevoegd.</string>
+    <string name="more_stores_remove_format">%1$s verwijderen</string>
     <string name="more_section_about">Over</string>
     <string name="more_about_version_format">App versie %1$s</string>
     <string name="more_about_feedback">Feedback</string>
@@ -168,6 +169,10 @@
     <string name="inventory_added_to_shopping_list_snackbar">Toegevoegd aan boodschappenlijst</string>
     <string name="inventory_restocked_snackbar_format">%1$s is automatisch aan je boodschappenlijst toegevoegd (voorraad laag)</string>
     <string name="inventory_remove_cd">Verwijderen uit voorraad</string>
+    <string name="inventory_selection_count_format">%1$d geselecteerd</string>
+    <string name="inventory_bulk_add_to_shopping_list_cd">Geselecteerde producten toevoegen aan boodschappenlijst</string>
+    <string name="inventory_bulk_delete_cd">Geselecteerde producten verwijderen</string>
+    <string name="inventory_bulk_added_to_shopping_list_format">%1$d producten toegevoegd aan boodschappenlijst</string>
     <string name="inventory_empty_filtered_title">Geen producten gevonden.</string>
     <string name="inventory_empty_filtered_subtitle">Pas je zoekopdracht of filter aan.</string>
     <string name="inventory_empty_title">Nog geen producten in voorraad.</string>
@@ -181,6 +186,7 @@
     <string name="sort_option_name">Naam</string>
     <string name="sort_option_quantity">Aantal</string>
     <string name="sort_option_recently_updated">Laatst toegevoegd</string>
+    <string name="sort_option_expiration">Houdbaarheid</string>
 
     <!-- Nieuws -->
     <string name="notifications_tab_notices">Meldingen</string>
@@ -277,6 +283,7 @@
     <!-- Boodschappenlijst -->
     <string name="shopping_list_title">Boodschappenlijst</string>
     <string name="shopping_list_clear_checked_cd">Wis afgevinkte items</string>
+    <string name="shopping_list_check_all_cd">Alles afvinken</string>
     <string name="shopping_list_add_item_cd">Item toevoegen</string>
     <string name="shopping_list_search_placeholder">Zoek in boodschappenlijst…</string>
     <string name="shopping_list_removed_format">%1$s verwijderd</string>
@@ -291,6 +298,8 @@
     <string name="shopping_list_save_confirm">Opslaan</string>
     <string name="shopping_list_note_label">Opmerking</string>
     <string name="shopping_list_note_placeholder">Bijv. merk of maat</string>
+    <string name="shopping_list_price_label">Prijs</string>
+    <string name="shopping_list_price_placeholder">Bijv. 2,49</string>
     <string name="unit_dropdown_label">Eenheid</string>
     <string name="unit_stuks">stuks</string>
     <string name="unit_gram">g</string>

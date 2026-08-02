@@ -23,12 +23,14 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
@@ -52,8 +54,11 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -72,6 +77,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -83,9 +89,9 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
 import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.entity.ShoppingListItemEntity
+import com.dtraas.boodschapbeheer.data.local.entity.StoreEntity
 import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.data.model.MeasurementUnit
-import com.dtraas.boodschapbeheer.data.model.Store
 import com.dtraas.boodschapbeheer.ui.components.CategoryDropdown
 import com.dtraas.boodschapbeheer.ui.components.MeasurementUnitDropdown
 import com.dtraas.boodschapbeheer.ui.components.ProductImage
@@ -97,6 +103,7 @@ import com.dtraas.boodschapbeheer.ui.components.icon
 import com.dtraas.boodschapbeheer.ui.theme.SoftBadgeShape
 import com.dtraas.boodschapbeheer.ui.theme.SoftCardShapeCompact
 import com.dtraas.boodschapbeheer.ui.theme.SoftImageShape
+import java.text.NumberFormat
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -108,12 +115,16 @@ fun ShoppingListScreen() {
     val application = LocalContext.current.applicationContext as BoodschapBeheerApplication
     val viewModel: ShoppingListViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { ShoppingListViewModel(application.container.shoppingListRepository) }
+            initializer {
+                ShoppingListViewModel(application.container.shoppingListRepository, application.container.storeRepository)
+            }
         },
     )
     val groupedByStore by viewModel.groupedByStore.collectAsState()
+    val stores by viewModel.stores.collectAsState()
     val searchQuery by viewModel.searchQueryState.collectAsState()
     val hasCheckedItems = groupedByStore.values.flatten().any { it.isChecked }
+    val hasUncheckedItems = groupedByStore.values.flatten().any { !it.isChecked }
     var viewMode by remember { mutableStateOf(ShoppingListViewMode.LIST) }
     var searchActive by remember { mutableStateOf(false) }
 
@@ -179,6 +190,15 @@ fun ShoppingListScreen() {
                         )
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (hasUncheckedItems) {
+                            IconButton(onClick = viewModel::checkAll, modifier = Modifier.size(56.dp)) {
+                                Icon(
+                                    Icons.Filled.DoneAll,
+                                    contentDescription = stringResource(R.string.shopping_list_check_all_cd),
+                                    modifier = Modifier.size(28.dp),
+                                )
+                            }
+                        }
                         if (hasCheckedItems) {
                             IconButton(onClick = viewModel::clearChecked, modifier = Modifier.size(56.dp)) {
                                 Icon(
@@ -258,9 +278,9 @@ fun ShoppingListScreen() {
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalArrangement = Arrangement.spacedBy(24.dp),
                 ) {
-                    groupedByStore.forEach { (store, itemsInStore) ->
+                    groupedByStore.forEach { (storeName, itemsInStore) ->
                         item(span = { GridItemSpan(maxLineSpan) }) {
-                            StoreHeader(store, itemCount = itemsInStore.size)
+                            StoreHeader(storeName, itemCount = itemsInStore.size)
                         }
                         items(itemsInStore, key = { it.id }) { item ->
                             val step = MeasurementUnit.fromStorageKey(item.unit).step
@@ -282,9 +302,11 @@ fun ShoppingListScreen() {
             ItemFormDialog(
                 title = stringResource(R.string.shopping_list_item_add_title),
                 confirmLabel = stringResource(R.string.shopping_list_add_confirm),
+                stores = stores,
+                onAddStore = viewModel::addStore,
                 onDismiss = { showAddDialog = false },
-                onConfirm = { name, category, store, quantity, note, unit ->
-                    viewModel.addItem(name, category, store, quantity, note.trim().ifBlank { null }, unit)
+                onConfirm = { name, category, store, quantity, note, unit, price ->
+                    viewModel.addItem(name, category, store, quantity, note.trim().ifBlank { null }, unit, price)
                     showAddDialog = false
                 },
             )
@@ -296,21 +318,25 @@ fun ShoppingListScreen() {
                 confirmLabel = stringResource(R.string.shopping_list_save_confirm),
                 initialName = item.name,
                 initialCategory = Category.fromStorageKey(item.category),
-                initialStore = Store.fromStorageKey(item.store),
+                initialStore = item.store,
                 initialQuantity = item.quantity,
                 initialNote = item.note ?: "",
                 initialUnit = MeasurementUnit.fromStorageKey(item.unit),
+                initialPrice = item.price,
                 imageUrl = item.imageUrl,
+                stores = stores,
+                onAddStore = viewModel::addStore,
                 onDismiss = { editingItem = null },
-                onConfirm = { name, category, store, quantity, note, unit ->
+                onConfirm = { name, category, store, quantity, note, unit, price ->
                     viewModel.updateItem(
                         item.copy(
                             name = name,
                             category = category.storageKey,
-                            store = store.storageKey,
+                            store = store,
                             quantity = quantity,
                             note = note.trim().ifBlank { null },
                             unit = unit.storageKey,
+                            price = price,
                         )
                     )
                     editingItem = null
@@ -330,7 +356,7 @@ fun ShoppingListScreen() {
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ReorderableShoppingList(
-    groupedByStore: Map<Store, List<ShoppingListItemEntity>>,
+    groupedByStore: Map<String, List<ShoppingListItemEntity>>,
     onCheckedChange: (ShoppingListItemEntity, Boolean) -> Unit,
     onItemClick: (ShoppingListItemEntity) -> Unit,
     onIncrease: (ShoppingListItemEntity) -> Unit,
@@ -415,14 +441,13 @@ private fun ReorderableShoppingList(
     // groupedByStore, and a drag only ever swaps items within their own store), so
     // grouping consecutive runs here always yields exactly one run per store.
     val storeRuns = remember(orderedItems.toList()) {
-        val runs = mutableListOf<Pair<Store, MutableList<ShoppingListItemEntity>>>()
+        val runs = mutableListOf<Pair<String, MutableList<ShoppingListItemEntity>>>()
         for (item in orderedItems) {
-            val store = Store.fromStorageKey(item.store)
             val lastRun = runs.lastOrNull()
-            if (lastRun != null && lastRun.first == store) {
+            if (lastRun != null && lastRun.first == item.store) {
                 lastRun.second.add(item)
             } else {
-                runs.add(store to mutableListOf(item))
+                runs.add(item.store to mutableListOf(item))
             }
         }
         runs
@@ -432,9 +457,9 @@ private fun ReorderableShoppingList(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = 8.dp),
     ) {
-        storeRuns.forEach { (store, groupItems) ->
-            stickyHeader(key = "header_${store.storageKey}") {
-                StoreHeader(store, itemCount = groupItems.size)
+        storeRuns.forEach { (storeName, groupItems) ->
+            stickyHeader(key = "header_$storeName") {
+                StoreHeader(storeName, itemCount = groupItems.size)
             }
             items(groupItems, key = { it.id }) { item ->
                 val isDragging = item.id == draggingId
@@ -468,7 +493,7 @@ private fun ReorderableShoppingList(
 }
 
 @Composable
-private fun StoreHeader(store: Store, itemCount: Int) {
+private fun StoreHeader(storeName: String, itemCount: Int) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -485,7 +510,7 @@ private fun StoreHeader(store: Store, itemCount: Int) {
                 modifier = Modifier.size(20.dp),
             )
             Text(
-                text = stringResource(store.displayNameRes),
+                text = storeName.ifBlank { stringResource(R.string.store_geen) },
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(start = 8.dp),
@@ -562,7 +587,8 @@ private fun ShoppingListRow(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Text(
-                    text = listOfNotNull(stringResource(category.displayNameRes), item.note).joinToString(" · "),
+                    text = listOfNotNull(stringResource(category.displayNameRes), item.note, item.price?.let(::formatPrice))
+                        .joinToString(" · "),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -589,6 +615,9 @@ private fun ShoppingListRow(
     }
 }
 
+private fun formatPrice(price: Double): String = NumberFormat.getCurrencyInstance().format(price)
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ShoppingListGridTile(
     item: ShoppingListItemEntity,
@@ -599,87 +628,120 @@ private fun ShoppingListGridTile(
     onDelete: () -> Unit,
 ) {
     val category = Category.fromStorageKey(item.category)
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(SoftCardShapeCompact)
-            .clickable(onClick = onClick),
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value != SwipeToDismissBoxValue.Settled) onCheckedChange(!item.isChecked)
+            true
+        },
+    )
+    // Swipe toggles checked/unchecked here (rather than delete, which already has its own
+    // button on the tile) — "off the list" is the far more frequent gesture while shopping.
+    SwipeToDismissBox(
+        state = dismissState,
+        modifier = Modifier.clip(SoftCardShapeCompact),
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .padding(horizontal = 16.dp),
+                contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
+                    Alignment.CenterStart
+                } else {
+                    Alignment.CenterEnd
+                },
+            ) {
+                Icon(
+                    imageVector = if (item.isChecked) Icons.Filled.RadioButtonUnchecked else Icons.Filled.CheckCircle,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+        },
     ) {
-        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
-            ProductImage(
-                imageUrl = item.imageUrl,
-                fallbackIcon = category.icon,
-                shape = SoftImageShape,
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.fillMaxSize(),
-            )
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(6.dp)
-                    .size(36.dp),
-            ) {
-                IconButton(
-                    onClick = { onCheckedChange(!item.isChecked) },
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surface)
+                .clickable(onClick = onClick),
+        ) {
+            Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
+                ProductImage(
+                    imageUrl = item.imageUrl,
+                    fallbackIcon = category.icon,
+                    shape = SoftImageShape,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.fillMaxSize(),
+                )
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(6.dp)
+                        .size(36.dp),
                 ) {
-                    Icon(
-                        imageVector = if (item.isChecked) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
-                        contentDescription = if (item.isChecked) {
-                            stringResource(R.string.shopping_list_mark_unchecked_cd)
-                        } else {
-                            stringResource(R.string.shopping_list_mark_checked_cd)
-                        },
-                        tint = if (item.isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp),
-                    )
+                    IconButton(
+                        onClick = { onCheckedChange(!item.isChecked) },
+                        modifier = Modifier.fillMaxSize(),
+                    ) {
+                        Icon(
+                            imageVector = if (item.isChecked) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
+                            contentDescription = if (item.isChecked) {
+                                stringResource(R.string.shopping_list_mark_unchecked_cd)
+                            } else {
+                                stringResource(R.string.shopping_list_mark_checked_cd)
+                            },
+                            tint = if (item.isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp),
+                        )
+                    }
+                }
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(36.dp),
+                ) {
+                    IconButton(onClick = onDelete, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.shopping_list_delete_cd),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
                 }
             }
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(6.dp)
-                    .size(36.dp),
-            ) {
-                IconButton(onClick = onDelete, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        Icons.Filled.Delete,
-                        contentDescription = stringResource(R.string.shopping_list_delete_cd),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
+            Column(modifier = Modifier.padding(top = 8.dp)) {
+                Text(
+                    text = item.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    textDecoration = if (item.isChecked) TextDecoration.LineThrough else null,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Text(
+                    text = listOfNotNull(stringResource(category.displayNameRes), item.note, item.price?.let(::formatPrice))
+                        .joinToString(" · "),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+                QuantityStepper(
+                    quantity = item.quantity,
+                    onDecrease = onDecrease,
+                    onIncrease = onIncrease,
+                    minQuantity = 1,
+                    modifier = Modifier.padding(top = 4.dp),
+                    displayText = formatQuantityWithUnit(item.quantity, MeasurementUnit.fromStorageKey(item.unit)),
+                )
             }
-        }
-        Column(modifier = Modifier.padding(top = 8.dp)) {
-            Text(
-                text = item.name,
-                style = MaterialTheme.typography.titleSmall,
-                textDecoration = if (item.isChecked) TextDecoration.LineThrough else null,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
-            Text(
-                text = listOfNotNull(stringResource(category.displayNameRes), item.note).joinToString(" · "),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(top = 2.dp),
-            )
-            QuantityStepper(
-                quantity = item.quantity,
-                onDecrease = onDecrease,
-                onIncrease = onIncrease,
-                minQuantity = 1,
-                modifier = Modifier.padding(top = 4.dp),
-                displayText = formatQuantityWithUnit(item.quantity, MeasurementUnit.fromStorageKey(item.unit)),
-            )
         }
     }
 }
@@ -723,13 +785,24 @@ private fun ItemFormDialog(
     confirmLabel: String,
     initialName: String = "",
     initialCategory: Category = Category.OVERIG,
-    initialStore: Store = Store.GEEN,
+    initialStore: String = "",
     initialQuantity: Int = 1,
     initialNote: String = "",
     initialUnit: MeasurementUnit = MeasurementUnit.STUKS,
+    initialPrice: Double? = null,
     imageUrl: String? = null,
+    stores: List<StoreEntity>,
+    onAddStore: (String) -> Unit,
     onDismiss: () -> Unit,
-    onConfirm: (name: String, category: Category, store: Store, quantity: Int, note: String, unit: MeasurementUnit) -> Unit,
+    onConfirm: (
+        name: String,
+        category: Category,
+        store: String,
+        quantity: Int,
+        note: String,
+        unit: MeasurementUnit,
+        price: Double?,
+    ) -> Unit,
 ) {
     var name by remember { mutableStateOf(initialName) }
     var category by remember { mutableStateOf(initialCategory) }
@@ -737,6 +810,7 @@ private fun ItemFormDialog(
     var quantity by remember { mutableIntStateOf(initialQuantity) }
     var note by remember { mutableStateOf(initialNote) }
     var unit by remember { mutableStateOf(initialUnit) }
+    var priceText by remember { mutableStateOf(initialPrice?.let { "%.2f".format(it) } ?: "") }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -767,7 +841,9 @@ private fun ItemFormDialog(
                     )
                     StoreDropdown(
                         selected = store,
+                        stores = stores,
                         onSelected = { store = it },
+                        onAddStore = onAddStore,
                         modifier = Modifier.fillMaxWidth(),
                     )
                     MeasurementUnitDropdown(
@@ -790,6 +866,15 @@ private fun ItemFormDialog(
                         )
                     }
                     OutlinedTextField(
+                        value = priceText,
+                        onValueChange = { input -> if (input.count { it == '.' || it == ',' } <= 1) priceText = input },
+                        label = { Text(stringResource(R.string.shopping_list_price_label)) },
+                        placeholder = { Text(stringResource(R.string.shopping_list_price_placeholder)) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    OutlinedTextField(
                         value = note,
                         onValueChange = { note = it },
                         label = { Text(stringResource(R.string.shopping_list_note_label)) },
@@ -801,7 +886,10 @@ private fun ItemFormDialog(
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(name, category, store, quantity, note, unit) },
+                onClick = {
+                    val price = priceText.replace(',', '.').toDoubleOrNull()
+                    onConfirm(name, category, store, quantity, note, unit, price)
+                },
                 enabled = name.isNotBlank(),
             ) {
                 Text(confirmLabel)

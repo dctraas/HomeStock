@@ -38,15 +38,11 @@
     <string name="category_dropdown_label">Categoría</string>
 
     <!-- Store display names (brand names stay the same across languages) -->
-    <string name="store_ah">Albert Heijn</string>
-    <string name="store_jumbo">Jumbo</string>
-    <string name="store_nettorama">Nettorama</string>
-    <string name="store_kruidvat">Kruidvat</string>
-    <string name="store_hema">Hema</string>
-    <string name="store_etos">Etos</string>
-    <string name="store_action">Action</string>
     <string name="store_geen">Sin tienda</string>
     <string name="store_dropdown_label">Tienda</string>
+    <string name="store_add_menu_item">Añadir nueva tienda</string>
+    <string name="store_add_dialog_title">Nueva tienda</string>
+    <string name="store_add_action">Añadir</string>
 
     <!-- Activity type labels (Novedades/Historial) -->
     <string name="activity_type_scanned">Escaneado</string>
@@ -136,6 +132,10 @@
     <string name="more_language_option_de">Alemán</string>
     <string name="more_language_option_fr">Francés</string>
     <string name="more_language_option_es">Español</string>
+    <string name="more_stores_title">Tiendas</string>
+    <string name="more_stores_count_format">%1$d tiendas</string>
+    <string name="more_stores_empty">Aún no se han añadido tiendas.</string>
+    <string name="more_stores_remove_format">Eliminar %1$s</string>
     <string name="more_section_about">Acerca de</string>
     <string name="more_about_version_format">Versión de la app %1$s</string>
     <string name="more_about_feedback">Comentarios</string>
@@ -168,6 +168,10 @@
     <string name="inventory_added_to_shopping_list_snackbar">Añadido a la lista de la compra</string>
     <string name="inventory_restocked_snackbar_format">%1$s se añadió automáticamente a tu lista de la compra (stock bajo)</string>
     <string name="inventory_remove_cd">Eliminar del inventario</string>
+    <string name="inventory_selection_count_format">%1$d seleccionados</string>
+    <string name="inventory_bulk_add_to_shopping_list_cd">Añadir productos seleccionados a la lista de la compra</string>
+    <string name="inventory_bulk_delete_cd">Eliminar productos seleccionados</string>
+    <string name="inventory_bulk_added_to_shopping_list_format">%1$d productos añadidos a la lista de la compra</string>
     <string name="inventory_empty_filtered_title">No se encontraron productos.</string>
     <string name="inventory_empty_filtered_subtitle">Ajusta tu búsqueda o filtro.</string>
     <string name="inventory_empty_title">Todavía no hay productos en el inventario.</string>
@@ -181,6 +185,7 @@
     <string name="sort_option_name">Nombre</string>
     <string name="sort_option_quantity">Cantidad</string>
     <string name="sort_option_recently_updated">Añadido recientemente</string>
+    <string name="sort_option_expiration">Caducidad</string>
 
     <!-- Novedades -->
     <string name="notifications_tab_notices">Avisos</string>
@@ -277,6 +282,7 @@
     <!-- Lista de la compra -->
     <string name="shopping_list_title">Lista de la compra</string>
     <string name="shopping_list_clear_checked_cd">Borrar artículos marcados</string>
+    <string name="shopping_list_check_all_cd">Marcar todo</string>
     <string name="shopping_list_add_item_cd">Añadir artículo</string>
     <string name="shopping_list_search_placeholder">Buscar en la lista de la compra…</string>
     <string name="shopping_list_removed_format">%1$s eliminado</string>
@@ -291,6 +297,8 @@
     <string name="shopping_list_save_confirm">Guardar</string>
     <string name="shopping_list_note_label">Nota</string>
     <string name="shopping_list_note_placeholder">P. ej. marca o talla</string>
+    <string name="shopping_list_price_label">Precio</string>
+    <string name="shopping_list_price_placeholder">P. ej. 2,49</string>
     <string name="unit_dropdown_label">Unidad</string>
     <string name="unit_stuks">uds</string>
     <string name="unit_gram">g</string>

@@ -4,7 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -27,11 +27,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.ViewList
@@ -52,7 +54,10 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -117,6 +122,8 @@ fun InventoryScreen(
     var viewMode by remember { mutableStateOf(InventoryViewMode.GRID) }
     var searchActive by remember { mutableStateOf(false) }
     var showProfileDialog by remember { mutableStateOf(false) }
+    var selectedBarcodes by remember { mutableStateOf(emptySet<String>()) }
+    val selectionMode = selectedBarcodes.isNotEmpty()
     val deviceProfile = application.container.deviceProfile
     val displayName by deviceProfile.displayName.collectAsState()
     val photoPath by deviceProfile.photoPath.collectAsState()
@@ -125,12 +132,17 @@ fun InventoryScreen(
     val removedFormat = stringResource(R.string.inventory_removed_snackbar_format)
     val undoLabel = stringResource(R.string.common_undo)
     val addedToShoppingListMessage = stringResource(R.string.inventory_added_to_shopping_list_snackbar)
+    val bulkAddedFormat = stringResource(R.string.inventory_bulk_added_to_shopping_list_format)
     val restockedFormat = stringResource(R.string.inventory_restocked_snackbar_format)
 
     LaunchedEffect(Unit) {
         viewModel.restockEvents.collect { name ->
             snackbarHostState.showSnackbar(restockedFormat.format(name), duration = SnackbarDuration.Short)
         }
+    }
+
+    fun toggleSelected(barcode: String) {
+        selectedBarcodes = if (barcode in selectedBarcodes) selectedBarcodes - barcode else selectedBarcodes + barcode
     }
 
     fun deleteWithUndo(item: InventoryItemWithProduct) {
@@ -160,49 +172,89 @@ fun InventoryScreen(
         }
     }
 
+    fun bulkDeleteSelected() {
+        val items = uiState.groupedInventory.values.flatten().filter { it.barcode in selectedBarcodes }
+        items.forEach { viewModel.removeFromInventory(it.barcode) }
+        selectedBarcodes = emptySet()
+    }
+
+    fun bulkAddSelectedToShoppingList() {
+        val items = uiState.groupedInventory.values.flatten().filter { it.barcode in selectedBarcodes }
+        items.forEach { viewModel.addToShoppingList(it) }
+        val count = items.size
+        selectedBarcodes = emptySet()
+        coroutineScope.launch {
+            snackbarHostState.showSnackbar(bulkAddedFormat.format(count), duration = SnackbarDuration.Short)
+        }
+    }
+
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text(stringResource(R.string.inventory_title)) },
-                navigationIcon = {
-                    // R.mipmap.ic_launcher is an <adaptive-icon> XML (background + foreground
-                    // layers); painterResource only supports plain VectorDrawable/raster assets
-                    // and crashes on it, so the two vector layers are composited by hand instead.
-                    Box(
-                        modifier = Modifier
-                            .padding(start = 16.dp)
-                            .size(32.dp)
-                            .clip(CircleShape),
-                    ) {
-                        Image(
-                            painter = painterResource(R.drawable.ic_launcher_background),
-                            contentDescription = null,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                        Image(
-                            painter = painterResource(R.drawable.ic_launcher_foreground),
-                            contentDescription = stringResource(R.string.app_name),
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showProfileDialog = true }) {
-                        if (photoPath != null) {
-                            AsyncImage(
-                                model = File(photoPath),
-                                contentDescription = stringResource(R.string.more_profile_title),
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier
-                                    .size(32.dp)
-                                    .clip(CircleShape),
-                            )
-                        } else {
-                            Icon(Icons.Filled.AccountCircle, contentDescription = stringResource(R.string.more_profile_title))
+            if (selectionMode) {
+                CenterAlignedTopAppBar(
+                    title = {
+                        Text(stringResource(R.string.inventory_selection_count_format, selectedBarcodes.size))
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = { selectedBarcodes = emptySet() }) {
+                            Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.common_cancel))
                         }
-                    }
-                },
-            )
+                    },
+                    actions = {
+                        IconButton(onClick = ::bulkAddSelectedToShoppingList) {
+                            Icon(
+                                Icons.Filled.AddShoppingCart,
+                                contentDescription = stringResource(R.string.inventory_bulk_add_to_shopping_list_cd),
+                            )
+                        }
+                        IconButton(onClick = ::bulkDeleteSelected) {
+                            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.inventory_bulk_delete_cd))
+                        }
+                    },
+                )
+            } else {
+                CenterAlignedTopAppBar(
+                    title = { Text(stringResource(R.string.inventory_title)) },
+                    navigationIcon = {
+                        // R.mipmap.ic_launcher is an <adaptive-icon> XML (background + foreground
+                        // layers); painterResource only supports plain VectorDrawable/raster assets
+                        // and crashes on it, so the two vector layers are composited by hand instead.
+                        Box(
+                            modifier = Modifier
+                                .padding(start = 16.dp)
+                                .size(32.dp)
+                                .clip(CircleShape),
+                        ) {
+                            Image(
+                                painter = painterResource(R.drawable.ic_launcher_background),
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                            Image(
+                                painter = painterResource(R.drawable.ic_launcher_foreground),
+                                contentDescription = stringResource(R.string.app_name),
+                                modifier = Modifier.fillMaxSize(),
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { showProfileDialog = true }) {
+                            if (photoPath != null) {
+                                AsyncImage(
+                                    model = File(photoPath),
+                                    contentDescription = stringResource(R.string.more_profile_title),
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .clip(CircleShape),
+                                )
+                            } else {
+                                Icon(Icons.Filled.AccountCircle, contentDescription = stringResource(R.string.more_profile_title))
+                            }
+                        }
+                    },
+                )
+            }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
@@ -299,11 +351,17 @@ fun InventoryScreen(
                         items(itemsInCategory, key = { it.barcode }) { item ->
                             InventoryRow(
                                 item = item,
-                                onClick = { onProductClick(item.barcode) },
+                                selected = item.barcode in selectedBarcodes,
+                                selectionMode = selectionMode,
+                                onClick = {
+                                    if (selectionMode) toggleSelected(item.barcode) else onProductClick(item.barcode)
+                                },
+                                onLongClick = { toggleSelected(item.barcode) },
                                 onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
                                 onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
                                 onDelete = { deleteWithUndo(item) },
                                 onAddToShoppingList = { addToShoppingListWithFeedback(item) },
+                                modifier = Modifier.animateItem(),
                             )
                         }
                     }
@@ -323,7 +381,12 @@ fun InventoryScreen(
                         items(itemsInCategory, key = { it.barcode }) { item ->
                             InventoryGridTile(
                                 item = item,
-                                onClick = { onProductClick(item.barcode) },
+                                selected = item.barcode in selectedBarcodes,
+                                selectionMode = selectionMode,
+                                onClick = {
+                                    if (selectionMode) toggleSelected(item.barcode) else onProductClick(item.barcode)
+                                },
+                                onLongClick = { toggleSelected(item.barcode) },
                                 onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
                                 onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
                                 onAddToShoppingList = { addToShoppingListWithFeedback(item) },
@@ -483,87 +546,147 @@ private fun CategoryHeader(category: Category, itemCount: Int) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun InventoryRow(
     item: InventoryItemWithProduct,
+    selected: Boolean,
+    selectionMode: Boolean,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     onIncrease: () -> Unit,
     onDecrease: () -> Unit,
     onDelete: () -> Unit,
     onAddToShoppingList: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val stockStatus = InventoryStockStatus.of(item.quantity, item.minQuantity, item.expirationDate)
-    Card(
-        onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 3.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shape = SoftCardShapeCompact,
-    ) {
-        Row(
-            modifier = Modifier.padding(start = 10.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Box(modifier = Modifier.size(32.dp)) {
-                ProductImage(
-                    imageUrl = item.imageUrl,
-                    fallbackIcon = Category.fromStorageKey(item.category).icon,
-                    shape = RoundedCornerShape(8.dp),
-                    modifier = Modifier.fillMaxSize(),
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            // Selection mode repurposes a tap/long-press for picking items, so a swipe here
+            // would surprise-delete the wrong thing — only live outside selection mode.
+            if (value != SwipeToDismissBoxValue.Settled && !selectionMode) onDelete()
+            true
+        },
+    )
+    SwipeToDismissBox(
+        state = dismissState,
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp),
+        enableDismissFromStartToEnd = !selectionMode,
+        enableDismissFromEndToStart = !selectionMode,
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(SoftCardShapeCompact)
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
+                    Alignment.CenterStart
+                } else {
+                    Alignment.CenterEnd
+                },
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Delete,
+                    contentDescription = stringResource(R.string.inventory_remove_cd),
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
                 )
-                StockStatusDot(status = stockStatus, modifier = Modifier.align(Alignment.BottomEnd))
             }
-            Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
-                Text(
-                    text = item.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                val subtitle = listOfNotNull(item.brand, item.unit).joinToString(" · ")
-                if (subtitle.isNotEmpty()) {
+        },
+    ) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+            colors = CardDefaults.cardColors(
+                containerColor = if (selected) {
+                    MaterialTheme.colorScheme.primaryContainer
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainerHigh
+                },
+            ),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+            shape = SoftCardShapeCompact,
+        ) {
+            Row(
+                modifier = Modifier.padding(start = 10.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (selectionMode) {
+                    Icon(
+                        imageVector = if (selected) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
+                        contentDescription = null,
+                        tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(32.dp),
+                    )
+                } else {
+                    Box(modifier = Modifier.size(32.dp)) {
+                        ProductImage(
+                            imageUrl = item.imageUrl,
+                            fallbackIcon = Category.fromStorageKey(item.category).icon,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                        StockStatusDot(status = stockStatus, modifier = Modifier.align(Alignment.BottomEnd))
+                    }
+                }
+                Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
                     Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        text = item.name,
+                        style = MaterialTheme.typography.bodyMedium,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.padding(top = 1.dp),
                     )
+                    val subtitle = listOfNotNull(item.brand, item.unit).joinToString(" · ")
+                    if (subtitle.isNotEmpty()) {
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(top = 1.dp),
+                        )
+                    }
                 }
-            }
-            QuantityStepper(
-                quantity = item.quantity,
-                onDecrease = onDecrease,
-                onIncrease = onIncrease,
-                dense = true,
-            )
-            IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(32.dp)) {
-                Icon(
-                    Icons.Filled.AddShoppingCart,
-                    contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp),
-                )
-            }
-            IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                Icon(
-                    Icons.Filled.Delete,
-                    contentDescription = stringResource(R.string.inventory_remove_cd),
-                    tint = MaterialTheme.colorScheme.outline,
-                    modifier = Modifier.size(18.dp),
-                )
+                if (!selectionMode) {
+                    QuantityStepper(
+                        quantity = item.quantity,
+                        onDecrease = onDecrease,
+                        onIncrease = onIncrease,
+                        dense = true,
+                    )
+                    IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            Icons.Filled.AddShoppingCart,
+                            contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                    IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            Icons.Filled.Delete,
+                            contentDescription = stringResource(R.string.inventory_remove_cd),
+                            tint = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
             }
         }
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun InventoryGridTile(
     item: InventoryItemWithProduct,
+    selected: Boolean,
+    selectionMode: Boolean,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     onIncrease: () -> Unit,
     onDecrease: () -> Unit,
     onAddToShoppingList: () -> Unit,
@@ -573,7 +696,14 @@ private fun InventoryGridTile(
         modifier = Modifier
             .fillMaxWidth()
             .clip(SoftCardShapeCompact)
-            .clickable(onClick = onClick),
+            .then(
+                if (selected) {
+                    Modifier.background(MaterialTheme.colorScheme.primaryContainer)
+                } else {
+                    Modifier
+                },
+            )
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
         Box(modifier = Modifier.fillMaxWidth().aspectRatio(1.4f)) {
             ProductImage(
@@ -586,6 +716,17 @@ private fun InventoryGridTile(
                 status = stockStatus,
                 modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
             )
+            if (selectionMode) {
+                Icon(
+                    imageVector = if (selected) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
+                    contentDescription = null,
+                    tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(8.dp)
+                        .background(MaterialTheme.colorScheme.surface, CircleShape),
+                )
+            }
         }
         Column(modifier = Modifier.padding(top = 6.dp)) {
             Text(

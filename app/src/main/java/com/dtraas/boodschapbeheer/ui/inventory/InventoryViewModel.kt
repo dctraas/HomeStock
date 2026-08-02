@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.dao.InventoryItemWithProduct
 import com.dtraas.boodschapbeheer.data.model.Category
-import com.dtraas.boodschapbeheer.data.model.Store
 import com.dtraas.boodschapbeheer.data.repository.ActivityLogRepository
 import com.dtraas.boodschapbeheer.data.repository.InventoryRepository
 import com.dtraas.boodschapbeheer.data.repository.ShoppingListRepository
@@ -25,6 +24,7 @@ enum class InventorySortOption(@StringRes val labelRes: Int) {
     NAME(R.string.sort_option_name),
     QUANTITY(R.string.sort_option_quantity),
     RECENTLY_UPDATED(R.string.sort_option_recently_updated),
+    EXPIRATION(R.string.sort_option_expiration),
 }
 
 data class InventoryUiState(
@@ -61,6 +61,8 @@ class InventoryViewModel(
             InventorySortOption.NAME -> filtered.sortedBy { it.name.lowercase() }
             InventorySortOption.QUANTITY -> filtered.sortedByDescending { it.quantity }
             InventorySortOption.RECENTLY_UPDATED -> filtered.sortedByDescending { it.updatedAt }
+            // Items with a set expiration date first (soonest first); items without one sink to the bottom.
+            InventorySortOption.EXPIRATION -> filtered.sortedWith(compareBy(nullsLast()) { it.expirationDate })
         }
         InventoryUiState(
             searchQuery = query,
@@ -113,7 +115,7 @@ class InventoryViewModel(
             shoppingListRepository.addItem(
                 name = item.name,
                 category = Category.fromStorageKey(item.category),
-                store = Store.GEEN,
+                store = "",
                 quantity = 1,
                 barcode = item.barcode,
                 imageUrl = item.imageUrl,
