@@ -3,7 +3,7 @@ package com.dtraas.boodschapbeheer.data.model
 import androidx.annotation.StringRes
 import com.dtraas.boodschapbeheer.R
 
-/** A short "what's new" style message from the app's developer, shown on the Nieuws screen. */
+/** A short "what's new" style message from the app's developer, shown on the Meldingen screen. */
 data class DeveloperNotice(
     val id: String,
     @StringRes val titleRes: Int,

@@ -3,7 +3,7 @@ package com.dtraas.boodschapbeheer.data.model
 import androidx.annotation.StringRes
 import com.dtraas.boodschapbeheer.R
 
-/** Kind of change recorded in the activity log, shown on the "Nieuws" screen. */
+/** Kind of change recorded in the activity log, shown on the "Meldingen" screen. */
 enum class ActivityType(val storageKey: String, @StringRes val labelRes: Int) {
     SCANNED("scanned", R.string.activity_type_scanned),
     QUANTITY_CHANGED("quantity_changed", R.string.activity_type_quantity_changed),

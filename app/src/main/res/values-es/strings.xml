@@ -20,7 +20,7 @@
     <string name="nav_shopping_list">Lista</string>
     <string name="nav_inventory">Home</string>
     <string name="nav_scan">Escanear</string>
-    <string name="nav_news">Novedades</string>
+    <string name="nav_news">Notificaciones</string>
     <string name="nav_more">Más</string>
 
     <!-- Category display names -->
