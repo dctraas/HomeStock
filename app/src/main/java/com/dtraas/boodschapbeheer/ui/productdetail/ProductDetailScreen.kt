@@ -4,12 +4,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -162,6 +160,12 @@ fun ProductDetailScreen(
         // that simply doesn't have all fields, to offer a "look it up again" retry.
         val looksManuallyEntered = product != null && product.imageUrl == null && !hasNutritionInfo
 
+        // Gap before each section header (Voorraad, Voedingswaarden, Ingrediënten, ...) and
+        // between a header and its own card below it — shared so e.g. "Voorraad" -> its card
+        // and "Ingrediënten" -> its card line up at the same distance.
+        val sectionGap = 16.dp
+        val headerToCardGap = 8.dp
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -215,9 +219,9 @@ fun ProductDetailScreen(
 
             // Voorraad
             if (stillInInventory) {
-                SectionHeader(stringResource(R.string.section_stock), modifier = Modifier.padding(top = 28.dp))
+                SectionHeader(stringResource(R.string.section_stock), modifier = Modifier.padding(top = sectionGap))
                 Card(
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = headerToCardGap),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                     shape = SoftCardShape,
                 ) {
@@ -269,42 +273,31 @@ fun ProductDetailScreen(
                 }
             }
 
-            // Voedingsinformatie (no group header of its own — each card carries its own).
-            // The first visible card gets more breathing room after the header above it;
-            // the rest sit close together, per how far down this list they land.
-            val hasNutrition = product?.nutrition != null
-            val hasIngredients = product?.ingredients != null
-            val closeGap = 8.dp
-            val openGap = 20.dp
-
+            // Voedingsinformatie — no overarching group header; each card is its own
+            // section with its own header, same treatment as Voorraad above.
             product?.nutrition?.let { nutrition ->
-                NutritionCard(nutrition, modifier = Modifier.padding(top = openGap))
+                SectionHeader(stringResource(R.string.product_detail_nutrition_title), modifier = Modifier.padding(top = sectionGap))
+                NutritionCard(nutrition, modifier = Modifier.padding(top = headerToCardGap))
             }
             product?.ingredients?.let { ingredients ->
-                IngredientsCard(ingredients, modifier = Modifier.padding(top = if (hasNutrition) closeGap else openGap))
+                SectionHeader(stringResource(R.string.product_detail_ingredients_title), modifier = Modifier.padding(top = sectionGap))
+                IngredientsCard(ingredients, modifier = Modifier.padding(top = headerToCardGap))
             }
             if (allergens.isNotEmpty()) {
-                AllergensCard(
-                    allergens,
-                    modifier = Modifier.padding(top = if (hasNutrition || hasIngredients) closeGap else openGap),
-                )
+                SectionHeader(stringResource(R.string.product_detail_allergens_title), modifier = Modifier.padding(top = sectionGap))
+                AllergensCard(allergens, modifier = Modifier.padding(top = headerToCardGap))
             }
             if (dietLabels.isNotEmpty()) {
-                DietLabelsCard(
-                    dietLabels,
-                    modifier = Modifier.padding(
-                        top = if (hasNutrition || hasIngredients || allergens.isNotEmpty()) closeGap else openGap,
-                    ),
-                )
+                SectionHeader(stringResource(R.string.product_detail_diet_labels_title), modifier = Modifier.padding(top = sectionGap))
+                DietLabelsCard(dietLabels, modifier = Modifier.padding(top = headerToCardGap))
             }
 
             if (stillInInventory) {
+                SectionHeader(stringResource(R.string.product_detail_note_title), modifier = Modifier.padding(top = sectionGap))
                 NoteCard(
                     note = uiState.note,
                     onNoteChange = viewModel::setNote,
-                    modifier = Modifier.padding(
-                        top = if (hasNutritionInfo) closeGap else openGap,
-                    ),
+                    modifier = Modifier.padding(top = headerToCardGap),
                 )
             }
         }
@@ -432,10 +425,8 @@ private fun AllergensCard(allergens: List<Allergen>, modifier: Modifier = Modifi
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(stringResource(R.string.product_detail_allergens_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(top = 8.dp),
             ) {
                 items(allergens) { allergen ->
                     TagChip(
@@ -457,10 +448,8 @@ private fun DietLabelsCard(labels: List<DietLabel>, modifier: Modifier = Modifie
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(stringResource(R.string.product_detail_diet_labels_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             LazyRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
-                contentPadding = PaddingValues(top = 8.dp),
             ) {
                 items(labels) { label ->
                     TagChip(
@@ -497,12 +486,10 @@ private fun IngredientsCard(ingredients: String, modifier: Modifier = Modifier) 
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(stringResource(R.string.product_detail_ingredients_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             Text(
                 text = ingredients,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp),
             )
         }
     }
@@ -516,9 +503,6 @@ private fun NutritionCard(nutrition: NutritionInfo, modifier: Modifier = Modifie
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(stringResource(R.string.product_detail_nutrition_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
-            Spacer(modifier = Modifier.height(4.dp))
-
             nutrition.energyKcal100g?.let {
                 NutritionRow(stringResource(R.string.product_detail_nutrition_energy), formatKcal(it))
             }
@@ -596,7 +580,7 @@ private fun ExpirationStatusRow(expirationDate: Long?) {
         else -> stringResource(R.string.product_detail_status_fresh) to false
     }
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -616,7 +600,7 @@ private fun ExpirationRow(expirationDate: Long?, onDateChange: (Long?) -> Unit) 
     val isNearExpiry = expirationDate != null && daysUntilExpiration(expirationDate) <= 3
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -674,7 +658,7 @@ private fun ExpirationRow(expirationDate: Long?, onDateChange: (Long?) -> Unit) 
 @Composable
 private fun MinQuantityRow(minQuantity: Int?, onChange: (Int?) -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
@@ -712,13 +696,12 @@ private fun NoteCard(note: String?, onNoteChange: (String?) -> Unit, modifier: M
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(stringResource(R.string.product_detail_note_title), style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
             OutlinedTextField(
                 value = text,
                 onValueChange = { text = it },
                 placeholder = { Text(stringResource(R.string.product_detail_note_placeholder)) },
                 minLines = 3,
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
