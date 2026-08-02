@@ -1,5 +1,6 @@
 package com.dtraas.boodschapbeheer.ui.notifications
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -168,6 +169,7 @@ private fun DeveloperNoticeRow(notice: DeveloperNotice, onDismiss: () -> Unit, m
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             shape = SoftCardShapeCompact,
         ) {
             Row(
@@ -221,6 +223,7 @@ private fun AppActivityRow(entry: ActivityLogWithProduct) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = SoftCardShapeCompact,
     ) {
         Row(

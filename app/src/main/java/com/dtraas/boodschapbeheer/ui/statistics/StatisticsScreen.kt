@@ -1,5 +1,6 @@
 package com.dtraas.boodschapbeheer.ui.statistics
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -161,6 +162,7 @@ private fun StatCard(icon: ImageVector, value: String, label: String, modifier: 
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = SoftCardShape,
     ) {
         Column(
@@ -193,6 +195,7 @@ private fun TopScannedRow(rank: Int, product: TopScannedProduct, maxCount: Int) 
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = SoftCardShapeCompact,
     ) {
         Row(
@@ -238,6 +241,7 @@ private fun CategoryDistributionCard(distribution: List<Pair<Category, Int>>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

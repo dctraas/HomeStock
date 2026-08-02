@@ -118,6 +118,7 @@
     <string name="more_expiry_notifications_description">Recibe un aviso cuando un producto esté a punto de caducar</string>
     <string name="more_settings_title">Configuración</string>
     <string name="more_section_account">Cuenta</string>
+    <string name="more_account_row_title">Perfil</string>
     <string name="more_section_general">General</string>
     <string name="more_theme_title">Pantalla</string>
     <string name="more_theme_option_system">Predeterminado del sistema</string>

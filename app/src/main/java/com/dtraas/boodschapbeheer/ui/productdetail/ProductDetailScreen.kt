@@ -1,5 +1,6 @@
 package com.dtraas.boodschapbeheer.ui.productdetail
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -176,6 +177,7 @@ fun ProductDetailScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                     shape = SoftCardShape,
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
@@ -378,6 +380,7 @@ private fun AllergensCard(allergens: List<Allergen>, modifier: Modifier = Modifi
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -403,6 +406,7 @@ private fun DietLabelsCard(labels: List<DietLabel>, modifier: Modifier = Modifie
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -443,6 +447,7 @@ private fun IngredientsCard(ingredients: String, modifier: Modifier = Modifier) 
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -462,6 +467,7 @@ private fun NutritionCard(nutrition: NutritionInfo, modifier: Modifier = Modifie
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
@@ -644,6 +650,7 @@ private fun NoteCard(note: String?, onNoteChange: (String?) -> Unit, modifier: M
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {

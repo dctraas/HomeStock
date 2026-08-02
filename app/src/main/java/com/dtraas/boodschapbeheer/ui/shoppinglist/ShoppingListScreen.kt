@@ -1,5 +1,6 @@
 package com.dtraas.boodschapbeheer.ui.shoppinglist
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -481,6 +482,7 @@ private fun ShoppingListRow(
             .padding(horizontal = 16.dp, vertical = 3.dp)
             .onGloballyPositioned { rowHeightPx = it.size.height.toFloat() },
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = SoftCardShapeCompact,
     ) {
         Row(

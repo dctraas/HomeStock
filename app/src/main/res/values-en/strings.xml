@@ -118,6 +118,7 @@
     <string name="more_expiry_notifications_description">Get notified when a product is about to expire</string>
     <string name="more_settings_title">Settings</string>
     <string name="more_section_account">Account</string>
+    <string name="more_account_row_title">Profile</string>
     <string name="more_section_general">General</string>
     <string name="more_theme_title">Display</string>
     <string name="more_theme_option_system">System default</string>

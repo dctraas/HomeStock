@@ -1,5 +1,6 @@
 package com.dtraas.boodschapbeheer.ui.inventory
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -490,6 +491,7 @@ private fun InventoryRow(
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 3.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         shape = SoftCardShapeCompact,
     ) {
         Row(

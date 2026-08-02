@@ -118,6 +118,7 @@
     <string name="more_expiry_notifications_description">Erhalte eine Benachrichtigung, wenn ein Produkt bald abläuft</string>
     <string name="more_settings_title">Einstellungen</string>
     <string name="more_section_account">Konto</string>
+    <string name="more_account_row_title">Profil</string>
     <string name="more_section_general">Allgemein</string>
     <string name="more_theme_title">Anzeige</string>
     <string name="more_theme_option_system">Systemstandard</string>
