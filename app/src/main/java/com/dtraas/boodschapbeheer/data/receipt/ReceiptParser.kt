@@ -14,6 +14,13 @@ data class ReceiptLineItem(val name: String, val price: String?)
  * ones OCR mangled the price on) in favor of not pulling in noise — the confirm
  * screen exists specifically so a human checks its output before anything is
  * saved. This is a Beta feature (see MoreScreen).
+ *
+ * Weighed items (fruit, vegetables) commonly print across *two* lines — the
+ * product name with no price, then a separate "1,39 €/kg  €1,58" unit-price
+ * breakdown line that does end in a price. [parse] tracks the most recent
+ * name-only line as a pending name and, when a price line's own text looks
+ * like a unit-price breakdown rather than a product name, pairs that price
+ * with the pending name instead of the breakdown text.
  */
 object ReceiptParser {
 
@@ -23,7 +30,7 @@ object ReceiptParser {
         // Payment / terminal
         "statiegeld", "kassabon", "kassa", "kassier", "transactie", "pinnen", "pin ",
         "contant", "retour", "terminal", "creditcard", "maestro", "mastercard", "visa",
-        "chip", "kaartnummer", "kaart nr", "autorisatie", "referentie", "goedgekeurd",
+        "leesmethode", "kaartnummer", "kaart nr", "autorisatie", "referentie", "goedgekeurd",
         "akkoord", "wisselgeld", "gepast", "betaalwijze",
         // Loyalty / discounts
         "korting", "bonus", "bonuskaart", "spaarzegel", "spaarpunt", "voordeel", "airmiles",
@@ -47,12 +54,51 @@ object ReceiptParser {
 
     private val trailingPriceRegex = Regex("""(-?\d{1,4}[.,]\d{2})\s*$""")
 
-    fun parse(rawText: String): List<ReceiptLineItem> =
-        rawText.lines()
+    // A price line whose own text is a unit-price breakdown ("1,39 €/kg", "0,687 kg x 1,99")
+    // rather than the product itself — the real name is on the preceding line instead.
+    private val unitBreakdownRegex = Regex(
+        """(?i)(€\s*/\s*(kg|l|100\s*g)|/\s*(kg|l)\b|\bkiloprijs\b|\bstuksprijs\b|\bkg\s*[x×]\s*\d)""",
+    )
+
+    fun parse(rawText: String): List<ReceiptLineItem> {
+        val candidateLines = rawText.lines()
             .map { it.trim() }
             .filter { it.isNotEmpty() }
             .filterNot(::looksLikeNoise)
-            .mapNotNull(::toLineItem)
+
+        val items = mutableListOf<ReceiptLineItem>()
+        var pendingName: String? = null
+
+        for (line in candidateLines) {
+            val priceMatch = trailingPriceRegex.find(line)
+            if (priceMatch == null) {
+                // No price on this line — remember it in case the *next* line is a
+                // unit-price breakdown that belongs to it (see class doc).
+                cleanName(line)?.let { pendingName = it }
+                continue
+            }
+
+            val price = priceMatch.value.trim()
+            if (price.startsWith("-")) {
+                // A discount/statiegeld-terug row prints as a negative amount even once past
+                // the keyword filters above; it never pairs with a pending name.
+                pendingName = null
+                continue
+            }
+
+            val localName = cleanName(line.substring(0, priceMatch.range.first))
+            val name = when {
+                localName != null && !unitBreakdownRegex.containsMatchIn(localName) -> localName
+                pendingName != null -> pendingName
+                else -> localName
+            }
+            pendingName = null
+
+            if (name != null) items += ReceiptLineItem(name = name, price = price)
+        }
+
+        return items
+    }
 
     private fun looksLikeNoise(line: String): Boolean {
         val lower = line.lowercase()
@@ -63,20 +109,10 @@ object ReceiptParser {
             urlOrEmailRegex.containsMatchIn(lower)
     }
 
-    private fun toLineItem(line: String): ReceiptLineItem? {
-        // Real product lines print "name .... €X,XX" — requiring that trailing price is the
-        // single biggest filter against store/address/legal lines, which almost never end
-        // in one. This trades away a few genuine lines OCR mangled the price on, in favor of
-        // not pulling in noise (see the class doc).
-        val priceMatch = trailingPriceRegex.find(line) ?: return null
-        val name = line.substring(0, priceMatch.range.first).trim().trimEnd('-', '*', 'x', 'X', ' ').trim()
-
-        // A "name" that's only digits/symbols (a barcode, a quantity, a date) isn't a product.
-        if (name.length < 2 || name.none { it.isLetter() }) return null
-        // A discount/statiegeld-terug row prints as a negative amount even once past the
-        // keyword filters above (e.g. an unrecognized loyalty scheme's own wording).
-        if (priceMatch.value.trim().startsWith("-")) return null
-
-        return ReceiptLineItem(name = name, price = priceMatch.value.trim())
+    // A "name" that's only digits/symbols (a barcode, a quantity, a date) isn't a product.
+    private fun cleanName(raw: String): String? {
+        val trimmed = raw.trim().trimEnd('-', '*', 'x', 'X', ' ').trim()
+        if (trimmed.length < 2 || trimmed.none { it.isLetter() }) return null
+        return trimmed
     }
 }
