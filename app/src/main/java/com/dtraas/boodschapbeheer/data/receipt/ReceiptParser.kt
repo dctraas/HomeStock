@@ -22,6 +22,14 @@ data class ReceiptLineItem(val name: String, val price: String?)
  * look like a real product name (see [looksLikeRealName] — this is symbol-
  * tolerant on purpose, since OCR frequently mangles "€" and "/" on exactly
  * these lines), pairs that price with the pending name instead.
+ *
+ * Scoped to photos of a single-column, top-to-bottom printed receipt. A
+ * screenshot of a multi-column digital receipt (e.g. the AH app's own
+ * Aantal/Omschrijving/Prijs/Bedrag table) isn't reliably supported: OCR on a
+ * table like that often reads a whole column at a time rather than row by
+ * row, which this line-by-line approach can't reconstruct. [appChromeExactLines]
+ * only keeps that case from adding obviously-wrong app-UI text as a product;
+ * it doesn't make table parsing itself correct.
  */
 object ReceiptParser {
 
@@ -45,6 +53,16 @@ object ReceiptParser {
         // that OCR can misread as a decimal price (colon read as comma), so the day name
         // is the more reliable signal to filter on.
         "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag",
+    )
+
+    // Lines that are *exactly* one of these (not just containing them) are app chrome, not
+    // receipt content — a screenshot of a digital bonnetje (e.g. the AH app) carries its own
+    // bottom nav bar and table headers into the OCR text alongside the actual receipt. Exact
+    // match, not substring, so a real product name is never accidentally caught by a common
+    // short word like "meer".
+    private val appChromeExactLines = setOf(
+        "home", "bonus", "recepten", "mijn lijst", "meer",
+        "aantal", "omschrijving", "prijs", "bedrag", "uw voordeel",
     )
 
     // Product lines end in a price; a bare percentage (VAT-rate rows like "9% BTW") does
@@ -115,7 +133,8 @@ object ReceiptParser {
 
     private fun looksLikeNoise(line: String): Boolean {
         val lower = line.lowercase()
-        return noiseKeywords.any { keyword -> lower.contains(keyword) } ||
+        return lower in appChromeExactLines ||
+            noiseKeywords.any { keyword -> lower.contains(keyword) } ||
             percentOnlyRegex.containsMatchIn(line) ||
             postalCodeRegex.containsMatchIn(line) ||
             phoneNumberRegex.containsMatchIn(line) ||
