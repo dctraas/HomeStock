@@ -4,32 +4,37 @@ package com.dtraas.boodschapbeheer.data.receipt
 data class ReceiptLineItem(val name: String, val price: String?)
 
 /**
- * Best-effort line-by-line parser for Dutch supermarket receipts, turning raw
- * OCR text into candidate product names. There's no structured format to rely
- * on — every chain prints differently — so this leans on one strong structural
- * signal (product lines end in a price; store/legal/payment boilerplate almost
- * never does) plus a keyword denylist for the boilerplate that *does* happen to
- * end in something price-shaped (VAT breakdown rows, card terminal totals).
- * It's deliberately conservative and will miss some real product lines (e.g.
- * ones OCR mangled the price on) in favor of not pulling in noise — the confirm
- * screen exists specifically so a human checks its output before anything is
- * saved. This is a Beta feature (see MoreScreen).
+ * Best-effort parser for Dutch supermarket receipts, turning OCR'd rows into
+ * candidate product names. [parse] takes already row-reconstructed text — see
+ * [ReceiptRowReconstructor], which turns ML Kit's raw OCR lines (grouped by
+ * their position on the photo, not the block/line order ML Kit happened to
+ * read them in) into one string per visual row before it ever reaches this
+ * parser. That matters because a receipt's item-name and price columns can
+ * be read as two separate blocks — all names, then all prices — rather than
+ * row by row; reconstructing rows by position fixes that regardless of how
+ * wide the gap between columns is.
  *
- * Weighed items (fruit, vegetables) commonly print across *two* lines — the
+ * Beyond that, there's no structured format to rely on — every chain prints
+ * differently — so this leans on one strong structural signal (product rows
+ * end in a price; store/legal/payment boilerplate almost never does) plus a
+ * keyword denylist for the boilerplate that *does* happen to end in something
+ * price-shaped (VAT breakdown rows, card terminal totals). It's deliberately
+ * conservative and will miss some real product rows (e.g. ones OCR mangled
+ * the price on) in favor of not pulling in noise — the confirm screen exists
+ * specifically so a human checks its output before anything is saved. This
+ * is a Beta feature (see MoreScreen).
+ *
+ * Weighed items (fruit, vegetables) commonly print across *two* rows — the
  * product name with no price, then a separate "1,39 €/kg  €1,58" unit-price
- * breakdown line that does end in a price. [parse] tracks the most recent
- * name-only line as a pending name and, when a price line's own text doesn't
+ * breakdown row that does end in a price. [parse] tracks the most recent
+ * name-only row as a pending name and, when a price row's own text doesn't
  * look like a real product name (see [looksLikeRealName] — this is symbol-
  * tolerant on purpose, since OCR frequently mangles "€" and "/" on exactly
- * these lines), pairs that price with the pending name instead.
+ * these rows), pairs that price with the pending name instead.
  *
- * Scoped to photos of a single-column, top-to-bottom printed receipt. A
- * screenshot of a multi-column digital receipt (e.g. the AH app's own
- * Aantal/Omschrijving/Prijs/Bedrag table) isn't reliably supported: OCR on a
- * table like that often reads a whole column at a time rather than row by
- * row, which this line-by-line approach can't reconstruct. [appChromeExactLines]
- * only keeps that case from adding obviously-wrong app-UI text as a product;
- * it doesn't make table parsing itself correct.
+ * [appChromeExactLines] filters out on-screen navigation/table-header text
+ * that a screenshot of a digital receipt (e.g. the AH app) carries into the
+ * OCR alongside the actual receipt content.
  */
 object ReceiptParser {
 
@@ -91,8 +96,8 @@ object ReceiptParser {
     // not a product name — kept as a belt-and-braces on top of [wordRegex].
     private val unitBreakdownRegex = Regex("""(?i)\b(kiloprijs|stuksprijs)\b""")
 
-    fun parse(rawText: String): List<ReceiptLineItem> {
-        val candidateLines = rawText.lines()
+    fun parse(rows: List<String>): List<ReceiptLineItem> {
+        val candidateLines = rows
             .map { it.trim() }
             .filter { it.isNotEmpty() }
             .filterNot(::looksLikeNoise)

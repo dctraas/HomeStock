@@ -72,6 +72,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
 import com.dtraas.boodschapbeheer.R
+import com.dtraas.boodschapbeheer.data.receipt.OcrLine
 import com.dtraas.boodschapbeheer.ui.theme.SoftCardShapeCompact
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
@@ -150,7 +151,7 @@ fun ReceiptScanScreen(onBack: () -> Unit) {
 @Composable
 private fun ReceiptCamera(
     padding: PaddingValues,
-    onTextRecognized: (String) -> Unit,
+    onTextRecognized: (List<OcrLine>) -> Unit,
     onCaptureFailed: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -271,7 +272,18 @@ private fun ReceiptCamera(
                                 .addOnSuccessListener(mainExecutor) { visionText ->
                                     image.close()
                                     isCapturing = false
-                                    onTextRecognized(visionText.text)
+                                    val ocrLines = visionText.textBlocks.flatMap { block ->
+                                        block.lines.mapNotNull { line ->
+                                            val box = line.boundingBox ?: return@mapNotNull null
+                                            OcrLine(
+                                                text = line.text,
+                                                top = box.top.toFloat(),
+                                                bottom = box.bottom.toFloat(),
+                                                left = box.left.toFloat(),
+                                            )
+                                        }
+                                    }
+                                    onTextRecognized(ocrLines)
                                 }
                                 .addOnFailureListener(mainExecutor) {
                                     image.close()

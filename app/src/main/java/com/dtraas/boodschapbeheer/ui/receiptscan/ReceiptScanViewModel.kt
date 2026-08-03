@@ -3,7 +3,9 @@ package com.dtraas.boodschapbeheer.ui.receiptscan
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.boodschapbeheer.data.model.Category
+import com.dtraas.boodschapbeheer.data.receipt.OcrLine
 import com.dtraas.boodschapbeheer.data.receipt.ReceiptParser
+import com.dtraas.boodschapbeheer.data.receipt.ReceiptRowReconstructor
 import com.dtraas.boodschapbeheer.data.remote.CategoryMapper
 import com.dtraas.boodschapbeheer.data.repository.InventoryRepository
 import com.dtraas.boodschapbeheer.data.repository.ProductRepository
@@ -40,9 +42,10 @@ class ReceiptScanViewModel(
         _step.value = ReceiptScanStep.Failed
     }
 
-    fun onTextRecognized(rawText: String) {
+    fun onTextRecognized(ocrLines: List<OcrLine>) {
         _step.value = ReceiptScanStep.Processing
-        val items = ReceiptParser.parse(rawText).mapIndexed { index, line ->
+        val rows = ReceiptRowReconstructor.reconstructRows(ocrLines)
+        val items = ReceiptParser.parse(rows).mapIndexed { index, line ->
             ReceiptConfirmItem(
                 id = index.toString(),
                 name = line.name,
