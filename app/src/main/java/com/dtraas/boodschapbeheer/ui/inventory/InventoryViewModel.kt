@@ -7,6 +7,7 @@ import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.dao.InventoryItemWithProduct
 import com.dtraas.boodschapbeheer.data.model.Category
 import com.dtraas.boodschapbeheer.data.repository.ActivityLogRepository
+import com.dtraas.boodschapbeheer.data.repository.HouseholdRepository
 import com.dtraas.boodschapbeheer.data.repository.InventoryRepository
 import com.dtraas.boodschapbeheer.data.repository.ShoppingListRepository
 import kotlinx.coroutines.channels.Channel
@@ -38,12 +39,16 @@ data class InventoryUiState(
     // so sort options where that global order is the point (EXPIRATION) render from this
     // instead of groupedInventory. See InventoryScreen.
     val flatInventory: List<InventoryItemWithProduct> = emptyList(),
+    // Shown as the top-bar title in place of the generic "Voorraad" label; null for
+    // households created before this field existed, or while it's still loading.
+    val householdName: String? = null,
 )
 
 class InventoryViewModel(
     private val inventoryRepository: InventoryRepository,
     private val shoppingListRepository: ShoppingListRepository,
     private val activityLogRepository: ActivityLogRepository,
+    private val householdRepository: HouseholdRepository,
 ) : ViewModel() {
 
     private val searchQuery = MutableStateFlow("")
@@ -55,7 +60,8 @@ class InventoryViewModel(
         searchQuery,
         selectedCategory,
         sortOption,
-    ) { items, query, category, sort ->
+        householdRepository.observeHouseholdName(),
+    ) { items, query, category, sort, householdName ->
         val filtered = items.filter { item ->
             val matchesCategory = category == null || Category.fromStorageKey(item.category) == category
             val matchesQuery = query.isBlank() ||
@@ -78,6 +84,7 @@ class InventoryViewModel(
                 .groupBy { Category.fromStorageKey(it.category) }
                 .toSortedMap(compareBy { it.sortOrder }),
             flatInventory = sorted,
+            householdName = householdName,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InventoryUiState())
 

@@ -114,6 +114,7 @@ fun InventoryScreen(
                     inventoryRepository = application.container.inventoryRepository,
                     shoppingListRepository = application.container.shoppingListRepository,
                     activityLogRepository = application.container.activityLogRepository,
+                    householdRepository = application.container.householdRepository,
                 )
             }
         },
@@ -214,7 +215,13 @@ fun InventoryScreen(
                 )
             } else {
                 CenterAlignedTopAppBar(
-                    title = { Text(stringResource(R.string.inventory_title)) },
+                    title = {
+                        Text(
+                            text = uiState.householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.inventory_title),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
                     navigationIcon = {
                         // R.mipmap.ic_launcher is an <adaptive-icon> XML (background + foreground
                         // layers); painterResource only supports plain VectorDrawable/raster assets

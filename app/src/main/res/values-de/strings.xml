@@ -99,6 +99,13 @@
     <string name="household_create_back_warning_title">Code noch nicht gespeichert?</string>
     <string name="household_create_back_warning_text">Stelle sicher, dass du den Haushalts-Code kopiert hast, bevor du zurückgehst — danach kannst du ihn nicht mehr finden.</string>
     <string name="household_create_back_warning_confirm">Trotzdem zurück</string>
+    <string name="household_profile_title">Erzähl uns, wer du bist</string>
+    <string name="household_profile_subtitle">Dein Name wird verwendet, um Änderungen in deinem Haushalt dir zuzuordnen. Ein Profilfoto ist optional.</string>
+    <string name="household_profile_add_photo">Profilfoto hinzufügen</string>
+    <string name="household_name_title">Gib deinem Haushalt einen Namen</string>
+    <string name="household_name_label">Name des Haushalts</string>
+    <string name="household_name_placeholder">Z. B. Familie Jansen</string>
+    <string name="household_name_char_count_format">%1$d/%2$d Zeichen</string>
 
     <!-- Mehr -->
     <string name="more_household_title">Haushalt</string>

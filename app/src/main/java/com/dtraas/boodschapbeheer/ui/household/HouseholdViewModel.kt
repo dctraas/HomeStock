@@ -2,6 +2,7 @@ package com.dtraas.boodschapbeheer.ui.household
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dtraas.boodschapbeheer.data.repository.DeviceProfile
 import com.dtraas.boodschapbeheer.data.repository.HouseholdMembersRepository
 import com.dtraas.boodschapbeheer.data.repository.HouseholdNotFoundException
 import com.dtraas.boodschapbeheer.data.repository.HouseholdRepository
@@ -11,7 +12,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class HouseholdMode { CHOOSE, CREATE, JOIN }
+enum class HouseholdMode { PROFILE, CHOOSE, CREATE, JOIN }
 
 data class HouseholdUiState(
     val mode: HouseholdMode = HouseholdMode.CHOOSE,
@@ -24,21 +25,58 @@ data class HouseholdUiState(
     val householdFull: Boolean = false,
     val createdCode: String? = null,
     val joinCodeInput: String = "",
+    val householdNameInput: String = "",
+    /** True once "Doorgaan" is tapped on the household-name step — switches CREATE from the name form to loading/result. */
+    val hasSubmittedHouseholdName: Boolean = false,
 )
 
 class HouseholdViewModel(
     private val householdRepository: HouseholdRepository,
     private val householdSession: HouseholdSession,
     private val householdMembersRepository: HouseholdMembersRepository,
+    deviceProfile: DeviceProfile,
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HouseholdUiState())
+    // The profile step (name + optional photo) only makes sense the very first time someone
+    // opens the app — a device that already has a name (e.g. after leaving a household to
+    // join another one) skips straight to CHOOSE instead of asking again.
+    private val _uiState = MutableStateFlow(
+        HouseholdUiState(mode = if (deviceProfile.displayName.value == null) HouseholdMode.PROFILE else HouseholdMode.CHOOSE),
+    )
     val uiState: StateFlow<HouseholdUiState> = _uiState
 
+    fun confirmProfile() {
+        _uiState.update { it.copy(mode = HouseholdMode.CHOOSE) }
+    }
+
     fun selectCreate() {
-        _uiState.update { it.copy(mode = HouseholdMode.CREATE, isLoading = true, errorMessage = null, hasGenericError = false) }
+        _uiState.update {
+            it.copy(
+                mode = HouseholdMode.CREATE,
+                errorMessage = null,
+                hasGenericError = false,
+                householdNameInput = "",
+                hasSubmittedHouseholdName = false,
+                createdCode = null,
+            )
+        }
+    }
+
+    fun onHouseholdNameChange(value: String) {
+        if (value.length <= HouseholdRepository.HOUSEHOLD_NAME_MAX_LENGTH) {
+            _uiState.update { it.copy(householdNameInput = value) }
+        }
+    }
+
+    /** Called once a household name has been entered — actually creates the household. */
+    fun submitHouseholdName() {
+        val name = _uiState.value.householdNameInput.trim()
+        if (name.isEmpty()) return
+        _uiState.update {
+            it.copy(isLoading = true, hasSubmittedHouseholdName = true, errorMessage = null, hasGenericError = false)
+        }
         viewModelScope.launch {
-            householdRepository.createHousehold()
+            householdRepository.createHousehold(name)
                 .onSuccess { code -> _uiState.update { it.copy(isLoading = false, createdCode = code) } }
                 .onFailure { error -> _uiState.update { it.copy(isLoading = false).withError(error) } }
         }
@@ -49,7 +87,7 @@ class HouseholdViewModel(
     }
 
     fun back() {
-        _uiState.update { HouseholdUiState() }
+        _uiState.update { HouseholdUiState(mode = HouseholdMode.CHOOSE) }
     }
 
     fun onJoinCodeChange(value: String) {

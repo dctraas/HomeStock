@@ -99,6 +99,13 @@
     <string name="household_create_back_warning_title">Code not saved yet?</string>
     <string name="household_create_back_warning_text">Make sure you\'ve copied the household code before going back — you won\'t be able to find it again afterwards.</string>
     <string name="household_create_back_warning_confirm">Go back anyway</string>
+    <string name="household_profile_title">Tell us who you are</string>
+    <string name="household_profile_subtitle">Your name is used to credit changes you make in your household. A profile photo is optional.</string>
+    <string name="household_profile_add_photo">Add profile photo</string>
+    <string name="household_name_title">Give your household a name</string>
+    <string name="household_name_label">Household name</string>
+    <string name="household_name_placeholder">E.g. The Jansen family</string>
+    <string name="household_name_char_count_format">%1$d/%2$d characters</string>
 
     <!-- More -->
     <string name="more_household_title">Household</string>

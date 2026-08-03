@@ -66,7 +66,7 @@ class AppContainer(context: Context) {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     val householdRepository: HouseholdRepository by lazy {
-        HouseholdRepository(appContext, firestore, auth)
+        HouseholdRepository(appContext, firestore, auth, householdSession)
     }
 
     val billingRepository: BillingRepository by lazy {

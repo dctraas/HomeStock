@@ -100,6 +100,13 @@
     <string name="household_create_back_warning_title">Code nog niet opgeslagen?</string>
     <string name="household_create_back_warning_text">Zorg dat je de huishouden-code hebt gekopieerd voordat je teruggaat — je kunt hem hierna niet meer terugvinden.</string>
     <string name="household_create_back_warning_confirm">Toch teruggaan</string>
+    <string name="household_profile_title">Vertel ons wie je bent</string>
+    <string name="household_profile_subtitle">Je naam wordt gebruikt om wijzigingen in je huishouden aan jou toe te schrijven. Een profielfoto is optioneel.</string>
+    <string name="household_profile_add_photo">Profielfoto toevoegen</string>
+    <string name="household_name_title">Geef je huishouden een naam</string>
+    <string name="household_name_label">Naam huishouden</string>
+    <string name="household_name_placeholder">Bijv. Familie Jansen</string>
+    <string name="household_name_char_count_format">%1$d/%2$d tekens</string>
 
     <!-- Meer -->
     <string name="more_household_title">Huishouden</string>

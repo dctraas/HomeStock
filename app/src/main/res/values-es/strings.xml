@@ -99,6 +99,13 @@
     <string name="household_create_back_warning_title">¿Código aún no guardado?</string>
     <string name="household_create_back_warning_text">Asegúrate de haber copiado el código del hogar antes de volver — después no podrás encontrarlo de nuevo.</string>
     <string name="household_create_back_warning_confirm">Volver de todos modos</string>
+    <string name="household_profile_title">Cuéntanos quién eres</string>
+    <string name="household_profile_subtitle">Tu nombre se usa para atribuirte los cambios en tu hogar. La foto de perfil es opcional.</string>
+    <string name="household_profile_add_photo">Añadir foto de perfil</string>
+    <string name="household_name_title">Ponle un nombre a tu hogar</string>
+    <string name="household_name_label">Nombre del hogar</string>
+    <string name="household_name_placeholder">Por ejemplo, Familia García</string>
+    <string name="household_name_char_count_format">%1$d/%2$d caracteres</string>
 
     <!-- Más -->
     <string name="more_household_title">Hogar</string>

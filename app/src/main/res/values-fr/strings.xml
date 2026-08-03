@@ -99,6 +99,13 @@
     <string name="household_create_back_warning_title">Code pas encore enregistré ?</string>
     <string name="household_create_back_warning_text">Assurez-vous d\'avoir copié le code du foyer avant de revenir en arrière — vous ne pourrez plus le retrouver ensuite.</string>
     <string name="household_create_back_warning_confirm">Revenir quand même</string>
+    <string name="household_profile_title">Dites-nous qui vous êtes</string>
+    <string name="household_profile_subtitle">Votre nom permet d\'attribuer les modifications apportées à votre foyer. La photo de profil est facultative.</string>
+    <string name="household_profile_add_photo">Ajouter une photo de profil</string>
+    <string name="household_name_title">Donnez un nom à votre foyer</string>
+    <string name="household_name_label">Nom du foyer</string>
+    <string name="household_name_placeholder">Ex. Famille Dupont</string>
+    <string name="household_name_char_count_format">%1$d/%2$d caractères</string>
 
     <!-- Plus -->
     <string name="more_household_title">Foyer</string>

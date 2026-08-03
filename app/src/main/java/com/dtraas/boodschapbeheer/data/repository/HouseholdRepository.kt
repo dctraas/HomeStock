@@ -2,9 +2,15 @@ package com.dtraas.boodschapbeheer.data.repository
 
 import android.content.Context
 import com.dtraas.boodschapbeheer.R
+import com.dtraas.boodschapbeheer.data.remote.observeSnapshot
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 
 /** Something went wrong that isn't a plain network/Firestore exception. */
@@ -19,6 +25,7 @@ class HouseholdRepository(
     private val context: Context,
     private val firestore: FirebaseFirestore,
     private val auth: FirebaseAuth,
+    private val householdSession: HouseholdSession,
 ) {
     private suspend fun ensureSignedIn() {
         if (auth.currentUser == null) {
@@ -26,17 +33,18 @@ class HouseholdRepository(
         }
     }
 
-    /** Generates a fresh, unused household code and creates its document. */
-    suspend fun createHousehold(): Result<String> {
+    /** Generates a fresh, unused household code and creates its document with [name] as its title. */
+    suspend fun createHousehold(name: String): Result<String> {
         return try {
             ensureSignedIn()
+            val trimmedName = name.trim().take(HOUSEHOLD_NAME_MAX_LENGTH)
             var createdCode: String? = null
             repeat(MAX_CODE_ATTEMPTS) {
                 if (createdCode != null) return@repeat
                 val code = generateCode()
                 val doc = firestore.collection(HOUSEHOLDS_COLLECTION).document(code)
                 if (!doc.get().await().exists()) {
-                    doc.set(mapOf("createdAt" to System.currentTimeMillis())).await()
+                    doc.set(mapOf("createdAt" to System.currentTimeMillis(), FIELD_NAME to trimmedName)).await()
                     createdCode = code
                 }
             }
@@ -46,6 +54,22 @@ class HouseholdRepository(
             Result.failure(e)
         }
     }
+
+    /**
+     * The current household's name, live — shown as the Voorraad screen's title instead of
+     * a generic label. Households created before this field existed have no [FIELD_NAME], so
+     * this can resolve to null; callers fall back to a generic title in that case.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeHouseholdName(): Flow<String?> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(null)
+            } else {
+                firestore.collection(HOUSEHOLDS_COLLECTION).document(householdId).observeSnapshot()
+                    .map { it.getString(FIELD_NAME) }
+            }
+        }
 
     /** Joins an existing household by its code, failing if no such household exists. */
     suspend fun joinHousehold(code: String): Result<String> {
@@ -111,6 +135,11 @@ class HouseholdRepository(
 
         /** Public so the join-household UI can validate input length before even trying. */
         const val CODE_LENGTH = 6
+
+        // Kept short enough to stay readable as the Voorraad screen's title.
+        const val HOUSEHOLD_NAME_MAX_LENGTH = 24
+
+        private const val FIELD_NAME = "name"
 
         // The code is the household's only access control (see firestore.rules), so it's
         // generated with a CSPRNG rather than Kotlin's non-cryptographic default Random.
