@@ -18,9 +18,10 @@ data class ReceiptLineItem(val name: String, val price: String?)
  * Weighed items (fruit, vegetables) commonly print across *two* lines — the
  * product name with no price, then a separate "1,39 €/kg  €1,58" unit-price
  * breakdown line that does end in a price. [parse] tracks the most recent
- * name-only line as a pending name and, when a price line's own text looks
- * like a unit-price breakdown rather than a product name, pairs that price
- * with the pending name instead of the breakdown text.
+ * name-only line as a pending name and, when a price line's own text doesn't
+ * look like a real product name (see [looksLikeRealName] — this is symbol-
+ * tolerant on purpose, since OCR frequently mangles "€" and "/" on exactly
+ * these lines), pairs that price with the pending name instead.
  */
 object ReceiptParser {
 
@@ -40,6 +41,10 @@ object ReceiptParser {
         "klantenservice", "handelsregister", "btw-nummer", "www.", "@", "tel:", "telefoon",
         // Date/time labels (the values themselves are caught by the numeric-line filter below)
         "datum", "tijd",
+        // Opening-hours day names — these lines carry a clock time like "8:00 tot 20:00"
+        // that OCR can misread as a decimal price (colon read as comma), so the day name
+        // is the more reliable signal to filter on.
+        "maandag", "dinsdag", "woensdag", "donderdag", "vrijdag", "zaterdag", "zondag",
     )
 
     // Product lines end in a price; a bare percentage (VAT-rate rows like "9% BTW") does
@@ -51,14 +56,22 @@ object ReceiptParser {
     private val postalCodeRegex = Regex("""\b\d{4}\s?[A-Z]{2}\b""")
     private val phoneNumberRegex = Regex("""\b(0|\+31)[\s-]?\d{2,3}[\s-]?\d{6,7}\b""")
     private val urlOrEmailRegex = Regex("""[\w.-]+@[\w.-]+|https?://|www\.[\w.-]+""")
+    // A clock time ("8:00", "18:05") — receipts print these in timestamps and opening
+    // hours, never in a product name, and it survives even when a price elsewhere on the
+    // same line got its own colon misread as a comma.
+    private val timeOfDayRegex = Regex("""\b\d{1,2}:\d{2}\b""")
 
     private val trailingPriceRegex = Regex("""(-?\d{1,4}[.,]\d{2})\s*$""")
 
-    // A price line whose own text is a unit-price breakdown ("1,39 €/kg", "0,687 kg x 1,99")
-    // rather than the product itself — the real name is on the preceding line instead.
-    private val unitBreakdownRegex = Regex(
-        """(?i)(€\s*/\s*(kg|l|100\s*g)|/\s*(kg|l)\b|\bkiloprijs\b|\bstuksprijs\b|\bkg\s*[x×]\s*\d)""",
-    )
+    // A run of 3+ letters is what separates an actual word ("Bananen", "kiloprijs") from
+    // number/unit noise ("1,39", "kg", "x"): unit abbreviations are all 1-2 letters. Used
+    // instead of matching specific symbols like "€/kg" directly, since OCR is unreliable
+    // about preserving exactly those symbols on the line that most needs them recognized.
+    private val wordRegex = Regex("""\p{L}{3,}""")
+
+    // Explicit phrases that read as a real word (3+ letters) but are still pricing text,
+    // not a product name — kept as a belt-and-braces on top of [wordRegex].
+    private val unitBreakdownRegex = Regex("""(?i)\b(kiloprijs|stuksprijs)\b""")
 
     fun parse(rawText: String): List<ReceiptLineItem> {
         val candidateLines = rawText.lines()
@@ -88,9 +101,9 @@ object ReceiptParser {
 
             val localName = cleanName(line.substring(0, priceMatch.range.first))
             val name = when {
-                localName != null && !unitBreakdownRegex.containsMatchIn(localName) -> localName
+                localName != null && looksLikeRealName(localName) -> localName
                 pendingName != null -> pendingName
-                else -> localName
+                else -> null
             }
             pendingName = null
 
@@ -106,7 +119,8 @@ object ReceiptParser {
             percentOnlyRegex.containsMatchIn(line) ||
             postalCodeRegex.containsMatchIn(line) ||
             phoneNumberRegex.containsMatchIn(line) ||
-            urlOrEmailRegex.containsMatchIn(lower)
+            urlOrEmailRegex.containsMatchIn(lower) ||
+            timeOfDayRegex.containsMatchIn(line)
     }
 
     // A "name" that's only digits/symbols (a barcode, a quantity, a date) isn't a product.
@@ -115,4 +129,7 @@ object ReceiptParser {
         if (trimmed.length < 2 || trimmed.none { it.isLetter() }) return null
         return trimmed
     }
+
+    private fun looksLikeRealName(name: String) =
+        wordRegex.containsMatchIn(name) && !unitBreakdownRegex.containsMatchIn(name)
 }
