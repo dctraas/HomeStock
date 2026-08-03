@@ -16,10 +16,14 @@ import com.android.billingclient.api.QueryPurchasesParams
 import com.android.billingclient.api.acknowledgePurchase
 import com.android.billingclient.api.queryProductDetails
 import com.android.billingclient.api.queryPurchasesAsync
+import com.dtraas.boodschapbeheer.BuildConfig
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
@@ -30,13 +34,26 @@ import kotlinx.coroutines.launch
  * Play's purchase records rather than trusted from a local cache alone. A household's
  * shared premium status (any member unlocks it for everyone) is handled one layer up, in
  * [HouseholdMembersRepository].
+ *
+ * [isPremium] also honors [debugPremiumOverride] in debug builds only — a locally
+ * persisted toggle for testing the gated screens and the household member cap without
+ * needing a real Play Console subscription set up. It's a no-op ([setDebugPremiumOverride]
+ * returns immediately) and always reads as false in a release build, so it can't leak into
+ * a real install.
  */
 class BillingRepository(context: Context) {
     private val appContext = context.applicationContext
     private val repositoryScope = CoroutineScope(Dispatchers.IO)
 
-    private val _isPremium = MutableStateFlow(false)
-    val isPremium: StateFlow<Boolean> = _isPremium
+    private val _isPremiumFromPlay = MutableStateFlow(false)
+
+    private val debugPrefs = appContext.getSharedPreferences(DEBUG_PREFS_NAME, Context.MODE_PRIVATE)
+    private val _debugPremiumOverride = MutableStateFlow(debugPrefs.getBoolean(KEY_DEBUG_PREMIUM_OVERRIDE, false))
+    val debugPremiumOverride: StateFlow<Boolean> = _debugPremiumOverride
+
+    val isPremium: StateFlow<Boolean> = combine(_isPremiumFromPlay, _debugPremiumOverride) { fromPlay, debugOverride ->
+        fromPlay || (BuildConfig.DEBUG && debugOverride)
+    }.stateIn(repositoryScope, SharingStarted.Eagerly, false)
 
     private val _productDetails = MutableStateFlow<ProductDetails?>(null)
     val productDetails: StateFlow<ProductDetails?> = _productDetails
@@ -101,7 +118,7 @@ class BillingRepository(context: Context) {
     }
 
     private suspend fun handlePurchases(purchases: List<Purchase>) {
-        _isPremium.value = purchases.any { purchase ->
+        _isPremiumFromPlay.value = purchases.any { purchase ->
             purchase.products.contains(PREMIUM_YEARLY_PRODUCT_ID) &&
                 purchase.purchaseState == Purchase.PurchaseState.PURCHASED
         }
@@ -132,8 +149,18 @@ class BillingRepository(context: Context) {
         client.launchBillingFlow(activity, flowParams)
     }
 
+    /** Debug builds only — see the class doc. Silently ignored in release. */
+    fun setDebugPremiumOverride(enabled: Boolean) {
+        if (!BuildConfig.DEBUG) return
+        debugPrefs.edit().putBoolean(KEY_DEBUG_PREMIUM_OVERRIDE, enabled).apply()
+        _debugPremiumOverride.value = enabled
+    }
+
     companion object {
         // Must be created as a subscription product with this exact id in the Play Console.
         const val PREMIUM_YEARLY_PRODUCT_ID = "premium_yearly"
+
+        private const val DEBUG_PREFS_NAME = "billing_debug_prefs"
+        private const val KEY_DEBUG_PREMIUM_OVERRIDE = "debug_premium_override"
     }
 }

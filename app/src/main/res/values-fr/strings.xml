@@ -156,6 +156,9 @@
     <string name="more_section_beta">Bêta</string>
     <string name="more_beta_recipes">Recettes</string>
     <string name="more_beta_receipt_scan">Scanner un ticket</string>
+    <string name="more_section_debug">Débogage</string>
+    <string name="more_debug_premium_title">Simuler Premium</string>
+    <string name="more_debug_premium_subtitle">Uniquement dans cette version de test — n\'affecte pas un véritable abonnement.</string>
 
     <!-- Stock -->
     <string name="inventory_title">Stock</string>

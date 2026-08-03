@@ -121,6 +121,8 @@ fun MoreScreen(
     val householdRepository = application.container.householdRepository
     val householdMembersRepository = application.container.householdMembersRepository
     val isPremium by householdMembersRepository.observeHouseholdIsPremium().collectAsState(initial = false)
+    val billingRepository = application.container.billingRepository
+    val debugPremiumOverride by billingRepository.debugPremiumOverride.collectAsState()
     val storeRepository = application.container.storeRepository
     val stores by storeRepository.observeStores().collectAsState(initial = emptyList())
     val currentLanguage = AppLanguage.entries.find { it.tag == LocalConfiguration.current.locales[0].language } ?: AppLanguage.NL
@@ -259,6 +261,50 @@ fun MoreScreen(
                 subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                 onClick = { if (isPremium) onNavigateToReceiptScan() else onNavigateToPremium() },
             )
+
+            if (BuildConfig.DEBUG) {
+                SectionHeader(stringResource(R.string.more_section_debug))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                    shape = SoftCardShape,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Surface(
+                            shape = SoftBadgeShape,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(44.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                Icon(
+                                    imageVector = Icons.Filled.WorkspacePremium,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                )
+                            }
+                        }
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(horizontal = 12.dp),
+                        ) {
+                            Text(stringResource(R.string.more_debug_premium_title), style = MaterialTheme.typography.titleSmall)
+                            Text(
+                                text = stringResource(R.string.more_debug_premium_subtitle),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(
+                            checked = debugPremiumOverride,
+                            onCheckedChange = billingRepository::setDebugPremiumOverride,
+                        )
+                    }
+                }
+            }
 
             Text(
                 text = stringResource(R.string.more_about_version_format, BuildConfig.VERSION_NAME),

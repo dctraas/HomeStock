@@ -156,6 +156,9 @@
     <string name="more_section_beta">Beta</string>
     <string name="more_beta_recipes">Recipes</string>
     <string name="more_beta_receipt_scan">Scan receipt</string>
+    <string name="more_section_debug">Debug</string>
+    <string name="more_debug_premium_title">Simulate Premium</string>
+    <string name="more_debug_premium_subtitle">Test build only — has no effect on a real subscription.</string>
 
     <!-- Inventory -->
     <string name="inventory_title">Inventory</string>
