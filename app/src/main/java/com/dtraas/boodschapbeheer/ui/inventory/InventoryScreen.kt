@@ -334,6 +334,12 @@ fun InventoryScreen(
                 }
             }
 
+            // Grouping by category loses the order between categories (each still shows in
+            // category order, not by whichever item within it sorts first) — for Houdbaarheid,
+            // where seeing what's soonest across the whole voorraad is the point, render one
+            // flat list instead of grouping by category at all.
+            val isFlatSort = uiState.sortOption == InventorySortOption.EXPIRATION
+
             if (uiState.groupedInventory.isEmpty()) {
                 EmptyInventory(
                     isFiltered = uiState.searchQuery.isNotBlank() || uiState.selectedCategory != null,
@@ -344,11 +350,8 @@ fun InventoryScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(vertical = 8.dp),
                 ) {
-                    uiState.groupedInventory.forEach { (category, itemsInCategory) ->
-                        stickyHeader {
-                            CategoryHeader(category, itemCount = itemsInCategory.size)
-                        }
-                        items(itemsInCategory, key = { it.barcode }) { item ->
+                    if (isFlatSort) {
+                        items(uiState.flatInventory, key = { it.barcode }) { item ->
                             InventoryRow(
                                 item = item,
                                 selected = item.barcode in selectedBarcodes,
@@ -364,6 +367,28 @@ fun InventoryScreen(
                                 modifier = Modifier.animateItem(),
                             )
                         }
+                    } else {
+                        uiState.groupedInventory.forEach { (category, itemsInCategory) ->
+                            stickyHeader {
+                                CategoryHeader(category, itemCount = itemsInCategory.size)
+                            }
+                            items(itemsInCategory, key = { it.barcode }) { item ->
+                                InventoryRow(
+                                    item = item,
+                                    selected = item.barcode in selectedBarcodes,
+                                    selectionMode = selectionMode,
+                                    onClick = {
+                                        if (selectionMode) toggleSelected(item.barcode) else onProductClick(item.barcode)
+                                    },
+                                    onLongClick = { toggleSelected(item.barcode) },
+                                    onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
+                                    onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
+                                    onDelete = { deleteWithUndo(item) },
+                                    onAddToShoppingList = { addToShoppingListWithFeedback(item) },
+                                    modifier = Modifier.animateItem(),
+                                )
+                            }
+                        }
                     }
                 }
             } else {
@@ -374,11 +399,8 @@ fun InventoryScreen(
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    uiState.groupedInventory.forEach { (category, itemsInCategory) ->
-                        item(span = { GridItemSpan(maxLineSpan) }) {
-                            CategoryHeader(category, itemCount = itemsInCategory.size)
-                        }
-                        items(itemsInCategory, key = { it.barcode }) { item ->
+                    if (isFlatSort) {
+                        items(uiState.flatInventory, key = { it.barcode }) { item ->
                             InventoryGridTile(
                                 item = item,
                                 selected = item.barcode in selectedBarcodes,
@@ -391,6 +413,26 @@ fun InventoryScreen(
                                 onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
                                 onAddToShoppingList = { addToShoppingListWithFeedback(item) },
                             )
+                        }
+                    } else {
+                        uiState.groupedInventory.forEach { (category, itemsInCategory) ->
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                CategoryHeader(category, itemCount = itemsInCategory.size)
+                            }
+                            items(itemsInCategory, key = { it.barcode }) { item ->
+                                InventoryGridTile(
+                                    item = item,
+                                    selected = item.barcode in selectedBarcodes,
+                                    selectionMode = selectionMode,
+                                    onClick = {
+                                        if (selectionMode) toggleSelected(item.barcode) else onProductClick(item.barcode)
+                                    },
+                                    onLongClick = { toggleSelected(item.barcode) },
+                                    onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
+                                    onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
+                                    onAddToShoppingList = { addToShoppingListWithFeedback(item) },
+                                )
+                            }
                         }
                     }
                 }
@@ -493,7 +535,12 @@ private fun FilterMenuButton(
                     menuExpanded = false
                 },
             )
-            Category.entries.sortedBy { it.sortOrder }.forEach { category ->
+            // Voorraadkast and Diepvries are excluded from the filter list specifically —
+            // still valid categories for a product to have, just not offered as a filter.
+            val filterableCategories = Category.entries
+                .filterNot { it == Category.VOORRAADKAST || it == Category.DIEPVRIES }
+                .sortedBy { it.sortOrder }
+            filterableCategories.forEach { category ->
                 DropdownMenuItem(
                     text = { Text(stringResource(category.displayNameRes)) },
                     leadingIcon = {

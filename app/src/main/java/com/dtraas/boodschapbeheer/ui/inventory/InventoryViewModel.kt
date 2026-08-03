@@ -32,6 +32,12 @@ data class InventoryUiState(
     val selectedCategory: Category? = null,
     val sortOption: InventorySortOption = InventorySortOption.NAME,
     val groupedInventory: Map<Category, List<InventoryItemWithProduct>> = emptyMap(),
+    // Same items as groupedInventory, but as one globally ordered list rather than grouped
+    // by category — grouping loses the overall order between categories (each category's
+    // header still shows in category order, not by whichever item within it sorts first),
+    // so sort options where that global order is the point (EXPIRATION) render from this
+    // instead of groupedInventory. See InventoryScreen.
+    val flatInventory: List<InventoryItemWithProduct> = emptyList(),
 )
 
 class InventoryViewModel(
@@ -71,6 +77,7 @@ class InventoryViewModel(
             groupedInventory = sorted
                 .groupBy { Category.fromStorageKey(it.category) }
                 .toSortedMap(compareBy { it.sortOrder }),
+            flatInventory = sorted,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InventoryUiState())
 

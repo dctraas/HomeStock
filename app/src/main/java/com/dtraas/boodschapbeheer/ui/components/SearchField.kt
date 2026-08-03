@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
 import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.ui.theme.SoftCardShape
 
@@ -26,7 +27,10 @@ fun SearchField(
         value = query,
         onValueChange = onQueryChange,
         modifier = modifier,
-        placeholder = { Text(placeholder) },
+        // The placeholder is its own composable slot, not covered by singleLine below —
+        // without an explicit line cap a long placeholder wraps and grows the field to two
+        // visual lines the moment it's shown, instead of just ellipsizing.
+        placeholder = { Text(placeholder, maxLines = 1, overflow = TextOverflow.Ellipsis) },
         leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
         trailingIcon = {
             if (query.isNotEmpty()) {

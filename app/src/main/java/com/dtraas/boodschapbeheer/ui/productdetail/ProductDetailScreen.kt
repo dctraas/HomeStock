@@ -217,9 +217,11 @@ fun ProductDetailScreen(
                 }
             }
 
-            // Voorraad
+            // Voorraad — a bit more breathing room than the other section headers get,
+            // specifically because it sits right under the category/Nutri-Score icon row
+            // rather than under a card like the rest do.
             if (stillInInventory) {
-                SectionHeader(stringResource(R.string.section_stock), modifier = Modifier.padding(top = sectionGap))
+                SectionHeader(stringResource(R.string.section_stock), modifier = Modifier.padding(top = sectionGap + 8.dp))
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(top = headerToCardGap),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -254,7 +256,7 @@ fun ProductDetailScreen(
 
                         Row(
                             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                            horizontalArrangement = Arrangement.End,
+                            horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
                         ) {
                             IconButton(onClick = viewModel::addToShoppingList) {
                                 Icon(
