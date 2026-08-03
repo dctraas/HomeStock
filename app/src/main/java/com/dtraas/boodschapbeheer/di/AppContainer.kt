@@ -24,6 +24,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.PersistentCacheSettings
+import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -77,10 +78,24 @@ class AppContainer(context: Context) {
         HouseholdMembersRepository(firestore, householdSession, auth, billingRepository)
     }
 
+    // Open Food Facts documents that it throttles/blocks requests carrying a generic HTTP
+    // client User-Agent (e.g. OkHttp's own default) to fight scraping abuse — without an
+    // app-identifying one, barcode lookups intermittently or permanently fail with an HTTP
+    // error that has nothing to do with the device's actual connectivity, which is exactly
+    // what surfaces to the user as a misleading "Geen verbinding" (see ScanResultViewModel,
+    // which maps every non-"product not found" failure to that message).
+    private val userAgentInterceptor = Interceptor { chain ->
+        val request = chain.request().newBuilder()
+            .header("User-Agent", "BoodschapBeheer/${BuildConfig.VERSION_NAME} (Android; +https://github.com/dctraas/BoodschapBeheer)")
+            .build()
+        chain.proceed(request)
+    }
+
     // Logging is debug-only: even at BASIC level, release builds shouldn't write network
     // activity (which barcodes were scanned, when) to logcat, which other apps or anyone
     // with physical/adb access to the device could otherwise read.
     private val okHttpClient: OkHttpClient = OkHttpClient.Builder()
+        .addInterceptor(userAgentInterceptor)
         .apply {
             if (BuildConfig.DEBUG) {
                 addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC })
