@@ -3,6 +3,7 @@ package com.dtraas.boodschapbeheer.ui.shoppinglist
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -78,6 +79,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
@@ -105,6 +107,7 @@ import com.dtraas.boodschapbeheer.ui.theme.SoftBadgeShape
 import com.dtraas.boodschapbeheer.ui.theme.SoftCardShapeCompact
 import com.dtraas.boodschapbeheer.ui.theme.SoftImageShape
 import kotlinx.coroutines.launch
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 private enum class ShoppingListViewMode { LIST, GRID }
@@ -368,6 +371,12 @@ fun ShoppingListScreen() {
  * from Firestore while nothing is being dragged, so a snapshot arriving mid-gesture (e.g.
  * a housemate's edit on another device) can't yank an item out from under the user's
  * finger — the same class of race this app already avoids for other live-edited fields.
+ *
+ * A long press starts this same gesture either way; what it *does* is decided only once
+ * it ends, by how far the finger actually travelled ([totalDragMovementPx]) — barely
+ * moved (a plain press-and-hold) opens the store picker, moved past
+ * [longPressStoreThresholdPx] commits a reorder. This lets a long press double as a
+ * faster way to (re)assign a store, alongside the explicit per-row store icon.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -386,6 +395,11 @@ private fun ReorderableShoppingList(
     var draggingId by remember { mutableStateOf<String?>(null) }
     var dragOffsetPx by remember { mutableFloatStateOf(0f) }
     var draggingRowHeightPx by remember { mutableFloatStateOf(0f) }
+    // Accumulates the absolute distance moved since the current long press started —
+    // unlike dragOffsetPx, never reset mid-gesture by a swap, so it reliably answers
+    // "did this press actually turn into a drag" once the gesture ends.
+    var totalDragMovementPx by remember { mutableFloatStateOf(0f) }
+    val longPressStoreThresholdPx = with(LocalDensity.current) { 8.dp.toPx() }
 
     if (draggingId == null) {
         // Not mid-gesture: reconcile with the latest Firestore data. If it's still the same
@@ -417,6 +431,7 @@ private fun ReorderableShoppingList(
 
     fun handleDrag(deltaY: Float) {
         val id = draggingId ?: return
+        totalDragMovementPx += abs(deltaY)
         dragOffsetPx += deltaY
         val rowHeight = draggingRowHeightPx.takeIf { it > 0f } ?: return
         while (true) {
@@ -443,15 +458,21 @@ private fun ReorderableShoppingList(
         val index = if (id != null) orderedItems.indexOfFirst { it.id == id } else -1
         if (index >= 0) {
             val item = orderedItems[index]
-            val previous = orderedItems.getOrNull(index - 1)?.takeIf { canSwap(item, it) }
-            val next = orderedItems.getOrNull(index + 1)?.takeIf { canSwap(item, it) }
-            if (previous != null || next != null) {
-                onMove(item, previous, next)
+            if (totalDragMovementPx < longPressStoreThresholdPx) {
+                // Held still and released — a plain long press, not a drag.
+                onAssignStoreClick(item)
+            } else {
+                val previous = orderedItems.getOrNull(index - 1)?.takeIf { canSwap(item, it) }
+                val next = orderedItems.getOrNull(index + 1)?.takeIf { canSwap(item, it) }
+                if (previous != null || next != null) {
+                    onMove(item, previous, next)
+                }
             }
         }
         draggingId = null
         dragOffsetPx = 0f
         draggingRowHeightPx = 0f
+        totalDragMovementPx = 0f
     }
 
     // Items of the same store are already contiguous in orderedItems (they come from
@@ -492,6 +513,7 @@ private fun ReorderableShoppingList(
                         draggingId = item.id
                         dragOffsetPx = 0f
                         draggingRowHeightPx = rowHeightPx
+                        totalDragMovementPx = 0f
                     },
                     onDrag = ::handleDrag,
                     onDragEnd = ::commitDrag,
@@ -641,7 +663,7 @@ private fun ShoppingListRow(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun ShoppingListGridTile(
     item: ShoppingListItemEntity,
@@ -688,7 +710,10 @@ private fun ShoppingListGridTile(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surface)
-                .clickable(onClick = onClick),
+                // A long press is a faster way to (re)assign a store here too, matching
+                // the list view's long-press-and-hold gesture — the store icon below stays
+                // as the discoverable, explicit way to do the same thing.
+                .combinedClickable(onClick = onClick, onLongClick = onAssignStoreClick),
         ) {
             Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
                 ProductImage(

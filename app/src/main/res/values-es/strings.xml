@@ -24,16 +24,24 @@
     <string name="nav_more">Más</string>
 
     <!-- Category display names -->
-    <string name="category_zuivel">Lácteos</string>
-    <string name="category_groente_fruit">Frutas &amp; Verduras</string>
-    <string name="category_vlees_vis">Carne &amp; Pescado</string>
-    <string name="category_brood_bakkerij">Pan &amp; Panadería</string>
-    <string name="category_voorraadkast">Despensa</string>
+    <string name="category_groente_fruit">Patatas, Verduras y Fruta</string>
+    <string name="category_maaltijden_salades">Ensaladas y Platos Preparados</string>
+    <string name="category_kaas_vleeswaren">Queso, Fiambres y Tapas</string>
+    <string name="category_vlees_vis">Carne, Aves y Pescado</string>
+    <string name="category_zuivel">Lácteos, Huevos y Mantequilla</string>
+    <string name="category_brood_bakkerij">Pan, Panadería y Bollería</string>
+    <string name="category_ontbijt_beleg">Desayuno y Untables</string>
+    <string name="category_pasta_rijst_wereldkeuken">Pasta, Arroz y Cocina del Mundo</string>
+    <string name="category_soepen_sauzen_conserven">Sopas, Salsas y Conservas</string>
+    <string name="category_snoep_koek_chocolade">Dulces, Galletas y Chocolate</string>
+    <string name="category_chips_zoutjes_noten">Patatas Fritas, Snacks y Frutos Secos</string>
+    <string name="category_frisdrank_sappen">Refrescos, Zumos, Café y Té</string>
+    <string name="category_bier_wijn">Cerveza, Vino y Aperitivos</string>
     <string name="category_diepvries">Congelados</string>
-    <string name="category_dranken">Bebidas</string>
-    <string name="category_snoep_snacks">Dulces &amp; Snacks</string>
+    <string name="category_baby_kind">Bebé y Niños</string>
+    <string name="category_verzorging">Cuidado Personal y Salud</string>
     <string name="category_huishouden">Hogar</string>
-    <string name="category_verzorging">Cuidado personal</string>
+    <string name="category_huisdier">Mascotas</string>
     <string name="category_overig">Otros</string>
     <string name="category_dropdown_label">Categoría</string>
 

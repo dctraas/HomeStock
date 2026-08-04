@@ -24,16 +24,24 @@
     <string name="nav_more">Plus</string>
 
     <!-- Category display names -->
-    <string name="category_zuivel">Produits laitiers</string>
-    <string name="category_groente_fruit">Fruits &amp; Légumes</string>
-    <string name="category_vlees_vis">Viande &amp; Poisson</string>
-    <string name="category_brood_bakkerij">Pain &amp; Boulangerie</string>
-    <string name="category_voorraadkast">Garde-manger</string>
+    <string name="category_groente_fruit">Pommes de Terre, Légumes &amp; Fruits</string>
+    <string name="category_maaltijden_salades">Salades &amp; Plats Préparés</string>
+    <string name="category_kaas_vleeswaren">Fromage, Charcuterie &amp; Tapas</string>
+    <string name="category_vlees_vis">Viande, Volaille &amp; Poisson</string>
+    <string name="category_zuivel">Produits Laitiers, Œufs &amp; Beurre</string>
+    <string name="category_brood_bakkerij">Pain, Boulangerie &amp; Pâtisserie</string>
+    <string name="category_ontbijt_beleg">Petit-Déjeuner &amp; Tartinables</string>
+    <string name="category_pasta_rijst_wereldkeuken">Pâtes, Riz &amp; Cuisine du Monde</string>
+    <string name="category_soepen_sauzen_conserven">Soupes, Sauces &amp; Conserves</string>
+    <string name="category_snoep_koek_chocolade">Bonbons, Biscuits &amp; Chocolat</string>
+    <string name="category_chips_zoutjes_noten">Chips, Biscuits Apéritifs &amp; Fruits Secs</string>
+    <string name="category_frisdrank_sappen">Boissons, Jus, Café &amp; Thé</string>
+    <string name="category_bier_wijn">Bière, Vin &amp; Apéritifs</string>
     <string name="category_diepvries">Surgelés</string>
-    <string name="category_dranken">Boissons</string>
-    <string name="category_snoep_snacks">Sucreries &amp; Snacks</string>
-    <string name="category_huishouden">Entretien</string>
-    <string name="category_verzorging">Hygiène &amp; Beauté</string>
+    <string name="category_baby_kind">Bébé &amp; Enfant</string>
+    <string name="category_verzorging">Soins &amp; Santé</string>
+    <string name="category_huishouden">Ménage</string>
+    <string name="category_huisdier">Animaux</string>
     <string name="category_overig">Autre</string>
     <string name="category_dropdown_label">Catégorie</string>
 
