@@ -23,6 +23,8 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -34,6 +36,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -132,6 +135,21 @@ fun ProductDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
+                    }
+                },
+                actions = {
+                    // Favorite is a field on the inventory entry, not the catalog product —
+                    // nothing to toggle for a product that isn't (or no longer) in stock.
+                    if (stillInInventory) {
+                        IconButton(onClick = viewModel::toggleFavorite) {
+                            Icon(
+                                imageVector = if (uiState.isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                                contentDescription = stringResource(
+                                    if (uiState.isFavorite) R.string.inventory_unmark_favorite_cd else R.string.inventory_mark_favorite_cd,
+                                ),
+                                tint = if (uiState.isFavorite) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                            )
+                        }
                     }
                 },
             )

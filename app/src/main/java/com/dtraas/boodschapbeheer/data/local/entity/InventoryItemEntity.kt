@@ -12,7 +12,8 @@ import com.google.firebase.firestore.DocumentSnapshot
  * [expirationDate] is a calendar date (epoch millis at UTC midnight, as
  * produced by Compose's Material3 date picker) rather than a precise
  * instant. [minQuantity], when set, is the threshold below which the
- * product is automatically re-added to the shopping list.
+ * product is automatically re-added to the shopping list. [isFavorite]
+ * is household-wide (like every other field here), not per-device.
  */
 data class InventoryItemEntity(
     val barcode: String,
@@ -21,6 +22,7 @@ data class InventoryItemEntity(
     val expirationDate: Long? = null,
     val minQuantity: Int? = null,
     val note: String? = null,
+    val isFavorite: Boolean = false,
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
         "quantity" to quantity,
@@ -28,6 +30,7 @@ data class InventoryItemEntity(
         "expirationDate" to expirationDate,
         "minQuantity" to minQuantity,
         "note" to note,
+        "isFavorite" to isFavorite,
     )
 
     companion object {
@@ -40,6 +43,7 @@ data class InventoryItemEntity(
                 expirationDate = document.getLong("expirationDate"),
                 minQuantity = document.getLong("minQuantity")?.toInt(),
                 note = document.getString("note")?.takeIf { it.isNotBlank() },
+                isFavorite = document.getBoolean("isFavorite") ?: false,
             )
         }
     }

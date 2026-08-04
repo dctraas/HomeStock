@@ -10,7 +10,9 @@ import com.dtraas.boodschapbeheer.data.remote.OpenFoodFactsApi
 import com.dtraas.boodschapbeheer.data.remote.dto.OffProduct
 import com.dtraas.boodschapbeheer.data.remote.observeSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import java.io.IOException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -25,6 +27,21 @@ class ProductRepository(
 ) {
     private fun productsCollection(householdId: String) =
         firestore.collection("households").document(householdId).collection("products")
+
+    /**
+     * A brief connectivity blip (Wi-Fi handing off to cellular, a slow tower, a single dropped
+     * packet) throws [IOException] the very first time but usually succeeds a moment later — the
+     * kind of "soms" (sometimes) failure that isn't a real "Geen verbinding" at all. One silent
+     * retry after a short delay absorbs that without bothering the user; anything that fails
+     * twice in a row (or a non-IOException, like a malformed response) is treated as real.
+     */
+    private suspend fun <T> withNetworkRetry(block: suspend () -> T): T =
+        try {
+            block()
+        } catch (e: IOException) {
+            delay(1000)
+            block()
+        }
 
     fun observeProduct(barcode: String): Flow<ProductEntity?> =
         householdSession.householdId.flatMapLatest { householdId ->
@@ -55,7 +72,7 @@ class ProductRepository(
         findCached(barcode)?.let { return Result.success(it) }
 
         return try {
-            val response = api.getProduct(barcode)
+            val response = withNetworkRetry { api.getProduct(barcode) }
             val offProduct = response.product
             if (response.status != 1 || offProduct == null || offProduct.productName.isNullOrBlank()) {
                 Result.failure(ProductNotFoundException(barcode))
@@ -79,7 +96,7 @@ class ProductRepository(
             ?: return Result.failure(IllegalStateException("Geen huishouden gekoppeld"))
 
         return try {
-            val response = api.getProduct(barcode)
+            val response = withNetworkRetry { api.getProduct(barcode) }
             val offProduct = response.product
             if (response.status != 1 || offProduct == null || offProduct.productName.isNullOrBlank()) {
                 Result.failure(ProductNotFoundException(barcode))
@@ -155,7 +172,7 @@ class ProductRepository(
      * (via its barcode) to fetch and cache the full product data.
      */
     suspend fun searchByName(query: String): Result<List<ProductSearchResult>> = try {
-        val response = api.searchProducts(searchTerms = query)
+        val response = withNetworkRetry { api.searchProducts(searchTerms = query) }
         val results = response.products.orEmpty().mapNotNull { product ->
             val barcode = product.code?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
             val name = product.productName?.trim()?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null

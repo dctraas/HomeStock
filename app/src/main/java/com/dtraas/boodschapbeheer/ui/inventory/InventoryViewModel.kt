@@ -32,6 +32,7 @@ data class InventoryUiState(
     val searchQuery: String = "",
     val selectedCategory: Category? = null,
     val sortOption: InventorySortOption = InventorySortOption.NAME,
+    val favoritesOnly: Boolean = false,
     val groupedInventory: Map<Category, List<InventoryItemWithProduct>> = emptyMap(),
     // Same items as groupedInventory, but as one globally ordered list rather than grouped
     // by category — grouping loses the overall order between categories (each category's
@@ -54,22 +55,40 @@ class InventoryViewModel(
     private val searchQuery = MutableStateFlow("")
     private val selectedCategory = MutableStateFlow<Category?>(null)
     private val sortOption = MutableStateFlow(InventorySortOption.NAME)
+    private val favoritesOnly = MutableStateFlow(false)
+
+    // combine() only has direct overloads up to 5 flows, and there are 6 inputs here — the
+    // filter/sort controls are combined into one flow first so the outer combine stays within
+    // that limit.
+    private data class FilterState(
+        val query: String,
+        val category: Category?,
+        val sort: InventorySortOption,
+        val favoritesOnly: Boolean,
+        val householdName: String?,
+    )
 
     val uiState: StateFlow<InventoryUiState> = combine(
         inventoryRepository.observeInventoryWithProduct(),
-        searchQuery,
-        selectedCategory,
-        sortOption,
-        householdRepository.observeHouseholdName(),
-    ) { items, query, category, sort, householdName ->
+        combine(
+            searchQuery,
+            selectedCategory,
+            sortOption,
+            favoritesOnly,
+            householdRepository.observeHouseholdName(),
+        ) { query, category, sort, favOnly, householdName ->
+            FilterState(query, category, sort, favOnly, householdName)
+        },
+    ) { items, filters ->
         val filtered = items.filter { item ->
-            val matchesCategory = category == null || Category.fromStorageKey(item.category) == category
-            val matchesQuery = query.isBlank() ||
-                item.name.contains(query, ignoreCase = true) ||
-                item.brand?.contains(query, ignoreCase = true) == true
-            matchesCategory && matchesQuery
+            val matchesCategory = filters.category == null || Category.fromStorageKey(item.category) == filters.category
+            val matchesQuery = filters.query.isBlank() ||
+                item.name.contains(filters.query, ignoreCase = true) ||
+                item.brand?.contains(filters.query, ignoreCase = true) == true
+            val matchesFavorite = !filters.favoritesOnly || item.isFavorite
+            matchesCategory && matchesQuery && matchesFavorite
         }
-        val sorted = when (sort) {
+        val sorted = when (filters.sort) {
             InventorySortOption.NAME -> filtered.sortedBy { it.name.lowercase() }
             InventorySortOption.QUANTITY -> filtered.sortedByDescending { it.quantity }
             InventorySortOption.RECENTLY_UPDATED -> filtered.sortedByDescending { it.updatedAt }
@@ -77,14 +96,15 @@ class InventoryViewModel(
             InventorySortOption.EXPIRATION -> filtered.sortedWith(compareBy(nullsLast()) { it.expirationDate })
         }
         InventoryUiState(
-            searchQuery = query,
-            selectedCategory = category,
-            sortOption = sort,
+            searchQuery = filters.query,
+            selectedCategory = filters.category,
+            sortOption = filters.sort,
+            favoritesOnly = filters.favoritesOnly,
             groupedInventory = sorted
                 .groupBy { Category.fromStorageKey(it.category) }
                 .toSortedMap(compareBy { it.sortOrder }),
             flatInventory = sorted,
-            householdName = householdName,
+            householdName = filters.householdName,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InventoryUiState())
 
@@ -98,6 +118,14 @@ class InventoryViewModel(
 
     fun onSortOptionChange(option: InventorySortOption) {
         sortOption.value = option
+    }
+
+    fun onFavoritesFilterChange(favoritesOnly: Boolean) {
+        this.favoritesOnly.value = favoritesOnly
+    }
+
+    fun toggleFavorite(item: InventoryItemWithProduct) {
+        viewModelScope.launch { inventoryRepository.setFavorite(item.barcode, !item.isFavorite) }
     }
 
     private val _restockEvents = Channel<String>(Channel.BUFFERED)
@@ -119,7 +147,7 @@ class InventoryViewModel(
     fun restoreItem(item: InventoryItemWithProduct) {
         viewModelScope.launch {
             inventoryRepository.restoreItem(
-                item.barcode, item.quantity, item.expirationDate, item.minQuantity, item.note,
+                item.barcode, item.quantity, item.expirationDate, item.minQuantity, item.note, item.isFavorite,
             )
         }
     }

@@ -25,6 +25,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.PersistentCacheSettings
 import com.google.firebase.storage.FirebaseStorage
+import java.util.concurrent.TimeUnit
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -96,8 +97,20 @@ class AppContainer(context: Context) {
     // Logging is debug-only: even at BASIC level, release builds shouldn't write network
     // activity (which barcodes were scanned, when) to logcat, which other apps or anyone
     // with physical/adb access to the device could otherwise read.
+    //
+    // OkHttp's 10s default connect/read/write timeouts are tight enough that a brief cellular
+    // hiccup or a slow Open Food Facts response intermittently trips a SocketTimeoutException —
+    // which ScanResultViewModel then shows as a misleading "Geen verbinding", even though the
+    // device is online and the request would have succeeded given a bit more time. Widening the
+    // timeouts (and leaving retryOnConnectionFailure on, which is also the default) makes that
+    // class of false negative much rarer; ProductRepository's own retry on top of this handles
+    // the rest.
     private val okHttpClient: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(userAgentInterceptor)
+        .connectTimeout(20, TimeUnit.SECONDS)
+        .readTimeout(20, TimeUnit.SECONDS)
+        .writeTimeout(20, TimeUnit.SECONDS)
+        .retryOnConnectionFailure(true)
         .apply {
             if (BuildConfig.DEBUG) {
                 addInterceptor(HttpLoggingInterceptor().apply { level = HttpLoggingInterceptor.Level.BASIC })

@@ -121,6 +121,7 @@
     <string name="more_household_members_title">Membres</string>
     <string name="more_household_member_unnamed">Membre sans nom</string>
     <string name="more_household_member_you">Toi</string>
+    <string name="more_household_save_name">Enregistrer le nom</string>
     <string name="more_rename_household_error">Impossible de modifier le nom. Réessayez.</string>
     <string name="more_premium_title">Premium</string>
     <string name="more_premium_active">Actif</string>
@@ -188,6 +189,10 @@
     <string name="inventory_sort_cd">Trier</string>
     <string name="inventory_filter_cd">Filtrer</string>
     <string name="inventory_filter_active_cd_format">Filtrer (actif : %1$s)</string>
+    <string name="inventory_favorites_filter_cd">Afficher uniquement les favoris</string>
+    <string name="inventory_favorites_filter_active_cd">Afficher uniquement les favoris (actif)</string>
+    <string name="inventory_mark_favorite_cd">Marquer comme favori</string>
+    <string name="inventory_unmark_favorite_cd">Retirer des favoris</string>
     <string name="inventory_search_cd">Rechercher</string>
     <string name="inventory_search_close_cd">Fermer la recherche</string>
     <string name="inventory_sort_active_cd_format">Trier (actif : %1$s)</string>

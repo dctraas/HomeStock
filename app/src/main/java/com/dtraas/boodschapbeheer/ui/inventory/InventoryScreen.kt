@@ -36,7 +36,9 @@ import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
@@ -47,6 +49,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -313,6 +316,23 @@ fun InventoryScreen(
                             selected = uiState.selectedCategory,
                             onSelected = viewModel::onCategoryFilterChange,
                         )
+                        IconButton(
+                            onClick = { viewModel.onFavoritesFilterChange(!uiState.favoritesOnly) },
+                            modifier = Modifier.size(56.dp),
+                        ) {
+                            Icon(
+                                imageVector = if (uiState.favoritesOnly) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                                contentDescription = stringResource(
+                                    if (uiState.favoritesOnly) {
+                                        R.string.inventory_favorites_filter_active_cd
+                                    } else {
+                                        R.string.inventory_favorites_filter_cd
+                                    },
+                                ),
+                                tint = if (uiState.favoritesOnly) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                                modifier = Modifier.size(28.dp),
+                            )
+                        }
                         SortMenuButton(
                             selected = uiState.sortOption,
                             onSelected = viewModel::onSortOptionChange,
@@ -349,7 +369,7 @@ fun InventoryScreen(
 
             if (uiState.groupedInventory.isEmpty()) {
                 EmptyInventory(
-                    isFiltered = uiState.searchQuery.isNotBlank() || uiState.selectedCategory != null,
+                    isFiltered = uiState.searchQuery.isNotBlank() || uiState.selectedCategory != null || uiState.favoritesOnly,
                     modifier = Modifier.fillMaxSize(),
                 )
             } else if (viewMode == InventoryViewMode.LIST) {
@@ -371,6 +391,7 @@ fun InventoryScreen(
                                 onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
                                 onDelete = { deleteWithUndo(item) },
                                 onAddToShoppingList = { addToShoppingListWithFeedback(item) },
+                                onToggleFavorite = { viewModel.toggleFavorite(item) },
                                 modifier = Modifier.animateItem(),
                             )
                         }
@@ -392,6 +413,7 @@ fun InventoryScreen(
                                     onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
                                     onDelete = { deleteWithUndo(item) },
                                     onAddToShoppingList = { addToShoppingListWithFeedback(item) },
+                                    onToggleFavorite = { viewModel.toggleFavorite(item) },
                                     modifier = Modifier.animateItem(),
                                 )
                             }
@@ -419,6 +441,7 @@ fun InventoryScreen(
                                 onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
                                 onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
                                 onAddToShoppingList = { addToShoppingListWithFeedback(item) },
+                                onToggleFavorite = { viewModel.toggleFavorite(item) },
                             )
                         }
                     } else {
@@ -438,6 +461,7 @@ fun InventoryScreen(
                                     onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
                                     onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
                                     onAddToShoppingList = { addToShoppingListWithFeedback(item) },
+                                    onToggleFavorite = { viewModel.toggleFavorite(item) },
                                 )
                             }
                         }
@@ -622,6 +646,7 @@ private fun InventoryRow(
     onDecrease: () -> Unit,
     onDelete: () -> Unit,
     onAddToShoppingList: () -> Unit,
+    onToggleFavorite: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val stockStatus = InventoryStockStatus.of(item.quantity, item.minQuantity, item.expirationDate)
@@ -721,6 +746,16 @@ private fun InventoryRow(
                         onIncrease = onIncrease,
                         dense = true,
                     )
+                    IconButton(onClick = onToggleFavorite, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            imageVector = if (item.isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                            contentDescription = stringResource(
+                                if (item.isFavorite) R.string.inventory_unmark_favorite_cd else R.string.inventory_mark_favorite_cd,
+                            ),
+                            tint = if (item.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
                     IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(32.dp)) {
                         Icon(
                             Icons.Filled.AddShoppingCart,
@@ -754,6 +789,7 @@ private fun InventoryGridTile(
     onIncrease: () -> Unit,
     onDecrease: () -> Unit,
     onAddToShoppingList: () -> Unit,
+    onToggleFavorite: () -> Unit,
 ) {
     val stockStatus = InventoryStockStatus.of(item.quantity, item.minQuantity, item.expirationDate)
     Column(
@@ -790,6 +826,24 @@ private fun InventoryGridTile(
                         .padding(8.dp)
                         .background(MaterialTheme.colorScheme.surface, CircleShape),
                 )
+            } else {
+                IconButton(
+                    onClick = onToggleFavorite,
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(4.dp)
+                        .size(32.dp)
+                        .background(MaterialTheme.colorScheme.surface, CircleShape),
+                ) {
+                    Icon(
+                        imageVector = if (item.isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                        contentDescription = stringResource(
+                            if (item.isFavorite) R.string.inventory_unmark_favorite_cd else R.string.inventory_mark_favorite_cd,
+                        ),
+                        tint = if (item.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
         }
         Column(modifier = Modifier.padding(top = 6.dp)) {

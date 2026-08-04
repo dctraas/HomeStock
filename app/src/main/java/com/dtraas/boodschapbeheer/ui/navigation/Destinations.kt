@@ -30,6 +30,7 @@ sealed class Destination(val route: String) {
     }
     data object ReceiptScan : Destination("receipt_scan")
     data object Premium : Destination("premium")
+    data object Household : Destination("household")
 }
 
 data class TopLevelDestination(

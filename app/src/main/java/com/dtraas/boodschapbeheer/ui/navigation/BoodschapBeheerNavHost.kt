@@ -27,6 +27,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.compose.runtime.getValue
+import com.dtraas.boodschapbeheer.ui.household.HouseholdSettingsScreen
 import com.dtraas.boodschapbeheer.ui.inventory.InventoryScreen
 import com.dtraas.boodschapbeheer.ui.more.MoreScreen
 import com.dtraas.boodschapbeheer.ui.notifications.NotificationsScreen
@@ -92,6 +93,7 @@ fun BoodschapBeheerApp() {
                     onNavigateToReceiptScan = { navController.navigate(Destination.ReceiptScan.route) },
                     onNavigateToStatistics = { navController.navigate(Destination.Statistics.route) },
                     onNavigateToPremium = { navController.navigate(Destination.Premium.route) },
+                    onNavigateToHousehold = { navController.navigate(Destination.Household.route) },
                 )
             }
             composable(
@@ -151,6 +153,9 @@ fun BoodschapBeheerApp() {
             }
             composable(Destination.Premium.route) {
                 PremiumScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Destination.Household.route) {
+                HouseholdSettingsScreen(onBack = { navController.popBackStack() })
             }
         }
     }

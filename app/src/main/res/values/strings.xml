@@ -122,6 +122,7 @@
     <string name="more_household_members_title">Leden</string>
     <string name="more_household_member_unnamed">Naamloos lid</string>
     <string name="more_household_member_you">Jij</string>
+    <string name="more_household_save_name">Naam opslaan</string>
     <string name="more_rename_household_error">Kon de naam niet wijzigen. Probeer het opnieuw.</string>
     <string name="more_premium_title">Premium</string>
     <string name="more_premium_active">Actief</string>
@@ -189,6 +190,10 @@
     <string name="inventory_sort_cd">Sorteren</string>
     <string name="inventory_filter_cd">Filteren</string>
     <string name="inventory_filter_active_cd_format">Filteren (actief: %1$s)</string>
+    <string name="inventory_favorites_filter_cd">Alleen favorieten tonen</string>
+    <string name="inventory_favorites_filter_active_cd">Alleen favorieten tonen (actief)</string>
+    <string name="inventory_mark_favorite_cd">Markeren als favoriet</string>
+    <string name="inventory_unmark_favorite_cd">Favoriet verwijderen</string>
     <string name="inventory_search_cd">Zoeken</string>
     <string name="inventory_search_close_cd">Zoeken sluiten</string>
     <string name="inventory_sort_active_cd_format">Sorteren (actief: %1$s)</string>

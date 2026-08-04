@@ -59,6 +59,7 @@ class InventoryRepository(
                                 expirationDate = item.expirationDate,
                                 minQuantity = item.minQuantity,
                                 note = item.note,
+                                isFavorite = item.isFavorite,
                             )
                         }
                         .sortedBy { it.name.lowercase() }
@@ -128,6 +129,11 @@ class InventoryRepository(
         inventoryCollection(householdId).document(barcode).update("note", note).await()
     }
 
+    suspend fun setFavorite(barcode: String, isFavorite: Boolean) {
+        val householdId = householdSession.householdId.value ?: return
+        inventoryCollection(householdId).document(barcode).update("isFavorite", isFavorite).await()
+    }
+
     /**
      * Auto re-adds [item]'s product to the shopping list once its quantity drops below its
      * minimum. Returns the product name when it actually added something, so callers can
@@ -166,6 +172,7 @@ class InventoryRepository(
         expirationDate: Long? = null,
         minQuantity: Int? = null,
         note: String? = null,
+        isFavorite: Boolean = false,
     ) {
         val householdId = householdSession.householdId.value ?: return
         inventoryCollection(householdId).document(barcode).set(
@@ -176,6 +183,7 @@ class InventoryRepository(
                 expirationDate = expirationDate,
                 minQuantity = minQuantity,
                 note = note,
+                isFavorite = isFavorite,
             ).toMap()
         ).await()
     }

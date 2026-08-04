@@ -18,6 +18,7 @@ data class InventoryItemWithProduct(
     val expirationDate: Long? = null,
     val minQuantity: Int? = null,
     val note: String? = null,
+    val isFavorite: Boolean = false,
 )
 
 /** Number of distinct inventory items per category, for the statistics screen. */

@@ -23,6 +23,7 @@ data class ProductDetailUiState(
     val expirationDate: Long? = null,
     val minQuantity: Int? = null,
     val note: String? = null,
+    val isFavorite: Boolean = false,
     val isLoading: Boolean = true,
 )
 
@@ -43,6 +44,7 @@ class ProductDetailViewModel(
             expirationDate = inventoryItem?.expirationDate,
             minQuantity = inventoryItem?.minQuantity,
             note = inventoryItem?.note,
+            isFavorite = inventoryItem?.isFavorite ?: false,
             isLoading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProductDetailUiState())
@@ -88,6 +90,11 @@ class ProductDetailViewModel(
 
     fun setNote(note: String?) {
         viewModelScope.launch { inventoryRepository.setNote(barcode, note) }
+    }
+
+    fun toggleFavorite() {
+        val newValue = !uiState.value.isFavorite
+        viewModelScope.launch { inventoryRepository.setFavorite(barcode, newValue) }
     }
 
     fun removeFromInventory() {
