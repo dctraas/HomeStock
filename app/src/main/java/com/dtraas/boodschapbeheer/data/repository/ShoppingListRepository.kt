@@ -115,6 +115,13 @@ class ShoppingListRepository(
         refreshWidget()
     }
 
+    /** Quick single-field store reassignment — see the per-row store picker in ShoppingListScreen. */
+    suspend fun setStore(id: String, store: String) {
+        val householdId = householdSession.householdId.value ?: return
+        shoppingListCollection(householdId).document(id).update("store", store.trim()).await()
+        refreshWidget()
+    }
+
     suspend fun removeItem(id: String) {
         val householdId = householdSession.householdId.value ?: return
         shoppingListCollection(householdId).document(id).delete().await()

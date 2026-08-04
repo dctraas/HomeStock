@@ -448,12 +448,23 @@ fun InventoryScreen(
     }
 
     if (showProfileDialog) {
+        val householdMembersRepository = application.container.householdMembersRepository
         ProfileEditDialog(
             displayName = displayName,
             photoPath = photoPath,
             onSaveName = { deviceProfile.setDisplayName(it) },
-            onPhotoPicked = { uri -> coroutineScope.launch { deviceProfile.setPhotoFromUri(uri) } },
-            onRemovePhoto = { coroutineScope.launch { deviceProfile.clearPhoto() } },
+            onPhotoPicked = { uri ->
+                coroutineScope.launch {
+                    deviceProfile.setPhotoFromUri(uri)
+                    householdMembersRepository.syncCurrentDevicePhoto()
+                }
+            },
+            onRemovePhoto = {
+                coroutineScope.launch {
+                    deviceProfile.clearPhoto()
+                    householdMembersRepository.syncCurrentDevicePhoto()
+                }
+            },
             onDismiss = { showProfileDialog = false },
         )
     }
@@ -542,11 +553,10 @@ private fun FilterMenuButton(
                     menuExpanded = false
                 },
             )
-            // Voorraadkast and Diepvries are excluded from the filter list specifically —
-            // still valid categories for a product to have, just not offered as a filter.
-            val filterableCategories = Category.entries
-                .filterNot { it == Category.VOORRAADKAST || it == Category.DIEPVRIES }
-                .sortedBy { it.sortOrder }
+            // The full fixed category set, in the same order a typical supermarket lays out
+            // its aisles (see Category.sortOrder) — every category a product can have is
+            // also offered as a filter.
+            val filterableCategories = Category.entries.sortedBy { it.sortOrder }
             filterableCategories.forEach { category ->
                 DropdownMenuItem(
                     text = { Text(stringResource(category.displayNameRes)) },

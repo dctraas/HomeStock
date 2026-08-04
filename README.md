@@ -18,7 +18,8 @@ Android-app om samen met je huisgenoten bij te houden welke boodschappen je nog 
 - Kotlin, Jetpack Compose (Material 3), Navigation Compose
 - **Cloud Firestore** als gedeelde database (huishoudens delen dezelfde data, met automatische
   offline-cache) + **Firebase Authentication** (anonieme sign-in — er is geen wachtwoord-login,
-  de huishouden-code is de enige toegangscontrole)
+  de huishouden-code is de enige toegangscontrole) + **Firebase Storage** (gedeelde profielfoto's
+  van huisgenoten in de huishouden-ledenlijst)
 - CameraX + ML Kit Barcode Scanning
 - Retrofit + Gson richting Open Food Facts
 - Coil voor productafbeeldingen
@@ -65,6 +66,11 @@ aanmaken, dat moet je zelf doen (gratis):
 5. Zet **Firestore Database** aan (kies een locatie, "production mode" is prima).
 6. Plak de inhoud van `firestore.rules` (in de root van dit project) in **Firestore Database →
    Rules** en publiceer ze. Zonder deze stap weigert Firestore alle lees/schrijf-verzoeken.
+7. Zet **Storage** aan (kies een locatie, "production mode" is prima) — dit backt de
+   profielfoto's van huisgenoten in de huishouden-ledenlijst (Instellingen > Huishouden).
+8. Plak de inhoud van `storage.rules` (in de root van dit project) in **Storage → Rules** en
+   publiceer ze. Zonder deze stap weigert Storage alle lees/schrijf-verzoeken (het uploaden
+   van een profielfoto mislukt dan stil op de achtergrond — de rest van de app blijft werken).
 
 Zonder deze stappen start de app niet (of kan geen huishouden aanmaken/koppelen).
 

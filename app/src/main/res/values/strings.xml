@@ -111,6 +111,10 @@
     <!-- Meer -->
     <string name="more_household_title">Huishouden</string>
     <string name="more_household_code_format">Code: %1$s</string>
+    <string name="more_household_members_title">Leden</string>
+    <string name="more_household_member_unnamed">Naamloos lid</string>
+    <string name="more_household_member_you">Jij</string>
+    <string name="more_rename_household_error">Kon de naam niet wijzigen. Probeer het opnieuw.</string>
     <string name="more_premium_title">Premium</string>
     <string name="more_premium_active">Actief</string>
     <string name="more_premium_inactive">Word Premium</string>
@@ -304,6 +308,8 @@
     <string name="shopping_list_search_placeholder">Zoek in boodschappenlijst…</string>
     <string name="shopping_list_removed_format">%1$s verwijderd</string>
     <string name="shopping_list_delete_cd">Verwijderen</string>
+    <string name="shopping_list_assign_store_cd">Winkel toewijzen</string>
+    <string name="shopping_list_assign_store_title">Kies een winkel</string>
     <string name="shopping_list_mark_unchecked_cd">Zet terug als niet afgevinkt</string>
     <string name="shopping_list_mark_checked_cd">Markeer als afgevinkt</string>
     <string name="shopping_list_empty_filtered">Geen items gevonden.</string>

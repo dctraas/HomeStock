@@ -74,6 +74,10 @@ dependencies {
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth.ktx)
     implementation(libs.firebase.firestore.ktx)
+    // Backs synced household-member profile photos (see HouseholdMembersRepository) —
+    // profile photos were purely local before this; this is what lets a housemate's photo,
+    // not just their name, show up on another device's members list.
+    implementation(libs.firebase.storage.ktx)
     implementation(libs.kotlinx.coroutines.play.services)
     // Firestore pulls in gRPC, which drags in a plain (non-Android) Guava that can win
     // Gradle's version conflict resolution over CameraX's own Guava/ListenableFuture

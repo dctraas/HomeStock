@@ -1,0 +1,19 @@
+rules_version = '2';
+
+// Publish these rules in the Firebase console under Storage → Rules
+// (or via `firebase deploy --only storage` if you use the Firebase CLI).
+//
+// Mirrors firestore.rules' access model: anyone signed in (including anonymously —
+// there is no password login) can read or write a household member's profile photo.
+// The household code being the only real access control is a deliberate, documented
+// simplification for a small household/family app — see firestore.rules for the full
+// reasoning. Photos are small (a single profile picture per member) and not sensitive
+// enough to warrant per-household path validation here.
+service firebase.storage {
+  match /b/{bucket}/o {
+    // households/{householdId}/members/{uid}/photo.jpg — see HouseholdMembersRepository.
+    match /households/{householdId}/members/{uid}/{fileName} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

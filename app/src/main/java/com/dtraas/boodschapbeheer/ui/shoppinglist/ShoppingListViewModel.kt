@@ -86,6 +86,10 @@ class ShoppingListViewModel(
         viewModelScope.launch { shoppingListRepository.setQuantity(id, quantity) }
     }
 
+    fun setStore(id: String, store: String) {
+        viewModelScope.launch { shoppingListRepository.setStore(id, store) }
+    }
+
     fun moveItem(item: ShoppingListItemEntity, previous: ShoppingListItemEntity?, next: ShoppingListItemEntity?) {
         viewModelScope.launch { shoppingListRepository.moveItem(item, previous, next) }
     }

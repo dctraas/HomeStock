@@ -22,9 +22,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Description
@@ -82,6 +84,8 @@ import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
 import com.dtraas.boodschapbeheer.BuildConfig
 import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.data.local.entity.StoreEntity
+import com.dtraas.boodschapbeheer.data.repository.HouseholdMember
+import com.dtraas.boodschapbeheer.data.repository.HouseholdRepository
 import com.dtraas.boodschapbeheer.data.repository.ThemeMode
 import com.dtraas.boodschapbeheer.ui.components.ProfileEditDialog
 import com.dtraas.boodschapbeheer.ui.theme.SoftBadgeShape
@@ -119,7 +123,9 @@ fun MoreScreen(
     val photoPath by deviceProfile.photoPath.collectAsState()
     val feedbackRepository = application.container.feedbackRepository
     val householdRepository = application.container.householdRepository
+    val householdName by householdRepository.observeHouseholdName().collectAsState(initial = null)
     val householdMembersRepository = application.container.householdMembersRepository
+    val householdMembers by householdMembersRepository.observeMembers().collectAsState(initial = emptyList())
     val isPremium by householdMembersRepository.observeHouseholdIsPremium().collectAsState(initial = false)
     val billingRepository = application.container.billingRepository
     val debugPremiumOverride by billingRepository.debugPremiumOverride.collectAsState()
@@ -133,6 +139,7 @@ fun MoreScreen(
     val feedbackErrorMessage = stringResource(R.string.more_feedback_error)
     val deleteHouseholdSuccessMessage = stringResource(R.string.more_delete_household_success)
     val deleteHouseholdErrorMessage = stringResource(R.string.more_delete_household_error)
+    val renameHouseholdErrorMessage = stringResource(R.string.more_rename_household_error)
 
     var showProfileDialog by remember { mutableStateOf(false) }
     var showHouseholdDialog by remember { mutableStateOf(false) }
@@ -323,8 +330,18 @@ fun MoreScreen(
             displayName = displayName,
             photoPath = photoPath,
             onSaveName = { deviceProfile.setDisplayName(it) },
-            onPhotoPicked = { uri -> coroutineScope.launch { deviceProfile.setPhotoFromUri(uri) } },
-            onRemovePhoto = { coroutineScope.launch { deviceProfile.clearPhoto() } },
+            onPhotoPicked = { uri ->
+                coroutineScope.launch {
+                    deviceProfile.setPhotoFromUri(uri)
+                    householdMembersRepository.syncCurrentDevicePhoto()
+                }
+            },
+            onRemovePhoto = {
+                coroutineScope.launch {
+                    deviceProfile.clearPhoto()
+                    householdMembersRepository.syncCurrentDevicePhoto()
+                }
+            },
             onDismiss = { showProfileDialog = false },
         )
     }
@@ -332,6 +349,15 @@ fun MoreScreen(
     if (showHouseholdDialog) {
         HouseholdDialog(
             householdCode = householdId,
+            householdName = householdName,
+            members = householdMembers,
+            onRenameHousehold = { newName ->
+                val idToRename = householdId ?: return@HouseholdDialog
+                coroutineScope.launch {
+                    householdRepository.renameHousehold(idToRename, newName)
+                        .onFailure { snackbarHostState.showSnackbar(renameHouseholdErrorMessage, duration = SnackbarDuration.Short) }
+                }
+            },
             onLeaveClick = {
                 showHouseholdDialog = false
                 showLeaveConfirm = true
@@ -584,10 +610,18 @@ private fun SettingsRow(icon: ImageVector, title: String, subtitle: String? = nu
 @Composable
 private fun HouseholdDialog(
     householdCode: String?,
+    householdName: String?,
+    members: List<HouseholdMember>,
+    onRenameHousehold: (String) -> Unit,
     onLeaveClick: () -> Unit,
     onDeleteClick: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    // Re-seeds from the live household name whenever it changes (e.g. this dialog reopening,
+    // or a housemate renaming it on their own device) — but not on every keystroke, since
+    // `key1 = householdName` only re-runs this initializer when that upstream value itself changes.
+    var nameInput by remember(householdName) { mutableStateOf(householdName.orEmpty()) }
+
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.more_household_title)) },
@@ -597,6 +631,32 @@ private fun HouseholdDialog(
                     text = stringResource(R.string.more_household_code_format, householdCode ?: "—"),
                     style = MaterialTheme.typography.bodyLarge,
                 )
+                OutlinedTextField(
+                    value = nameInput,
+                    onValueChange = { if (it.length <= HouseholdRepository.HOUSEHOLD_NAME_MAX_LENGTH) nameInput = it },
+                    label = { Text(stringResource(R.string.household_name_label)) },
+                    singleLine = true,
+                    trailingIcon = {
+                        if (nameInput.isNotBlank() && nameInput != householdName) {
+                            IconButton(onClick = { onRenameHousehold(nameInput) }) {
+                                Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.common_save))
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                HorizontalDivider()
+                Text(
+                    text = stringResource(R.string.more_household_members_title),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Column(
+                    modifier = Modifier.heightIn(max = 220.dp).verticalScroll(rememberScrollState()),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    members.forEach { member -> HouseholdMemberRow(member) }
+                }
                 TextButton(
                     onClick = onDeleteClick,
                     modifier = Modifier.align(Alignment.End),
@@ -612,6 +672,47 @@ private fun HouseholdDialog(
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) }
         },
     )
+}
+
+@Composable
+private fun HouseholdMemberRow(member: HouseholdMember) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.primaryContainer,
+            modifier = Modifier.size(36.dp),
+        ) {
+            if (member.photoUrl != null) {
+                AsyncImage(
+                    model = member.photoUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = Icons.Filled.AccountCircle,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+        }
+        Text(
+            text = member.displayName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.more_household_member_unnamed),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f).padding(start = 10.dp),
+        )
+        if (member.isCurrentDevice) {
+            Text(
+                text = stringResource(R.string.more_household_member_you),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 private fun ThemeMode.labelRes(): Int = when (this) {

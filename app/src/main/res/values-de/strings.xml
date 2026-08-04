@@ -110,6 +110,10 @@
     <!-- Mehr -->
     <string name="more_household_title">Haushalt</string>
     <string name="more_household_code_format">Code: %1$s</string>
+    <string name="more_household_members_title">Mitglieder</string>
+    <string name="more_household_member_unnamed">Namenloses Mitglied</string>
+    <string name="more_household_member_you">Du</string>
+    <string name="more_rename_household_error">Der Name konnte nicht geändert werden. Bitte versuche es erneut.</string>
     <string name="more_premium_title">Premium</string>
     <string name="more_premium_active">Aktiv</string>
     <string name="more_premium_inactive">Premium holen</string>
@@ -303,6 +307,8 @@
     <string name="shopping_list_search_placeholder">Einkaufsliste durchsuchen…</string>
     <string name="shopping_list_removed_format">%1$s entfernt</string>
     <string name="shopping_list_delete_cd">Löschen</string>
+    <string name="shopping_list_assign_store_cd">Geschäft zuweisen</string>
+    <string name="shopping_list_assign_store_title">Wähle ein Geschäft</string>
     <string name="shopping_list_mark_unchecked_cd">Als nicht abgehakt markieren</string>
     <string name="shopping_list_mark_checked_cd">Als abgehakt markieren</string>
     <string name="shopping_list_empty_filtered">Keine Artikel gefunden.</string>

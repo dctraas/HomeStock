@@ -127,6 +127,10 @@ fun ShoppingListScreen() {
 
     var showAddDialog by remember { mutableStateOf(false) }
     var editingItem by remember { mutableStateOf<ShoppingListItemEntity?>(null) }
+    // Separate from editingItem: opens a compact, store-only picker (tap = assign + close)
+    // instead of the full edit form — a faster way to (re)assign an item's store than
+    // opening ItemFormDialog and navigating to its store field among several others.
+    var storeAssignItem by remember { mutableStateOf<ShoppingListItemEntity?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val removedFormat = stringResource(R.string.shopping_list_removed_format)
@@ -266,6 +270,7 @@ fun ShoppingListScreen() {
                     },
                     onDelete = { deleteWithUndo(it) },
                     onMove = viewModel::moveItem,
+                    onAssignStoreClick = { storeAssignItem = it },
                 )
             } else {
                 LazyVerticalGrid(
@@ -288,11 +293,24 @@ fun ShoppingListScreen() {
                                 onIncrease = { viewModel.setQuantity(item.id, item.quantity + step) },
                                 onDecrease = { viewModel.setQuantity(item.id, (item.quantity - step).coerceAtLeast(1)) },
                                 onDelete = { deleteWithUndo(item) },
+                                onAssignStoreClick = { storeAssignItem = item },
                             )
                         }
                     }
                 }
             }
+        }
+
+        storeAssignItem?.let { item ->
+            QuickStoreAssignDialog(
+                stores = stores,
+                currentStore = item.store,
+                onSelect = { store ->
+                    viewModel.setStore(item.id, store)
+                    storeAssignItem = null
+                },
+                onDismiss = { storeAssignItem = null },
+            )
         }
 
         if (showAddDialog) {
@@ -358,6 +376,7 @@ private fun ReorderableShoppingList(
     onDecrease: (ShoppingListItemEntity) -> Unit,
     onDelete: (ShoppingListItemEntity) -> Unit,
     onMove: (item: ShoppingListItemEntity, previous: ShoppingListItemEntity?, next: ShoppingListItemEntity?) -> Unit,
+    onAssignStoreClick: (ShoppingListItemEntity) -> Unit,
 ) {
     val flattened = remember(groupedByStore) { groupedByStore.values.flatten() }
     val orderedItems = remember { mutableStateListOf<ShoppingListItemEntity>() }
@@ -465,6 +484,7 @@ private fun ReorderableShoppingList(
                     onIncrease = { onIncrease(item) },
                     onDecrease = { onDecrease(item) },
                     onDelete = { onDelete(item) },
+                    onAssignStoreClick = { onAssignStoreClick(item) },
                     onDragStart = { rowHeightPx ->
                         draggingId = item.id
                         dragOffsetPx = 0f
@@ -527,6 +547,7 @@ private fun ShoppingListRow(
     onIncrease: () -> Unit,
     onDecrease: () -> Unit,
     onDelete: () -> Unit,
+    onAssignStoreClick: () -> Unit,
     onDragStart: (rowHeightPx: Float) -> Unit,
     onDrag: (deltaYPx: Float) -> Unit,
     onDragEnd: () -> Unit,
@@ -597,6 +618,14 @@ private fun ShoppingListRow(
                 dense = true,
                 displayText = formatQuantityWithUnit(item.quantity, MeasurementUnit.fromStorageKey(item.unit)),
             )
+            IconButton(onClick = onAssignStoreClick, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    Icons.Filled.Storefront,
+                    contentDescription = stringResource(R.string.shopping_list_assign_store_cd),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
             IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
                 Icon(
                     Icons.Filled.Delete,
@@ -618,6 +647,7 @@ private fun ShoppingListGridTile(
     onIncrease: () -> Unit,
     onDecrease: () -> Unit,
     onDelete: () -> Unit,
+    onAssignStoreClick: () -> Unit,
 ) {
     val category = Category.fromStorageKey(item.category)
     val dismissState = rememberSwipeToDismissBoxState(
@@ -702,6 +732,23 @@ private fun ShoppingListGridTile(
                         Icon(
                             Icons.Filled.Delete,
                             contentDescription = stringResource(R.string.shopping_list_delete_cd),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(6.dp)
+                        .size(36.dp),
+                ) {
+                    IconButton(onClick = onAssignStoreClick, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            Icons.Filled.Storefront,
+                            contentDescription = stringResource(R.string.shopping_list_assign_store_cd),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp),
                         )
@@ -885,4 +932,61 @@ private fun ItemFormAvatar(imageUrl: String?, category: Category) {
         shape = RoundedCornerShape(24.dp),
         modifier = Modifier.size(88.dp),
     )
+}
+
+/**
+ * A faster way to (re)assign an item's store than [ItemFormDialog]: a store-only list where
+ * tapping a row assigns it and closes immediately, instead of opening the full edit form and
+ * navigating to its store dropdown among several other fields.
+ */
+@Composable
+private fun QuickStoreAssignDialog(
+    stores: List<StoreEntity>,
+    currentStore: String,
+    onSelect: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.shopping_list_assign_store_title)) },
+        text = {
+            Column(
+                modifier = Modifier.heightIn(max = 320.dp).verticalScroll(rememberScrollState()),
+            ) {
+                QuickStoreOptionRow(
+                    name = stringResource(R.string.store_geen),
+                    selected = currentStore.isBlank(),
+                    onClick = { onSelect("") },
+                )
+                stores.forEach { store ->
+                    QuickStoreOptionRow(
+                        name = store.name,
+                        selected = store.name == currentStore,
+                        onClick = { onSelect(store.name) },
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun QuickStoreOptionRow(name: String, selected: Boolean, onClick: () -> Unit) {
+    val contentColor = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(Icons.Filled.Storefront, contentDescription = null, tint = contentColor)
+        Text(name, style = MaterialTheme.typography.bodyLarge, color = contentColor, modifier = Modifier.weight(1f).padding(start = 12.dp))
+        if (selected) {
+            Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = contentColor)
+        }
+    }
 }

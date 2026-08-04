@@ -110,6 +110,10 @@
     <!-- Plus -->
     <string name="more_household_title">Foyer</string>
     <string name="more_household_code_format">Code : %1$s</string>
+    <string name="more_household_members_title">Membres</string>
+    <string name="more_household_member_unnamed">Membre sans nom</string>
+    <string name="more_household_member_you">Toi</string>
+    <string name="more_rename_household_error">Impossible de modifier le nom. Réessayez.</string>
     <string name="more_premium_title">Premium</string>
     <string name="more_premium_active">Actif</string>
     <string name="more_premium_inactive">Passer à Premium</string>
@@ -303,6 +307,8 @@
     <string name="shopping_list_search_placeholder">Rechercher dans la liste de courses…</string>
     <string name="shopping_list_removed_format">%1$s supprimé</string>
     <string name="shopping_list_delete_cd">Supprimer</string>
+    <string name="shopping_list_assign_store_cd">Attribuer un magasin</string>
+    <string name="shopping_list_assign_store_title">Choisissez un magasin</string>
     <string name="shopping_list_mark_unchecked_cd">Marquer comme non coché</string>
     <string name="shopping_list_mark_checked_cd">Marquer comme coché</string>
     <string name="shopping_list_empty_filtered">Aucun article trouvé.</string>

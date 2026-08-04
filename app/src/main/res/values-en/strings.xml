@@ -110,6 +110,10 @@
     <!-- More -->
     <string name="more_household_title">Household</string>
     <string name="more_household_code_format">Code: %1$s</string>
+    <string name="more_household_members_title">Members</string>
+    <string name="more_household_member_unnamed">Unnamed member</string>
+    <string name="more_household_member_you">You</string>
+    <string name="more_rename_household_error">Couldn\'t change the name. Please try again.</string>
     <string name="more_premium_title">Premium</string>
     <string name="more_premium_active">Active</string>
     <string name="more_premium_inactive">Go Premium</string>
@@ -303,6 +307,8 @@
     <string name="shopping_list_search_placeholder">Search shopping list…</string>
     <string name="shopping_list_removed_format">%1$s removed</string>
     <string name="shopping_list_delete_cd">Delete</string>
+    <string name="shopping_list_assign_store_cd">Assign store</string>
+    <string name="shopping_list_assign_store_title">Choose a store</string>
     <string name="shopping_list_mark_unchecked_cd">Mark as not checked</string>
     <string name="shopping_list_mark_checked_cd">Mark as checked</string>
     <string name="shopping_list_empty_filtered">No items found.</string>

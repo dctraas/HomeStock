@@ -24,6 +24,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.PersistentCacheSettings
+import com.google.firebase.storage.FirebaseStorage
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
@@ -65,6 +66,7 @@ class AppContainer(context: Context) {
             .build()
     }
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+    private val storage: FirebaseStorage = FirebaseStorage.getInstance()
 
     val householdRepository: HouseholdRepository by lazy {
         HouseholdRepository(appContext, firestore, auth, householdSession)
@@ -75,7 +77,7 @@ class AppContainer(context: Context) {
     }
 
     val householdMembersRepository: HouseholdMembersRepository by lazy {
-        HouseholdMembersRepository(firestore, householdSession, auth, billingRepository)
+        HouseholdMembersRepository(firestore, storage, householdSession, auth, billingRepository, deviceProfile)
     }
 
     // Open Food Facts documents that it throttles/blocks requests carrying a generic HTTP

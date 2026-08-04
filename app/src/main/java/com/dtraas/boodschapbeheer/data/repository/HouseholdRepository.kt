@@ -55,6 +55,18 @@ class HouseholdRepository(
         }
     }
 
+    /** Renames an existing household (Instellingen > Huishouden > naam wijzigen). */
+    suspend fun renameHousehold(householdId: String, name: String): Result<Unit> {
+        val trimmedName = name.trim().take(HOUSEHOLD_NAME_MAX_LENGTH)
+        if (trimmedName.isEmpty()) return Result.failure(IllegalArgumentException("Naam mag niet leeg zijn"))
+        return try {
+            firestore.collection(HOUSEHOLDS_COLLECTION).document(householdId).update(FIELD_NAME, trimmedName).await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     /**
      * The current household's name, live — shown as the Voorraad screen's title instead of
      * a generic label. Households created before this field existed have no [FIELD_NAME], so
