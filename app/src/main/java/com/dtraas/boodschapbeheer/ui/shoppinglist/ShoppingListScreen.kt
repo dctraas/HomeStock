@@ -273,6 +273,7 @@ fun ShoppingListScreen() {
                     },
                     onDelete = { deleteWithUndo(it) },
                     onMove = viewModel::moveItem,
+                    onStoreChange = { item, newStore -> viewModel.setStore(item.id, newStore) },
                     onAssignStoreClick = { storeAssignItem = it },
                 )
             } else {
@@ -368,6 +369,11 @@ fun ShoppingListScreen() {
  * from Firestore while nothing is being dragged, so a snapshot arriving mid-gesture (e.g.
  * a housemate's edit on another device) can't yank an item out from under the user's
  * finger — the same class of race this app already avoids for other live-edited fields.
+ *
+ * Dragging an item past the end of its own store's group and into a neighboring store's
+ * group reassigns it to that store (see [onStoreChange]) — a faster alternative to opening
+ * the store picker for a plain "move this to my other list" gesture. The explicit per-row
+ * store icon remains the discoverable way to do the same thing.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -379,6 +385,7 @@ private fun ReorderableShoppingList(
     onDecrease: (ShoppingListItemEntity) -> Unit,
     onDelete: (ShoppingListItemEntity) -> Unit,
     onMove: (item: ShoppingListItemEntity, previous: ShoppingListItemEntity?, next: ShoppingListItemEntity?) -> Unit,
+    onStoreChange: (item: ShoppingListItemEntity, newStore: String) -> Unit,
     onAssignStoreClick: (ShoppingListItemEntity) -> Unit,
 ) {
     val flattened = remember(groupedByStore) { groupedByStore.values.flatten() }
@@ -386,6 +393,10 @@ private fun ReorderableShoppingList(
     var draggingId by remember { mutableStateOf<String?>(null) }
     var dragOffsetPx by remember { mutableFloatStateOf(0f) }
     var draggingRowHeightPx by remember { mutableFloatStateOf(0f) }
+    // The store this item belonged to when the drag started — compared against its
+    // (possibly reassigned, see handleDrag) store at drop time so onStoreChange only
+    // fires when a store boundary was actually crossed.
+    var draggingOriginalStore by remember { mutableStateOf<String?>(null) }
 
     if (draggingId == null) {
         // Not mid-gesture: reconcile with the latest Firestore data. If it's still the same
@@ -409,11 +420,13 @@ private fun ReorderableShoppingList(
     }
 
     // Two items can only be swapped past each other while dragging if they're in the same
-    // store and the same checked/unchecked group — isChecked is the primary sort key, so
-    // moving across that boundary wouldn't visually do anything but would silently corrupt
-    // the manual order.
+    // checked/unchecked group — isChecked is the primary sort key, so moving across that
+    // boundary wouldn't visually do anything but would silently corrupt the manual order.
+    // Store is deliberately not part of this gate: dragging an item past the last item of
+    // its own store's group and into a neighboring store's group is how a store reassignment
+    // happens (see handleDrag), so the two runs need to be swappable across that boundary.
     fun canSwap(a: ShoppingListItemEntity, b: ShoppingListItemEntity) =
-        a.store == b.store && a.isChecked == b.isChecked
+        a.isChecked == b.isChecked
 
     fun handleDrag(deltaY: Float) {
         val id = draggingId ?: return
@@ -422,14 +435,22 @@ private fun ReorderableShoppingList(
         while (true) {
             val index = orderedItems.indexOfFirst { it.id == id }
             if (index < 0) break
+            val current = orderedItems[index]
             if (dragOffsetPx > rowHeight / 2f && index < orderedItems.lastIndex &&
-                canSwap(orderedItems[index], orderedItems[index + 1])
+                canSwap(current, orderedItems[index + 1])
             ) {
+                val neighbor = orderedItems[index + 1]
+                // Crossing into a neighboring store's run: adopt its store right as the
+                // dragged item passes it, so it visually merges into that group immediately
+                // instead of only updating once the drag ends.
+                if (neighbor.store != current.store) orderedItems[index] = current.copy(store = neighbor.store)
                 orderedItems.add(index, orderedItems.removeAt(index + 1))
                 dragOffsetPx -= rowHeight
             } else if (dragOffsetPx < -rowHeight / 2f && index > 0 &&
-                canSwap(orderedItems[index], orderedItems[index - 1])
+                canSwap(current, orderedItems[index - 1])
             ) {
+                val neighbor = orderedItems[index - 1]
+                if (neighbor.store != current.store) orderedItems[index] = current.copy(store = neighbor.store)
                 orderedItems.add(index - 1, orderedItems.removeAt(index))
                 dragOffsetPx += rowHeight
             } else {
@@ -445,6 +466,9 @@ private fun ReorderableShoppingList(
             val item = orderedItems[index]
             val previous = orderedItems.getOrNull(index - 1)?.takeIf { canSwap(item, it) }
             val next = orderedItems.getOrNull(index + 1)?.takeIf { canSwap(item, it) }
+            if (item.store != draggingOriginalStore) {
+                onStoreChange(item, item.store)
+            }
             if (previous != null || next != null) {
                 onMove(item, previous, next)
             }
@@ -452,11 +476,13 @@ private fun ReorderableShoppingList(
         draggingId = null
         dragOffsetPx = 0f
         draggingRowHeightPx = 0f
+        draggingOriginalStore = null
     }
 
-    // Items of the same store are already contiguous in orderedItems (they come from
-    // groupedByStore, and a drag only ever swaps items within their own store), so
-    // grouping consecutive runs here always yields exactly one run per store.
+    // Items of the same store are always contiguous in orderedItems — they start out that
+    // way (from groupedByStore), and a drag either swaps within a run or, at a run's edge,
+    // relabels the dragged item's store to merge it into the neighboring run (see
+    // handleDrag) — so grouping consecutive runs here always yields exactly one run per store.
     val storeRuns = remember(orderedItems.toList()) {
         val runs = mutableListOf<Pair<String, MutableList<ShoppingListItemEntity>>>()
         for (item in orderedItems) {
@@ -492,6 +518,7 @@ private fun ReorderableShoppingList(
                         draggingId = item.id
                         dragOffsetPx = 0f
                         draggingRowHeightPx = rowHeightPx
+                        draggingOriginalStore = item.store
                     },
                     onDrag = ::handleDrag,
                     onDragEnd = ::commitDrag,

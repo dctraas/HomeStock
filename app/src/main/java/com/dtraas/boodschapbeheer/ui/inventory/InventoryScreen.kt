@@ -826,24 +826,6 @@ private fun InventoryGridTile(
                         .padding(8.dp)
                         .background(MaterialTheme.colorScheme.surface, CircleShape),
                 )
-            } else {
-                IconButton(
-                    onClick = onToggleFavorite,
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(4.dp)
-                        .size(32.dp)
-                        .background(MaterialTheme.colorScheme.surface, CircleShape),
-                ) {
-                    Icon(
-                        imageVector = if (item.isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                        contentDescription = stringResource(
-                            if (item.isFavorite) R.string.inventory_unmark_favorite_cd else R.string.inventory_mark_favorite_cd,
-                        ),
-                        tint = if (item.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
             }
         }
         Column(modifier = Modifier.padding(top = 6.dp)) {
@@ -875,13 +857,25 @@ private fun InventoryGridTile(
                     onIncrease = onIncrease,
                     dense = true,
                 )
-                IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        Icons.Filled.AddShoppingCart,
-                        contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp),
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onToggleFavorite, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            imageVector = if (item.isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                            contentDescription = stringResource(
+                                if (item.isFavorite) R.string.inventory_unmark_favorite_cd else R.string.inventory_mark_favorite_cd,
+                            ),
+                            tint = if (item.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                    IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            Icons.Filled.AddShoppingCart,
+                            contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
                 }
             }
         }

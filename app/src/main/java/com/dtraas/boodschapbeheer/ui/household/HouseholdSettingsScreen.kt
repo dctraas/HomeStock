@@ -13,8 +13,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -23,7 +25,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -102,8 +103,6 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            CodeSection(householdCode = householdId)
-
             NameSection(
                 householdName = householdName,
                 onSave = { newName ->
@@ -122,6 +121,8 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                 onLeaveClick = { showLeaveConfirm = true },
                 onDeleteClick = { showDeleteConfirm = true },
             )
+
+            CodeSection(householdCode = householdId)
         }
     }
 
@@ -199,14 +200,18 @@ private fun SectionCard(content: @Composable ColumnScope.() -> Unit) {
     }
 }
 
+/** Low-key footer at the very bottom of the screen — the code is for sharing, not editing, so it doesn't need a card of its own like the sections above it. */
 @Composable
 private fun CodeSection(householdCode: String?) {
-    SectionCard {
-        Text(
-            text = stringResource(R.string.more_household_code_format, householdCode ?: "—"),
-            style = MaterialTheme.typography.titleMedium,
-        )
-    }
+    Text(
+        text = stringResource(R.string.more_household_code_format, householdCode ?: "—"),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp),
+    )
 }
 
 /**
@@ -299,27 +304,22 @@ private fun DangerZoneSection(isDeleting: Boolean, onLeaveClick: () -> Unit, onD
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
         shape = SoftCardShape,
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
         ) {
-            OutlinedButton(
-                onClick = onLeaveClick,
-                enabled = !isDeleting,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(stringResource(R.string.more_leave))
+            IconButton(onClick = onLeaveClick, enabled = !isDeleting) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Logout,
+                    contentDescription = stringResource(R.string.more_leave),
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                )
             }
-            TextButton(
-                onClick = onDeleteClick,
-                enabled = !isDeleting,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = stringResource(R.string.more_delete_household),
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
+            IconButton(onClick = onDeleteClick, enabled = !isDeleting) {
+                Icon(
+                    imageVector = Icons.Filled.DeleteForever,
+                    contentDescription = stringResource(R.string.more_delete_household),
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
                 )
             }
         }
