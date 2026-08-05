@@ -157,6 +157,10 @@
     <string name="account_link_prompt_message">Evita perder el acceso a este hogar si desinstalas la app o cambias de dispositivo. Solo lleva un par de toques, y también puedes hacerlo más tarde desde Más.</string>
     <string name="account_link_prompt_confirm">Vincular ahora</string>
     <string name="account_link_prompt_dismiss">Ahora no</string>
+    <string name="account_link_unlink_button">Desvincular</string>
+    <string name="account_link_unlink_dialog_title">¿Desvincular cuenta?</string>
+    <string name="account_link_unlink_dialog_text">Tu acceso al hogar ya no estará protegido — si desinstalas la app o cambias de dispositivo, podrías perder el acceso a este hogar de nuevo.</string>
+    <string name="account_link_unlink_error">No se pudo desvincular la cuenta. Inténtalo de nuevo.</string>
     <string name="more_section_general">General</string>
     <string name="more_theme_title">Pantalla</string>
     <string name="more_theme_option_system">Predeterminado del sistema</string>

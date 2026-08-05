@@ -158,6 +158,10 @@
     <string name="account_link_prompt_message">Voorkom dat je toegang tot dit huishouden kwijtraakt als je de app verwijdert of van toestel wisselt. Dit duurt maar een paar tikken, en kan ook later nog via Meer.</string>
     <string name="account_link_prompt_confirm">Nu koppelen</string>
     <string name="account_link_prompt_dismiss">Niet nu</string>
+    <string name="account_link_unlink_button">Ontkoppelen</string>
+    <string name="account_link_unlink_dialog_title">Account ontkoppelen?</string>
+    <string name="account_link_unlink_dialog_text">Je huishouden-toegang is dan niet meer beschermd — als je de app verwijdert of van toestel wisselt, kun je opnieuw de toegang tot dit huishouden verliezen.</string>
+    <string name="account_link_unlink_error">Ontkoppelen is niet gelukt. Probeer het opnieuw.</string>
     <string name="more_section_general">Algemeen</string>
     <string name="more_theme_title">Weergave</string>
     <string name="more_theme_option_system">Systeem standaard</string>

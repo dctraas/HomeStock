@@ -157,6 +157,10 @@
     <string name="account_link_prompt_message">Verhindere, dass du den Zugriff auf diesen Haushalt verlierst, wenn du die App deinstallierst oder das Gerät wechselst. Das dauert nur ein paar Klicks und geht später auch noch über Mehr.</string>
     <string name="account_link_prompt_confirm">Jetzt verknüpfen</string>
     <string name="account_link_prompt_dismiss">Nicht jetzt</string>
+    <string name="account_link_unlink_button">Trennen</string>
+    <string name="account_link_unlink_dialog_title">Konto trennen?</string>
+    <string name="account_link_unlink_dialog_text">Dein Haushaltszugriff ist dann nicht mehr geschützt — wenn du die App deinstallierst oder das Gerät wechselst, kannst du den Zugriff auf diesen Haushalt erneut verlieren.</string>
+    <string name="account_link_unlink_error">Trennen ist fehlgeschlagen. Bitte versuche es erneut.</string>
     <string name="more_section_general">Allgemein</string>
     <string name="more_theme_title">Anzeige</string>
     <string name="more_theme_option_system">Systemstandard</string>

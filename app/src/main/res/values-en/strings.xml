@@ -157,6 +157,10 @@
     <string name="account_link_prompt_message">Prevent losing access to this household if you uninstall the app or switch devices. It only takes a couple of taps, and you can also do this later via More.</string>
     <string name="account_link_prompt_confirm">Link now</string>
     <string name="account_link_prompt_dismiss">Not now</string>
+    <string name="account_link_unlink_button">Unlink</string>
+    <string name="account_link_unlink_dialog_title">Unlink account?</string>
+    <string name="account_link_unlink_dialog_text">Your household access will no longer be protected — if you uninstall the app or switch devices, you could lose access to this household again.</string>
+    <string name="account_link_unlink_error">Couldn\'t unlink your account. Please try again.</string>
     <string name="more_section_general">General</string>
     <string name="more_theme_title">Display</string>
     <string name="more_theme_option_system">System default</string>

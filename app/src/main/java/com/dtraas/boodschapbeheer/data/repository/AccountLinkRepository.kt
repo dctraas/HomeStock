@@ -2,6 +2,7 @@ package com.dtraas.boodschapbeheer.data.repository
 
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -36,14 +37,23 @@ class AccountLinkRepository(context: Context, private val auth: FirebaseAuth) {
         prefs.edit().putBoolean(KEY_HAS_SHOWN_PROMPT, true).apply()
     }
 
-    /** True once this device's session has a permanent (non-anonymous) credential attached. */
+    // Checked via providerData rather than FirebaseUser.isAnonymous: isAnonymous is meant to
+    // answer "was this account ever claimed by a real identity", not "is a Google credential
+    // attached right now" — whether it reverts to true after unlinkGoogleAccount() isn't
+    // something Firebase documents, so relying on it here would risk this screen quietly
+    // showing "linked" right after a successful unlink. Checking providerData for the specific
+    // provider is exactly what both linking and unlinking actually add/remove, so it can't drift.
+    private fun isGoogleLinked(user: FirebaseUser?): Boolean =
+        user?.providerData?.any { it.providerId == GoogleAuthProvider.PROVIDER_ID } == true
+
+    /** True once this device's session has a Google credential attached. */
     fun observeIsLinked(): Flow<Boolean> = callbackFlow {
-        val listener = FirebaseAuth.AuthStateListener { trySend(it.currentUser?.isAnonymous == false) }
+        val listener = FirebaseAuth.AuthStateListener { trySend(isGoogleLinked(it.currentUser)) }
         auth.addAuthStateListener(listener)
         awaitClose { auth.removeAuthStateListener(listener) }
     }
 
-    /** The linked Google account's email, or null if not linked (or linked some other way). */
+    /** The linked Google account's email, or null if not linked. */
     val linkedEmail: String?
         get() = auth.currentUser?.providerData?.firstOrNull { it.providerId == GoogleAuthProvider.PROVIDER_ID }?.email
 
@@ -61,6 +71,20 @@ class AccountLinkRepository(context: Context, private val auth: FirebaseAuth) {
         val user = auth.currentUser ?: return Result.failure(IllegalStateException("Not signed in"))
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         user.linkWithCredential(credential).await()
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    /**
+     * Removes the Google credential from this session, reverting it to anonymous-only. This
+     * undoes the protection linking provided — after this, uninstalling the app or switching
+     * devices loses access to the household again, same as before ever linking (see
+     * AccountLinkScreen's confirmation dialog, which explains that before calling this).
+     */
+    suspend fun unlinkGoogleAccount(): Result<Unit> = try {
+        val user = auth.currentUser ?: return Result.failure(IllegalStateException("Not signed in"))
+        user.unlink(GoogleAuthProvider.PROVIDER_ID).await()
         Result.success(Unit)
     } catch (e: Exception) {
         Result.failure(e)

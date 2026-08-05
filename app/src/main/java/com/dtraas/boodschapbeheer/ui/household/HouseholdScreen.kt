@@ -72,7 +72,12 @@ import kotlinx.coroutines.launch
 fun HouseholdScreen() {
     val application = LocalContext.current.applicationContext as BoodschapBeheerApplication
     val deviceProfile = application.container.deviceProfile
+    // Keyed off onboardingGeneration so leaving/deleting a household forces a brand new
+    // HouseholdViewModel instead of Android handing back the previous, stale one — see
+    // HouseholdSession.onboardingGeneration's doc for why that would otherwise happen.
+    val onboardingGeneration by application.container.householdSession.onboardingGeneration.collectAsState()
     val viewModel: HouseholdViewModel = viewModel(
+        key = "household_onboarding_$onboardingGeneration",
         factory = viewModelFactory {
             initializer {
                 HouseholdViewModel(

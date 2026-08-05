@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.VerifiedUser
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
@@ -21,6 +22,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -78,9 +80,23 @@ fun AccountLinkScreen(onBack: () -> Unit) {
     val coroutineScope = rememberCoroutineScope()
 
     var isLinking by remember { mutableStateOf(false) }
+    var isUnlinking by remember { mutableStateOf(false) }
+    var showUnlinkConfirm by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
     val collisionErrorMessage = stringResource(R.string.account_link_error_collision)
     val genericErrorMessage = stringResource(R.string.account_link_error_generic)
+    val unlinkErrorMessage = stringResource(R.string.account_link_unlink_error)
+
+    fun unlinkAccount() {
+        isUnlinking = true
+        coroutineScope.launch {
+            accountLinkRepository.unlinkGoogleAccount().onFailure { e ->
+                errorMessage = unlinkErrorMessage.withDebugDetail(e)
+            }
+            isUnlinking = false
+            showUnlinkConfirm = false
+        }
+    }
 
     fun startGoogleSignIn() {
         errorMessage = null
@@ -130,7 +146,12 @@ fun AccountLinkScreen(onBack: () -> Unit) {
             verticalArrangement = Arrangement.Center,
         ) {
             if (isLinked) {
-                LinkedState(email = accountLinkRepository.linkedEmail)
+                LinkedState(
+                    email = accountLinkRepository.linkedEmail,
+                    isUnlinking = isUnlinking,
+                    errorMessage = errorMessage,
+                    onUnlinkClick = { showUnlinkConfirm = true },
+                )
             } else {
                 UnlinkedState(
                     isLinking = isLinking,
@@ -139,6 +160,25 @@ fun AccountLinkScreen(onBack: () -> Unit) {
                 )
             }
         }
+    }
+
+    if (showUnlinkConfirm) {
+        AlertDialog(
+            onDismissRequest = { if (!isUnlinking) showUnlinkConfirm = false },
+            title = { Text(stringResource(R.string.account_link_unlink_dialog_title)) },
+            text = { Text(stringResource(R.string.account_link_unlink_dialog_text)) },
+            confirmButton = {
+                TextButton(enabled = !isUnlinking, onClick = ::unlinkAccount) {
+                    Text(stringResource(R.string.account_link_unlink_button))
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    enabled = !isUnlinking,
+                    onClick = { showUnlinkConfirm = false },
+                ) { Text(stringResource(R.string.common_cancel)) }
+            },
+        )
     }
 }
 
@@ -192,7 +232,7 @@ private fun UnlinkedState(isLinking: Boolean, errorMessage: String?, onSignInCli
 }
 
 @Composable
-private fun LinkedState(email: String?) {
+private fun LinkedState(email: String?, isUnlinking: Boolean, errorMessage: String?, onUnlinkClick: () -> Unit) {
     Surface(
         shape = SoftBadgeShape,
         color = MaterialTheme.colorScheme.primaryContainer,
@@ -219,4 +259,20 @@ private fun LinkedState(email: String?) {
         textAlign = TextAlign.Center,
         modifier = Modifier.padding(top = 4.dp),
     )
+    if (errorMessage != null) {
+        Text(
+            text = errorMessage,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.error,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 12.dp),
+        )
+    }
+    TextButton(onClick = onUnlinkClick, enabled = !isUnlinking, modifier = Modifier.padding(top = 20.dp)) {
+        if (isUnlinking) {
+            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+        } else {
+            Text(stringResource(R.string.account_link_unlink_button), color = MaterialTheme.colorScheme.error)
+        }
+    }
 }

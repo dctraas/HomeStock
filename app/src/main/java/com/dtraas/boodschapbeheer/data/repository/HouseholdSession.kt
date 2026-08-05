@@ -33,9 +33,22 @@ class HouseholdSession(context: Context) {
         _justJoinedHousehold.value = false
     }
 
+    // HouseholdScreen isn't a Navigation-Compose destination — MainActivity just conditionally
+    // composes it based on householdId — so there's no NavBackStackEntry-scoped
+    // ViewModelStoreOwner to clear HouseholdViewModel for us when this device leaves a
+    // household. Without something forcing a new instance, Android's viewModel() call keeps
+    // returning the SAME retained HouseholdViewModel (scoped to the whole Activity) the next
+    // time HouseholdScreen appears, complete with whatever stale createdCode/joinCodeInput/mode
+    // it had from before — e.g. re-showing an already-deleted household's old code as if it had
+    // just been created again. HouseholdScreen keys its viewModel() call off this counter so a
+    // fresh instance is created every time onboarding needs to start over.
+    private val _onboardingGeneration = MutableStateFlow(0)
+    val onboardingGeneration: StateFlow<Int> = _onboardingGeneration
+
     fun leaveHousehold() {
         prefs.edit().remove(KEY_HOUSEHOLD_ID).apply()
         _householdId.value = null
+        _onboardingGeneration.value += 1
     }
 
     private companion object {
