@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">BoodschapBeheer</string>
+    <string name="app_name">HomeStock</string>
 
     <!-- Common -->
     <string name="common_back">Zurück</string>
@@ -86,7 +86,7 @@
     <string name="notice_statistics_message">Sieh dir deine meistgescannten Produkte und die Verteilung nach Kategorie an.</string>
 
     <!-- Household (onboarding, before joining a household) -->
-    <string name="household_welcome_title">Willkommen bei BoodschapBeheer</string>
+    <string name="household_welcome_title">Willkommen bei HomeStock</string>
     <string name="household_welcome_subtitle">Teile deinen Vorrat und deine Einkaufsliste mit deinen Mitbewohnern. Erstelle einen neuen Haushalt oder tritt einem bestehenden Haushalt mit einem Code bei.</string>
     <string name="household_create_button">Neuen Haushalt starten</string>
     <string name="household_join_button">Ich habe bereits einen Haushalt-Code</string>
@@ -309,7 +309,7 @@
     <!-- Scannen -->
     <string name="scan_quick_added_format">%1$s hinzugefügt (+1)</string>
     <string name="scan_overlay_hint">Richte die Kamera auf den Barcode eines Produkts</string>
-    <string name="scan_permission_rationale">BoodschapBeheer benötigt Kamerazugriff, um Barcodes scannen zu können.</string>
+    <string name="scan_permission_rationale">HomeStock benötigt Kamerazugriff, um Barcodes scannen zu können.</string>
     <string name="scan_permission_button">Kamerazugriff erlauben</string>
     <string name="scan_permission_denied_rationale">Du hast den Kamerazugriff verweigert. Aktiviere ihn in den App-Einstellungen, um weiter zu scannen.</string>
     <string name="scan_permission_open_settings">Einstellungen öffnen</string>
@@ -417,7 +417,7 @@
 
     <!-- Premium -->
     <string name="premium_title">Premium</string>
-    <string name="premium_pitch_title">Hol mehr aus BoodschapBeheer heraus</string>
+    <string name="premium_pitch_title">Hol mehr aus HomeStock heraus</string>
     <string name="premium_pitch_subtitle">Schalte Rezepte, Kassenbon-Scan, Statistiken und mehr Haushaltsmitglieder mit einem Jahresabo frei.</string>
     <string name="premium_active_title">Du bist Premium</string>
     <string name="premium_active_subtitle">Danke! Alle Premium-Funktionen sind für deinen ganzen Haushalt freigeschaltet.</string>

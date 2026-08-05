@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">BoodschapBeheer</string>
+    <string name="app_name">HomeStock</string>
 
     <!-- Common -->
     <string name="common_back">Terug</string>
@@ -87,7 +87,7 @@
     <string name="notice_statistics_message">Bekijk je meest gescande producten en de verdeling per categorie.</string>
 
     <!-- Household (onboarding, before joining a household) -->
-    <string name="household_welcome_title">Welkom bij BoodschapBeheer</string>
+    <string name="household_welcome_title">Welkom bij HomeStock</string>
     <string name="household_welcome_subtitle">Deel je voorraad en boodschappenlijst met je huisgenoten. Maak een nieuw huishouden aan, of sluit aan bij een bestaand huishouden met een code.</string>
     <string name="household_create_button">Nieuw huishouden starten</string>
     <string name="household_join_button">Ik heb al een huishouden-code</string>
@@ -310,7 +310,7 @@
     <!-- Scannen -->
     <string name="scan_quick_added_format">%1$s toegevoegd (+1)</string>
     <string name="scan_overlay_hint">Richt de camera op de barcode van een product</string>
-    <string name="scan_permission_rationale">BoodschapBeheer heeft toegang tot de camera nodig om barcodes te kunnen scannen.</string>
+    <string name="scan_permission_rationale">HomeStock heeft toegang tot de camera nodig om barcodes te kunnen scannen.</string>
     <string name="scan_permission_button">Geef toegang tot camera</string>
     <string name="scan_permission_denied_rationale">Je hebt camera-toegang geweigerd. Zet deze aan bij de instellingen van de app om verder te kunnen scannen.</string>
     <string name="scan_permission_open_settings">Open instellingen</string>
@@ -418,7 +418,7 @@
 
     <!-- Premium -->
     <string name="premium_title">Premium</string>
-    <string name="premium_pitch_title">Haal meer uit BoodschapBeheer</string>
+    <string name="premium_pitch_title">Haal meer uit HomeStock</string>
     <string name="premium_pitch_subtitle">Ontgrendel recepten, bonnetje scannen, statistieken en meer huisgenoten met één jaarabonnement.</string>
     <string name="premium_active_title">Je bent Premium</string>
     <string name="premium_active_subtitle">Bedankt! Alle Premium-functies staan open voor je hele huishouden.</string>

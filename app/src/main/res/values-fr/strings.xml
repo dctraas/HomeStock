@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">BoodschapBeheer</string>
+    <string name="app_name">HomeStock</string>
 
     <!-- Common -->
     <string name="common_back">Retour</string>
@@ -86,7 +86,7 @@
     <string name="notice_statistics_message">Consultez vos produits les plus scannés et la répartition par catégorie.</string>
 
     <!-- Household (onboarding, before joining a household) -->
-    <string name="household_welcome_title">Bienvenue sur BoodschapBeheer</string>
+    <string name="household_welcome_title">Bienvenue sur HomeStock</string>
     <string name="household_welcome_subtitle">Partagez votre stock et votre liste de courses avec vos colocataires. Créez un nouveau foyer ou rejoignez un foyer existant avec un code.</string>
     <string name="household_create_button">Créer un nouveau foyer</string>
     <string name="household_join_button">J\'ai déjà un code de foyer</string>
@@ -309,7 +309,7 @@
     <!-- Scanner -->
     <string name="scan_quick_added_format">%1$s ajouté (+1)</string>
     <string name="scan_overlay_hint">Pointez la caméra vers le code-barres d\'un produit</string>
-    <string name="scan_permission_rationale">BoodschapBeheer a besoin d\'accéder à la caméra pour scanner les codes-barres.</string>
+    <string name="scan_permission_rationale">HomeStock a besoin d\'accéder à la caméra pour scanner les codes-barres.</string>
     <string name="scan_permission_button">Autoriser l\'accès à la caméra</string>
     <string name="scan_permission_denied_rationale">Vous avez refusé l\'accès à la caméra. Activez-le dans les paramètres de l\'application pour continuer à scanner.</string>
     <string name="scan_permission_open_settings">Ouvrir les paramètres</string>
@@ -417,7 +417,7 @@
 
     <!-- Premium -->
     <string name="premium_title">Premium</string>
-    <string name="premium_pitch_title">Profitez encore plus de BoodschapBeheer</string>
+    <string name="premium_pitch_title">Profitez encore plus de HomeStock</string>
     <string name="premium_pitch_subtitle">Débloquez les recettes, le scan de tickets, les statistiques et plus de membres du foyer avec un abonnement annuel.</string>
     <string name="premium_active_title">Vous êtes Premium</string>
     <string name="premium_active_subtitle">Merci ! Toutes les fonctionnalités Premium sont accessibles pour tout votre foyer.</string>

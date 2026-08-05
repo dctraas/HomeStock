@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "BoodschapBeheer"
+rootProject.name = "HomeStock"
 include(":app")

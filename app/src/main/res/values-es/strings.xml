@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">BoodschapBeheer</string>
+    <string name="app_name">HomeStock</string>
 
     <!-- Common -->
     <string name="common_back">Atrás</string>
@@ -86,7 +86,7 @@
     <string name="notice_statistics_message">Consulta tus productos más escaneados y la distribución por categoría.</string>
 
     <!-- Household (onboarding, before joining a household) -->
-    <string name="household_welcome_title">Bienvenido a BoodschapBeheer</string>
+    <string name="household_welcome_title">Bienvenido a HomeStock</string>
     <string name="household_welcome_subtitle">Comparte tu inventario y lista de la compra con tus convivientes. Crea un hogar nuevo o únete a uno existente con un código.</string>
     <string name="household_create_button">Iniciar un nuevo hogar</string>
     <string name="household_join_button">Ya tengo un código de hogar</string>
@@ -309,7 +309,7 @@
     <!-- Escanear -->
     <string name="scan_quick_added_format">%1$s añadido (+1)</string>
     <string name="scan_overlay_hint">Apunta la cámara al código de barras de un producto</string>
-    <string name="scan_permission_rationale">BoodschapBeheer necesita acceso a la cámara para poder escanear códigos de barras.</string>
+    <string name="scan_permission_rationale">HomeStock necesita acceso a la cámara para poder escanear códigos de barras.</string>
     <string name="scan_permission_button">Conceder acceso a la cámara</string>
     <string name="scan_permission_denied_rationale">Has denegado el acceso a la cámara. Actívalo en los ajustes de la aplicación para seguir escaneando.</string>
     <string name="scan_permission_open_settings">Abrir ajustes</string>
@@ -417,7 +417,7 @@
 
     <!-- Premium -->
     <string name="premium_title">Premium</string>
-    <string name="premium_pitch_title">Saca más partido a BoodschapBeheer</string>
+    <string name="premium_pitch_title">Saca más partido a HomeStock</string>
     <string name="premium_pitch_subtitle">Desbloquea recetas, escaneo de tickets, estadísticas y más miembros del hogar con una suscripción anual.</string>
     <string name="premium_active_title">Ya eres Premium</string>
     <string name="premium_active_subtitle">¡Gracias! Todas las funciones Premium están disponibles para todo tu hogar.</string>

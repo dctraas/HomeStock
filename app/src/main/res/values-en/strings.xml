@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">BoodschapBeheer</string>
+    <string name="app_name">HomeStock</string>
 
     <!-- Common -->
     <string name="common_back">Back</string>
@@ -86,7 +86,7 @@
     <string name="notice_statistics_message">View your most-scanned products and the breakdown by category.</string>
 
     <!-- Household (onboarding, before joining a household) -->
-    <string name="household_welcome_title">Welcome to BoodschapBeheer</string>
+    <string name="household_welcome_title">Welcome to HomeStock</string>
     <string name="household_welcome_subtitle">Share your inventory and shopping list with your housemates. Create a new household, or join an existing one with a code.</string>
     <string name="household_create_button">Start a new household</string>
     <string name="household_join_button">I already have a household code</string>
@@ -309,7 +309,7 @@
     <!-- Scan -->
     <string name="scan_quick_added_format">%1$s added (+1)</string>
     <string name="scan_overlay_hint">Point the camera at a product\'s barcode</string>
-    <string name="scan_permission_rationale">BoodschapBeheer needs camera access to scan barcodes.</string>
+    <string name="scan_permission_rationale">HomeStock needs camera access to scan barcodes.</string>
     <string name="scan_permission_button">Grant camera access</string>
     <string name="scan_permission_denied_rationale">You\'ve denied camera access. Turn it on in the app\'s settings to keep scanning.</string>
     <string name="scan_permission_open_settings">Open settings</string>
@@ -417,7 +417,7 @@
 
     <!-- Premium -->
     <string name="premium_title">Premium</string>
-    <string name="premium_pitch_title">Get more out of BoodschapBeheer</string>
+    <string name="premium_pitch_title">Get more out of HomeStock</string>
     <string name="premium_pitch_subtitle">Unlock recipes, receipt scanning, statistics, and more household members with one yearly subscription.</string>
     <string name="premium_active_title">You\'re Premium</string>
     <string name="premium_active_subtitle">Thank you! All Premium features are open for your whole household.</string>

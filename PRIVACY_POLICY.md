@@ -1,10 +1,10 @@
-# Privacyverklaring BoodschapBeheer
+# Privacyverklaring HomeStock
 
 *Laatst bijgewerkt: 02-08-2026*
 
 > **Voor de ontwikkelaar:** dit is de canonieke, hostbare versie van de privacyverklaring die in de app wordt getoond (`app/src/main/assets/privacy_policy_nl.txt`) en die live staat op `docs/index.html` (GitHub Pages). Houd alle drie gelijk als je wijzigingen aanbrengt.
 
-Deze privacyverklaring legt uit welke gegevens de app BoodschapBeheer ("de app") verwerkt, waarom, en welke rechten je hebt. BoodschapBeheer is een app voor het bijhouden van een gedeelde voorraad en boodschappenlijst binnen een huishouden.
+Deze privacyverklaring legt uit welke gegevens de app HomeStock ("de app") verwerkt, waarom, en welke rechten je hebt. HomeStock is een app voor het bijhouden van een gedeelde voorraad en boodschappenlijst binnen een huishouden.
 
 **Verwerkingsverantwoordelijke:** Dennis Traas
 **Contact:** info@dennistraas.dev
@@ -38,7 +38,7 @@ De app gebruikt je camera om barcodes te scannen. Deze herkenning gebeurt volled
 Als je vrijwillig feedback stuurt via Instellingen (een sterbeoordeling en/of tekstbericht), wordt dit los van je huishouden opgeslagen zodat we de app kunnen verbeteren. Vul geen persoonsgegevens in je feedbackbericht in die je niet met ons wilt delen.
 
 ### 1.6 Wat we niet verzamelen
-BoodschapBeheer bevat geen advertenties, geen trackingscookies en geen analytics- of crashrapportage-SDK's van derden. We volgen je niet buiten de app en verkopen geen gegevens.
+HomeStock bevat geen advertenties, geen trackingscookies en geen analytics- of crashrapportage-SDK's van derden. We volgen je niet buiten de app en verkopen geen gegevens.
 
 ## 2. Waarom verwerken we deze gegevens
 
@@ -77,7 +77,7 @@ Je kunt deze rechten uitoefenen door contact met ons op te nemen via het e-maila
 
 ## 7. Kinderen
 
-BoodschapBeheer is niet specifiek gericht op kinderen jonger dan 16 jaar. We verzamelen niet bewust gegevens van kinderen onder deze leeftijd zonder toestemming van een ouder of voogd.
+HomeStock is niet specifiek gericht op kinderen jonger dan 16 jaar. We verzamelen niet bewust gegevens van kinderen onder deze leeftijd zonder toestemming van een ouder of voogd.
 
 ## 8. Wijzigingen
 

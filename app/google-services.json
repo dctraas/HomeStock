@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:400748229964:android:d35fbe32eb14dcaf870be9",
         "android_client_info": {
-          "package_name": "com.dtraas.boodschapbeheer"
+          "package_name": "com.dtraas.homestock"
         }
       },
       "oauth_client": [
@@ -17,7 +17,7 @@
           "client_id": "400748229964-gl55mqsjsft2j7847t334gjdhsoa3uil.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
-            "package_name": "com.dtraas.boodschapbeheer",
+            "package_name": "com.dtraas.homestock",
             "certificate_hash": "1dcaed78c571cd844a6593ddf0ddf07a5def69ee"
           }
         },

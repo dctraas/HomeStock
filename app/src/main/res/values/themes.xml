@@ -4,5 +4,5 @@
          Algemeen > Taal), which throws at runtime on a non-AppCompat theme. The
          actual UI is all Compose/Material3 — this native theme only governs the
          window chrome before Compose takes over. -->
-    <style name="Theme.BoodschapBeheer" parent="Theme.AppCompat.Light.NoActionBar" />
+    <style name="Theme.HomeStock" parent="Theme.AppCompat.Light.NoActionBar" />
 </resources>

@@ -3,7 +3,7 @@ rules_version = '2';
 // Publish these rules in the Firebase console under Firestore Database → Rules
 // (or via `firebase deploy --only firestore:rules` if you use the Firebase CLI).
 //
-// Access model: anyone who is signed in (including anonymously — BoodschapBeheer signs
+// Access model: anyone who is signed in (including anonymously — HomeStock signs
 // every device in anonymously, there is no password login) AND knows a household's
 // code can read and write everything under that household. The household code is
 // the only access control — this is deliberately simple for a small household/family

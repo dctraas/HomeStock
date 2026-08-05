@@ -1,4 +1,4 @@
-# BoodschapBeheer
+# HomeStock
 
 Android-app om samen met je huisgenoten bij te houden welke boodschappen je nog in huis hebt.
 
@@ -25,12 +25,12 @@ Android-app om samen met je huisgenoten bij te houden welke boodschappen je nog 
 - Coil voor productafbeeldingen
 - Handmatige DI (`AppContainer`) — bewust geen Hilt/Koin, de app is klein genoeg dat dat alleen ceremonie toevoegt
 
-Package: `com.dtraas.boodschapbeheer` · `minSdk 26` · `targetSdk/compileSdk 34`.
+Package: `com.dtraas.homestock` · `minSdk 26` · `targetSdk/compileSdk 34`.
 
 ## Projectstructuur
 
 ```
-app/src/main/java/com/dtraas/boodschapbeheer/
+app/src/main/java/com/dtraas/homestock/
 ├── data/
 │   ├── local/entity/  Firestore-document-modellen (toMap()/fromDocument())
 │   ├── local/dao/      Overgebleven platte DTO's (joins/aggregaties), geen Room meer
@@ -59,7 +59,7 @@ De app heeft een eigen Firebase-project nodig om te kunnen draaien — dit kan i
 aanmaken, dat moet je zelf doen (gratis):
 
 1. Ga naar de [Firebase Console](https://console.firebase.google.com/) en maak een nieuw project aan.
-2. Voeg een Android-app toe met pakketnaam `com.dtraas.boodschapbeheer`.
+2. Voeg een Android-app toe met pakketnaam `com.dtraas.homestock`.
 3. Download het gegenereerde `google-services.json` en plaats het in de map `app/` van dit
    project (naast `build.gradle.kts`). Dit bestand staat in `.gitignore` — commit het niet.
 4. Zet in de Firebase Console **Authentication → Sign-in method → Anonymous** aan.

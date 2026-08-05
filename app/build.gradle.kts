@@ -6,11 +6,11 @@ plugins {
 }
 
 android {
-    namespace = "com.dtraas.boodschapbeheer"
+    namespace = "com.dtraas.homestock"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.dtraas.boodschapbeheer"
+        applicationId = "com.dtraas.homestock"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
