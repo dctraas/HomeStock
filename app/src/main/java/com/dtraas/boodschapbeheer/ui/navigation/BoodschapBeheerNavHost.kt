@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -26,7 +27,14 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
+import com.dtraas.boodschapbeheer.ui.account.AccountLinkPromptDialog
 import com.dtraas.boodschapbeheer.ui.account.AccountLinkScreen
 import com.dtraas.boodschapbeheer.ui.household.HouseholdSettingsScreen
 import com.dtraas.boodschapbeheer.ui.inventory.InventoryScreen
@@ -50,6 +58,25 @@ fun BoodschapBeheerApp() {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
     val showBottomBar = topLevelDestinations.any { it.destination.route == currentRoute }
+
+    val application = LocalContext.current.applicationContext as BoodschapBeheerApplication
+    val householdSession = application.container.householdSession
+    val accountLinkRepository = application.container.accountLinkRepository
+    val justJoinedHousehold by householdSession.justJoinedHousehold.collectAsState()
+    var showAccountLinkPrompt by remember { mutableStateOf(false) }
+
+    // Fires once, right when this composable first mounts after creating/joining a household
+    // (see HouseholdSession.setHousehold) — a one-time nudge rather than a blocking step in
+    // that flow, and never shown again afterward regardless of how the user responds.
+    LaunchedEffect(justJoinedHousehold) {
+        if (justJoinedHousehold) {
+            if (!accountLinkRepository.hasShownLinkPrompt) {
+                showAccountLinkPrompt = true
+                accountLinkRepository.markLinkPromptShown()
+            }
+            householdSession.consumeJustJoinedHousehold()
+        }
+    }
 
     Scaffold(
         bottomBar = {
@@ -163,6 +190,16 @@ fun BoodschapBeheerApp() {
                 AccountLinkScreen(onBack = { navController.popBackStack() })
             }
         }
+    }
+
+    if (showAccountLinkPrompt) {
+        AccountLinkPromptDialog(
+            onLinkNow = {
+                showAccountLinkPrompt = false
+                navController.navigate(Destination.AccountLink.route)
+            },
+            onDismiss = { showAccountLinkPrompt = false },
+        )
     }
 }
 

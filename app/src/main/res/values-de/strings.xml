@@ -153,6 +153,10 @@
     <string name="account_link_linked_subtitle_format">Verknüpft mit %1$s. Dein Zugriff auf diesen Haushalt bleibt erhalten, auch nach einer Neuinstallation.</string>
     <string name="account_link_error_collision">Dieses Google-Konto ist bereits mit einem anderen Haushalt verknüpft. Wähle ein anderes Konto, oder tritt mit diesem Konto über den Haushalt-Code bei.</string>
     <string name="account_link_error_generic">Verknüpfen ist fehlgeschlagen. Bitte versuche es erneut.</string>
+    <string name="account_link_prompt_title">Konto verknüpfen</string>
+    <string name="account_link_prompt_message">Verhindere, dass du den Zugriff auf diesen Haushalt verlierst, wenn du die App deinstallierst oder das Gerät wechselst. Das dauert nur ein paar Klicks und geht später auch noch über Mehr.</string>
+    <string name="account_link_prompt_confirm">Jetzt verknüpfen</string>
+    <string name="account_link_prompt_dismiss">Nicht jetzt</string>
     <string name="more_section_general">Allgemein</string>
     <string name="more_theme_title">Anzeige</string>
     <string name="more_theme_option_system">Systemstandard</string>

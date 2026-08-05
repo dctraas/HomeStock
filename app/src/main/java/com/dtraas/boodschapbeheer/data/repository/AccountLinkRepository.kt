@@ -1,5 +1,6 @@
 package com.dtraas.boodschapbeheer.data.repository
 
+import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import kotlinx.coroutines.channels.awaitClose
@@ -17,7 +18,23 @@ import kotlinx.coroutines.tasks.await
  * household this device was signed into: an anonymous session has nothing else identifying
  * it, and there's no "forgot password"-style recovery for it.
  */
-class AccountLinkRepository(private val auth: FirebaseAuth) {
+class AccountLinkRepository(context: Context, private val auth: FirebaseAuth) {
+
+    private val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+
+    /**
+     * Whether the one-time "koppel je account" prompt (shown right after creating/joining a
+     * household — see BoodschapBeheerApp) has already been offered on this device. Set once
+     * the prompt is shown, regardless of whether the user acts on it or dismisses it — it's
+     * meant as a single nudge, not a recurring nag; the Meer > Account koppelen row is the
+     * permanent, always-available way to link later.
+     */
+    val hasShownLinkPrompt: Boolean
+        get() = prefs.getBoolean(KEY_HAS_SHOWN_PROMPT, false)
+
+    fun markLinkPromptShown() {
+        prefs.edit().putBoolean(KEY_HAS_SHOWN_PROMPT, true).apply()
+    }
 
     /** True once this device's session has a permanent (non-anonymous) credential attached. */
     fun observeIsLinked(): Flow<Boolean> = callbackFlow {
@@ -47,5 +64,10 @@ class AccountLinkRepository(private val auth: FirebaseAuth) {
         Result.success(Unit)
     } catch (e: Exception) {
         Result.failure(e)
+    }
+
+    private companion object {
+        const val PREFS_NAME = "account_link"
+        const val KEY_HAS_SHOWN_PROMPT = "has_shown_link_prompt"
     }
 }

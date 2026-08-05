@@ -75,7 +75,7 @@ class AppContainer(context: Context) {
     }
 
     val accountLinkRepository: AccountLinkRepository by lazy {
-        AccountLinkRepository(auth)
+        AccountLinkRepository(appContext, auth)
     }
 
     val billingRepository: BillingRepository by lazy {
