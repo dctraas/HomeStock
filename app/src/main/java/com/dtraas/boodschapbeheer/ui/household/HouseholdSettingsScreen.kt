@@ -127,17 +127,20 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                     .weight(1f)
                     .verticalScroll(rememberScrollState())
                     .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 NameSection(
                     nameInput = nameInput,
                     onNameInputChange = { if (it.length <= HouseholdRepository.HOUSEHOLD_NAME_MAX_LENGTH) nameInput = it },
+                )
+
+                MembersSection(members = members)
+
+                ActionButtonsRow(
                     isDeleting = isDeleting,
                     onLeaveClick = { showLeaveConfirm = true },
                     onDeleteClick = { showDeleteConfirm = true },
                 )
-
-                MembersSection(members = members)
             }
 
             CodeSection(householdCode = householdId)
@@ -242,18 +245,10 @@ private fun CodeSection(householdCode: String?) {
  * No explicit save button any more — a rename is saved when the screen is left (see
  * [HouseholdSettingsScreen]'s `saveNameAndGoBack`), which replaces both the old dialog's
  * disconnected "OK" button (that only ever dismissed, never saved) and this screen's earlier
- * always-visible save button. Leave/delete live directly below the input field, as two
- * plain icon buttons rather than a separate boxed "danger zone" — still destructive-colored
- * via the icon tint, but without a loud red background competing with the rest of the screen.
+ * always-visible save button.
  */
 @Composable
-private fun NameSection(
-    nameInput: String,
-    onNameInputChange: (String) -> Unit,
-    isDeleting: Boolean,
-    onLeaveClick: () -> Unit,
-    onDeleteClick: () -> Unit,
-) {
+private fun NameSection(nameInput: String, onNameInputChange: (String) -> Unit) {
     SectionCard {
         Text(stringResource(R.string.household_name_label), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         OutlinedTextField(
@@ -262,25 +257,6 @@ private fun NameSection(
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
-        ) {
-            IconButton(onClick = onLeaveClick, enabled = !isDeleting) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Logout,
-                    contentDescription = stringResource(R.string.more_leave),
-                    tint = MaterialTheme.colorScheme.error,
-                )
-            }
-            IconButton(onClick = onDeleteClick, enabled = !isDeleting) {
-                Icon(
-                    imageVector = Icons.Filled.DeleteForever,
-                    contentDescription = stringResource(R.string.more_delete_household),
-                    tint = MaterialTheme.colorScheme.error,
-                )
-            }
-        }
     }
 }
 
@@ -294,6 +270,35 @@ private fun MembersSection(members: List<HouseholdMember>) {
         )
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             members.forEach { member -> HouseholdMemberRow(member) }
+        }
+    }
+}
+
+/**
+ * Leave/delete as two plain, right-aligned icon buttons — no card, no red background, no text
+ * labels. A neutral (theme-aware "black") tint rather than the error color keeps them from
+ * reading as loud/alarming at a glance; the actual warning is the confirmation dialog each one
+ * opens (see [HouseholdSettingsScreen]'s showLeaveConfirm/showDeleteConfirm), not the icon color.
+ */
+@Composable
+private fun ActionButtonsRow(isDeleting: Boolean, onLeaveClick: () -> Unit, onDeleteClick: () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
+    ) {
+        IconButton(onClick = onLeaveClick, enabled = !isDeleting) {
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.Logout,
+                contentDescription = stringResource(R.string.more_leave),
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
+        }
+        IconButton(onClick = onDeleteClick, enabled = !isDeleting) {
+            Icon(
+                imageVector = Icons.Filled.DeleteForever,
+                contentDescription = stringResource(R.string.more_delete_household),
+                tint = MaterialTheme.colorScheme.onSurface,
+            )
         }
     }
 }
