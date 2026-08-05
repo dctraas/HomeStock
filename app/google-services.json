@@ -9,12 +9,49 @@
       "client_info": {
         "mobilesdk_app_id": "1:400748229964:android:d35fbe32eb14dcaf870be9",
         "android_client_info": {
-          "package_name": "com.dtraas.homestock"
+          "package_name": "com.dtraas.boodschapbeheer"
         }
       },
       "oauth_client": [
         {
           "client_id": "400748229964-gl55mqsjsft2j7847t334gjdhsoa3uil.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.dtraas.boodschapbeheer",
+            "certificate_hash": "1dcaed78c571cd844a6593ddf0ddf07a5def69ee"
+          }
+        },
+        {
+          "client_id": "400748229964-1ligps8hvorr0ak8b7ec1uvabnl2u4cc.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBmkLTVdt9B4H9sZo8SN0_abKNj-lAqFCM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "400748229964-1ligps8hvorr0ak8b7ec1uvabnl2u4cc.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:400748229964:android:f87c0766c79edc5c870be9",
+        "android_client_info": {
+          "package_name": "com.dtraas.homestock"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "400748229964-goceaea20cs3nm1e4s9bc29328mnud57.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.dtraas.homestock",
