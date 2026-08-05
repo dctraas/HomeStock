@@ -105,4 +105,8 @@ dependencies {
     implementation(libs.androidx.glance.appwidget)
 
     implementation(libs.billing.ktx)
+
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
 }

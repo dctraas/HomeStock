@@ -27,6 +27,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.NavType
 import androidx.navigation.navArgument
 import androidx.compose.runtime.getValue
+import com.dtraas.boodschapbeheer.ui.account.AccountLinkScreen
 import com.dtraas.boodschapbeheer.ui.household.HouseholdSettingsScreen
 import com.dtraas.boodschapbeheer.ui.inventory.InventoryScreen
 import com.dtraas.boodschapbeheer.ui.more.MoreScreen
@@ -94,6 +95,7 @@ fun BoodschapBeheerApp() {
                     onNavigateToStatistics = { navController.navigate(Destination.Statistics.route) },
                     onNavigateToPremium = { navController.navigate(Destination.Premium.route) },
                     onNavigateToHousehold = { navController.navigate(Destination.Household.route) },
+                    onNavigateToAccountLink = { navController.navigate(Destination.AccountLink.route) },
                 )
             }
             composable(
@@ -156,6 +158,9 @@ fun BoodschapBeheerApp() {
             }
             composable(Destination.Household.route) {
                 HouseholdSettingsScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Destination.AccountLink.route) {
+                AccountLinkScreen(onBack = { navController.popBackStack() })
             }
         }
     }

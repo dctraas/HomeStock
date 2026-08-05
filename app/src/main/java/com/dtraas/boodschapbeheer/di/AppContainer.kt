@@ -4,6 +4,7 @@ import android.content.Context
 import com.dtraas.boodschapbeheer.BuildConfig
 import com.dtraas.boodschapbeheer.data.remote.OpenFoodFactsApi
 import com.dtraas.boodschapbeheer.data.remote.TheMealDbApi
+import com.dtraas.boodschapbeheer.data.repository.AccountLinkRepository
 import com.dtraas.boodschapbeheer.data.repository.ActivityLogRepository
 import com.dtraas.boodschapbeheer.data.repository.BillingRepository
 import com.dtraas.boodschapbeheer.data.repository.DeviceProfile
@@ -71,6 +72,10 @@ class AppContainer(context: Context) {
 
     val householdRepository: HouseholdRepository by lazy {
         HouseholdRepository(appContext, firestore, auth, householdSession)
+    }
+
+    val accountLinkRepository: AccountLinkRepository by lazy {
+        AccountLinkRepository(auth)
     }
 
     val billingRepository: BillingRepository by lazy {

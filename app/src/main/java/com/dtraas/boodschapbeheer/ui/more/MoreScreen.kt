@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarRate
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
@@ -106,6 +107,7 @@ fun MoreScreen(
     onNavigateToStatistics: () -> Unit = {},
     onNavigateToPremium: () -> Unit = {},
     onNavigateToHousehold: () -> Unit = {},
+    onNavigateToAccountLink: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as BoodschapBeheerApplication
@@ -119,6 +121,8 @@ fun MoreScreen(
     val displayName by deviceProfile.displayName.collectAsState()
     val photoPath by deviceProfile.photoPath.collectAsState()
     val feedbackRepository = application.container.feedbackRepository
+    val accountLinkRepository = application.container.accountLinkRepository
+    val isAccountLinked by accountLinkRepository.observeIsLinked().collectAsState(initial = accountLinkRepository.linkedEmail != null)
     val householdMembersRepository = application.container.householdMembersRepository
     val isPremium by householdMembersRepository.observeHouseholdIsPremium().collectAsState(initial = false)
     val billingRepository = application.container.billingRepository
@@ -174,6 +178,16 @@ fun MoreScreen(
                 displayName = displayName,
                 photoPath = photoPath,
                 onClick = { showProfileDialog = true },
+            )
+            SettingsRow(
+                icon = Icons.Filled.VerifiedUser,
+                title = stringResource(R.string.account_link_row_title),
+                subtitle = if (isAccountLinked) {
+                    stringResource(R.string.account_link_row_subtitle_linked_format, accountLinkRepository.linkedEmail ?: "—")
+                } else {
+                    stringResource(R.string.account_link_row_subtitle_unlinked)
+                },
+                onClick = onNavigateToAccountLink,
             )
             SettingsRow(
                 icon = Icons.Filled.Home,

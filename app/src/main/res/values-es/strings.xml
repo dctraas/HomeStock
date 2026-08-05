@@ -144,6 +144,15 @@
     <string name="more_settings_title">Configuración</string>
     <string name="more_section_account">Cuenta</string>
     <string name="more_account_row_title">Perfil</string>
+    <string name="account_link_row_title">Vincular cuenta</string>
+    <string name="account_link_row_subtitle_linked_format">Vinculada con %1$s</string>
+    <string name="account_link_row_subtitle_unlinked">Evita perder datos al reinstalar</string>
+    <string name="account_link_explanation">Ahora mismo tienes una sesión anónima — si desinstalas la app o cambias de dispositivo, perderás el acceso a este hogar. Vincula tu cuenta con Google para evitarlo; tus datos no cambian.</string>
+    <string name="account_link_google_button">Continuar con Google</string>
+    <string name="account_link_linked_title">Cuenta vinculada</string>
+    <string name="account_link_linked_subtitle_format">Vinculada con %1$s. Tu acceso a este hogar se conserva, incluso después de reinstalar.</string>
+    <string name="account_link_error_collision">Esta cuenta de Google ya está vinculada a otro hogar. Elige otra cuenta, o únete con esa cuenta usando el código del hogar.</string>
+    <string name="account_link_error_generic">No se pudo vincular la cuenta. Inténtalo de nuevo.</string>
     <string name="more_section_general">General</string>
     <string name="more_theme_title">Pantalla</string>
     <string name="more_theme_option_system">Predeterminado del sistema</string>

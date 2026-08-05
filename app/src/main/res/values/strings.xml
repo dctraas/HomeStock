@@ -145,6 +145,15 @@
     <string name="more_settings_title">Instellingen</string>
     <string name="more_section_account">Account</string>
     <string name="more_account_row_title">Profiel</string>
+    <string name="account_link_row_title">Account koppelen</string>
+    <string name="account_link_row_subtitle_linked_format">Gekoppeld met %1$s</string>
+    <string name="account_link_row_subtitle_unlinked">Voorkom dataverlies bij een nieuwe installatie</string>
+    <string name="account_link_explanation">Je bent nu anoniem ingelogd — als je de app verwijdert of van toestel wisselt, raak je de toegang tot dit huishouden kwijt. Koppel je account aan Google om dat te voorkomen; al je gegevens blijven ongewijzigd.</string>
+    <string name="account_link_google_button">Doorgaan met Google</string>
+    <string name="account_link_linked_title">Account gekoppeld</string>
+    <string name="account_link_linked_subtitle_format">Gekoppeld met %1$s. Je toegang tot dit huishouden blijft behouden, ook na een nieuwe installatie.</string>
+    <string name="account_link_error_collision">Dit Google-account is al gekoppeld aan een ander huishouden. Kies een ander account, of sluit vanaf dat account aan met de huishouden-code.</string>
+    <string name="account_link_error_generic">Koppelen is niet gelukt. Probeer het opnieuw.</string>
     <string name="more_section_general">Algemeen</string>
     <string name="more_theme_title">Weergave</string>
     <string name="more_theme_option_system">Systeem standaard</string>

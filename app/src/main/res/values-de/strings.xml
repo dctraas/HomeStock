@@ -144,6 +144,15 @@
     <string name="more_settings_title">Einstellungen</string>
     <string name="more_section_account">Konto</string>
     <string name="more_account_row_title">Profil</string>
+    <string name="account_link_row_title">Konto verknüpfen</string>
+    <string name="account_link_row_subtitle_linked_format">Verknüpft mit %1$s</string>
+    <string name="account_link_row_subtitle_unlinked">Verhindere Datenverlust bei einer Neuinstallation</string>
+    <string name="account_link_explanation">Du bist derzeit anonym angemeldet — wenn du die App deinstallierst oder das Gerät wechselst, verlierst du den Zugriff auf diesen Haushalt. Verknüpfe dein Konto mit Google, um das zu verhindern; an deinen Daten ändert sich nichts.</string>
+    <string name="account_link_google_button">Weiter mit Google</string>
+    <string name="account_link_linked_title">Konto verknüpft</string>
+    <string name="account_link_linked_subtitle_format">Verknüpft mit %1$s. Dein Zugriff auf diesen Haushalt bleibt erhalten, auch nach einer Neuinstallation.</string>
+    <string name="account_link_error_collision">Dieses Google-Konto ist bereits mit einem anderen Haushalt verknüpft. Wähle ein anderes Konto, oder tritt mit diesem Konto über den Haushalt-Code bei.</string>
+    <string name="account_link_error_generic">Verknüpfen ist fehlgeschlagen. Bitte versuche es erneut.</string>
     <string name="more_section_general">Allgemein</string>
     <string name="more_theme_title">Anzeige</string>
     <string name="more_theme_option_system">Systemstandard</string>
