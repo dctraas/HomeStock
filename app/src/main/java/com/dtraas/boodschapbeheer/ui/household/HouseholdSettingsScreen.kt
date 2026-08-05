@@ -1,10 +1,12 @@
 package com.dtraas.boodschapbeheer.ui.household
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -74,20 +76,39 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
 
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val renameErrorMessage = stringResource(R.string.more_rename_household_error)
     val deleteSuccessMessage = stringResource(R.string.more_delete_household_success)
     val deleteErrorMessage = stringResource(R.string.more_delete_household_error)
+
+    // Re-seeds from the live household name whenever it changes (e.g. this screen reopening,
+    // or a housemate renaming it on their own device) — but not on every keystroke, since
+    // `key1 = householdName` only re-runs this initializer when that upstream value itself changes.
+    var nameInput by remember(householdName) { mutableStateOf(householdName.orEmpty()) }
 
     var showLeaveConfirm by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var isDeleting by remember { mutableStateOf(false) }
+
+    // There's no explicit save button any more — leaving the screen (either via the app bar's
+    // back arrow or the system back gesture/button, hence both wiring below) is the save
+    // action. Firestore's offline persistence queues this write even without a connection, so
+    // it doesn't need to block navigating away.
+    fun saveNameAndGoBack() {
+        val trimmed = nameInput.trim()
+        val idToRename = householdId
+        if (idToRename != null && trimmed.isNotBlank() && trimmed != householdName) {
+            coroutineScope.launch { householdRepository.renameHousehold(idToRename, trimmed) }
+        }
+        onBack()
+    }
+
+    BackHandler(onBack = ::saveNameAndGoBack)
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.more_household_title)) },
                 navigationIcon = {
-                    IconButton(onClick = onBack) {
+                    IconButton(onClick = ::saveNameAndGoBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
@@ -95,32 +116,29 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            NameSection(
-                householdName = householdName,
-                onSave = { newName ->
-                    val idToRename = householdId ?: return@NameSection
-                    coroutineScope.launch {
-                        householdRepository.renameHousehold(idToRename, newName)
-                            .onFailure { snackbarHostState.showSnackbar(renameErrorMessage, duration = SnackbarDuration.Short) }
-                    }
-                },
-            )
+        // Split into a scrollable region (weighted) plus a footer sitting outside of it,
+        // rather than putting a weighted Spacer inside the scrollable Column itself — Compose
+        // disallows weight() on a child of a verticalScroll() container (it measures that
+        // container's content with unbounded height, which a weight expects to be bounded, and
+        // crashes). This split is the standard "scrollable content + pinned footer" pattern.
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                NameSection(
+                    nameInput = nameInput,
+                    onNameInputChange = { if (it.length <= HouseholdRepository.HOUSEHOLD_NAME_MAX_LENGTH) nameInput = it },
+                    isDeleting = isDeleting,
+                    onLeaveClick = { showLeaveConfirm = true },
+                    onDeleteClick = { showDeleteConfirm = true },
+                )
 
-            MembersSection(members = members)
-
-            DangerZoneSection(
-                isDeleting = isDeleting,
-                onLeaveClick = { showLeaveConfirm = true },
-                onDeleteClick = { showDeleteConfirm = true },
-            )
+                MembersSection(members = members)
+            }
 
             CodeSection(householdCode = householdId)
         }
@@ -200,7 +218,12 @@ private fun SectionCard(content: @Composable ColumnScope.() -> Unit) {
     }
 }
 
-/** Low-key footer at the very bottom of the screen — the code is for sharing, not editing, so it doesn't need a card of its own like the sections above it. */
+/**
+ * Low-key footer pinned to the very bottom of the screen, outside the scrollable content
+ * above it — the code is for sharing, not editing, so it doesn't need a card of its own like
+ * the sections above it, and staying put at the bottom keeps it easy to find regardless of
+ * how much content (e.g. members) is above it.
+ */
 @Composable
 private fun CodeSection(householdCode: String?) {
     Text(
@@ -210,35 +233,53 @@ private fun CodeSection(householdCode: String?) {
         textAlign = TextAlign.Center,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 4.dp),
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 16.dp),
     )
 }
 
 /**
- * The rename field always shows an explicit, always-visible "Naam opslaan" button when there's
- * something new to save — no ambiguous trailing icon to miss, and nothing to confuse with a
- * dialog's own OK/Cancel buttons the way a smaller popup version of this once did (tapping
- * "OK" there closed the dialog without saving, since OK was only ever wired to dismiss it).
+ * No explicit save button any more — a rename is saved when the screen is left (see
+ * [HouseholdSettingsScreen]'s `saveNameAndGoBack`), which replaces both the old dialog's
+ * disconnected "OK" button (that only ever dismissed, never saved) and this screen's earlier
+ * always-visible save button. Leave/delete live directly below the input field, as two
+ * plain icon buttons rather than a separate boxed "danger zone" — still destructive-colored
+ * via the icon tint, but without a loud red background competing with the rest of the screen.
  */
 @Composable
-private fun NameSection(householdName: String?, onSave: (String) -> Unit) {
-    var nameInput by remember(householdName) { mutableStateOf(householdName.orEmpty()) }
-    val hasChanges = nameInput.isNotBlank() && nameInput != householdName
-
+private fun NameSection(
+    nameInput: String,
+    onNameInputChange: (String) -> Unit,
+    isDeleting: Boolean,
+    onLeaveClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+) {
     SectionCard {
         Text(stringResource(R.string.household_name_label), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         OutlinedTextField(
             value = nameInput,
-            onValueChange = { if (it.length <= HouseholdRepository.HOUSEHOLD_NAME_MAX_LENGTH) nameInput = it },
+            onValueChange = onNameInputChange,
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
-        TextButton(
-            onClick = { onSave(nameInput) },
-            enabled = hasChanges,
-            modifier = Modifier.align(Alignment.End),
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
         ) {
-            Text(stringResource(R.string.more_household_save_name))
+            IconButton(onClick = onLeaveClick, enabled = !isDeleting) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.Logout,
+                    contentDescription = stringResource(R.string.more_leave),
+                    tint = MaterialTheme.colorScheme.error,
+                )
+            }
+            IconButton(onClick = onDeleteClick, enabled = !isDeleting) {
+                Icon(
+                    imageVector = Icons.Filled.DeleteForever,
+                    contentDescription = stringResource(R.string.more_delete_household),
+                    tint = MaterialTheme.colorScheme.error,
+                )
+            }
         }
     }
 }
@@ -297,31 +338,3 @@ private fun HouseholdMemberRow(member: HouseholdMember) {
     }
 }
 
-@Composable
-private fun DangerZoneSection(isDeleting: Boolean, onLeaveClick: () -> Unit, onDeleteClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
-        shape = SoftCardShape,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
-        ) {
-            IconButton(onClick = onLeaveClick, enabled = !isDeleting) {
-                Icon(
-                    imageVector = Icons.AutoMirrored.Filled.Logout,
-                    contentDescription = stringResource(R.string.more_leave),
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                )
-            }
-            IconButton(onClick = onDeleteClick, enabled = !isDeleting) {
-                Icon(
-                    imageVector = Icons.Filled.DeleteForever,
-                    contentDescription = stringResource(R.string.more_delete_household),
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                )
-            }
-        }
-    }
-}

@@ -121,7 +121,6 @@
     <string name="more_household_members_title">Membres</string>
     <string name="more_household_member_unnamed">Membre sans nom</string>
     <string name="more_household_member_you">Toi</string>
-    <string name="more_household_save_name">Enregistrer le nom</string>
     <string name="more_rename_household_error">Impossible de modifier le nom. Réessayez.</string>
     <string name="more_premium_title">Premium</string>
     <string name="more_premium_active">Actif</string>
