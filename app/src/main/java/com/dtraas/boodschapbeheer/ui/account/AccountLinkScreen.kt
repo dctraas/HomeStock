@@ -39,6 +39,7 @@ import androidx.credentials.GetCredentialRequest
 import androidx.credentials.exceptions.GetCredentialCancellationException
 import androidx.credentials.exceptions.GetCredentialException
 import com.dtraas.boodschapbeheer.BoodschapBeheerApplication
+import com.dtraas.boodschapbeheer.BuildConfig
 import com.dtraas.boodschapbeheer.R
 import com.dtraas.boodschapbeheer.ui.theme.SoftBadgeShape
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
@@ -57,6 +58,16 @@ import kotlinx.coroutines.launch
  * generates once Google is enabled as a sign-in provider in the Firebase console and
  * `google-services.json` has been re-downloaded — this screen won't compile until then.
  */
+
+/**
+ * In debug builds, appends the real exception so a failure (e.g. a misconfigured OAuth client
+ * or SHA fingerprint) can be diagnosed straight from the on-screen message instead of digging
+ * through Logcat. Release builds only ever show [this] friendly message — an exception's raw
+ * type/message isn't something to surface to a real user.
+ */
+private fun String.withDebugDetail(cause: Throwable): String =
+    if (BuildConfig.DEBUG) "$this\n\n[debug] ${cause::class.simpleName}: ${cause.message}" else this
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AccountLinkScreen(onBack: () -> Unit) {
@@ -84,13 +95,14 @@ fun AccountLinkScreen(onBack: () -> Unit) {
                 val response = credentialManager.getCredential(context, request)
                 val googleIdTokenCredential = GoogleIdTokenCredential.createFrom(response.credential.data)
                 accountLinkRepository.linkWithGoogleIdToken(googleIdTokenCredential.idToken).onFailure { e ->
-                    errorMessage = if (e is FirebaseAuthUserCollisionException) collisionErrorMessage else genericErrorMessage
+                    val friendly = if (e is FirebaseAuthUserCollisionException) collisionErrorMessage else genericErrorMessage
+                    errorMessage = friendly.withDebugDetail(e)
                 }
             } catch (e: GetCredentialCancellationException) {
                 // The user backed out of the account picker — a deliberate choice, not a
                 // failure, so nothing is shown.
             } catch (e: GetCredentialException) {
-                errorMessage = genericErrorMessage
+                errorMessage = genericErrorMessage.withDebugDetail(e)
             } finally {
                 isLinking = false
             }
