@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
+import retrofit2.HttpException
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProductRepository(
@@ -81,6 +82,12 @@ class ProductRepository(
                 productsCollection(householdId).document(barcode).set(entity.toMap()).await()
                 Result.success(entity)
             }
+        } catch (e: HttpException) {
+            // Open Food Facts' v2 API answers an unknown barcode with HTTP 404 rather than a
+            // 200 body with status 0 — Retrofit surfaces that as an HttpException, which would
+            // otherwise fall into the generic branch below and get shown as "Geen verbinding"
+            // even though connectivity is fine and the barcode is simply not in their database.
+            if (e.code() == 404) Result.failure(ProductNotFoundException(barcode)) else Result.failure(e)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -106,6 +113,9 @@ class ProductRepository(
                 productsCollection(householdId).document(barcode).set(entity.toMap()).await()
                 Result.success(entity)
             }
+        } catch (e: HttpException) {
+            // See getOrFetchProduct: a 404 here means "not in Open Food Facts", not "offline".
+            if (e.code() == 404) Result.failure(ProductNotFoundException(barcode)) else Result.failure(e)
         } catch (e: Exception) {
             Result.failure(e)
         }
