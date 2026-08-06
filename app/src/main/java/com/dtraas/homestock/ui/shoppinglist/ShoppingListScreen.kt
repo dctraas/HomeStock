@@ -404,10 +404,18 @@ private fun ReorderableShoppingList(
         // unrelated field edited on another device), update values in place but keep our
         // local order — otherwise the moment-old snapshot arriving right after a drop would
         // briefly show the pre-drag order before the new one catches up. Only fall back to
-        // the server order outright when items were actually added or removed.
+        // the server order outright when items were actually added or removed, or when
+        // someone's store changed: storeRuns below assumes same-store items are always
+        // contiguous, which an in-place field patch can't guarantee (a store reassigned via
+        // the icon/dialog — as opposed to a drag, which already keeps runs contiguous itself
+        // — leaves the item at its old position, splitting its new store into two runs and
+        // crashing on a duplicate stickyHeader key). Rebuilding from [flattened], which is
+        // grouped by store, restores that invariant.
         LaunchedEffect(flattened) {
             val flattenedById = flattened.associateBy { it.id }
-            if (flattenedById.keys == orderedItems.map { it.id }.toSet()) {
+            val sameIds = flattenedById.keys == orderedItems.map { it.id }.toSet()
+            val storeChanged = sameIds && orderedItems.any { flattenedById.getValue(it.id).store != it.store }
+            if (sameIds && !storeChanged) {
                 for (i in orderedItems.indices) {
                     val updated = flattenedById.getValue(orderedItems[i].id)
                     if (updated != orderedItems[i]) orderedItems[i] = updated
