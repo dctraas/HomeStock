@@ -121,6 +121,14 @@
     <string name="household_name_char_count_format">%1$d/%2$d tekens</string>
     <string name="household_share_invite_cd">Deel uitnodiging</string>
     <string name="household_share_invite_text_format">Doe mee met mijn huishouden in HomeStock! Tik op de link om aan te sluiten: %1$s\n\n(Heb je de app nog niet? Installeer HomeStock en voer dan code %2$s in.)</string>
+    <string name="household_switch_section_title">Eerdere huishoudens</string>
+    <string name="household_switch_unnamed_format">Huishouden %1$s</string>
+    <string name="household_switch_unnamed_fallback">dit huishouden</string>
+    <string name="household_switch_forget_cd">Verwijderen uit lijst</string>
+    <string name="household_switch_dialog_title">Wisselen van huishouden?</string>
+    <string name="household_switch_dialog_text_format">Je verlaat \'%1$s\' en sluit aan bij \'%2$s\'.</string>
+    <string name="household_switch_confirm">Wisselen</string>
+    <string name="household_switch_not_found_error">Dit huishouden bestaat niet meer.</string>
 
     <!-- Meer -->
     <string name="more_household_title">Huishouden</string>

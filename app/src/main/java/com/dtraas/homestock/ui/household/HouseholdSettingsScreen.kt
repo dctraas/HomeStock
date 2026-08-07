@@ -2,6 +2,7 @@ package com.dtraas.homestock.ui.household
 
 import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,8 +20,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Share
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -38,6 +41,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -57,6 +61,7 @@ import com.dtraas.homestock.R
 import com.dtraas.homestock.data.repository.HouseholdInviteLink
 import com.dtraas.homestock.data.repository.HouseholdMember
 import com.dtraas.homestock.data.repository.HouseholdRepository
+import com.dtraas.homestock.data.repository.RecentHousehold
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import kotlinx.coroutines.launch
 
@@ -77,20 +82,64 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
     val householdName by householdRepository.observeHouseholdName().collectAsState(initial = null)
     val householdMembersRepository = application.container.householdMembersRepository
     val members by householdMembersRepository.observeMembers().collectAsState(initial = emptyList())
+    val recentHouseholds by householdSession.recentHouseholds.collectAsState()
+    // Switching to the current household would be a no-op, and it's already shown above as
+    // "this" household — only *other* previously-joined households belong in the switcher.
+    val otherHouseholds = recentHouseholds.filter { it.id != householdId }
 
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val deleteSuccessMessage = stringResource(R.string.more_delete_household_success)
     val deleteErrorMessage = stringResource(R.string.more_delete_household_error)
+    val switchFullMessage = stringResource(R.string.household_join_full_error)
+    val switchNotFoundMessage = stringResource(R.string.household_switch_not_found_error)
 
     // Re-seeds from the live household name whenever it changes (e.g. this screen reopening,
     // or a housemate renaming it on their own device) — but not on every keystroke, since
     // `key1 = householdName` only re-runs this initializer when that upstream value itself changes.
     var nameInput by remember(householdName) { mutableStateOf(householdName.orEmpty()) }
 
+    // Keeps the switcher's cached label for *this* household in sync with its live name —
+    // covers both "just joined by code, name wasn't known yet" and "a housemate renamed it".
+    LaunchedEffect(householdId, householdName) {
+        val id = householdId
+        if (id != null && householdName != null) householdSession.rememberHousehold(id, householdName)
+    }
+
     var showLeaveConfirm by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var isDeleting by remember { mutableStateOf(false) }
+    var switchTarget by remember { mutableStateOf<RecentHousehold?>(null) }
+    var isSwitching by remember { mutableStateOf(false) }
+
+    fun switchToHousehold(target: RecentHousehold) {
+        isSwitching = true
+        coroutineScope.launch {
+            try {
+                householdRepository.joinHousehold(target.id)
+                    .onSuccess { validId ->
+                        if (!householdMembersRepository.canJoin(validId)) {
+                            snackbarHostState.showSnackbar(switchFullMessage, duration = SnackbarDuration.Short)
+                            return@onSuccess
+                        }
+                        // Leave the currently active household before joining the new one, so
+                        // this device isn't left registered as a member of both at once.
+                        householdMembersRepository.unregisterCurrentDevice()
+                        householdMembersRepository.registerCurrentDevice(validId)
+                        householdSession.rememberHousehold(validId, target.name)
+                        householdSession.setHousehold(validId)
+                    }
+                    .onFailure {
+                        // Most likely it was deleted since this device last saw it — nothing
+                        // left to switch to, so drop it from the list instead of offering it again.
+                        householdSession.forgetHousehold(target.id)
+                        snackbarHostState.showSnackbar(switchNotFoundMessage, duration = SnackbarDuration.Short)
+                    }
+            } finally {
+                isSwitching = false
+            }
+        }
+    }
 
     // There's no explicit save button any more — leaving the screen (either via the app bar's
     // back arrow or the system back gesture/button, hence both wiring below) is the save
@@ -139,6 +188,15 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                 )
 
                 MembersSection(members = members)
+
+                if (otherHouseholds.isNotEmpty()) {
+                    SwitchHouseholdSection(
+                        households = otherHouseholds,
+                        isSwitching = isSwitching,
+                        onHouseholdClick = { switchTarget = it },
+                        onForgetClick = { householdSession.forgetHousehold(it.id) },
+                    )
+                }
 
                 ActionButtonsRow(
                     isDeleting = isDeleting,
@@ -226,6 +284,36 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
             },
         )
     }
+
+    switchTarget?.let { target ->
+        AlertDialog(
+            onDismissRequest = { if (!isSwitching) switchTarget = null },
+            title = { Text(stringResource(R.string.household_switch_dialog_title)) },
+            text = {
+                Text(
+                    stringResource(
+                        R.string.household_switch_dialog_text_format,
+                        householdName ?: stringResource(R.string.household_switch_unnamed_fallback),
+                        target.name ?: stringResource(R.string.household_switch_unnamed_fallback),
+                    ),
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    enabled = !isSwitching,
+                    onClick = {
+                        switchToHousehold(target)
+                        switchTarget = null
+                    },
+                ) { Text(stringResource(R.string.household_switch_confirm)) }
+            },
+            dismissButton = {
+                TextButton(enabled = !isSwitching, onClick = { switchTarget = null }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+        )
+    }
 }
 
 @Composable
@@ -299,6 +387,73 @@ private fun MembersSection(members: List<HouseholdMember>) {
         )
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             members.forEach { member -> HouseholdMemberRow(member) }
+        }
+    }
+}
+
+/**
+ * Households this device created or joined before, most-recent-first (see
+ * [com.dtraas.homestock.data.repository.HouseholdSession.recentHouseholds]) — tapping one
+ * rejoins it without retyping its code, a faster path than "Huishouden verlaten" followed by
+ * manually entering a remembered code on the onboarding screen.
+ */
+@Composable
+private fun SwitchHouseholdSection(
+    households: List<RecentHousehold>,
+    isSwitching: Boolean,
+    onHouseholdClick: (RecentHousehold) -> Unit,
+    onForgetClick: (RecentHousehold) -> Unit,
+) {
+    SectionCard {
+        Text(
+            text = stringResource(R.string.household_switch_section_title),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            households.forEach { household ->
+                RecentHouseholdRow(
+                    household = household,
+                    enabled = !isSwitching,
+                    onClick = { onHouseholdClick(household) },
+                    onForgetClick = { onForgetClick(household) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun RecentHouseholdRow(
+    household: RecentHousehold,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    onForgetClick: () -> Unit,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = enabled, onClick = onClick),
+    ) {
+        Icon(
+            imageVector = Icons.Filled.SwapHoriz,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Text(
+            text = household.name?.takeIf { it.isNotBlank() }
+                ?: stringResource(R.string.household_switch_unnamed_format, household.id),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.weight(1f).padding(start = 12.dp, top = 10.dp, bottom = 10.dp),
+        )
+        IconButton(enabled = enabled, onClick = onForgetClick, modifier = Modifier.size(36.dp)) {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = stringResource(R.string.household_switch_forget_cd),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
         }
     }
 }

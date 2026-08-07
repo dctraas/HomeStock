@@ -120,6 +120,14 @@
     <string name="household_name_char_count_format">%1$d/%2$d caractères</string>
     <string name="household_share_invite_cd">Partager l\'invitation</string>
     <string name="household_share_invite_text_format">Rejoins mon foyer sur HomeStock ! Touche le lien pour rejoindre : %1$s\n\n(Tu n\'as pas encore l\'appli ? Installe HomeStock puis entre le code %2$s.)</string>
+    <string name="household_switch_section_title">Foyers précédents</string>
+    <string name="household_switch_unnamed_format">Foyer %1$s</string>
+    <string name="household_switch_unnamed_fallback">ce foyer</string>
+    <string name="household_switch_forget_cd">Retirer de la liste</string>
+    <string name="household_switch_dialog_title">Changer de foyer ?</string>
+    <string name="household_switch_dialog_text_format">Tu quitteras \'%1$s\' et rejoindras \'%2$s\'.</string>
+    <string name="household_switch_confirm">Changer</string>
+    <string name="household_switch_not_found_error">Ce foyer n\'existe plus.</string>
 
     <!-- Plus -->
     <string name="more_household_title">Foyer</string>

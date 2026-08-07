@@ -117,6 +117,9 @@ class HouseholdViewModel(
         // A freshly created household only ever has this one device so far — no need to
         // check the free-tier limit, just register.
         viewModelScope.launch { householdMembersRepository.registerCurrentDevice(code) }
+        // Name is already in hand from the step just completed — no need to wait for a
+        // round-trip read of the household document to cache it for the switcher.
+        householdSession.rememberHousehold(code, _uiState.value.householdNameInput.trim())
         householdSession.setHousehold(code)
     }
 
@@ -129,6 +132,9 @@ class HouseholdViewModel(
                 .onSuccess { joinedCode ->
                     if (householdMembersRepository.canJoin(joinedCode)) {
                         householdMembersRepository.registerCurrentDevice(joinedCode)
+                        // Name isn't known yet here (joining is by code alone) — HouseholdSettingsScreen
+                        // fills it in once the household document's name has actually been read.
+                        householdSession.rememberHousehold(joinedCode, name = null)
                         householdSession.setHousehold(joinedCode)
                     } else {
                         _uiState.update { it.copy(isLoading = false, householdFull = true) }

@@ -120,6 +120,14 @@
     <string name="household_name_char_count_format">%1$d/%2$d Zeichen</string>
     <string name="household_share_invite_cd">Einladung teilen</string>
     <string name="household_share_invite_text_format">Tritt meinem Haushalt in HomeStock bei! Tippe auf den Link, um beizutreten: %1$s\n\n(Hast du die App noch nicht? Installiere HomeStock und gib dann den Code %2$s ein.)</string>
+    <string name="household_switch_section_title">Frühere Haushalte</string>
+    <string name="household_switch_unnamed_format">Haushalt %1$s</string>
+    <string name="household_switch_unnamed_fallback">diesen Haushalt</string>
+    <string name="household_switch_forget_cd">Aus Liste entfernen</string>
+    <string name="household_switch_dialog_title">Haushalt wechseln?</string>
+    <string name="household_switch_dialog_text_format">Du verlässt \'%1$s\' und trittst \'%2$s\' bei.</string>
+    <string name="household_switch_confirm">Wechseln</string>
+    <string name="household_switch_not_found_error">Dieser Haushalt existiert nicht mehr.</string>
 
     <!-- Mehr -->
     <string name="more_household_title">Haushalt</string>
