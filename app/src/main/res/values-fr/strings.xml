@@ -409,6 +409,7 @@
     <string name="recipes_empty_title">Pas encore de suggestions</string>
     <string name="recipes_empty_subtitle">Ajoutez des produits à votre inventaire pour obtenir des suggestions de recettes.</string>
     <string name="recipes_beta_notice">Bêta : les suggestions de recettes reposent sur un ensemble limité d\'ingrédients reconnus et peuvent parfois être inexactes.</string>
+    <string name="recipes_match_count_format">%1$d ingrédients disponibles</string>
     <string name="recipes_detail_error">Impossible de charger cette recette. Réessayez.</string>
     <string name="recipes_ingredients_title">Ingrédients</string>
     <string name="recipes_ingredient_in_inventory_cd">Déjà en stock</string>

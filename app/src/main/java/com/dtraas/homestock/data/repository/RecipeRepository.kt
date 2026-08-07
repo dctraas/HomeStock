@@ -6,6 +6,9 @@ import com.dtraas.homestock.data.remote.dto.MealDbDetail
 import com.dtraas.homestock.data.remote.dto.MealDbSummary
 import kotlinx.coroutines.flow.first
 
+/** A [meal] suggestion plus how many of the searched-for inventory ingredients it actually uses — see [RecipeRepository.suggestRecipes]. */
+data class RecipeSuggestion(val meal: MealDbSummary, val matchCount: Int)
+
 /**
  * Recipe suggestions based on what's currently in the household's inventory —
  * a Beta feature (see MoreScreen). TheMealDB (the recipe source) only speaks
@@ -20,20 +23,30 @@ class RecipeRepository(
     private val shoppingListRepository: ShoppingListRepository,
 ) {
     /**
-     * Looks at what's in inventory, picks a handful of recognized ingredient
-     * terms from it, and returns recipes that use any of them — deduplicated,
-     * in no particular ranking beyond "found first". Never throws.
+     * Looks at what's in inventory, picks a handful of recognized ingredient terms from it, and
+     * returns recipes that use any of them — deduplicated and ranked by how many of those
+     * terms each recipe actually uses, most matches first. TheMealDB's free API can only filter
+     * by one ingredient per request (no "AND" query), so this approximates "what can I actually
+     * cook right now" by counting, per recipe, how many of the separate per-ingredient searches
+     * it turned up in — a real ingredient-overlap count, not just "found first". Never throws.
      */
-    suspend fun suggestRecipes(maxSeedIngredients: Int = 5): Result<List<MealDbSummary>> = try {
+    suspend fun suggestRecipes(maxSeedIngredients: Int = 5): Result<List<RecipeSuggestion>> = try {
         val inventoryNames = inventoryRepository.observeInventoryWithProduct().first().map { it.name }
         val seedIngredients = matchDutchIngredients(inventoryNames).take(maxSeedIngredients)
 
         val meals = LinkedHashMap<String, MealDbSummary>()
+        val matchCounts = HashMap<String, Int>()
         for (ingredient in seedIngredients) {
             val response = api.filterByIngredient(ingredient)
-            response.meals?.forEach { meal -> meals.putIfAbsent(meal.id, meal) }
+            response.meals?.forEach { meal ->
+                meals.putIfAbsent(meal.id, meal)
+                matchCounts[meal.id] = (matchCounts[meal.id] ?: 0) + 1
+            }
         }
-        Result.success(meals.values.toList())
+        val ranked = meals.values
+            .map { meal -> RecipeSuggestion(meal, matchCounts.getValue(meal.id)) }
+            .sortedByDescending { it.matchCount }
+        Result.success(ranked)
     } catch (e: Exception) {
         Result.failure(e)
     }

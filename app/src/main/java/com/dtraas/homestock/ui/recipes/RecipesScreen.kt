@@ -44,7 +44,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
-import com.dtraas.homestock.data.remote.dto.MealDbSummary
+import com.dtraas.homestock.data.repository.RecipeSuggestion
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
 
@@ -107,8 +107,8 @@ fun RecipesScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    items(uiState.recipes, key = { it.id }) { recipe ->
-                        RecipeRow(recipe = recipe, onClick = { onRecipeClick(recipe.id) })
+                    items(uiState.recipes, key = { it.meal.id }) { recipe ->
+                        RecipeRow(recipe = recipe, onClick = { onRecipeClick(recipe.meal.id) })
                     }
                 }
             }
@@ -156,7 +156,7 @@ private fun RecipesMessage(
 }
 
 @Composable
-private fun RecipeRow(recipe: MealDbSummary, onClick: () -> Unit) {
+private fun RecipeRow(recipe: RecipeSuggestion, onClick: () -> Unit) {
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -167,9 +167,9 @@ private fun RecipeRow(recipe: MealDbSummary, onClick: () -> Unit) {
             modifier = Modifier.padding(12.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            if (recipe.thumbnailUrl != null) {
+            if (recipe.meal.thumbnailUrl != null) {
                 AsyncImage(
-                    model = recipe.thumbnailUrl,
+                    model = recipe.meal.thumbnailUrl,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier
@@ -177,13 +177,22 @@ private fun RecipeRow(recipe: MealDbSummary, onClick: () -> Unit) {
                         .clip(SoftImageShape),
                 )
             }
-            Text(
-                text = recipe.name,
-                style = MaterialTheme.typography.bodyMedium,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.padding(start = 12.dp),
-            )
+            Column(modifier = Modifier.padding(start = 12.dp)) {
+                Text(
+                    text = recipe.meal.name,
+                    style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                // Ranks this recipe within the list (see RecipeRepository.suggestRecipes) — makes
+                // "wat kan ik koken met wat ik in huis heb" visible, not just implicit in the order.
+                Text(
+                    text = stringResource(R.string.recipes_match_count_format, recipe.matchCount),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
         }
     }
 }

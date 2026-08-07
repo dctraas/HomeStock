@@ -410,6 +410,7 @@
     <string name="recipes_empty_title">Nog geen suggesties</string>
     <string name="recipes_empty_subtitle">Voeg producten toe aan je voorraad om receptsuggesties te krijgen.</string>
     <string name="recipes_beta_notice">Beta: receptsuggesties zijn gebaseerd op een beperkte set herkende ingrediënten en kunnen soms niet kloppen.</string>
+    <string name="recipes_match_count_format">%1$d ingrediënten in huis</string>
     <string name="recipes_detail_error">Kon dit recept niet laden. Probeer het opnieuw.</string>
     <string name="recipes_ingredients_title">Ingrediënten</string>
     <string name="recipes_ingredient_in_inventory_cd">Al in voorraad</string>

@@ -2,8 +2,8 @@ package com.dtraas.homestock.ui.recipes
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.dtraas.homestock.data.remote.dto.MealDbSummary
 import com.dtraas.homestock.data.repository.RecipeRepository
+import com.dtraas.homestock.data.repository.RecipeSuggestion
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
@@ -11,7 +11,7 @@ import kotlinx.coroutines.launch
 
 data class RecipesUiState(
     val isLoading: Boolean = true,
-    val recipes: List<MealDbSummary> = emptyList(),
+    val recipes: List<RecipeSuggestion> = emptyList(),
     val hasError: Boolean = false,
 )
 
