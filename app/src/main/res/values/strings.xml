@@ -349,8 +349,6 @@
     <string name="shopping_list_search_placeholder">Zoek in boodschappenlijst…</string>
     <string name="shopping_list_removed_format">%1$s verwijderd</string>
     <string name="shopping_list_delete_cd">Verwijderen</string>
-    <string name="shopping_list_assign_store_cd">Winkel toewijzen</string>
-    <string name="shopping_list_assign_store_title">Kies een winkel</string>
     <string name="shopping_list_mark_unchecked_cd">Zet terug als niet afgevinkt</string>
     <string name="shopping_list_mark_checked_cd">Markeer als afgevinkt</string>
     <string name="shopping_list_empty_filtered">Geen items gevonden.</string>

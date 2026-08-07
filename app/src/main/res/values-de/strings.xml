@@ -348,8 +348,6 @@
     <string name="shopping_list_search_placeholder">Einkaufsliste durchsuchen…</string>
     <string name="shopping_list_removed_format">%1$s entfernt</string>
     <string name="shopping_list_delete_cd">Löschen</string>
-    <string name="shopping_list_assign_store_cd">Geschäft zuweisen</string>
-    <string name="shopping_list_assign_store_title">Wähle ein Geschäft</string>
     <string name="shopping_list_mark_unchecked_cd">Als nicht abgehakt markieren</string>
     <string name="shopping_list_mark_checked_cd">Als abgehakt markieren</string>
     <string name="shopping_list_empty_filtered">Keine Artikel gefunden.</string>

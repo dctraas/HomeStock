@@ -348,8 +348,6 @@
     <string name="shopping_list_search_placeholder">Buscar en la lista de la compra…</string>
     <string name="shopping_list_removed_format">%1$s eliminado</string>
     <string name="shopping_list_delete_cd">Eliminar</string>
-    <string name="shopping_list_assign_store_cd">Asignar tienda</string>
-    <string name="shopping_list_assign_store_title">Elige una tienda</string>
     <string name="shopping_list_mark_unchecked_cd">Marcar como no marcado</string>
     <string name="shopping_list_mark_checked_cd">Marcar como completado</string>
     <string name="shopping_list_empty_filtered">No se encontraron artículos.</string>
