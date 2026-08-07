@@ -422,11 +422,11 @@ fun InventoryScreen(
                 }
             } else {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
+                    columns = GridCells.Fixed(3),
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     if (isFlatSort) {
                         items(uiState.flatInventory, key = { it.barcode }) { item ->
@@ -805,7 +805,10 @@ private fun InventoryGridTile(
             )
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
-        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1.4f)) {
+        // A shorter image (relative to tile width) than the old 2-column layout used, so three
+        // rows of tiles fit on screen at once with three columns instead of two — a wider tile
+        // would otherwise mean a taller image too (aspectRatio scales the image with tile width).
+        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1.7f)) {
             ProductImage(
                 imageUrl = item.imageUrl,
                 fallbackIcon = Category.fromStorageKey(item.category).icon,
