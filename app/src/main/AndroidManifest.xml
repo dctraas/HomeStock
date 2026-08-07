@@ -69,6 +69,13 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/shopping_list_widget_info" />
         </receiver>
+
+        <!-- Backs the "Toevoegen aan lijstje" action button on an expiry notification (see
+             ExpiryCheckWorker) — only ever triggered by our own PendingIntent, never from
+             outside the app. -->
+        <receiver
+            android:name=".work.AddExpiringItemToShoppingListReceiver"
+            android:exported="false" />
     </application>
 
 </manifest>

@@ -20,6 +20,7 @@ import androidx.work.WorkerParameters
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.MainActivity
 import com.dtraas.homestock.R
+import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import kotlinx.coroutines.flow.first
 import java.time.Instant
 import java.time.LocalDate
@@ -56,7 +57,6 @@ class ExpiryCheckWorker(
                 val date = Instant.ofEpochMilli(expirationDate).atZone(ZoneOffset.UTC).toLocalDate()
                 ChronoUnit.DAYS.between(today, date) <= EXPIRY_THRESHOLD_DAYS
             }
-            .map { it.name }
 
         if (expiringSoon.isNotEmpty()) {
             postNotification(expiringSoon)
@@ -64,8 +64,9 @@ class ExpiryCheckWorker(
         return Result.success()
     }
 
-    private fun postNotification(productNames: List<String>) {
+    private fun postNotification(items: List<InventoryItemWithProduct>) {
         val context = applicationContext
+        val productNames = items.map { it.name }
         val contentText = if (productNames.size == 1) {
             productNames.first()
         } else {
@@ -78,19 +79,38 @@ class ExpiryCheckWorker(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(android.R.drawable.ic_popup_reminder)
             .setContentTitle(context.getString(R.string.notification_expiry_title))
             .setContentText(contentText)
             .setStyle(NotificationCompat.BigTextStyle().bigText(productNames.joinToString(", ")))
             .setContentIntent(contentIntent)
             .setAutoCancel(true)
-            .build()
+
+        // Only offered when there's exactly one expiring product — with several, which one
+        // "voeg toe aan lijstje" should mean is ambiguous, so those still just open the app.
+        items.singleOrNull()?.let { item ->
+            val addToListIntent = Intent(context, AddExpiringItemToShoppingListReceiver::class.java).apply {
+                putExtra(AddExpiringItemToShoppingListReceiver.EXTRA_BARCODE, item.barcode)
+                putExtra(AddExpiringItemToShoppingListReceiver.EXTRA_NOTIFICATION_ID, NOTIFICATION_ID)
+            }
+            val addToListPendingIntent = PendingIntent.getBroadcast(
+                context,
+                0,
+                addToListIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+            )
+            builder.addAction(
+                android.R.drawable.ic_menu_add,
+                context.getString(R.string.product_detail_add_to_shopping_list),
+                addToListPendingIntent,
+            )
+        }
 
         if (ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED ||
             Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
         ) {
-            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, notification)
+            NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build())
         }
     }
 
