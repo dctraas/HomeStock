@@ -70,6 +70,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
@@ -594,10 +595,16 @@ private fun ShoppingListRow(
             modifier = Modifier.padding(start = 12.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
+            // Material3's Checkbox draws its glyph at a fixed intrinsic size no matter what
+            // Modifier.size() constrains its layout box to — a plain .size() only shrinks the
+            // surrounding space (which is why this previously only affected the gap to the
+            // image, not the checkbox itself). scale() is a render-layer transform and is what
+            // actually shrinks the drawn checkbox; .size() below just keeps its footprint in
+            // the row compact and proportional to the smaller visual.
             Checkbox(
                 checked = item.isChecked,
                 onCheckedChange = onCheckedChange,
-                modifier = Modifier.size(18.dp),
+                modifier = Modifier.size(20.dp).scale(0.7f),
             )
             ProductImage(
                 imageUrl = item.imageUrl,
