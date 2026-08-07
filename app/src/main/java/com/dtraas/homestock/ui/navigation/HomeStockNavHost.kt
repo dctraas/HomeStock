@@ -194,7 +194,10 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                 ReceiptScanScreen(onBack = { navController.popBackStack() })
             }
             composable(Destination.MealPlan.route) {
-                MealPlanScreen(onBack = { navController.popBackStack() })
+                MealPlanScreen(
+                    onBack = { navController.popBackStack() },
+                    onRecipeClick = { mealId -> navController.navigate(Destination.RecipeDetail.createRoute(mealId)) },
+                )
             }
             composable(Destination.Premium.route) {
                 PremiumScreen(onBack = { navController.popBackStack() })

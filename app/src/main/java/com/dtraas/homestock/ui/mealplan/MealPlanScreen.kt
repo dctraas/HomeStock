@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -18,9 +17,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -30,12 +30,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -55,24 +52,26 @@ import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.entity.PlannedMeal
+import com.dtraas.homestock.data.model.MealSlot
 import com.dtraas.homestock.data.repository.RecipeSuggestion
-import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
+import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftImageShape
-import java.time.DayOfWeek
+import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
 
 /**
- * Instellingen > Beta > Weekmenu — a repeating weekly plan (one recipe per weekday, not tied
- * to calendar dates; see [com.dtraas.homestock.data.repository.MealPlanRepository]) with a
- * "Genereer boodschappenlijst" action that adds every planned meal's missing ingredients to
- * the shopping list in one combined, deduplicated batch.
+ * Instellingen > Beta > Maaltijdplanner — a real, date-based plan (see
+ * [com.dtraas.homestock.data.repository.MealPlanRepository]): the top bar shows the selected
+ * date with prev/next-day arrows, and each of the four [MealSlot]s can hold a recipe. Tapping a
+ * planned recipe navigates to the existing recipe detail screen (see [onRecipeClick]), which
+ * already shows matched/missing ingredients and an "add missing to shopping list" action — no
+ * need to duplicate that here.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MealPlanScreen(onBack: () -> Unit) {
-    val context = LocalContext.current
-    val application = context.applicationContext as HomeStockApplication
+fun MealPlanScreen(onBack: () -> Unit, onRecipeClick: (String) -> Unit) {
+    val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: MealPlanViewModel = viewModel(
         factory = viewModelFactory {
             initializer {
@@ -83,49 +82,38 @@ fun MealPlanScreen(onBack: () -> Unit) {
     val uiState by viewModel.uiState.collectAsState()
     val locale: Locale = LocalConfiguration.current.locales[0]
 
-    val snackbarHostState = remember { SnackbarHostState() }
-    val generateErrorMessage = stringResource(R.string.meal_plan_generate_error)
-
-    LaunchedEffect(uiState.generatedCount) {
-        val count = uiState.generatedCount ?: return@LaunchedEffect
-        snackbarHostState.showSnackbar(context.getString(R.string.meal_plan_generate_success_format, count))
-        viewModel.consumeGeneratedCount()
+    val dateLabel = remember(uiState.date, locale) {
+        val dayName = uiState.date.dayOfWeek.getDisplayName(TextStyle.FULL, locale).replaceFirstChar { it.titlecase(locale) }
+        val rest = uiState.date.format(DateTimeFormatter.ofPattern("d MMMM", locale))
+        "$dayName $rest"
     }
-    LaunchedEffect(uiState.hasGenerateError) {
-        if (uiState.hasGenerateError) snackbarHostState.showSnackbar(generateErrorMessage)
-    }
-
-    fun dayLabel(day: DayOfWeek): String =
-        day.getDisplayName(TextStyle.FULL, locale).replaceFirstChar { it.titlecase(locale) }
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text(stringResource(R.string.meal_plan_title)) },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+                        IconButton(onClick = viewModel::goToPreviousDay) {
+                            Icon(Icons.Filled.ChevronLeft, contentDescription = stringResource(R.string.meal_plan_previous_day_cd))
+                        }
+                        Text(
+                            text = dateLabel,
+                            style = MaterialTheme.typography.titleMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
+                        IconButton(onClick = viewModel::goToNextDay) {
+                            Icon(Icons.Filled.ChevronRight, contentDescription = stringResource(R.string.meal_plan_next_day_cd))
+                        }
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
             )
-        },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        bottomBar = {
-            Button(
-                onClick = viewModel::generateShoppingList,
-                enabled = !uiState.isGenerating && uiState.plan.values.any { it != null },
-                modifier = Modifier.fillMaxWidth().padding(16.dp),
-            ) {
-                if (uiState.isGenerating) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        strokeWidth = 2.dp,
-                        color = MaterialTheme.colorScheme.onPrimary,
-                    )
-                } else {
-                    Text(stringResource(R.string.meal_plan_generate_button))
-                }
-            }
         },
     ) { padding ->
         Column(
@@ -134,23 +122,24 @@ fun MealPlanScreen(onBack: () -> Unit) {
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            DayOfWeek.entries.forEach { day ->
-                DayRow(
-                    label = dayLabel(day),
-                    planned = uiState.plan[day],
-                    onClick = { viewModel.openPicker(day) },
-                    onClear = { viewModel.clearDay(day) },
+            MealSlot.ORDERED.forEach { slot ->
+                SlotCard(
+                    label = stringResource(slot.labelRes),
+                    planned = uiState.plan[slot],
+                    onAddClick = { viewModel.openPicker(slot) },
+                    onOpenClick = onRecipeClick,
+                    onClear = { viewModel.clearSlot(slot) },
                 )
             }
         }
     }
 
-    val pickerDay = uiState.pickerDay
-    if (pickerDay != null) {
+    val pickerSlot = uiState.pickerSlot
+    if (pickerSlot != null) {
         MealPickerDialog(
-            titleText = stringResource(R.string.meal_plan_picker_title_format, dayLabel(pickerDay)),
+            titleText = stringResource(R.string.meal_plan_picker_title_format, stringResource(pickerSlot.labelRes)),
             isLoading = uiState.isPickerLoading,
             suggestions = uiState.pickerSuggestions,
             onSelect = viewModel::pickMeal,
@@ -160,57 +149,61 @@ fun MealPlanScreen(onBack: () -> Unit) {
 }
 
 @Composable
-private fun DayRow(label: String, planned: PlannedMeal?, onClick: () -> Unit, onClear: () -> Unit) {
+private fun SlotCard(
+    label: String,
+    planned: PlannedMeal?,
+    onAddClick: () -> Unit,
+    onOpenClick: (String) -> Unit,
+    onClear: () -> Unit,
+) {
     Card(
-        onClick = onClick,
+        onClick = { if (planned != null) onOpenClick(planned.mealId) else onAddClick() },
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = SoftCardShapeCompact,
+        shape = SoftCardShape,
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.titleSmall,
-                modifier = Modifier.width(88.dp),
-            )
-            if (planned != null) {
-                if (planned.thumbnailUrl != null) {
-                    AsyncImage(
-                        model = planned.thumbnailUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.size(40.dp).clip(SoftImageShape),
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(text = label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (planned != null) {
+                    if (planned.thumbnailUrl != null) {
+                        AsyncImage(
+                            model = planned.thumbnailUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(48.dp).clip(SoftImageShape),
+                        )
+                    }
+                    Text(
+                        text = planned.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f).padding(start = 12.dp),
                     )
-                }
-                Text(
-                    text = planned.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f).padding(start = 12.dp),
-                )
-                IconButton(onClick = onClear) {
+                    IconButton(onClick = onClear) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.meal_plan_clear_cd),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else {
+                    Text(
+                        text = stringResource(R.string.meal_plan_empty_day),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
                     Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = stringResource(R.string.meal_plan_clear_cd),
+                        imageVector = Icons.Filled.Add,
+                        contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            } else {
-                Text(
-                    text = stringResource(R.string.meal_plan_empty_day),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f).padding(start = 12.dp),
-                )
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
             }
         }
     }

@@ -421,14 +421,17 @@
     <string name="recipes_instructions_title">Instructies</string>
 
     <!-- Weekmenu -->
-    <string name="meal_plan_title">Weekmenu</string>
+    <string name="meal_plan_title">Maaltijdplanner</string>
     <string name="meal_plan_empty_day">Kies een recept</string>
     <string name="meal_plan_clear_cd">Gepland recept verwijderen</string>
-    <string name="meal_plan_generate_button">Genereer boodschappenlijst</string>
-    <string name="meal_plan_generate_success_format">%1$d ingrediënten toegevoegd aan je boodschappenlijst</string>
-    <string name="meal_plan_generate_error">Genereren van boodschappenlijst mislukt. Probeer het opnieuw.</string>
     <string name="meal_plan_picker_title_format">Kies een recept voor %1$s</string>
     <string name="meal_plan_picker_empty">Geen suggesties gevonden. Voeg meer producten toe aan je voorraad.</string>
+    <string name="meal_plan_slot_breakfast">Ontbijt</string>
+    <string name="meal_plan_slot_lunch">Lunch</string>
+    <string name="meal_plan_slot_dinner">Avondeten</string>
+    <string name="meal_plan_slot_snack">Tussendoor</string>
+    <string name="meal_plan_previous_day_cd">Vorige dag</string>
+    <string name="meal_plan_next_day_cd">Volgende dag</string>
 
     <!-- Bonnetje scannen (Beta) -->
     <string name="receipt_scan_title">Bonnetje scannen</string>

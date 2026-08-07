@@ -3,25 +3,24 @@ package com.dtraas.homestock.ui.mealplan
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.homestock.data.local.entity.PlannedMeal
+import com.dtraas.homestock.data.model.MealSlot
 import com.dtraas.homestock.data.repository.MealPlanRepository
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
-import java.time.DayOfWeek
+import java.time.LocalDate
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class MealPlanUiState(
-    val plan: Map<DayOfWeek, PlannedMeal?> = emptyMap(),
-    /** Non-null while the "pick a recipe for this day" dialog is open. */
-    val pickerDay: DayOfWeek? = null,
+    val date: LocalDate = LocalDate.now(),
+    val plan: Map<MealSlot, PlannedMeal?> = emptyMap(),
+    /** Non-null while the "pick a recipe for this slot" dialog is open. */
+    val pickerSlot: MealSlot? = null,
     val isPickerLoading: Boolean = false,
     val pickerSuggestions: List<RecipeSuggestion> = emptyList(),
-    val isGenerating: Boolean = false,
-    /** Set once generateShoppingList() succeeds, to trigger a one-shot snackbar; see [MealPlanViewModel.consumeGeneratedCount]. */
-    val generatedCount: Int? = null,
-    val hasGenerateError: Boolean = false,
 )
 
 class MealPlanViewModel(
@@ -32,17 +31,37 @@ class MealPlanViewModel(
     private val _uiState = MutableStateFlow(MealPlanUiState())
     val uiState: StateFlow<MealPlanUiState> = _uiState
 
+    // Re-launched on every date change (see changeDate) rather than a single collect over a
+    // flatMapLatest-on-date flow — the date lives in plain UI state, not its own StateFlow, so
+    // there's nothing to flatMapLatest from; cancelling the previous listener by hand achieves
+    // the same "only one day's snapshot listener open at a time" result.
+    private var planObservationJob: Job? = null
+
     init {
-        viewModelScope.launch {
-            mealPlanRepository.observeMealPlan().collect { plan ->
+        observeCurrentDate()
+    }
+
+    private fun observeCurrentDate() {
+        planObservationJob?.cancel()
+        planObservationJob = viewModelScope.launch {
+            mealPlanRepository.observeMealPlan(_uiState.value.date).collect { plan ->
                 _uiState.update { it.copy(plan = plan) }
             }
         }
     }
 
-    /** Opens the recipe picker for [day], loading suggestions fresh every time — inventory may have changed since it was last opened. */
-    fun openPicker(day: DayOfWeek) {
-        _uiState.update { it.copy(pickerDay = day, isPickerLoading = true, pickerSuggestions = emptyList()) }
+    fun goToPreviousDay() = changeDate(_uiState.value.date.minusDays(1))
+
+    fun goToNextDay() = changeDate(_uiState.value.date.plusDays(1))
+
+    private fun changeDate(date: LocalDate) {
+        _uiState.update { it.copy(date = date, plan = emptyMap()) }
+        observeCurrentDate()
+    }
+
+    /** Opens the recipe picker for [slot], loading suggestions fresh every time — inventory may have changed since it was last opened. */
+    fun openPicker(slot: MealSlot) {
+        _uiState.update { it.copy(pickerSlot = slot, isPickerLoading = true, pickerSuggestions = emptyList()) }
         viewModelScope.launch {
             recipeRepository.suggestRecipes()
                 .onSuccess { suggestions -> _uiState.update { it.copy(isPickerLoading = false, pickerSuggestions = suggestions) } }
@@ -51,30 +70,19 @@ class MealPlanViewModel(
     }
 
     fun dismissPicker() {
-        _uiState.update { it.copy(pickerDay = null, isPickerLoading = false, pickerSuggestions = emptyList()) }
+        _uiState.update { it.copy(pickerSlot = null, isPickerLoading = false, pickerSuggestions = emptyList()) }
     }
 
     fun pickMeal(suggestion: RecipeSuggestion) {
-        val day = _uiState.value.pickerDay ?: return
+        val slot = _uiState.value.pickerSlot ?: return
+        val date = _uiState.value.date
         val meal = PlannedMeal(suggestion.meal.id, suggestion.meal.name, suggestion.meal.thumbnailUrl)
-        viewModelScope.launch { mealPlanRepository.setMeal(day, meal) }
+        viewModelScope.launch { mealPlanRepository.setMeal(date, slot, meal) }
         dismissPicker()
     }
 
-    fun clearDay(day: DayOfWeek) {
-        viewModelScope.launch { mealPlanRepository.clearMeal(day) }
-    }
-
-    fun generateShoppingList() {
-        _uiState.update { it.copy(isGenerating = true, hasGenerateError = false) }
-        viewModelScope.launch {
-            mealPlanRepository.generateShoppingList()
-                .onSuccess { count -> _uiState.update { it.copy(isGenerating = false, generatedCount = count) } }
-                .onFailure { _uiState.update { it.copy(isGenerating = false, hasGenerateError = true) } }
-        }
-    }
-
-    fun consumeGeneratedCount() {
-        _uiState.update { it.copy(generatedCount = null) }
+    fun clearSlot(slot: MealSlot) {
+        val date = _uiState.value.date
+        viewModelScope.launch { mealPlanRepository.clearMeal(date, slot) }
     }
 }

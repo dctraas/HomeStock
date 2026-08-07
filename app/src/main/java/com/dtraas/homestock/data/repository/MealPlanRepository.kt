@@ -1,86 +1,62 @@
 package com.dtraas.homestock.data.repository
 
 import com.dtraas.homestock.data.local.entity.PlannedMeal
+import com.dtraas.homestock.data.model.MealSlot
 import com.dtraas.homestock.data.remote.observeSnapshot
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
-import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 
 /**
- * The household's weekmenu — a single, repeating weekly plan ("what do we usually cook on
- * Mondays") rather than a full date-based calendar, which keeps this to one small Firestore
- * document (`households/{id}/mealPlan/current`) with up to 7 fields, one per [DayOfWeek], each
- * holding a [PlannedMeal]. [DayOfWeek]'s own English constant name backs the Firestore field
- * key (stable regardless of the app's display locale); [DayOfWeek.getDisplayName] backs the
- * localized label shown in the UI.
+ * The household's maaltijdplanner — a real, date-based plan (not a repeating weekly template):
+ * one Firestore document per calendar date (`households/{id}/mealPlan/{yyyy-MM-dd}`) with up to
+ * 4 fields, one per [MealSlot] (ontbijt/lunch/avondeten/tussendoor), so reading or writing a
+ * whole day is a single round-trip.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class MealPlanRepository(
     private val firestore: FirebaseFirestore,
     private val householdSession: HouseholdSession,
-    private val recipeRepository: RecipeRepository,
 ) {
-    private fun mealPlanDoc(householdId: String) =
-        firestore.collection("households").document(householdId).collection("mealPlan").document(DOC_ID)
+    private fun mealPlanCollection(householdId: String) =
+        firestore.collection("households").document(householdId).collection("mealPlan")
 
-    private fun fieldKey(day: DayOfWeek): String = day.name.lowercase()
+    private fun dayDoc(householdId: String, date: LocalDate) =
+        mealPlanCollection(householdId).document(date.format(DATE_FORMATTER))
 
-    fun observeMealPlan(): Flow<Map<DayOfWeek, PlannedMeal?>> =
+    fun observeMealPlan(date: LocalDate): Flow<Map<MealSlot, PlannedMeal?>> =
         householdSession.householdId.flatMapLatest { householdId ->
             if (householdId == null) {
                 flowOf(emptyMap())
             } else {
-                mealPlanDoc(householdId).observeSnapshot().map { snapshot ->
-                    DayOfWeek.entries.associateWith { day ->
-                        PlannedMeal.fromMap(snapshot.get(fieldKey(day)) as? Map<*, *>)
+                dayDoc(householdId, date).observeSnapshot().map { snapshot ->
+                    MealSlot.ORDERED.associateWith { slot ->
+                        PlannedMeal.fromMap(snapshot.get(slot.storageKey) as? Map<*, *>)
                     }
                 }
             }
         }
 
-    suspend fun setMeal(day: DayOfWeek, meal: PlannedMeal) {
+    suspend fun setMeal(date: LocalDate, slot: MealSlot, meal: PlannedMeal) {
         val householdId = householdSession.householdId.value ?: return
-        mealPlanDoc(householdId).set(mapOf(fieldKey(day) to meal.toMap()), SetOptions.merge()).await()
+        dayDoc(householdId, date).set(mapOf(slot.storageKey to meal.toMap()), SetOptions.merge()).await()
     }
 
-    /** [SetOptions.merge] with a delete sentinel value, rather than update(), so this still
-     *  works even if the document doesn't exist yet (nothing was ever planned before). */
-    suspend fun clearMeal(day: DayOfWeek) {
+    /** [SetOptions.merge] with a delete sentinel, rather than update(), so this still works even if the day's document doesn't exist yet. */
+    suspend fun clearMeal(date: LocalDate, slot: MealSlot) {
         val householdId = householdSession.householdId.value ?: return
-        mealPlanDoc(householdId)
-            .set(mapOf(fieldKey(day) to FieldValue.delete()), SetOptions.merge())
-            .await()
-    }
-
-    /**
-     * Fetches full ingredient lists for every currently planned meal and adds whatever isn't
-     * already in inventory (or already on the shopping list) to it — one combined list for the
-     * whole week rather than duplicating shared ingredients per day. Returns how many distinct
-     * ingredients were actually added.
-     */
-    suspend fun generateShoppingList(): Result<Int> = try {
-        val plan = observeMealPlan().first()
-        val mealIds = plan.values.filterNotNull().map { it.mealId }.distinct()
-        if (mealIds.isEmpty()) {
-            Result.success(0)
-        } else {
-            val details = mealIds.mapNotNull { recipeRepository.getRecipeDetail(it).getOrNull() }
-            val missing = recipeRepository.missingIngredients(details)
-            Result.success(recipeRepository.addIngredientsToShoppingList(missing))
-        }
-    } catch (e: Exception) {
-        Result.failure(e)
+        dayDoc(householdId, date).set(mapOf(slot.storageKey to FieldValue.delete()), SetOptions.merge()).await()
     }
 
     private companion object {
-        const val DOC_ID = "current"
+        val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
     }
 }

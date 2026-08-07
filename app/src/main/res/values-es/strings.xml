@@ -420,14 +420,17 @@
     <string name="recipes_instructions_title">Instrucciones</string>
 
     <!-- Weekmenu -->
-    <string name="meal_plan_title">Menú semanal</string>
+    <string name="meal_plan_title">Planificador de comidas</string>
     <string name="meal_plan_empty_day">Elegir una receta</string>
     <string name="meal_plan_clear_cd">Quitar receta planificada</string>
-    <string name="meal_plan_generate_button">Generar lista de la compra</string>
-    <string name="meal_plan_generate_success_format">%1$d ingredientes añadidos a tu lista de la compra</string>
-    <string name="meal_plan_generate_error">No se pudo generar la lista de la compra. Inténtalo de nuevo.</string>
     <string name="meal_plan_picker_title_format">Elige una receta para %1$s</string>
     <string name="meal_plan_picker_empty">No se encontraron sugerencias. Añade más productos a tu inventario.</string>
+    <string name="meal_plan_slot_breakfast">Desayuno</string>
+    <string name="meal_plan_slot_lunch">Comida</string>
+    <string name="meal_plan_slot_dinner">Cena</string>
+    <string name="meal_plan_slot_snack">Tentempié</string>
+    <string name="meal_plan_previous_day_cd">Día anterior</string>
+    <string name="meal_plan_next_day_cd">Día siguiente</string>
 
     <!-- Escanear ticket (Beta) -->
     <string name="receipt_scan_title">Escanear ticket</string>
