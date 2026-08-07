@@ -203,7 +203,7 @@
     <string name="more_feedback_star_cd">Estrella %1$d</string>
     <string name="more_feedback_sent_confirmation">¡Gracias por tus comentarios!</string>
     <string name="more_feedback_error">No se pudieron enviar los comentarios. Inténtalo de nuevo más tarde.</string>
-    <string name="more_section_beta">Beta</string>
+    <string name="more_section_beta">HomeStock Premium</string>
     <string name="more_beta_recipes">Recetas</string>
     <string name="more_beta_receipt_scan">Escanear ticket</string>
     <string name="more_section_debug">Depuración</string>

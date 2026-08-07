@@ -146,10 +146,24 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                 ScanResultScreen(
                     barcode = barcode,
                     onSaved = {
-                        // Inventory is the app's start destination, so it's always on the
-                        // back stack — popping straight to it discards the scan detour
-                        // (scan_result, and scan itself if it was pushed) in one go.
-                        navController.popBackStack(Destination.Inventory.route, inclusive = false)
+                        // Inventory is the app's start destination, but it isn't always on the
+                        // *current* back stack: switching to another bottom-nav tab pops
+                        // everything up to and including it off with saveState = true (see
+                        // HomeStockBottomBar), tucking it away in saved state instead of
+                        // leaving it on the live stack. Scanning from the Scan tab after
+                        // switching tabs that way left this popBackStack silently failing
+                        // ("Ignoring popBackStack to route inventory..."), stranding the user
+                        // on this screen. Try the cheap direct pop first (covers the common
+                        // "scanned straight from Inventory" case); if Inventory genuinely isn't
+                        // on the stack, fall back to a full navigate that's guaranteed to land
+                        // there regardless of how this screen was reached.
+                        val popped = navController.popBackStack(Destination.Inventory.route, inclusive = false)
+                        if (!popped) {
+                            navController.navigate(Destination.Inventory.route) {
+                                popUpTo(navController.graph.id) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
                     },
                     onBack = { navController.popBackStack() },
                 )

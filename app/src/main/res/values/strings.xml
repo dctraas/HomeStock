@@ -204,7 +204,7 @@
     <string name="more_feedback_star_cd">Ster %1$d</string>
     <string name="more_feedback_sent_confirmation">Bedankt voor je feedback!</string>
     <string name="more_feedback_error">Kon feedback niet verzenden. Probeer het later opnieuw.</string>
-    <string name="more_section_beta">Beta</string>
+    <string name="more_section_beta">HomeStock Premium</string>
     <string name="more_beta_recipes">Recepten</string>
     <string name="more_beta_receipt_scan">Bonnetje scannen</string>
     <string name="more_section_debug">Debug</string>
