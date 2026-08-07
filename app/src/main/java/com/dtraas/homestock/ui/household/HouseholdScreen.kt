@@ -67,9 +67,14 @@ import kotlinx.coroutines.launch
  * Shown before the main app whenever this device isn't part of a household yet.
  * A household is the sharing boundary: every device that creates or joins the
  * same household code sees the same inventory, shopping list and activity log.
+ *
+ * [prefillJoinCode] comes from a homestock://join?code=XXXXXX link (see MainActivity /
+ * HouseholdInviteLink) — when set, the join step opens pre-filled with that code instead of
+ * the usual create-or-join choice, right after the one-time profile step if this is a fresh
+ * install.
  */
 @Composable
-fun HouseholdScreen() {
+fun HouseholdScreen(prefillJoinCode: String? = null) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val deviceProfile = application.container.deviceProfile
     // Keyed off onboardingGeneration so leaving/deleting a household forces a brand new
@@ -85,6 +90,7 @@ fun HouseholdScreen() {
                     householdSession = application.container.householdSession,
                     householdMembersRepository = application.container.householdMembersRepository,
                     deviceProfile = deviceProfile,
+                    prefillJoinCode = prefillJoinCode,
                 )
             }
         },

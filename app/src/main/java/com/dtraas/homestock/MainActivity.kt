@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import com.dtraas.homestock.data.repository.HouseholdInviteLink
 import com.dtraas.homestock.data.repository.ThemeMode
 import com.dtraas.homestock.ui.household.HouseholdScreen
 import com.dtraas.homestock.ui.navigation.Destination
@@ -33,10 +34,18 @@ class MainActivity : AppCompatActivity() {
     // instead of spawning a new one).
     private var pendingRoute by mutableStateOf<String?>(null)
 
+    // From a homestock://join?code=XXXXXX link (see HouseholdInviteLink and
+    // HouseholdSettingsScreen's "Deel uitnodiging" button) — only meaningful while this device
+    // isn't in a household yet, since that's the only time HouseholdScreen is shown at all (see
+    // setContent below). Read once by HouseholdScreen/HouseholdViewModel to prefill the join
+    // step; not consumed/cleared the way pendingRoute is; there's nothing to conflict with.
+    private var pendingJoinCode by mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         pendingRoute = shortcutRouteForIntent(intent)
+        pendingJoinCode = HouseholdInviteLink.codeFrom(intent.data)
         setContent {
             val application = LocalContext.current.applicationContext as HomeStockApplication
             val themeMode by application.container.themePreferences.themeMode.collectAsState()
@@ -49,7 +58,7 @@ class MainActivity : AppCompatActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val householdId by application.container.householdSession.householdId.collectAsState()
                     if (householdId == null) {
-                        HouseholdScreen()
+                        HouseholdScreen(prefillJoinCode = pendingJoinCode)
                     } else {
                         HomeStockApp(
                             pendingRoute = pendingRoute,
@@ -65,6 +74,7 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         shortcutRouteForIntent(intent)?.let { pendingRoute = it }
+        HouseholdInviteLink.codeFrom(intent.data)?.let { pendingJoinCode = it }
     }
 
     private fun shortcutRouteForIntent(intent: Intent?): String? = when (intent?.action) {

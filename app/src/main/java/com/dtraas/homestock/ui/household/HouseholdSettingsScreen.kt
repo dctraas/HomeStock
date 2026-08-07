@@ -1,5 +1,6 @@
 package com.dtraas.homestock.ui.household
 
+import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -19,6 +20,7 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -52,6 +54,7 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
+import com.dtraas.homestock.data.repository.HouseholdInviteLink
 import com.dtraas.homestock.data.repository.HouseholdMember
 import com.dtraas.homestock.data.repository.HouseholdRepository
 import com.dtraas.homestock.ui.theme.SoftCardShape
@@ -66,7 +69,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HouseholdSettingsScreen(onBack: () -> Unit) {
-    val application = LocalContext.current.applicationContext as HomeStockApplication
+    val context = LocalContext.current
+    val application = context.applicationContext as HomeStockApplication
     val householdSession = application.container.householdSession
     val householdId by householdSession.householdId.collectAsState()
     val householdRepository = application.container.householdRepository
@@ -143,7 +147,21 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                 )
             }
 
-            CodeSection(householdCode = householdId)
+            CodeSection(
+                householdCode = householdId,
+                onShareClick = { code ->
+                    val message = context.getString(
+                        R.string.household_share_invite_text_format,
+                        HouseholdInviteLink.build(code),
+                        code,
+                    )
+                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                        type = "text/plain"
+                        putExtra(Intent.EXTRA_TEXT, message)
+                    }
+                    context.startActivity(Intent.createChooser(sendIntent, null))
+                },
+            )
         }
     }
 
@@ -228,17 +246,28 @@ private fun SectionCard(content: @Composable ColumnScope.() -> Unit) {
  * how much content (e.g. members) is above it.
  */
 @Composable
-private fun CodeSection(householdCode: String?) {
-    Text(
-        text = stringResource(R.string.more_household_code_format, householdCode ?: "—"),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = TextAlign.Center,
+private fun CodeSection(householdCode: String?, onShareClick: (String) -> Unit) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 16.dp),
-    )
+            .padding(start = 16.dp, end = 4.dp)
+            .padding(bottom = 8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.more_household_code_format, householdCode ?: "—"),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(enabled = householdCode != null, onClick = { householdCode?.let(onShareClick) }) {
+            Icon(
+                imageVector = Icons.Filled.Share,
+                contentDescription = stringResource(R.string.household_share_invite_cd),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 /**

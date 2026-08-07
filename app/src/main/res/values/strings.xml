@@ -119,6 +119,8 @@
     <string name="household_name_label">Naam huishouden</string>
     <string name="household_name_placeholder">Bijv. Familie Jansen</string>
     <string name="household_name_char_count_format">%1$d/%2$d tekens</string>
+    <string name="household_share_invite_cd">Deel uitnodiging</string>
+    <string name="household_share_invite_text_format">Doe mee met mijn huishouden in HomeStock! Tik op de link om aan te sluiten: %1$s\n\n(Heb je de app nog niet? Installeer HomeStock en voer dan code %2$s in.)</string>
 
     <!-- Meer -->
     <string name="more_household_title">Huishouden</string>

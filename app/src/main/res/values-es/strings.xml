@@ -118,6 +118,8 @@
     <string name="household_name_label">Nombre del hogar</string>
     <string name="household_name_placeholder">Por ejemplo, Familia García</string>
     <string name="household_name_char_count_format">%1$d/%2$d caracteres</string>
+    <string name="household_share_invite_cd">Compartir invitación</string>
+    <string name="household_share_invite_text_format">¡Únete a mi hogar en HomeStock! Toca el enlace para unirte: %1$s\n\n(¿Aún no tienes la app? Instala HomeStock e introduce el código %2$s.)</string>
 
     <!-- Más -->
     <string name="more_household_title">Hogar</string>

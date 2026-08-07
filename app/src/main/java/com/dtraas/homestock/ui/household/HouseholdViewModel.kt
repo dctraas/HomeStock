@@ -35,18 +35,35 @@ class HouseholdViewModel(
     private val householdSession: HouseholdSession,
     private val householdMembersRepository: HouseholdMembersRepository,
     deviceProfile: DeviceProfile,
+    /** From an invite link (see HouseholdScreen's doc) — skips straight to a pre-filled join step. */
+    private val prefillJoinCode: String? = null,
 ) : ViewModel() {
 
     // The profile step (name + optional photo) only makes sense the very first time someone
     // opens the app — a device that already has a name (e.g. after leaving a household to
-    // join another one) skips straight to CHOOSE instead of asking again.
+    // join another one) skips straight to CHOOSE instead of asking again. An invite link skips
+    // CHOOSE too and lands straight on JOIN, pre-filled — someone who followed a link already
+    // expressed intent to join a specific household, no need to make them pick "join" again.
     private val _uiState = MutableStateFlow(
-        HouseholdUiState(mode = if (deviceProfile.displayName.value == null) HouseholdMode.PROFILE else HouseholdMode.CHOOSE),
+        HouseholdUiState(
+            mode = when {
+                deviceProfile.displayName.value == null -> HouseholdMode.PROFILE
+                prefillJoinCode != null -> HouseholdMode.JOIN
+                else -> HouseholdMode.CHOOSE
+            },
+            joinCodeInput = if (deviceProfile.displayName.value != null) prefillJoinCode.orEmpty() else "",
+        ),
     )
     val uiState: StateFlow<HouseholdUiState> = _uiState
 
     fun confirmProfile() {
-        _uiState.update { it.copy(mode = HouseholdMode.CHOOSE) }
+        _uiState.update {
+            if (prefillJoinCode != null) {
+                it.copy(mode = HouseholdMode.JOIN, joinCodeInput = prefillJoinCode)
+            } else {
+                it.copy(mode = HouseholdMode.CHOOSE)
+            }
+        }
     }
 
     fun selectCreate() {

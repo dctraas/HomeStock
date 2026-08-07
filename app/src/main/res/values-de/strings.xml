@@ -118,6 +118,8 @@
     <string name="household_name_label">Name des Haushalts</string>
     <string name="household_name_placeholder">Z. B. Familie Jansen</string>
     <string name="household_name_char_count_format">%1$d/%2$d Zeichen</string>
+    <string name="household_share_invite_cd">Einladung teilen</string>
+    <string name="household_share_invite_text_format">Tritt meinem Haushalt in HomeStock bei! Tippe auf den Link, um beizutreten: %1$s\n\n(Hast du die App noch nicht? Installiere HomeStock und gib dann den Code %2$s ein.)</string>
 
     <!-- Mehr -->
     <string name="more_household_title">Haushalt</string>

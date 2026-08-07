@@ -118,6 +118,8 @@
     <string name="household_name_label">Nom du foyer</string>
     <string name="household_name_placeholder">Ex. Famille Dupont</string>
     <string name="household_name_char_count_format">%1$d/%2$d caractères</string>
+    <string name="household_share_invite_cd">Partager l\'invitation</string>
+    <string name="household_share_invite_text_format">Rejoins mon foyer sur HomeStock ! Touche le lien pour rejoindre : %1$s\n\n(Tu n\'as pas encore l\'appli ? Installe HomeStock puis entre le code %2$s.)</string>
 
     <!-- Plus -->
     <string name="more_household_title">Foyer</string>
