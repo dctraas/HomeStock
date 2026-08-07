@@ -269,11 +269,11 @@ fun ShoppingListScreen() {
                 )
             } else {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
+                    columns = GridCells.Fixed(3),
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(24.dp),
+                    contentPadding = PaddingValues(12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     groupedByStore.forEach { (storeName, itemsInStore) ->
                         item(span = { GridItemSpan(maxLineSpan) }) {
@@ -597,7 +597,7 @@ private fun ShoppingListRow(
             Checkbox(
                 checked = item.isChecked,
                 onCheckedChange = onCheckedChange,
-                modifier = Modifier.size(26.dp),
+                modifier = Modifier.size(18.dp),
             )
             ProductImage(
                 imageUrl = item.imageUrl,
