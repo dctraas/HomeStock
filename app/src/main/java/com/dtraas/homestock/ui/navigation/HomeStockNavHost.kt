@@ -53,7 +53,7 @@ import com.dtraas.homestock.ui.statistics.StatisticsScreen
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
 
 @Composable
-fun HomeStockApp() {
+fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Unit = {}) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -75,6 +75,17 @@ fun HomeStockApp() {
                 accountLinkRepository.markLinkPromptShown()
             }
             householdSession.consumeJustJoinedHousehold()
+        }
+    }
+
+    // A launcher shortcut (see MainActivity/shortcuts.xml) was tapped — jump straight there,
+    // on top of the normal Inventory start destination so back navigation still lands there.
+    // Keyed on pendingRoute itself (not Unit) so re-tapping the same shortcut while already on
+    // that screen still re-fires this, matching MainActivity's onNewIntent semantics.
+    LaunchedEffect(pendingRoute) {
+        pendingRoute?.let { route ->
+            navController.navigate(route) { launchSingleTop = true }
+            onPendingRouteConsumed()
         }
     }
 

@@ -34,12 +34,29 @@
         <activity
             android:name=".MainActivity"
             android:exported="true"
+            android:launchMode="singleTop"
             android:screenOrientation="portrait"
             android:theme="@style/Theme.HomeStock">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Household invite links, e.g. homestock://join?code=ABC123 (see
+                 HouseholdSettingsScreen's "Deel uitnodiging" button). Custom-scheme rather than
+                 an HTTPS App Link, since that would need a verified web domain serving
+                 assetlinks.json — this only works when the app is already installed, which is
+                 an acceptable trade-off for now. -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="homestock" android:host="join" />
+            </intent-filter>
+
+            <meta-data
+                android:name="android.app.shortcuts"
+                android:resource="@xml/shortcuts" />
         </activity>
 
         <receiver

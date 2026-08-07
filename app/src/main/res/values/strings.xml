@@ -23,6 +23,10 @@
     <string name="nav_news">Meldingen</string>
     <string name="nav_more">Meer</string>
 
+    <!-- Launcher shortcuts (long-press the app icon) -->
+    <string name="shortcut_scan_long_label">Barcode scannen</string>
+    <string name="shortcut_shopping_list_long_label">Boodschappenlijst</string>
+
     <!-- Category display names -->
     <string name="category_groente_fruit">Aardappelen, Groente &amp; Fruit</string>
     <string name="category_maaltijden_salades">Salades &amp; Maaltijden</string>

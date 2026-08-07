@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Static launcher shortcuts (long-press the app icon). Each intent targets MainActivity
+     directly with a distinct custom action; MainActivity.routeForIntent maps that action to
+     the Navigation Compose route to jump straight to (see HomeStockNavHost's pendingRoute). -->
+<shortcuts xmlns:android="http://schemas.android.com/apk/res/android">
+    <shortcut
+        android:shortcutId="scan"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_scan"
+        android:shortcutShortLabel="@string/nav_scan"
+        android:shortcutLongLabel="@string/shortcut_scan_long_label">
+        <intent
+            android:action="com.dtraas.homestock.action.SHORTCUT_SCAN"
+            android:targetPackage="com.dtraas.homestock"
+            android:targetClass="com.dtraas.homestock.MainActivity" />
+    </shortcut>
+    <shortcut
+        android:shortcutId="shopping_list"
+        android:enabled="true"
+        android:icon="@drawable/ic_shortcut_shopping_list"
+        android:shortcutShortLabel="@string/nav_shopping_list"
+        android:shortcutLongLabel="@string/shortcut_shopping_list_long_label">
+        <intent
+            android:action="com.dtraas.homestock.action.SHORTCUT_SHOPPING_LIST"
+            android:targetPackage="com.dtraas.homestock"
+            android:targetClass="com.dtraas.homestock.MainActivity" />
+    </shortcut>
+</shortcuts>

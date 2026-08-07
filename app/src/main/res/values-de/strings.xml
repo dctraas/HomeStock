@@ -21,6 +21,10 @@
     <string name="nav_inventory">Vorrat</string>
     <string name="nav_scan">Scannen</string>
     <string name="nav_news">Meldungen</string>
+
+    <!-- Launcher shortcuts (long-press the app icon) -->
+    <string name="shortcut_scan_long_label">Barcode scannen</string>
+    <string name="shortcut_shopping_list_long_label">Einkaufsliste</string>
     <string name="nav_more">Mehr</string>
 
     <!-- Category display names -->

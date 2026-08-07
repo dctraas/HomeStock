@@ -21,6 +21,10 @@
     <string name="nav_inventory">Stock</string>
     <string name="nav_scan">Scanner</string>
     <string name="nav_news">Alertes</string>
+
+    <!-- Launcher shortcuts (long-press the app icon) -->
+    <string name="shortcut_scan_long_label">Scanner un code-barres</string>
+    <string name="shortcut_shopping_list_long_label">Liste de courses</string>
     <string name="nav_more">Plus</string>
 
     <!-- Category display names -->
