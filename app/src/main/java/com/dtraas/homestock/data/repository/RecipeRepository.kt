@@ -70,18 +70,44 @@ class RecipeRepository(
 
     /** Adds every ingredient of [detail] that isn't already in inventory to the shopping list. */
     suspend fun addMissingIngredientsToShoppingList(detail: MealDbDetail) {
+        addIngredientsToShoppingList(missingIngredients(listOf(detail)))
+    }
+
+    /**
+     * Ingredient names across all of [details] that aren't already in inventory, deduplicated
+     * by name — used by [com.dtraas.homestock.data.repository.MealPlanRepository] to turn a
+     * whole week's worth of planned recipes into one combined shopping list instead of one
+     * per recipe (so e.g. onion needed by three different days is only listed once).
+     */
+    suspend fun missingIngredients(details: List<MealDbDetail>): List<String> {
         val inventoryNames = inventoryRepository.observeInventoryWithProduct().first().map { it.name }
-        detail.ingredients
-            .map { it.first }
-            .filterNot { ingredient -> inventoryHasIngredient(ingredient, inventoryNames) }
-            .forEach { ingredient ->
-                shoppingListRepository.addItem(
-                    name = ingredient,
-                    category = Category.OVERIG,
-                    store = "",
-                    quantity = 1,
-                )
+        val missing = LinkedHashSet<String>()
+        for (detail in details) {
+            for ((ingredient, _) in detail.ingredients) {
+                if (!inventoryHasIngredient(ingredient, inventoryNames)) missing.add(ingredient)
             }
+        }
+        return missing.toList()
+    }
+
+    /**
+     * Adds [ingredients] to the shopping list, skipping any that already have an open (unchecked)
+     * line there by name — without this, re-running a weekmenu's "genereer boodschappenlijst"
+     * after only changing one day would re-add every ingredient the unchanged days already put
+     * on the list. Returns how many were actually added.
+     */
+    suspend fun addIngredientsToShoppingList(ingredients: List<String>): Int {
+        val openNames = shoppingListRepository.observeShoppingList().first()
+            .filterNot { it.isChecked }
+            .map { it.name.lowercase() }
+            .toSet()
+        var added = 0
+        for (ingredient in ingredients) {
+            if (ingredient.lowercase() in openNames) continue
+            shoppingListRepository.addItem(name = ingredient, category = Category.OVERIG, store = "", quantity = 1)
+            added++
+        }
+        return added
     }
 
     private fun inventoryHasIngredient(englishIngredient: String, inventoryNames: List<String>): Boolean {

@@ -38,6 +38,7 @@ import com.dtraas.homestock.ui.account.AccountLinkPromptDialog
 import com.dtraas.homestock.ui.account.AccountLinkScreen
 import com.dtraas.homestock.ui.household.HouseholdSettingsScreen
 import com.dtraas.homestock.ui.inventory.InventoryScreen
+import com.dtraas.homestock.ui.mealplan.MealPlanScreen
 import com.dtraas.homestock.ui.more.MoreScreen
 import com.dtraas.homestock.ui.notifications.NotificationsScreen
 import com.dtraas.homestock.ui.premium.PremiumScreen
@@ -130,6 +131,7 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                 MoreScreen(
                     onNavigateToRecipes = { navController.navigate(Destination.Recipes.route) },
                     onNavigateToReceiptScan = { navController.navigate(Destination.ReceiptScan.route) },
+                    onNavigateToMealPlan = { navController.navigate(Destination.MealPlan.route) },
                     onNavigateToStatistics = { navController.navigate(Destination.Statistics.route) },
                     onNavigateToPremium = { navController.navigate(Destination.Premium.route) },
                     onNavigateToHousehold = { navController.navigate(Destination.Household.route) },
@@ -190,6 +192,9 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
             }
             composable(Destination.ReceiptScan.route) {
                 ReceiptScanScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Destination.MealPlan.route) {
+                MealPlanScreen(onBack = { navController.popBackStack() })
             }
             composable(Destination.Premium.route) {
                 PremiumScreen(onBack = { navController.popBackStack() })

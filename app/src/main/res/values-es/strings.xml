@@ -417,6 +417,16 @@
     <string name="recipes_add_missing_to_shopping_list">Añadir ingredientes que faltan a la lista de la compra</string>
     <string name="recipes_instructions_title">Instrucciones</string>
 
+    <!-- Weekmenu -->
+    <string name="meal_plan_title">Menú semanal</string>
+    <string name="meal_plan_empty_day">Elegir una receta</string>
+    <string name="meal_plan_clear_cd">Quitar receta planificada</string>
+    <string name="meal_plan_generate_button">Generar lista de la compra</string>
+    <string name="meal_plan_generate_success_format">%1$d ingredientes añadidos a tu lista de la compra</string>
+    <string name="meal_plan_generate_error">No se pudo generar la lista de la compra. Inténtalo de nuevo.</string>
+    <string name="meal_plan_picker_title_format">Elige una receta para %1$s</string>
+    <string name="meal_plan_picker_empty">No se encontraron sugerencias. Añade más productos a tu inventario.</string>
+
     <!-- Escanear ticket (Beta) -->
     <string name="receipt_scan_title">Escanear ticket</string>
     <string name="receipt_scan_processing">Procesando ticket…</string>

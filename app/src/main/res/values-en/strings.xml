@@ -417,6 +417,16 @@
     <string name="recipes_add_missing_to_shopping_list">Add missing ingredients to shopping list</string>
     <string name="recipes_instructions_title">Instructions</string>
 
+    <!-- Weekmenu -->
+    <string name="meal_plan_title">Weekly menu</string>
+    <string name="meal_plan_empty_day">Choose a recipe</string>
+    <string name="meal_plan_clear_cd">Remove planned recipe</string>
+    <string name="meal_plan_generate_button">Generate shopping list</string>
+    <string name="meal_plan_generate_success_format">%1$d ingredients added to your shopping list</string>
+    <string name="meal_plan_generate_error">Couldn\'t generate the shopping list. Please try again.</string>
+    <string name="meal_plan_picker_title_format">Choose a recipe for %1$s</string>
+    <string name="meal_plan_picker_empty">No suggestions found. Add more products to your inventory.</string>
+
     <!-- Scan receipt (Beta) -->
     <string name="receipt_scan_title">Scan receipt</string>
     <string name="receipt_scan_processing">Processing receipt…</string>

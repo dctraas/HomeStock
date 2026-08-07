@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Description
@@ -104,6 +105,7 @@ private enum class AppLanguage(val tag: String, val labelRes: Int) {
 fun MoreScreen(
     onNavigateToRecipes: () -> Unit = {},
     onNavigateToReceiptScan: () -> Unit = {},
+    onNavigateToMealPlan: () -> Unit = {},
     onNavigateToStatistics: () -> Unit = {},
     onNavigateToPremium: () -> Unit = {},
     onNavigateToHousehold: () -> Unit = {},
@@ -268,6 +270,12 @@ fun MoreScreen(
                 title = stringResource(R.string.more_beta_receipt_scan),
                 subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                 onClick = { if (isPremium) onNavigateToReceiptScan() else onNavigateToPremium() },
+            )
+            SettingsRow(
+                icon = Icons.Filled.CalendarMonth,
+                title = stringResource(R.string.meal_plan_title),
+                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                onClick = { if (isPremium) onNavigateToMealPlan() else onNavigateToPremium() },
             )
 
             if (BuildConfig.DEBUG) {

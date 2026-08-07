@@ -417,6 +417,16 @@
     <string name="recipes_add_missing_to_shopping_list">Fehlende Zutaten zur Einkaufsliste hinzufügen</string>
     <string name="recipes_instructions_title">Zubereitung</string>
 
+    <!-- Weekmenu -->
+    <string name="meal_plan_title">Wochenmenü</string>
+    <string name="meal_plan_empty_day">Rezept wählen</string>
+    <string name="meal_plan_clear_cd">Geplantes Rezept entfernen</string>
+    <string name="meal_plan_generate_button">Einkaufsliste erstellen</string>
+    <string name="meal_plan_generate_success_format">%1$d Zutaten zu deiner Einkaufsliste hinzugefügt</string>
+    <string name="meal_plan_generate_error">Einkaufsliste konnte nicht erstellt werden. Versuche es erneut.</string>
+    <string name="meal_plan_picker_title_format">Rezept wählen für %1$s</string>
+    <string name="meal_plan_picker_empty">Keine Vorschläge gefunden. Füge mehr Produkte zu deinem Vorrat hinzu.</string>
+
     <!-- Kassenbon scannen (Beta) -->
     <string name="receipt_scan_title">Kassenbon scannen</string>
     <string name="receipt_scan_processing">Kassenbon wird verarbeitet…</string>
