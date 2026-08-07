@@ -53,9 +53,15 @@ import com.dtraas.homestock.R
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
+import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
 
+/**
+ * Browses TheMealDB's whole recipe catalog by default (see RecipeRepository.browseAllRecipes)
+ * — not narrowed to what's in inventory, though a recipe from the household's language/cuisine
+ * still gets a badge (see [RecipeRow]). The search field switches to a name search instead.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecipesScreen(
@@ -90,9 +96,30 @@ fun RecipesScreen(
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            ) {
+                SearchField(
+                    query = uiState.searchQuery,
+                    onQueryChange = { query ->
+                        viewModel.onSearchQueryChange(query)
+                        if (query.isEmpty()) viewModel.clearSearch()
+                    },
+                    placeholder = stringResource(R.string.recipes_search_placeholder),
+                    modifier = Modifier.weight(1f),
+                )
+                Button(
+                    onClick = viewModel::search,
+                    enabled = uiState.searchQuery.isNotBlank() && !uiState.isLoading,
+                    modifier = Modifier.padding(start = 8.dp),
+                ) {
+                    Text(stringResource(R.string.search_product_action))
+                }
+            }
             AllergenFilterRow(
                 excludedAllergens = uiState.excludedAllergens,
-                onToggle = { allergen -> viewModel.toggleAllergen(allergen, languageTag) },
+                onToggle = viewModel::toggleAllergen,
             )
             when {
                 uiState.isLoading -> Box(
@@ -107,7 +134,7 @@ fun RecipesScreen(
                     title = stringResource(R.string.recipes_error_title),
                     subtitle = stringResource(R.string.recipes_error_subtitle),
                     retryLabel = stringResource(R.string.scan_result_retry),
-                    onRetry = { viewModel.load(languageTag) },
+                    onRetry = viewModel::search,
                 )
                 uiState.recipes.isEmpty() -> RecipesMessage(
                     modifier = Modifier.fillMaxSize(),
@@ -235,22 +262,28 @@ private fun RecipeRow(recipe: RecipeSuggestion, onClick: () -> Unit) {
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                    // Ranks this recipe within the list (see RecipeRepository.suggestRecipes) —
-                    // makes "wat kan ik koken met wat ik in huis heb" visible, not just implicit
-                    // in the order.
-                    Text(
-                        text = stringResource(R.string.recipes_match_count_format, recipe.matchCount),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    if (recipe.matchesArea) {
-                        Icon(
-                            imageVector = Icons.Filled.Public,
-                            contentDescription = stringResource(R.string.recipes_area_match_cd),
-                            tint = MaterialTheme.colorScheme.secondary,
-                            modifier = Modifier.padding(start = 6.dp).size(14.dp),
-                        )
+                // matchCount is only non-null for inventory-based results (see
+                // RecipeRepository.suggestRecipes) — browsing everything or searching by name
+                // doesn't have a per-recipe ingredient count to show without fetching full
+                // details for every result, so this row is skipped entirely there unless the
+                // recipe at least matches the household's language/cuisine.
+                if (recipe.matchCount != null || recipe.matchesArea) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                        if (recipe.matchCount != null) {
+                            Text(
+                                text = stringResource(R.string.recipes_match_count_format, recipe.matchCount),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                        if (recipe.matchesArea) {
+                            Icon(
+                                imageVector = Icons.Filled.Public,
+                                contentDescription = stringResource(R.string.recipes_area_match_cd),
+                                tint = MaterialTheme.colorScheme.secondary,
+                                modifier = Modifier.padding(start = 6.dp).size(14.dp),
+                            )
+                        }
                     }
                 }
             }

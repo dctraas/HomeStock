@@ -1,5 +1,6 @@
 package com.dtraas.homestock.data.remote
 
+import com.dtraas.homestock.data.remote.dto.MealDbCategoriesResponse
 import com.dtraas.homestock.data.remote.dto.MealDbFilterResponse
 import com.dtraas.homestock.data.remote.dto.MealDbLookupResponse
 import retrofit2.http.GET
@@ -18,6 +19,18 @@ interface TheMealDbApi {
     /** Recipes from a given cuisine/region, e.g. "Dutch", "French" — see RecipeRepository's language-to-area mapping. */
     @GET("filter.php")
     suspend fun filterByArea(@Query("a") area: String): MealDbFilterResponse
+
+    /** Recipes in a given category, e.g. "Dessert" — see RecipeRepository.browseAllRecipes, which enumerates every category to approximate "all recipes" (TheMealDB has no single "list everything" endpoint). */
+    @GET("filter.php")
+    suspend fun filterByCategory(@Query("c") category: String): MealDbFilterResponse
+
+    /** Every category TheMealDB has, e.g. "Beef", "Dessert", "Vegetarian". */
+    @GET("categories.php")
+    suspend fun listCategories(): MealDbCategoriesResponse
+
+    /** Free-text search by (partial) recipe name — unlike the filter.php family, this returns full recipe details, not just summaries. */
+    @GET("search.php")
+    suspend fun searchByName(@Query("s") query: String): MealDbLookupResponse
 
     @GET("lookup.php")
     suspend fun lookupMeal(@Query("i") id: String): MealDbLookupResponse

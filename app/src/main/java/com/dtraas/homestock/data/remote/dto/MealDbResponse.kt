@@ -2,7 +2,7 @@ package com.dtraas.homestock.data.remote.dto
 
 import com.google.gson.annotations.SerializedName
 
-/** Response shape of TheMealDB's "filter by main ingredient" endpoint. */
+/** Response shape of TheMealDB's "filter by main ingredient/area/category" endpoints. */
 data class MealDbFilterResponse(
     @SerializedName("meals") val meals: List<MealDbSummary>?,
 )
@@ -11,6 +11,15 @@ data class MealDbSummary(
     @SerializedName("idMeal") val id: String,
     @SerializedName("strMeal") val name: String,
     @SerializedName("strMealThumb") val thumbnailUrl: String?,
+)
+
+/** Response shape of TheMealDB's "list all categories" endpoint — used to enumerate (an approximation of) every recipe it has. */
+data class MealDbCategoriesResponse(
+    @SerializedName("categories") val categories: List<MealDbCategory>?,
+)
+
+data class MealDbCategory(
+    @SerializedName("strCategory") val name: String,
 )
 
 /** Response shape of TheMealDB's "lookup full recipe by id" endpoint. */

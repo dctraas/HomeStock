@@ -407,9 +407,10 @@
     <string name="recipes_title">Recepten</string>
     <string name="recipes_error_title">Geen verbinding</string>
     <string name="recipes_error_subtitle">We konden geen receptsuggesties ophalen. Controleer je internetverbinding en probeer het opnieuw.</string>
-    <string name="recipes_empty_title">Nog geen suggesties</string>
-    <string name="recipes_empty_subtitle">Voeg producten toe aan je voorraad om receptsuggesties te krijgen.</string>
-    <string name="recipes_beta_notice">Beta: receptsuggesties zijn gebaseerd op een beperkte set herkende ingrediënten en kunnen soms niet kloppen.</string>
+    <string name="recipes_empty_title">Geen recepten gevonden</string>
+    <string name="recipes_empty_subtitle">Probeer een andere zoekterm of pas je allergeenfilters aan.</string>
+    <string name="recipes_beta_notice">Beta: recepten komen van een externe, Engelstalige database (TheMealDB). Ingrediënt- en allergeenmatching gebeurt bij benadering en kan soms niet kloppen.</string>
+    <string name="recipes_search_placeholder">Zoek recepten op naam…</string>
     <string name="recipes_match_count_format">%1$d ingrediënten in huis</string>
     <string name="recipes_allergen_filter_label">Allergenen uitsluiten</string>
     <string name="recipes_area_match_cd">Sluit aan bij jouw taal/regio</string>

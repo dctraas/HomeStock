@@ -5,14 +5,18 @@ import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.remote.TheMealDbApi
 import com.dtraas.homestock.data.remote.dto.MealDbDetail
 import com.dtraas.homestock.data.remote.dto.MealDbSummary
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.first
 
 /**
- * A [meal] suggestion: [matchCount] is how many of the searched-for inventory ingredients it
- * actually uses, [matchesArea] whether it's from the cuisine/region tied to the app's current
- * language (see [RecipeRepository.suggestRecipes]).
+ * A [meal] suggestion. [matchCount] is how many of the searched-for inventory ingredients it
+ * actually uses — null when the list it came from wasn't built from inventory in the first
+ * place (see [RecipeRepository.browseAllRecipes]/[RecipeRepository.searchRecipesByName]), as
+ * opposed to zero, which would wrongly claim "matches nothing". [matchesArea] is whether it's
+ * from the cuisine/region tied to the app's current language.
  */
-data class RecipeSuggestion(val meal: MealDbSummary, val matchCount: Int, val matchesArea: Boolean = false)
+data class RecipeSuggestion(val meal: MealDbSummary, val matchCount: Int? = null, val matchesArea: Boolean = false)
 
 /**
  * Recipe suggestions based on what's currently in the household's inventory —
@@ -72,23 +76,93 @@ class RecipeRepository(
             }
         }
 
-        var ranked = meals.values
+        val ranked = meals.values
             .map { meal -> RecipeSuggestion(meal, matchCounts.getValue(meal.id), meal.id in areaMatches) }
             .sortedByDescending { it.matchCount }
 
-        if (excludedAllergens.isNotEmpty()) {
-            val clean = mutableListOf<RecipeSuggestion>()
-            for (suggestion in ranked.take(MAX_ALLERGEN_CHECKS)) {
-                val detail = api.lookupMeal(suggestion.meal.id).meals?.firstOrNull() ?: continue
-                val hasExcludedAllergen = excludedAllergens.any { allergen -> recipeContainsAllergen(detail, allergen) }
-                if (!hasExcludedAllergen) clean.add(suggestion)
-            }
-            ranked = clean
-        }
-
-        Result.success(ranked)
+        Result.success(applyAllergenFilter(ranked, excludedAllergens))
     } catch (e: Exception) {
         Result.failure(e)
+    }
+
+    /**
+     * Every recipe TheMealDB has (or as close to it as its API allows) — not narrowed by
+     * inventory at all, unlike [suggestRecipes]. TheMealDB has no "list everything" endpoint,
+     * so this enumerates every category (fetched once via [TheMealDbApi.listCategories]) and
+     * fetches each in parallel, merging and deduplicating the results — TheMealDB has a few
+     * hundred recipes across roughly a dozen categories, so this is a bounded, one-shot cost
+     * rather than something scaling with the recipe count.
+     *
+     * There's no per-recipe ingredient data in these list responses (only id/name/thumbnail),
+     * so unlike [suggestRecipes], [RecipeSuggestion.matchCount] is always null here — showing a
+     * fabricated "0 ingredients you have" would be actively misleading. [languageTag] still
+     * folds in an area-matched badge the same way (one extra, cheap request), and results are
+     * sorted with area matches first, then alphabetically.
+     */
+    suspend fun browseAllRecipes(
+        languageTag: String? = null,
+        excludedAllergens: Set<Allergen> = emptySet(),
+    ): Result<List<RecipeSuggestion>> = try {
+        val categoryNames = api.listCategories().categories.orEmpty().map { it.name }
+
+        val meals = LinkedHashMap<String, MealDbSummary>()
+        coroutineScope {
+            val perCategory = categoryNames.map { category ->
+                async { runCatching { api.filterByCategory(category) }.getOrNull() }
+            }
+            perCategory.forEach { deferred ->
+                deferred.await()?.meals?.forEach { meal -> meals.putIfAbsent(meal.id, meal) }
+            }
+        }
+
+        val areaMatches = HashSet<String>()
+        languageToArea[languageTag]?.let { area ->
+            val response = api.filterByArea(area)
+            response.meals?.forEach { meal ->
+                meals.putIfAbsent(meal.id, meal)
+                areaMatches += meal.id
+            }
+        }
+
+        val list = meals.values
+            .map { meal -> RecipeSuggestion(meal, matchCount = null, matchesArea = meal.id in areaMatches) }
+            .sortedWith(compareByDescending<RecipeSuggestion> { it.matchesArea }.thenBy { it.meal.name })
+
+        Result.success(applyAllergenFilter(list, excludedAllergens))
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    /** Free-text search by recipe name (e.g. typed into RecipesScreen's search field), independent of inventory or category. */
+    suspend fun searchRecipesByName(query: String, excludedAllergens: Set<Allergen> = emptySet()): Result<List<RecipeSuggestion>> = try {
+        val details = api.searchByName(query).meals.orEmpty()
+        val list = details.map { detail ->
+            RecipeSuggestion(MealDbSummary(detail.id, detail.name, detail.thumbnailUrl), matchCount = null)
+        }
+        Result.success(applyAllergenFilter(list, excludedAllergens))
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    /**
+     * TheMealDB has no structured allergen data, so this checks each candidate's full
+     * ingredient list for keyword matches (see [allergenIngredientKeywords]) — which means
+     * fetching full details per candidate, so it's capped at the top [MAX_ALLERGEN_CHECKS]
+     * candidates (in whatever order [candidates] is already in) rather than every result. A
+     * no-op (candidates returned as-is) when [excludedAllergens] is empty.
+     */
+    private suspend fun applyAllergenFilter(
+        candidates: List<RecipeSuggestion>,
+        excludedAllergens: Set<Allergen>,
+    ): List<RecipeSuggestion> {
+        if (excludedAllergens.isEmpty()) return candidates
+        val clean = mutableListOf<RecipeSuggestion>()
+        for (suggestion in candidates.take(MAX_ALLERGEN_CHECKS)) {
+            val detail = api.lookupMeal(suggestion.meal.id).meals?.firstOrNull() ?: continue
+            val hasExcludedAllergen = excludedAllergens.any { allergen -> recipeContainsAllergen(detail, allergen) }
+            if (!hasExcludedAllergen) clean.add(suggestion)
+        }
+        return clean
     }
 
     suspend fun getRecipeDetail(mealId: String): Result<MealDbDetail> = try {

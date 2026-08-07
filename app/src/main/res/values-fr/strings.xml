@@ -406,9 +406,10 @@
     <string name="recipes_title">Recettes</string>
     <string name="recipes_error_title">Pas de connexion</string>
     <string name="recipes_error_subtitle">Impossible de charger les suggestions de recettes. Vérifiez votre connexion internet et réessayez.</string>
-    <string name="recipes_empty_title">Pas encore de suggestions</string>
-    <string name="recipes_empty_subtitle">Ajoutez des produits à votre inventaire pour obtenir des suggestions de recettes.</string>
-    <string name="recipes_beta_notice">Bêta : les suggestions de recettes reposent sur un ensemble limité d\'ingrédients reconnus et peuvent parfois être inexactes.</string>
+    <string name="recipes_empty_title">Aucune recette trouvée</string>
+    <string name="recipes_empty_subtitle">Essaie un autre terme de recherche ou ajuste tes filtres d\'allergènes.</string>
+    <string name="recipes_beta_notice">Bêta : les recettes proviennent d\'une base de données externe en anglais (TheMealDB). La correspondance des ingrédients et allergènes est approximative et peut parfois être inexacte.</string>
+    <string name="recipes_search_placeholder">Rechercher des recettes par nom…</string>
     <string name="recipes_match_count_format">%1$d ingrédients disponibles</string>
     <string name="recipes_allergen_filter_label">Exclure les allergènes</string>
     <string name="recipes_area_match_cd">Correspond à ta langue/région</string>
