@@ -167,7 +167,7 @@
     <string name="account_link_unlink_dialog_title">Konto trennen?</string>
     <string name="account_link_unlink_dialog_text">Dein Haushaltszugriff ist dann nicht mehr geschützt — wenn du die App deinstallierst oder das Gerät wechselst, kannst du den Zugriff auf diesen Haushalt erneut verlieren.</string>
     <string name="account_link_unlink_error">Trennen ist fehlgeschlagen. Bitte versuche es erneut.</string>
-    <string name="more_section_general">Allgemein</string>
+    <string name="more_section_preferences">Präferenzen</string>
     <string name="more_theme_title">Anzeige</string>
     <string name="more_theme_option_system">Systemstandard</string>
     <string name="more_theme_option_light">Hell</string>
@@ -195,7 +195,7 @@
     <string name="more_feedback_star_cd">Stern %1$d</string>
     <string name="more_feedback_sent_confirmation">Danke für dein Feedback!</string>
     <string name="more_feedback_error">Feedback konnte nicht gesendet werden. Bitte versuche es später erneut.</string>
-    <string name="more_section_beta">HomeStock Premium</string>
+    <string name="more_section_features">Funktionen</string>
     <string name="more_beta_recipes">Rezepte</string>
     <string name="more_beta_receipt_scan">Kassenbon scannen</string>
     <string name="more_section_debug">Debug</string>

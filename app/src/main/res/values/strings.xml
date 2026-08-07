@@ -168,7 +168,7 @@
     <string name="account_link_unlink_dialog_title">Account ontkoppelen?</string>
     <string name="account_link_unlink_dialog_text">Je huishouden-toegang is dan niet meer beschermd — als je de app verwijdert of van toestel wisselt, kun je opnieuw de toegang tot dit huishouden verliezen.</string>
     <string name="account_link_unlink_error">Ontkoppelen is niet gelukt. Probeer het opnieuw.</string>
-    <string name="more_section_general">Algemeen</string>
+    <string name="more_section_preferences">Voorkeuren</string>
     <string name="more_theme_title">Weergave</string>
     <string name="more_theme_option_system">Systeem standaard</string>
     <string name="more_theme_option_light">Licht</string>
@@ -196,7 +196,7 @@
     <string name="more_feedback_star_cd">Ster %1$d</string>
     <string name="more_feedback_sent_confirmation">Bedankt voor je feedback!</string>
     <string name="more_feedback_error">Kon feedback niet verzenden. Probeer het later opnieuw.</string>
-    <string name="more_section_beta">HomeStock Premium</string>
+    <string name="more_section_features">Functies</string>
     <string name="more_beta_recipes">Recepten</string>
     <string name="more_beta_receipt_scan">Bonnetje scannen</string>
     <string name="more_section_debug">Debug</string>

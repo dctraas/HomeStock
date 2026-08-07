@@ -167,7 +167,7 @@
     <string name="account_link_unlink_dialog_title">¿Desvincular cuenta?</string>
     <string name="account_link_unlink_dialog_text">Tu acceso al hogar ya no estará protegido — si desinstalas la app o cambias de dispositivo, podrías perder el acceso a este hogar de nuevo.</string>
     <string name="account_link_unlink_error">No se pudo desvincular la cuenta. Inténtalo de nuevo.</string>
-    <string name="more_section_general">General</string>
+    <string name="more_section_preferences">Preferencias</string>
     <string name="more_theme_title">Pantalla</string>
     <string name="more_theme_option_system">Predeterminado del sistema</string>
     <string name="more_theme_option_light">Claro</string>
@@ -195,7 +195,7 @@
     <string name="more_feedback_star_cd">Estrella %1$d</string>
     <string name="more_feedback_sent_confirmation">¡Gracias por tus comentarios!</string>
     <string name="more_feedback_error">No se pudieron enviar los comentarios. Inténtalo de nuevo más tarde.</string>
-    <string name="more_section_beta">HomeStock Premium</string>
+    <string name="more_section_features">Funciones</string>
     <string name="more_beta_recipes">Recetas</string>
     <string name="more_beta_receipt_scan">Escanear ticket</string>
     <string name="more_section_debug">Depuración</string>

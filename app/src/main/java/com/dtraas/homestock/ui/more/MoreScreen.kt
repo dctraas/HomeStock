@@ -204,7 +204,33 @@ fun MoreScreen(
                 onClick = onNavigateToPremium,
             )
 
-            SectionHeader(stringResource(R.string.more_section_general))
+            SectionHeader(stringResource(R.string.more_section_features))
+            SettingsRow(
+                icon = Icons.Filled.BarChart,
+                title = stringResource(R.string.more_statistics_title),
+                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                onClick = { if (isPremium) onNavigateToStatistics() else onNavigateToPremium() },
+            )
+            SettingsRow(
+                icon = Icons.Filled.RestaurantMenu,
+                title = stringResource(R.string.more_beta_recipes),
+                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                onClick = { if (isPremium) onNavigateToRecipes() else onNavigateToPremium() },
+            )
+            SettingsRow(
+                icon = Icons.Filled.Receipt,
+                title = stringResource(R.string.more_beta_receipt_scan),
+                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                onClick = { if (isPremium) onNavigateToReceiptScan() else onNavigateToPremium() },
+            )
+            SettingsRow(
+                icon = Icons.Filled.CalendarMonth,
+                title = stringResource(R.string.meal_plan_title),
+                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                onClick = { if (isPremium) onNavigateToMealPlan() else onNavigateToPremium() },
+            )
+
+            SectionHeader(stringResource(R.string.more_section_preferences))
             SettingsRow(
                 icon = Icons.Filled.DarkMode,
                 title = stringResource(R.string.more_theme_title),
@@ -229,12 +255,6 @@ fun MoreScreen(
                 subtitle = stringResource(R.string.more_stores_count_format, stores.size),
                 onClick = { showStoresDialog = true },
             )
-            SettingsRow(
-                icon = Icons.Filled.BarChart,
-                title = stringResource(R.string.more_statistics_title),
-                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
-                onClick = { if (isPremium) onNavigateToStatistics() else onNavigateToPremium() },
-            )
 
             SectionHeader(stringResource(R.string.more_section_about))
             SettingsRow(
@@ -256,26 +276,6 @@ fun MoreScreen(
                 icon = Icons.Filled.Description,
                 title = stringResource(R.string.more_about_licenses),
                 onClick = { showLicensesDialog = true },
-            )
-
-            SectionHeader(stringResource(R.string.more_section_beta))
-            SettingsRow(
-                icon = Icons.Filled.RestaurantMenu,
-                title = stringResource(R.string.more_beta_recipes),
-                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
-                onClick = { if (isPremium) onNavigateToRecipes() else onNavigateToPremium() },
-            )
-            SettingsRow(
-                icon = Icons.Filled.Receipt,
-                title = stringResource(R.string.more_beta_receipt_scan),
-                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
-                onClick = { if (isPremium) onNavigateToReceiptScan() else onNavigateToPremium() },
-            )
-            SettingsRow(
-                icon = Icons.Filled.CalendarMonth,
-                title = stringResource(R.string.meal_plan_title),
-                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
-                onClick = { if (isPremium) onNavigateToMealPlan() else onNavigateToPremium() },
             )
 
             if (BuildConfig.DEBUG) {

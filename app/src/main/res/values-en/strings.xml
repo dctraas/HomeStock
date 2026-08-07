@@ -167,7 +167,7 @@
     <string name="account_link_unlink_dialog_title">Unlink account?</string>
     <string name="account_link_unlink_dialog_text">Your household access will no longer be protected — if you uninstall the app or switch devices, you could lose access to this household again.</string>
     <string name="account_link_unlink_error">Couldn\'t unlink your account. Please try again.</string>
-    <string name="more_section_general">General</string>
+    <string name="more_section_preferences">Preferences</string>
     <string name="more_theme_title">Display</string>
     <string name="more_theme_option_system">System default</string>
     <string name="more_theme_option_light">Light</string>
@@ -195,7 +195,7 @@
     <string name="more_feedback_star_cd">Star %1$d</string>
     <string name="more_feedback_sent_confirmation">Thanks for your feedback!</string>
     <string name="more_feedback_error">Couldn\'t send feedback. Please try again later.</string>
-    <string name="more_section_beta">HomeStock Premium</string>
+    <string name="more_section_features">Features</string>
     <string name="more_beta_recipes">Recipes</string>
     <string name="more_beta_receipt_scan">Scan receipt</string>
     <string name="more_section_debug">Debug</string>
