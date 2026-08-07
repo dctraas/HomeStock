@@ -45,7 +45,6 @@ import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -85,6 +84,7 @@ import com.dtraas.homestock.BuildConfig
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.entity.StoreEntity
 import com.dtraas.homestock.data.repository.ThemeMode
+import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.ProfileEditDialog
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShape
@@ -164,7 +164,7 @@ fun MoreScreen(
     }
 
     Scaffold(
-        topBar = { CenterAlignedTopAppBar(title = { Text(stringResource(R.string.more_settings_title)) }) },
+        topBar = { HomeStockTopAppBar(title = { Text(stringResource(R.string.more_settings_title)) }) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(

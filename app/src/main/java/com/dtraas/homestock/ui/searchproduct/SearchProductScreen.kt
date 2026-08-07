@@ -18,7 +18,6 @@ import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -42,6 +41,7 @@ import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.repository.ProductSearchResult
+import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.ProductImage
 import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.components.icon
@@ -64,7 +64,7 @@ fun SearchProductScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
+            HomeStockTopAppBar(
                 title = { Text(stringResource(R.string.search_product_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

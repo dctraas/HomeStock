@@ -21,7 +21,6 @@ import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
@@ -53,6 +52,7 @@ import com.dtraas.homestock.R
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
+import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
@@ -85,7 +85,7 @@ fun RecipesScreen(
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
+            HomeStockTopAppBar(
                 title = { Text(stringResource(R.string.recipes_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

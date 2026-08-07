@@ -43,7 +43,6 @@ import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -89,6 +88,7 @@ import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.InventoryStockStatus
+import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.ProductImage
 import com.dtraas.homestock.ui.components.ProfileEditDialog
 import com.dtraas.homestock.ui.components.QuantityStepper
@@ -195,7 +195,7 @@ fun InventoryScreen(
     Scaffold(
         topBar = {
             if (selectionMode) {
-                CenterAlignedTopAppBar(
+                HomeStockTopAppBar(
                     title = {
                         Text(stringResource(R.string.inventory_selection_count_format, selectedBarcodes.size))
                     },
@@ -217,7 +217,7 @@ fun InventoryScreen(
                     },
                 )
             } else {
-                CenterAlignedTopAppBar(
+                HomeStockTopAppBar(
                     title = {
                         Text(
                             text = uiState.householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.inventory_title),
@@ -621,7 +621,7 @@ private fun CategoryHeader(category: Category, itemCount: Int) {
             )
             Text(
                 text = stringResource(category.displayNameRes),
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(start = 8.dp),
             )
@@ -796,12 +796,8 @@ private fun InventoryGridTile(
         modifier = Modifier
             .fillMaxWidth()
             .clip(SoftCardShapeCompact)
-            .then(
-                if (selected) {
-                    Modifier.background(MaterialTheme.colorScheme.primaryContainer)
-                } else {
-                    Modifier
-                },
+            .background(
+                if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
             )
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
@@ -828,7 +824,7 @@ private fun InventoryGridTile(
                 )
             }
         }
-        Column(modifier = Modifier.padding(top = 6.dp)) {
+        Column(modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 8.dp)) {
             Text(
                 text = item.name,
                 style = MaterialTheme.typography.bodyMedium,

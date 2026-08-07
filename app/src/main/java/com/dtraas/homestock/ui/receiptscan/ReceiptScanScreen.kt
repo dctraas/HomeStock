@@ -35,7 +35,6 @@ import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -72,6 +71,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
+import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.data.receipt.OcrLine
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.google.mlkit.vision.common.InputImage
@@ -101,7 +101,7 @@ fun ReceiptScanScreen(onBack: () -> Unit) {
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
+            HomeStockTopAppBar(
                 title = { Text(stringResource(R.string.receipt_scan_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

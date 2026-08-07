@@ -43,7 +43,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -93,6 +92,7 @@ import com.dtraas.homestock.data.local.entity.ShoppingListItemEntity
 import com.dtraas.homestock.data.local.entity.StoreEntity
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.MeasurementUnit
+import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.CategoryDropdown
 import com.dtraas.homestock.ui.components.MeasurementUnitDropdown
 import com.dtraas.homestock.ui.components.ProductImage
@@ -141,7 +141,7 @@ fun ShoppingListScreen() {
 
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(title = { Text(stringResource(R.string.shopping_list_title)) })
+            HomeStockTopAppBar(title = { Text(stringResource(R.string.shopping_list_title)) })
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddDialog = true }) {

@@ -25,20 +25,26 @@ val GoldTertiaryContainer = Color(0xFFEFE0BE)
 val OnGoldTertiaryContainer = Color(0xFF3D2C08)
 
 val LinenInk = Color(0xFF2E3B31)
-// Page and card backgrounds are plain white/black (see the Dark variants below) rather
-// than tinted — an explicit choice to keep every surface neutral, with the sage/coral/
-// gold palette carried entirely by primary/secondary/tertiary (icons, badges, buttons).
+// The page background itself is plain white (see the Dark variant below) — an explicit
+// choice to keep the ground neutral, with the sage/coral/gold palette carried by
+// primary/secondary/tertiary (icons, badges, buttons). Elevated surfaces (top app bars,
+// cards) step away from that ground through the surfaceContainer* ramp just below: a
+// warm, neutral grey — not sage-tinted — so a card or bar always reads as a distinct
+// layer instead of blending into the page.
 val LinenBackground = Color(0xFFFFFFFF)
 val LinenSurfaceVariant = Color(0xFFCBD6C0)
 val OnLinenSurfaceVariant = Color(0xFF4A5B4D)
 val LinenOutline = Color(0xFF8B9686)
 val LinenOutlineVariant = Color(0xFFCBD6C0)
 
+// Ascending "distance" from the white page background — used for e.g. the top app bar
+// (surfaceContainer) and cards (surfaceContainerHigh), each meant to read as clearly
+// separate from the page without shouting.
 val LinenSurfaceContainerLowest = Color(0xFFFFFFFF)
-val LinenSurfaceContainerLow = Color(0xFFFFFFFF)
-val LinenSurfaceContainer = Color(0xFFFFFFFF)
-val LinenSurfaceContainerHigh = Color(0xFFFFFFFF)
-val LinenSurfaceContainerHighest = Color(0xFFFFFFFF)
+val LinenSurfaceContainerLow = Color(0xFFF9F8F5)
+val LinenSurfaceContainer = Color(0xFFF3F1EC)
+val LinenSurfaceContainerHigh = Color(0xFFECE9E1)
+val LinenSurfaceContainerHighest = Color(0xFFE4E0D5)
 
 val LinenError = Color(0xFFB3392A)
 val OnLinenError = Color(0xFFFFFFFF)
@@ -67,11 +73,13 @@ val OnLinenSurfaceVariantDark = Color(0xFFC4CFBD)
 val LinenOutlineDark = Color(0xFF8B9686)
 val LinenOutlineVariantDark = Color(0xFF3A4232)
 
+// Mirror of the light ramp above, but climbing away from black instead of white — still
+// subtle (this stays a dark theme), just no longer indistinguishable from the page.
 val LinenSurfaceContainerLowestDark = Color(0xFF000000)
-val LinenSurfaceContainerLowDark = Color(0xFF000000)
-val LinenSurfaceContainerDark = Color(0xFF000000)
-val LinenSurfaceContainerHighDark = Color(0xFF000000)
-val LinenSurfaceContainerHighestDark = Color(0xFF000000)
+val LinenSurfaceContainerLowDark = Color(0xFF0B0C0A)
+val LinenSurfaceContainerDark = Color(0xFF141510)
+val LinenSurfaceContainerHighDark = Color(0xFF1C1D17)
+val LinenSurfaceContainerHighestDark = Color(0xFF25261E)
 
 val LinenErrorDark = Color(0xFFF2A08F)
 val OnLinenErrorDark = Color(0xFF4A130A)
