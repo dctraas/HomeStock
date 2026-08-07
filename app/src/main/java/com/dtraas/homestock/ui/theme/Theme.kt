@@ -8,6 +8,8 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.platform.LocalContext
 
 private val LightColors = lightColorScheme(
@@ -74,6 +76,14 @@ private val DarkColors = darkColorScheme(
     onErrorContainer = OnLinenErrorContainerDark,
 )
 
+// Not part of Material3's ColorScheme — the top app bar deliberately uses its own
+// dedicated tone (see TopAppBarContainer/TopAppBarContainerDark in Color.kt) rather
+// than one of the neutral surfaceContainer steps, so it reads as a splash of the
+// app's own color instead of another shade of grey. Exposed via a CompositionLocal
+// so both [HomeStockTopAppBar] and MainActivity (to also tint the system status bar
+// the exact same color — see its usage there) can read the same resolved value.
+val LocalTopAppBarContainerColor = compositionLocalOf { TopAppBarContainer }
+
 /**
  * [dynamicColor] defaults to false: this app has a deliberately designed
  * "Keukenlinnen" palette, and letting Android 12+ override it with
@@ -92,11 +102,20 @@ fun HomeStockTheme(
         darkTheme -> DarkColors
         else -> LightColors
     }
+    // Dynamic color has no equivalent of our custom top app bar tone, so it falls back to
+    // the wallpaper-derived surfaceContainer instead of the fixed sage tint below.
+    val topAppBarContainerColor = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> colorScheme.surfaceContainer
+        darkTheme -> TopAppBarContainerDark
+        else -> TopAppBarContainer
+    }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = HomeStockTypography,
-        shapes = HomeStockShapes,
-        content = content,
-    )
+    CompositionLocalProvider(LocalTopAppBarContainerColor provides topAppBarContainerColor) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = HomeStockTypography,
+            shapes = HomeStockShapes,
+            content = content,
+        )
+    }
 }

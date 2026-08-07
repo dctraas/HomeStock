@@ -46,6 +46,15 @@ val LinenSurfaceContainer = Color(0xFFF3F1EC)
 val LinenSurfaceContainerHigh = Color(0xFFECE9E1)
 val LinenSurfaceContainerHighest = Color(0xFFE4E0D5)
 
+// Top app bar container — its own dedicated tone rather than a reuse of
+// surfaceContainer above: a soft, fresh sage tint (this app's primary hue, greatly
+// lightened) so the title bar reads as a deliberate splash of color rather than
+// another shade of grey. Cards stay neutral; this is the one elevated surface that
+// gets to carry the palette. Also pushed to the system status bar itself (see
+// MainActivity) so the color reaches the physical top edge of the screen, not just
+// the app bar's own bounds below it.
+val TopAppBarContainer = Color(0xFFDDEAD6)
+
 val LinenError = Color(0xFFB3392A)
 val OnLinenError = Color(0xFFFFFFFF)
 val LinenErrorContainer = Color(0xFFF6D3CC)
@@ -80,6 +89,10 @@ val LinenSurfaceContainerLowDark = Color(0xFF0B0C0A)
 val LinenSurfaceContainerDark = Color(0xFF141510)
 val LinenSurfaceContainerHighDark = Color(0xFF1C1D17)
 val LinenSurfaceContainerHighestDark = Color(0xFF25261E)
+
+// Dark counterpart of TopAppBarContainer above — same idea, a dark, desaturated sage
+// rather than a shade of the neutral surfaceContainer ramp.
+val TopAppBarContainerDark = Color(0xFF15231A)
 
 val LinenErrorDark = Color(0xFFF2A08F)
 val OnLinenErrorDark = Color(0xFF4A130A)

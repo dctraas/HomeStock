@@ -8,18 +8,22 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.view.WindowCompat
 import com.dtraas.homestock.data.repository.HouseholdInviteLink
 import com.dtraas.homestock.data.repository.ThemeMode
 import com.dtraas.homestock.ui.household.HouseholdScreen
 import com.dtraas.homestock.ui.navigation.Destination
 import com.dtraas.homestock.ui.navigation.HomeStockApp
 import com.dtraas.homestock.ui.theme.HomeStockTheme
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 
 // AppCompatActivity (rather than plain ComponentActivity) is required for
 // AppCompatDelegate.setApplicationLocales to recreate this activity with the
@@ -55,6 +59,18 @@ class MainActivity : AppCompatActivity() {
                 ThemeMode.DARK -> true
             }
             HomeStockTheme(darkTheme = darkTheme) {
+                // enableEdgeToEdge() alone draws app content behind a transparent status
+                // bar and relies on each top app bar's own background to show through —
+                // in practice that band can stop short of the physical top edge on some
+                // devices/OS versions. Setting the system status bar color explicitly to
+                // the same tone the top app bar uses (see HomeStockTopAppBar) guarantees
+                // the color reaches all the way up, regardless of that quirk.
+                val topAppBarContainerColor = LocalTopAppBarContainerColor.current
+                val insetsController = WindowCompat.getInsetsController(window, window.decorView)
+                SideEffect {
+                    window.statusBarColor = topAppBarContainerColor.toArgb()
+                    insetsController.isAppearanceLightStatusBars = !darkTheme
+                }
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val householdId by application.container.householdSession.householdId.collectAsState()
                     if (householdId == null) {
