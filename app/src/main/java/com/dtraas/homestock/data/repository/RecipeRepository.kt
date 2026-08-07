@@ -1,13 +1,18 @@
 package com.dtraas.homestock.data.repository
 
+import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.remote.TheMealDbApi
 import com.dtraas.homestock.data.remote.dto.MealDbDetail
 import com.dtraas.homestock.data.remote.dto.MealDbSummary
 import kotlinx.coroutines.flow.first
 
-/** A [meal] suggestion plus how many of the searched-for inventory ingredients it actually uses — see [RecipeRepository.suggestRecipes]. */
-data class RecipeSuggestion(val meal: MealDbSummary, val matchCount: Int)
+/**
+ * A [meal] suggestion: [matchCount] is how many of the searched-for inventory ingredients it
+ * actually uses, [matchesArea] whether it's from the cuisine/region tied to the app's current
+ * language (see [RecipeRepository.suggestRecipes]).
+ */
+data class RecipeSuggestion(val meal: MealDbSummary, val matchCount: Int, val matchesArea: Boolean = false)
 
 /**
  * Recipe suggestions based on what's currently in the household's inventory —
@@ -29,13 +34,28 @@ class RecipeRepository(
      * by one ingredient per request (no "AND" query), so this approximates "what can I actually
      * cook right now" by counting, per recipe, how many of the separate per-ingredient searches
      * it turned up in — a real ingredient-overlap count, not just "found first". Never throws.
+     *
+     * [languageTag] (an app-language code like "nl") is mapped to a TheMealDB cuisine/region —
+     * see [languageToArea] — and recipes from it are folded into the same candidate pool with a
+     * one-point ranking boost (same weight as one ingredient match) and [RecipeSuggestion.matchesArea]
+     * set, so recipes matching the household's language surface higher without drowning out
+     * genuine ingredient overlap. TheMealDB's free API has no structured allergen data, so
+     * [excludedAllergens] filters by keyword-matching each candidate's ingredient names (see
+     * [allergenIngredientKeywords]) — approximate, and requires fetching full ingredient details
+     * per candidate, so it's capped at the top [MAX_ALLERGEN_CHECKS] ranked candidates rather
+     * than checking every result.
      */
-    suspend fun suggestRecipes(maxSeedIngredients: Int = 5): Result<List<RecipeSuggestion>> = try {
+    suspend fun suggestRecipes(
+        maxSeedIngredients: Int = 5,
+        excludedAllergens: Set<Allergen> = emptySet(),
+        languageTag: String? = null,
+    ): Result<List<RecipeSuggestion>> = try {
         val inventoryNames = inventoryRepository.observeInventoryWithProduct().first().map { it.name }
         val seedIngredients = matchDutchIngredients(inventoryNames).take(maxSeedIngredients)
 
         val meals = LinkedHashMap<String, MealDbSummary>()
         val matchCounts = HashMap<String, Int>()
+        val areaMatches = HashSet<String>()
         for (ingredient in seedIngredients) {
             val response = api.filterByIngredient(ingredient)
             response.meals?.forEach { meal ->
@@ -43,9 +63,29 @@ class RecipeRepository(
                 matchCounts[meal.id] = (matchCounts[meal.id] ?: 0) + 1
             }
         }
-        val ranked = meals.values
-            .map { meal -> RecipeSuggestion(meal, matchCounts.getValue(meal.id)) }
+        languageToArea[languageTag]?.let { area ->
+            val response = api.filterByArea(area)
+            response.meals?.forEach { meal ->
+                meals.putIfAbsent(meal.id, meal)
+                matchCounts[meal.id] = (matchCounts[meal.id] ?: 0) + 1
+                areaMatches += meal.id
+            }
+        }
+
+        var ranked = meals.values
+            .map { meal -> RecipeSuggestion(meal, matchCounts.getValue(meal.id), meal.id in areaMatches) }
             .sortedByDescending { it.matchCount }
+
+        if (excludedAllergens.isNotEmpty()) {
+            val clean = mutableListOf<RecipeSuggestion>()
+            for (suggestion in ranked.take(MAX_ALLERGEN_CHECKS)) {
+                val detail = api.lookupMeal(suggestion.meal.id).meals?.firstOrNull() ?: continue
+                val hasExcludedAllergen = excludedAllergens.any { allergen -> recipeContainsAllergen(detail, allergen) }
+                if (!hasExcludedAllergen) clean.add(suggestion)
+            }
+            ranked = clean
+        }
+
         Result.success(ranked)
     } catch (e: Exception) {
         Result.failure(e)
@@ -133,7 +173,49 @@ class RecipeRepository(
     private fun tokenize(text: String): Set<String> =
         text.lowercase().split(Regex("[^a-zà-ÿ]+")).filter { it.isNotEmpty() }.toSet()
 
-    private companion object {
+    /** Best-effort keyword check — TheMealDB has no structured allergen data, just ingredient names. */
+    private fun recipeContainsAllergen(detail: MealDbDetail, allergen: Allergen): Boolean {
+        val keywords = allergenIngredientKeywords[allergen] ?: return false
+        return detail.ingredients.any { (name, _) -> keywords.any { keyword -> name.lowercase().contains(keyword) } }
+    }
+
+    companion object {
+        // Most common/relevant allergens for everyday recipes, out of the full 14 EU-regulated
+        // ones in [Allergen] — the rarer ones (sesame, sulphites, lupin, molluscs, mustard,
+        // celery) aren't worth a filter chip here and have no reliable ingredient-keyword tell
+        // anyway. Public so RecipesScreen can build its filter chips from the same list.
+        val filterableAllergens: List<Allergen> = listOf(
+            Allergen.GLUTEN, Allergen.MILK, Allergen.EGGS, Allergen.PEANUTS,
+            Allergen.NUTS, Allergen.FISH, Allergen.CRUSTACEANS, Allergen.SOYBEANS,
+        )
+
+        private const val MAX_ALLERGEN_CHECKS = 25
+
+        private val allergenIngredientKeywords: Map<Allergen, List<String>> = mapOf(
+            Allergen.GLUTEN to listOf(
+                "flour", "bread", "pasta", "spaghetti", "noodle", "wheat", "breadcrumb", "tortilla", "cracker", "barley", "oat",
+            ),
+            Allergen.MILK to listOf("milk", "butter", "cream", "cheese", "yogurt", "yoghurt"),
+            Allergen.EGGS to listOf("egg"),
+            Allergen.PEANUTS to listOf("peanut"),
+            Allergen.NUTS to listOf("almond", "walnut", "pecan", "hazelnut", "cashew", "pistachio", "macadamia"),
+            Allergen.FISH to listOf("fish", "salmon", "tuna", "cod", "anchov", "haddock", "trout", "mackerel", "sardine"),
+            Allergen.CRUSTACEANS to listOf("shrimp", "prawn", "crab", "lobster", "crayfish"),
+            Allergen.SOYBEANS to listOf("soy", "tofu", "edamame"),
+        )
+
+        // App-language code -> TheMealDB "Area" (cuisine/region). Best-effort: not every
+        // language maps to an unambiguous single cuisine (English -> British, arbitrarily),
+        // and TheMealDB's area list doesn't necessarily cover every one of these — an area with
+        // no matches there just contributes nothing, not an error.
+        private val languageToArea: Map<String, String> = mapOf(
+            "nl" to "Dutch",
+            "en" to "British",
+            "de" to "German",
+            "fr" to "French",
+            "es" to "Spanish",
+        )
+
         // Single Dutch grocery term -> the closest TheMealDB ingredient search term.
         // Deliberately small and common-staples-only; this is a Beta feature, not a
         // real NL/EN dictionary.

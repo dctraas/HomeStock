@@ -15,6 +15,10 @@ interface TheMealDbApi {
     @GET("filter.php")
     suspend fun filterByIngredient(@Query("i") ingredient: String): MealDbFilterResponse
 
+    /** Recipes from a given cuisine/region, e.g. "Dutch", "French" — see RecipeRepository's language-to-area mapping. */
+    @GET("filter.php")
+    suspend fun filterByArea(@Query("a") area: String): MealDbFilterResponse
+
     @GET("lookup.php")
     suspend fun lookupMeal(@Query("i") id: String): MealDbLookupResponse
 

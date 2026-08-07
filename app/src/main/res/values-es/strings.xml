@@ -410,6 +410,8 @@
     <string name="recipes_empty_subtitle">Añade productos a tu inventario para obtener sugerencias de recetas.</string>
     <string name="recipes_beta_notice">Beta: las sugerencias de recetas se basan en un conjunto limitado de ingredientes reconocidos y a veces pueden ser inexactas.</string>
     <string name="recipes_match_count_format">%1$d ingredientes que tienes</string>
+    <string name="recipes_allergen_filter_label">Excluir alérgenos</string>
+    <string name="recipes_area_match_cd">Coincide con tu idioma/región</string>
     <string name="recipes_detail_error">No se pudo cargar esta receta. Inténtalo de nuevo.</string>
     <string name="recipes_ingredients_title">Ingredientes</string>
     <string name="recipes_ingredient_in_inventory_cd">Ya en el inventario</string>

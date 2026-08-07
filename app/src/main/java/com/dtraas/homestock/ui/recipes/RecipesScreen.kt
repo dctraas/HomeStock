@@ -1,5 +1,6 @@
 package com.dtraas.homestock.ui.recipes
 
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,8 +12,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
@@ -21,12 +24,14 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -34,6 +39,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -44,6 +50,8 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
+import com.dtraas.homestock.data.model.Allergen
+import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
@@ -61,6 +69,13 @@ fun RecipesScreen(
         },
     )
     val uiState by viewModel.uiState.collectAsState()
+    val languageTag = LocalConfiguration.current.locales[0].language
+
+    // languageTag as the key rather than Unit: an in-app language switch (Instellingen >
+    // Algemeen > Taal) recreates the whole activity, but keying here means this also behaves
+    // correctly if that ever changes — refetches with the new cuisine/region boost instead of
+    // silently keeping stale results for the old language.
+    LaunchedEffect(languageTag) { viewModel.load(languageTag) }
 
     Scaffold(
         topBar = {
@@ -74,43 +89,79 @@ fun RecipesScreen(
             )
         },
     ) { padding ->
-        when {
-            uiState.isLoading -> Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center,
-            ) {
-                CircularProgressIndicator()
-            }
-            uiState.hasError -> RecipesMessage(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                icon = Icons.Filled.WifiOff,
-                title = stringResource(R.string.recipes_error_title),
-                subtitle = stringResource(R.string.recipes_error_subtitle),
-                retryLabel = stringResource(R.string.scan_result_retry),
-                onRetry = viewModel::load,
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            AllergenFilterRow(
+                excludedAllergens = uiState.excludedAllergens,
+                onToggle = { allergen -> viewModel.toggleAllergen(allergen, languageTag) },
             )
-            uiState.recipes.isEmpty() -> RecipesMessage(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                icon = Icons.Filled.RestaurantMenu,
-                title = stringResource(R.string.recipes_empty_title),
-                subtitle = stringResource(R.string.recipes_empty_subtitle),
-            )
-            else -> Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-                Text(
-                    text = stringResource(R.string.recipes_beta_notice),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                )
-                LazyColumn(
+            when {
+                uiState.isLoading -> Box(
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    items(uiState.recipes, key = { it.meal.id }) { recipe ->
-                        RecipeRow(recipe = recipe, onClick = { onRecipeClick(recipe.meal.id) })
+                    CircularProgressIndicator()
+                }
+                uiState.hasError -> RecipesMessage(
+                    modifier = Modifier.fillMaxSize(),
+                    icon = Icons.Filled.WifiOff,
+                    title = stringResource(R.string.recipes_error_title),
+                    subtitle = stringResource(R.string.recipes_error_subtitle),
+                    retryLabel = stringResource(R.string.scan_result_retry),
+                    onRetry = { viewModel.load(languageTag) },
+                )
+                uiState.recipes.isEmpty() -> RecipesMessage(
+                    modifier = Modifier.fillMaxSize(),
+                    icon = Icons.Filled.RestaurantMenu,
+                    title = stringResource(R.string.recipes_empty_title),
+                    subtitle = stringResource(R.string.recipes_empty_subtitle),
+                )
+                else -> Column(modifier = Modifier.fillMaxSize()) {
+                    Text(
+                        text = stringResource(R.string.recipes_beta_notice),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                    )
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(uiState.recipes, key = { it.meal.id }) { recipe ->
+                            RecipeRow(recipe = recipe, onClick = { onRecipeClick(recipe.meal.id) })
+                        }
                     }
                 }
+            }
+        }
+    }
+}
+
+/** Toggleable chips for the curated allergen subset (see RecipeRepository.filterableAllergens) — a selected chip means that allergen is excluded. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AllergenFilterRow(excludedAllergens: Set<Allergen>, onToggle: (Allergen) -> Unit) {
+    Column(modifier = Modifier.padding(top = 8.dp)) {
+        Text(
+            text = stringResource(R.string.recipes_allergen_filter_label),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 16.dp),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            RecipeRepository.filterableAllergens.forEach { allergen ->
+                val selected = allergen in excludedAllergens
+                FilterChip(
+                    selected = selected,
+                    onClick = { onToggle(allergen) },
+                    label = { Text(stringResource(allergen.labelRes)) },
+                )
             }
         }
     }
@@ -184,14 +235,24 @@ private fun RecipeRow(recipe: RecipeSuggestion, onClick: () -> Unit) {
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                // Ranks this recipe within the list (see RecipeRepository.suggestRecipes) — makes
-                // "wat kan ik koken met wat ik in huis heb" visible, not just implicit in the order.
-                Text(
-                    text = stringResource(R.string.recipes_match_count_format, recipe.matchCount),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                    // Ranks this recipe within the list (see RecipeRepository.suggestRecipes) —
+                    // makes "wat kan ik koken met wat ik in huis heb" visible, not just implicit
+                    // in the order.
+                    Text(
+                        text = stringResource(R.string.recipes_match_count_format, recipe.matchCount),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    if (recipe.matchesArea) {
+                        Icon(
+                            imageVector = Icons.Filled.Public,
+                            contentDescription = stringResource(R.string.recipes_area_match_cd),
+                            tint = MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.padding(start = 6.dp).size(14.dp),
+                        )
+                    }
+                }
             }
         }
     }
