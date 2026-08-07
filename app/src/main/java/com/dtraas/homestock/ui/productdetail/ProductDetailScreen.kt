@@ -13,16 +13,21 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
@@ -36,7 +41,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -54,6 +58,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,10 +81,12 @@ import com.dtraas.homestock.data.local.entity.ProductEntity
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.DietLabel
+import com.dtraas.homestock.ui.components.CategoryDropdown
 import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -116,6 +123,16 @@ fun ProductDetailScreen(
     val retryLookupFailureMessage = stringResource(R.string.product_detail_retry_lookup_failure)
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
+    // Collapsed by default — the plus icon on each header expands it. Product details also
+    // starts collapsed; the edit button in the top app bar (see below) expands it and scrolls
+    // it into view, which doubles as this screen's "product details page".
+    var nutritionExpanded by remember { mutableStateOf(false) }
+    var ingredientsExpanded by remember { mutableStateOf(false) }
+    var allergensExpanded by remember { mutableStateOf(false) }
+    var productDetailsExpanded by remember { mutableStateOf(false) }
+    val productDetailsBringIntoViewRequester = remember { BringIntoViewRequester() }
+    val coroutineScope = rememberCoroutineScope()
+
     LaunchedEffect(Unit) {
         viewModel.restockEvents.collect { name ->
             snackbarHostState.showSnackbar(restockedFormat.format(name), duration = SnackbarDuration.Short)
@@ -138,17 +155,15 @@ fun ProductDetailScreen(
                     }
                 },
                 actions = {
-                    // Favorite is a field on the inventory entry, not the catalog product —
-                    // nothing to toggle for a product that isn't (or no longer) in stock.
-                    if (stillInInventory) {
-                        IconButton(onClick = viewModel::toggleFavorite) {
-                            Icon(
-                                imageVector = if (uiState.isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                                contentDescription = stringResource(
-                                    if (uiState.isFavorite) R.string.inventory_unmark_favorite_cd else R.string.inventory_mark_favorite_cd,
-                                ),
-                                tint = if (uiState.isFavorite) MaterialTheme.colorScheme.primary else LocalContentColor.current,
-                            )
+                    // The favorite star used to live here; it now sits on the hero image (see
+                    // ProductHero) so this slot can host the edit button, which expands and
+                    // scrolls to the "Product details" section below instead of navigating away.
+                    if (uiState.product != null) {
+                        IconButton(onClick = {
+                            productDetailsExpanded = true
+                            coroutineScope.launch { productDetailsBringIntoViewRequester.bringIntoView() }
+                        }) {
+                            Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.product_detail_edit_cd))
                         }
                     }
                 },
@@ -193,7 +208,13 @@ fun ProductDetailScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             // Header
-            ProductHero(product = product, category = category)
+            ProductHero(
+                product = product,
+                category = category,
+                showFavorite = stillInInventory,
+                isFavorite = uiState.isFavorite,
+                onToggleFavorite = viewModel::toggleFavorite,
+            )
             Text(
                 text = product?.name ?: stringResource(R.string.product_detail_default_title),
                 style = MaterialTheme.typography.titleLarge,
@@ -293,19 +314,67 @@ fun ProductDetailScreen(
                 }
             }
 
+            // Product details — editable name/brand/category/unit, collapsed by default. The
+            // edit button in the top app bar (where the favorite star used to be) expands this
+            // and scrolls it into view rather than navigating to a separate screen, since it
+            // already lives right here.
+            product?.let { p ->
+                CollapsibleSectionHeader(
+                    title = stringResource(R.string.product_detail_editable_title),
+                    expanded = productDetailsExpanded,
+                    onToggle = { productDetailsExpanded = !productDetailsExpanded },
+                    modifier = Modifier
+                        .padding(top = sectionGap)
+                        .bringIntoViewRequester(productDetailsBringIntoViewRequester),
+                )
+                if (productDetailsExpanded) {
+                    ProductDetailsCard(
+                        product = p,
+                        category = category,
+                        onNameChange = viewModel::updateName,
+                        onBrandChange = viewModel::updateBrand,
+                        onCategoryChange = viewModel::updateCategory,
+                        onUnitChange = viewModel::updateUnit,
+                        modifier = Modifier.padding(top = headerToCardGap),
+                    )
+                }
+            }
+
             // Voedingsinformatie — no overarching group header; each card is its own
-            // section with its own header, same treatment as Voorraad above.
+            // section with its own header, same treatment as Voorraad above. Collapsed by
+            // default, uitklappen via het plusje.
             product?.nutrition?.let { nutrition ->
-                SectionHeader(stringResource(R.string.product_detail_nutrition_title), modifier = Modifier.padding(top = sectionGap))
-                NutritionCard(nutrition, modifier = Modifier.padding(top = headerToCardGap))
+                CollapsibleSectionHeader(
+                    title = stringResource(R.string.product_detail_nutrition_title),
+                    expanded = nutritionExpanded,
+                    onToggle = { nutritionExpanded = !nutritionExpanded },
+                    modifier = Modifier.padding(top = sectionGap),
+                )
+                if (nutritionExpanded) {
+                    NutritionCard(nutrition, modifier = Modifier.padding(top = headerToCardGap))
+                }
             }
             product?.ingredients?.let { ingredients ->
-                SectionHeader(stringResource(R.string.product_detail_ingredients_title), modifier = Modifier.padding(top = sectionGap))
-                IngredientsCard(ingredients, modifier = Modifier.padding(top = headerToCardGap))
+                CollapsibleSectionHeader(
+                    title = stringResource(R.string.product_detail_ingredients_title),
+                    expanded = ingredientsExpanded,
+                    onToggle = { ingredientsExpanded = !ingredientsExpanded },
+                    modifier = Modifier.padding(top = sectionGap),
+                )
+                if (ingredientsExpanded) {
+                    IngredientsCard(ingredients, modifier = Modifier.padding(top = headerToCardGap))
+                }
             }
             if (allergens.isNotEmpty()) {
-                SectionHeader(stringResource(R.string.product_detail_allergens_title), modifier = Modifier.padding(top = sectionGap))
-                AllergensCard(allergens, modifier = Modifier.padding(top = headerToCardGap))
+                CollapsibleSectionHeader(
+                    title = stringResource(R.string.product_detail_allergens_title),
+                    expanded = allergensExpanded,
+                    onToggle = { allergensExpanded = !allergensExpanded },
+                    modifier = Modifier.padding(top = sectionGap),
+                )
+                if (allergensExpanded) {
+                    AllergensCard(allergens, modifier = Modifier.padding(top = headerToCardGap))
+                }
             }
             if (dietLabels.isNotEmpty()) {
                 SectionHeader(stringResource(R.string.product_detail_diet_labels_title), modifier = Modifier.padding(top = sectionGap))
@@ -354,29 +423,86 @@ private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
     )
 }
 
+/** Same as [SectionHeader], but with a plus/minus toggle to expand or collapse the section below it. */
 @Composable
-private fun ProductHero(product: ProductEntity?, category: Category) {
-    val imageUrl = product?.imageUrl
-    Surface(
-        shape = RoundedCornerShape(28.dp),
-        color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = Modifier.size(160.dp),
+private fun CollapsibleSectionHeader(title: String, expanded: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onToggle),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        if (imageUrl != null) {
-            AsyncImage(
-                model = imageUrl,
-                contentDescription = product?.name,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.fillMaxSize(),
-            )
-        } else {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                Icon(
-                    imageVector = category.icon,
-                    contentDescription = null,
-                    modifier = Modifier.size(64.dp),
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+        )
+        Icon(
+            imageVector = if (expanded) Icons.Filled.Remove else Icons.Filled.Add,
+            contentDescription = stringResource(
+                if (expanded) R.string.product_detail_collapse_cd else R.string.product_detail_expand_cd,
+            ),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+    }
+}
+
+@Composable
+private fun ProductHero(
+    product: ProductEntity?,
+    category: Category,
+    showFavorite: Boolean,
+    isFavorite: Boolean,
+    onToggleFavorite: () -> Unit,
+) {
+    val imageUrl = product?.imageUrl
+    Box(modifier = Modifier.size(160.dp)) {
+        Surface(
+            shape = RoundedCornerShape(28.dp),
+            color = MaterialTheme.colorScheme.primaryContainer,
+            modifier = Modifier.fillMaxSize(),
+        ) {
+            if (imageUrl != null) {
+                AsyncImage(
+                    model = imageUrl,
+                    contentDescription = product?.name,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
                 )
+            } else {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = category.icon,
+                        contentDescription = null,
+                        modifier = Modifier.size(64.dp),
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
+            }
+        }
+        // The favorite toggle used to sit in the top app bar; that slot now hosts the edit
+        // button, so favorite moved to a badge on the hero image instead — a common spot for
+        // a "favorite this" affordance, and it stays close to the product it applies to.
+        if (showFavorite) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(6.dp)
+                    .size(32.dp),
+            ) {
+                IconButton(onClick = onToggleFavorite, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                        contentDescription = stringResource(
+                            if (isFavorite) R.string.inventory_unmark_favorite_cd else R.string.inventory_mark_favorite_cd,
+                        ),
+                        tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
         }
     }
@@ -432,6 +558,74 @@ private fun GradeBadge(grade: String, contentDescription: String) {
                 text = grade.uppercase(Locale.ROOT),
                 style = MaterialTheme.typography.titleSmall,
                 color = Color.White,
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProductDetailsCard(
+    product: ProductEntity,
+    category: Category,
+    onNameChange: (String) -> Unit,
+    onBrandChange: (String?) -> Unit,
+    onCategoryChange: (Category) -> Unit,
+    onUnitChange: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var name by remember(product.barcode) { mutableStateOf(product.name) }
+    var brand by remember(product.barcode) { mutableStateOf(product.brand ?: "") }
+    var unit by remember(product.barcode) { mutableStateOf(product.unit ?: "") }
+
+    // Debounced autosave per field, same pattern as NoteCard below: writes shortly after
+    // typing pauses instead of on every keystroke or only once the field loses focus.
+    LaunchedEffect(name) {
+        delay(600)
+        if (name != product.name) onNameChange(name)
+    }
+    LaunchedEffect(brand) {
+        delay(600)
+        if (brand != (product.brand ?: "")) onBrandChange(brand.trim().ifBlank { null })
+    }
+    LaunchedEffect(unit) {
+        delay(600)
+        if (unit != (product.unit ?: "")) onUnitChange(unit.trim().ifBlank { null })
+    }
+
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = SoftCardShape,
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(stringResource(R.string.common_name)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = brand,
+                onValueChange = { brand = it },
+                label = { Text(stringResource(R.string.product_detail_field_brand)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            CategoryDropdown(
+                selected = category,
+                onSelected = onCategoryChange,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = unit,
+                onValueChange = { unit = it },
+                label = { Text(stringResource(R.string.product_detail_field_unit)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }

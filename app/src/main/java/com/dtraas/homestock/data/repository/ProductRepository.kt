@@ -176,6 +176,22 @@ class ProductRepository(
         productsCollection(householdId).document(barcode).update("category", category.storageKey).await()
     }
 
+    suspend fun updateName(barcode: String, name: String) {
+        val householdId = householdSession.householdId.value ?: return
+        val trimmed = name.trim().takeIf { it.isNotEmpty() } ?: return
+        productsCollection(householdId).document(barcode).update("name", trimmed).await()
+    }
+
+    suspend fun updateBrand(barcode: String, brand: String?) {
+        val householdId = householdSession.householdId.value ?: return
+        productsCollection(householdId).document(barcode).update("brand", brand).await()
+    }
+
+    suspend fun updateUnit(barcode: String, unit: String?) {
+        val householdId = householdSession.householdId.value ?: return
+        productsCollection(householdId).document(barcode).update("unit", unit).await()
+    }
+
     /**
      * Free-text product search, for finding something to add without scanning its barcode.
      * Returns lightweight results only — picking one still goes through [getOrFetchProduct]

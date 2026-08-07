@@ -92,6 +92,22 @@ class ProductDetailViewModel(
         viewModelScope.launch { inventoryRepository.setNote(barcode, note) }
     }
 
+    fun updateName(name: String) {
+        viewModelScope.launch { productRepository.updateName(barcode, name) }
+    }
+
+    fun updateBrand(brand: String?) {
+        viewModelScope.launch { productRepository.updateBrand(barcode, brand) }
+    }
+
+    fun updateCategory(category: Category) {
+        viewModelScope.launch { productRepository.updateCategory(barcode, category) }
+    }
+
+    fun updateUnit(unit: String?) {
+        viewModelScope.launch { productRepository.updateUnit(barcode, unit) }
+    }
+
     fun toggleFavorite() {
         val newValue = !uiState.value.isFavorite
         viewModelScope.launch { inventoryRepository.setFavorite(barcode, newValue) }
