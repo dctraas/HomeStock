@@ -165,6 +165,31 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
+                actions = {
+                    val code = householdId
+                    IconButton(
+                        enabled = code != null,
+                        onClick = {
+                            if (code != null) {
+                                val message = context.getString(
+                                    R.string.household_share_invite_text_format,
+                                    HouseholdInviteLink.build(code),
+                                    code,
+                                )
+                                val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                    type = "text/plain"
+                                    putExtra(Intent.EXTRA_TEXT, message)
+                                }
+                                context.startActivity(Intent.createChooser(sendIntent, null))
+                            }
+                        },
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Share,
+                            contentDescription = stringResource(R.string.household_share_invite_cd),
+                        )
+                    }
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -205,21 +230,7 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                 )
             }
 
-            CodeSection(
-                householdCode = householdId,
-                onShareClick = { code ->
-                    val message = context.getString(
-                        R.string.household_share_invite_text_format,
-                        HouseholdInviteLink.build(code),
-                        code,
-                    )
-                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                        type = "text/plain"
-                        putExtra(Intent.EXTRA_TEXT, message)
-                    }
-                    context.startActivity(Intent.createChooser(sendIntent, null))
-                },
-            )
+            CodeSection(householdCode = householdId)
         }
     }
 
@@ -331,31 +342,21 @@ private fun SectionCard(content: @Composable ColumnScope.() -> Unit) {
  * Low-key footer pinned to the very bottom of the screen, outside the scrollable content
  * above it — the code is for sharing, not editing, so it doesn't need a card of its own like
  * the sections above it, and staying put at the bottom keeps it easy to find regardless of
- * how much content (e.g. members) is above it.
+ * how much content (e.g. members) is above it. The share action itself lives in the top app
+ * bar (see [HouseholdSettingsScreen]) so this is just the code, centered.
  */
 @Composable
-private fun CodeSection(householdCode: String?, onShareClick: (String) -> Unit) {
-    Row(
-        verticalAlignment = Alignment.CenterVertically,
+private fun CodeSection(householdCode: String?) {
+    Text(
+        text = stringResource(R.string.more_household_code_format, householdCode ?: "—"),
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        textAlign = TextAlign.Center,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 16.dp, end = 4.dp)
-            .padding(bottom = 8.dp),
-    ) {
-        Text(
-            text = stringResource(R.string.more_household_code_format, householdCode ?: "—"),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.weight(1f),
-        )
-        IconButton(enabled = householdCode != null, onClick = { householdCode?.let(onShareClick) }) {
-            Icon(
-                imageVector = Icons.Filled.Share,
-                contentDescription = stringResource(R.string.household_share_invite_cd),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 16.dp),
+    )
 }
 
 /**
