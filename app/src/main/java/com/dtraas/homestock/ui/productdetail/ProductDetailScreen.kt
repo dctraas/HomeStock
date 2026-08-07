@@ -336,6 +336,9 @@ fun ProductDetailScreen(
                         onBrandChange = viewModel::updateBrand,
                         onCategoryChange = viewModel::updateCategory,
                         onUnitChange = viewModel::updateUnit,
+                        showNote = stillInInventory,
+                        note = uiState.note,
+                        onNoteChange = viewModel::setNote,
                         modifier = Modifier.padding(top = headerToCardGap),
                     )
                 }
@@ -380,15 +383,6 @@ fun ProductDetailScreen(
             if (dietLabels.isNotEmpty()) {
                 SectionHeader(stringResource(R.string.product_detail_diet_labels_title), modifier = Modifier.padding(top = sectionGap))
                 DietLabelsCard(dietLabels, modifier = Modifier.padding(top = headerToCardGap))
-            }
-
-            if (stillInInventory) {
-                SectionHeader(stringResource(R.string.product_detail_note_title), modifier = Modifier.padding(top = sectionGap))
-                NoteCard(
-                    note = uiState.note,
-                    onNoteChange = viewModel::setNote,
-                    modifier = Modifier.padding(top = headerToCardGap),
-                )
             }
         }
 
@@ -572,14 +566,21 @@ private fun ProductDetailsCard(
     onBrandChange: (String?) -> Unit,
     onCategoryChange: (Category) -> Unit,
     onUnitChange: (String?) -> Unit,
+    showNote: Boolean,
+    note: String?,
+    onNoteChange: (String?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var name by remember(product.barcode) { mutableStateOf(product.name) }
     var brand by remember(product.barcode) { mutableStateOf(product.brand ?: "") }
     var unit by remember(product.barcode) { mutableStateOf(product.unit ?: "") }
+    // Keyed on the note itself (not just the barcode) — unlike name/brand/unit, this field
+    // lives on the inventory entry rather than the catalog product, so it can legitimately
+    // change from outside this card (e.g. removed from inventory) while it stays mounted.
+    var noteText by remember(note) { mutableStateOf(note ?: "") }
 
-    // Debounced autosave per field, same pattern as NoteCard below: writes shortly after
-    // typing pauses instead of on every keystroke or only once the field loses focus.
+    // Debounced autosave per field: writes shortly after typing pauses instead of on every
+    // keystroke or only once the field loses focus (which back-navigation can't reliably catch).
     LaunchedEffect(name) {
         delay(600)
         if (name != product.name) onNameChange(name)
@@ -591,6 +592,10 @@ private fun ProductDetailsCard(
     LaunchedEffect(unit) {
         delay(600)
         if (unit != (product.unit ?: "")) onUnitChange(unit.trim().ifBlank { null })
+    }
+    LaunchedEffect(noteText) {
+        delay(600)
+        if (noteText != (note ?: "")) onNoteChange(noteText.trim().ifBlank { null })
     }
 
     Card(
@@ -628,6 +633,18 @@ private fun ProductDetailsCard(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
+            // Note is a field on the inventory entry, not the catalog product — nothing to
+            // save it against for a product that isn't (or no longer) in stock.
+            if (showNote) {
+                OutlinedTextField(
+                    value = noteText,
+                    onValueChange = { noteText = it },
+                    label = { Text(stringResource(R.string.product_detail_note_title)) },
+                    placeholder = { Text(stringResource(R.string.product_detail_note_placeholder)) },
+                    minLines = 3,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
         }
     }
 }
@@ -891,33 +908,3 @@ private fun MinQuantityRow(minQuantity: Int?, onChange: (Int?) -> Unit) {
     }
 }
 
-@Composable
-private fun NoteCard(note: String?, onNoteChange: (String?) -> Unit, modifier: Modifier = Modifier) {
-    var text by remember(note) { mutableStateOf(note ?: "") }
-
-    // Debounced autosave: writes shortly after typing pauses, so the note is
-    // never lost even if the user navigates away without explicitly blurring
-    // the field (which onFocusChanged can't reliably catch on back-navigation).
-    LaunchedEffect(text) {
-        delay(600)
-        if (text != (note ?: "")) {
-            onNoteChange(text.trim().ifBlank { null })
-        }
-    }
-
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = SoftCardShape,
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                placeholder = { Text(stringResource(R.string.product_detail_note_placeholder)) },
-                minLines = 3,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        }
-    }
-}
