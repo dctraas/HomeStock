@@ -53,7 +53,11 @@ class AiRecognitionRepository(
 
         return try {
             val result = functions.getHttpsCallable("recognizeProduct").call(requestData).await()
-            val candidates = parseCandidates(result.data)
+            // Explicit getData() rather than the result.data property-syntax shorthand — on
+            // some Firebase SDK versions Kotlin resolves that shorthand against
+            // HttpsCallableResult's private backing field instead of the public getter,
+            // failing to compile ("val data: Any? is private").
+            val candidates = parseCandidates(result.getData())
             if (candidates.isEmpty()) RecognizeProductResult.Failed else RecognizeProductResult.Success(candidates)
         } catch (e: FirebaseFunctionsException) {
             when (e.code) {
