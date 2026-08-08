@@ -392,7 +392,6 @@ fun InventoryScreen(
                                 onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
                                 onDelete = { deleteWithUndo(item) },
                                 onAddToShoppingList = { addToShoppingListWithFeedback(item) },
-                                onToggleFavorite = { viewModel.toggleFavorite(item) },
                                 modifier = Modifier.animateItem(),
                             )
                         }
@@ -414,8 +413,7 @@ fun InventoryScreen(
                                     onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
                                     onDelete = { deleteWithUndo(item) },
                                     onAddToShoppingList = { addToShoppingListWithFeedback(item) },
-                                    onToggleFavorite = { viewModel.toggleFavorite(item) },
-                                    modifier = Modifier.animateItem(),
+                                        modifier = Modifier.animateItem(),
                                 )
                             }
                         }
@@ -442,7 +440,6 @@ fun InventoryScreen(
                                 onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
                                 onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
                                 onAddToShoppingList = { addToShoppingListWithFeedback(item) },
-                                onToggleFavorite = { viewModel.toggleFavorite(item) },
                             )
                         }
                     } else {
@@ -462,7 +459,6 @@ fun InventoryScreen(
                                     onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
                                     onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
                                     onAddToShoppingList = { addToShoppingListWithFeedback(item) },
-                                    onToggleFavorite = { viewModel.toggleFavorite(item) },
                                 )
                             }
                         }
@@ -801,7 +797,6 @@ private fun InventoryGridTile(
     onIncrease: () -> Unit,
     onDecrease: () -> Unit,
     onAddToShoppingList: () -> Unit,
-    onToggleFavorite: () -> Unit,
 ) {
     val stockStatus = InventoryStockStatus.of(item.quantity, item.minQuantity, item.expirationDate)
     Column(
@@ -824,6 +819,12 @@ private fun InventoryGridTile(
                 status = stockStatus,
                 modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
             )
+            // TopEnd hosts either the selection checkmark or the add-to-shopping-list badge —
+            // never both, since they're mutually exclusive modes. The badge mirrors the
+            // favorite badge on ProductDetailScreen's hero image (same Surface-circle pattern)
+            // now that it's the only quick action left here — freed up by dropping the
+            // favorite star from this tile and the stepper's own row from cramming a second
+            // icon button next to it.
             if (selectionMode) {
                 Icon(
                     imageVector = if (selected) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
@@ -834,6 +835,24 @@ private fun InventoryGridTile(
                         .padding(8.dp)
                         .background(MaterialTheme.colorScheme.surface, CircleShape),
                 )
+            } else {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(6.dp)
+                        .size(28.dp),
+                ) {
+                    IconButton(onClick = onAddToShoppingList, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            Icons.Filled.AddShoppingCart,
+                            contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
             }
         }
         Column(modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 8.dp)) {
@@ -854,12 +873,9 @@ private fun InventoryGridTile(
                     modifier = Modifier.padding(top = 1.dp),
                 )
             }
-            // Two separate rows rather than one QuantityStepper-plus-two-icon-buttons row —
-            // in a 3-column grid a tile is only around 90-110dp wide, and the stepper (~100dp)
-            // plus both icon buttons (~64dp) together need well over that, which used to make
-            // the row overflow the tile: controls crowded together with no clean alignment,
-            // and the add-to-shopping-list button pushed out past the tile's edge entirely.
-            // Splitting them across two rows keeps each row comfortably within tile width.
+            // Just the stepper now — dropping the favorite star and moving add-to-shopping-list
+            // up onto the image (see above) means this no longer needs to share its row with
+            // any other controls, so minus/count/plus finally sit cleanly on one line.
             QuantityStepper(
                 quantity = item.quantity,
                 onDecrease = onDecrease,
@@ -867,30 +883,6 @@ private fun InventoryGridTile(
                 dense = true,
                 modifier = Modifier.padding(top = 4.dp),
             )
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.End,
-            ) {
-                IconButton(onClick = onToggleFavorite, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        imageVector = if (item.isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                        contentDescription = stringResource(
-                            if (item.isFavorite) R.string.inventory_unmark_favorite_cd else R.string.inventory_mark_favorite_cd,
-                        ),
-                        tint = if (item.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-                IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        Icons.Filled.AddShoppingCart,
-                        contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-            }
         }
     }
 }

@@ -261,7 +261,7 @@
     <string name="product_detail_delete_dialog_text">Are you sure you want to remove this product from your inventory?</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_ingredients_title">Ingredients</string>
-    <string name="product_detail_nutrition_title">Nutrition per 100 g</string>
+    <string name="product_detail_nutrition_title">Nutrition</string>
     <string name="product_detail_nutrition_energy">Energy</string>
     <string name="product_detail_nutrition_fat">Fat</string>
     <string name="product_detail_nutrition_saturated_fat">of which saturated</string>
@@ -378,7 +378,8 @@
     <string name="statistics_category_distribution">Breakdown by category</string>
     <string name="statistics_no_products_yet">No products in inventory yet.</string>
     <string name="statistics_in_stock">In stock</string>
-    <string name="statistics_total_scans">Total scans</string>
+    <string name="statistics_categories">Categories</string>
+    <string name="statistics_favorites">Favorites</string>
     <string name="statistics_this_week">This week</string>
     <string name="statistics_range_month">This month</string>
     <string name="statistics_by_actor">By household member</string>
@@ -461,6 +462,7 @@
     <string name="ai_recognize_failed">No product recognized in the photo. Try again with better lighting.</string>
     <string name="ai_recognize_retry">Try again</string>
     <string name="ai_recognize_confidence_format">Recognized as \'%1$s\' (%2$d%% confident)</string>
+    <string name="ai_recognize_candidate_format">%1$s (%2$d%%)</string>
     <string name="ai_recognize_disclaimer">The AI gives an indication based on the photo — review and adjust the name and category below before adding.</string>
     <string name="ai_recognize_confirm">Add to inventory</string>
 

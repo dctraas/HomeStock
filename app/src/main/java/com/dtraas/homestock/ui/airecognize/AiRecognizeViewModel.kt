@@ -25,12 +25,17 @@ sealed interface AiRecognizeStep {
     data object Failed : AiRecognizeStep
 
     /**
-     * A label came back — [suggestedName] and [category] start out AI-suggested (from
-     * [suggestCategoryForLabel]) but are fully editable before confirming, since ML Kit's
-     * on-device labels are generic ("Food", "Produce", "Bread") rather than a specific
-     * product name — this is a starting point to correct, not a barcode-accurate match.
+     * One or more labels came back — [suggestedName] and [category] start out set from the
+     * top-confidence one ([candidates].first()) but are fully editable before confirming,
+     * since ML Kit's on-device labels are generic ("Food", "Produce", "Bread") rather than a
+     * specific product name. Surfacing all of [candidates] (not just the top guess) matters
+     * in practice — the single best match is sometimes a worse fit than #2 or #3, and letting
+     * the user tap whichever one actually matches beats forcing a single guess into the name
+     * field with no alternative.
      */
     data class Recognized(
+        /** Label text to confidence percent, sorted by confidence descending. */
+        val candidates: List<Pair<String, Int>>,
         val suggestedName: String,
         val category: Category,
         val confidencePercent: Int,
@@ -48,12 +53,26 @@ class AiRecognizeViewModel(
     private val _confirmed = MutableSharedFlow<String>()
     val confirmed: SharedFlow<String> = _confirmed
 
-    fun onLabelRecognized(label: String, confidencePercent: Int) {
+    /** [candidates] pre-sorted by confidence descending. */
+    fun onLabelsRecognized(candidates: List<Pair<String, Int>>) {
+        val (topLabel, topConfidence) = candidates.first()
         _step.value = AiRecognizeStep.Recognized(
-            suggestedName = label,
-            category = suggestCategoryForLabel(label),
-            confidencePercent = confidencePercent,
+            candidates = candidates,
+            suggestedName = topLabel,
+            category = suggestCategoryForLabel(topLabel),
+            confidencePercent = topConfidence,
         )
+    }
+
+    /** User tapped a different candidate than the top guess — swap name, category and confidence to match it. */
+    fun selectCandidate(label: String, confidencePercent: Int) {
+        (_step.value as? AiRecognizeStep.Recognized)?.let {
+            _step.value = it.copy(
+                suggestedName = label,
+                category = suggestCategoryForLabel(label),
+                confidencePercent = confidencePercent,
+            )
+        }
     }
 
     fun onCaptureFailed() {

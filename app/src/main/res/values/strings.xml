@@ -262,7 +262,7 @@
     <string name="product_detail_delete_dialog_text">Weet je zeker dat je dit product uit je voorraad wilt verwijderen?</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_ingredients_title">Ingrediënten</string>
-    <string name="product_detail_nutrition_title">Voedingswaarden per 100 g</string>
+    <string name="product_detail_nutrition_title">Voedingswaarden</string>
     <string name="product_detail_nutrition_energy">Energie</string>
     <string name="product_detail_nutrition_fat">Vet</string>
     <string name="product_detail_nutrition_saturated_fat">waarvan verzadigd</string>
@@ -379,7 +379,8 @@
     <string name="statistics_category_distribution">Verdeling per categorie</string>
     <string name="statistics_no_products_yet">Nog geen producten in voorraad.</string>
     <string name="statistics_in_stock">In voorraad</string>
-    <string name="statistics_total_scans">Scans totaal</string>
+    <string name="statistics_categories">Categorieën</string>
+    <string name="statistics_favorites">Favorieten</string>
     <string name="statistics_this_week">Deze week</string>
     <string name="statistics_range_month">Deze maand</string>
     <string name="statistics_by_actor">Per huisgenoot</string>
@@ -462,6 +463,7 @@
     <string name="ai_recognize_failed">Geen product herkend op de foto. Probeer het opnieuw met betere belichting.</string>
     <string name="ai_recognize_retry">Opnieuw proberen</string>
     <string name="ai_recognize_confidence_format">Herkend als \'%1$s\' (%2$d%% zeker)</string>
+    <string name="ai_recognize_candidate_format">%1$s (%2$d%%)</string>
     <string name="ai_recognize_disclaimer">De AI geeft een indicatie op basis van de foto — controleer en pas de naam en categorie hieronder aan voordat je toevoegt.</string>
     <string name="ai_recognize_confirm">Toevoegen aan voorraad</string>
 

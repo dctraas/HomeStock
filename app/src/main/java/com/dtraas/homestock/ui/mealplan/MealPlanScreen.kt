@@ -15,11 +15,16 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Cookie
+import androidx.compose.material.icons.filled.DinnerDining
+import androidx.compose.material.icons.filled.FreeBreakfast
+import androidx.compose.material.icons.filled.LunchDining
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -31,6 +36,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -40,6 +46,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -128,6 +135,7 @@ fun MealPlanScreen(onBack: () -> Unit, onRecipeClick: (String) -> Unit) {
         ) {
             MealSlot.ORDERED.forEach { slot ->
                 SlotCard(
+                    slot = slot,
                     label = stringResource(slot.labelRes),
                     planned = uiState.plan[slot].orEmpty(),
                     onAddClick = { viewModel.openPicker(slot) },
@@ -153,15 +161,27 @@ fun MealPlanScreen(onBack: () -> Unit, onRecipeClick: (String) -> Unit) {
     }
 }
 
+/** Recognizable icon per meal slot, shown in the card header next to its label. */
+private val MealSlot.icon: ImageVector
+    get() = when (this) {
+        MealSlot.BREAKFAST -> Icons.Filled.FreeBreakfast
+        MealSlot.LUNCH -> Icons.Filled.LunchDining
+        MealSlot.DINNER -> Icons.Filled.DinnerDining
+        MealSlot.SNACK -> Icons.Filled.Cookie
+    }
+
 /**
  * A slot can now hold zero, one, or several planned meals — a household may want more than
  * one dish lined up for e.g. avondeten — so this renders one row per [PlannedMeal] plus a
  * trailing "add" row that's always present, rather than a single card that's either "empty"
  * or "has one recipe". Only meals with a [PlannedMeal.recipeId] (picked from a suggestion,
- * not typed by hand) are clickable through to the recipe detail screen.
+ * not typed by hand) are clickable through to the recipe detail screen. A thin divider
+ * separates multiple meals within the same slot, so a busier day (say, two snacks) still
+ * reads as clearly distinct dishes rather than a run-on list.
  */
 @Composable
 private fun SlotCard(
+    slot: MealSlot,
     label: String,
     planned: List<PlannedMeal>,
     onAddClick: () -> Unit,
@@ -174,8 +194,27 @@ private fun SlotCard(
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
-            planned.forEach { meal ->
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = slot.icon,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(20.dp),
+                )
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 8.dp),
+                )
+            }
+            planned.forEachIndexed { index, meal ->
+                if (index > 0) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(top = 8.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    )
+                }
                 PlannedMealRow(
                     meal = meal,
                     onClick = { if (meal.recipeId != null) onOpenClick(meal.recipeId) },
@@ -186,25 +225,36 @@ private fun SlotCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp)
-                    .clickable(onClick = onAddClick),
+                    .clip(SoftImageShape)
+                    .clickable(onClick = onAddClick)
+                    .padding(vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                Icon(
+                    imageVector = Icons.Filled.AddCircleOutline,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(24.dp),
+                )
                 Text(
                     text = stringResource(R.string.meal_plan_empty_day),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.weight(1f),
-                )
-                Icon(
-                    imageVector = Icons.Filled.Add,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 12.dp),
                 )
             }
         }
     }
 }
 
+/**
+ * A recipe pick always has [PlannedMeal.thumbnailUrl] (from TheMealDB); a manually typed meal
+ * never does. Rather than just skipping the image slot for those — which used to leave manual
+ * entries looking bare and unfinished next to a recipe's photo, right when the user asked for
+ * this to look nicer specifically for hand-typed meals — they get a colored fallback badge
+ * with a fork-and-knife icon instead, the same "always a visual, real photo or otherwise"
+ * treatment ProductImage gives products with no picture elsewhere in the app.
+ */
 @Composable
 private fun PlannedMealRow(meal: PlannedMeal, onClick: () -> Unit, onRemove: () -> Unit) {
     Row(
@@ -221,6 +271,21 @@ private fun PlannedMealRow(meal: PlannedMeal, onClick: () -> Unit, onRemove: () 
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.size(48.dp).clip(SoftImageShape),
             )
+        } else {
+            Surface(
+                shape = SoftImageShape,
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                modifier = Modifier.size(48.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = Icons.Filled.Restaurant,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+            }
         }
         Text(
             text = meal.name,

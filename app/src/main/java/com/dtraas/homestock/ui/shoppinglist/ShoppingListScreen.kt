@@ -569,86 +569,116 @@ private fun ShoppingListRow(
 ) {
     val category = Category.fromStorageKey(item.category)
     var rowHeightPx by remember { mutableFloatStateOf(0f) }
-    Card(
-        onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 3.dp)
-            .onGloballyPositioned { rowHeightPx = it.size.height.toFloat() }
-            // A long press starts the reorder drag; a plain tap falls through to the
-            // Card's own onClick above to open the edit dialog.
-            .pointerInput(item.id) {
-                detectDragGesturesAfterLongPress(
-                    onDragStart = { onDragStart(rowHeightPx) },
-                    onDrag = { change, dragAmount ->
-                        change.consume()
-                        onDrag(dragAmount.y)
-                    },
-                    onDragEnd = onDragEnd,
-                    onDragCancel = onDragEnd,
-                )
-            },
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = SoftCardShapeCompact,
-    ) {
-        Row(
-            modifier = Modifier.padding(start = 12.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            // Material3's Checkbox draws its glyph at a fixed intrinsic size no matter what
-            // Modifier.size() constrains its layout box to — a plain .size() only shrinks the
-            // surrounding space (which is why this previously only affected the gap to the
-            // image, not the checkbox itself). scale() is a render-layer transform and is what
-            // actually shrinks the drawn checkbox; .size() keeps its footprint in the row
-            // compact and proportional to the smaller visual. The leading `padding(end = ...)`
-            // has to be the OUTERMOST modifier (i.e. applied before .size()) to actually add
-            // extra space after the checkbox's fixed 20dp box, rather than just eating into
-            // that box's own content area — it's the gap to the product image right after it,
-            // previously 0dp (the two sat flush against each other).
-            Checkbox(
-                checked = item.isChecked,
-                onCheckedChange = onCheckedChange,
-                modifier = Modifier.padding(end = 10.dp).size(20.dp).scale(0.7f),
-            )
-            ProductImage(
-                imageUrl = item.imageUrl,
-                fallbackIcon = category.icon,
-                shape = RoundedCornerShape(8.dp),
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.size(32.dp),
-            )
-            Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
-                Text(
-                    text = item.name,
-                    style = MaterialTheme.typography.bodyMedium,
-                    textDecoration = if (item.isChecked) TextDecoration.LineThrough else null,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Text(
-                    text = listOfNotNull(stringResource(category.displayNameRes), item.note).joinToString(" · "),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+    // Swipe-to-delete only from the end edge (left, in LTR) — the same direction and
+    // trash-can treatment as Voorraad's InventoryRow — not from the start edge, which would
+    // otherwise fight with a stray horizontal component of the long-press reorder drag below.
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) onDelete()
+            true
+        },
+    )
+    SwipeToDismissBox(
+        state = dismissState,
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp),
+        enableDismissFromStartToEnd = false,
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(SoftCardShapeCompact)
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(horizontal = 20.dp),
+                contentAlignment = Alignment.CenterEnd,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Delete,
+                    contentDescription = stringResource(R.string.shopping_list_delete_cd),
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
                 )
             }
-            QuantityStepper(
-                quantity = item.quantity,
-                onDecrease = onDecrease,
-                onIncrease = onIncrease,
-                minQuantity = 1,
-                dense = true,
-                displayText = formatQuantityWithUnit(item.quantity, MeasurementUnit.fromStorageKey(item.unit)),
-            )
-            IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                Icon(
-                    Icons.Filled.Delete,
-                    contentDescription = stringResource(R.string.shopping_list_delete_cd),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(18.dp),
+        },
+    ) {
+        Card(
+            onClick = onClick,
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { rowHeightPx = it.size.height.toFloat() }
+                // A long press starts the reorder drag; a plain tap falls through to the
+                // Card's own onClick above to open the edit dialog.
+                .pointerInput(item.id) {
+                    detectDragGesturesAfterLongPress(
+                        onDragStart = { onDragStart(rowHeightPx) },
+                        onDrag = { change, dragAmount ->
+                            change.consume()
+                            onDrag(dragAmount.y)
+                        },
+                        onDragEnd = onDragEnd,
+                        onDragCancel = onDragEnd,
+                    )
+                },
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            shape = SoftCardShapeCompact,
+        ) {
+            Row(
+                modifier = Modifier.padding(start = 12.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                // Material3's Checkbox draws its glyph at a fixed intrinsic size no matter what
+                // Modifier.size() constrains its layout box to — a plain .size() only shrinks
+                // the surrounding space (which is why this previously only affected the gap to
+                // the image, not the checkbox itself). scale() is a render-layer transform and
+                // is what actually shrinks the drawn checkbox; .size() keeps its footprint in
+                // the row compact and proportional to the smaller visual. The leading
+                // `padding(end = ...)` has to be the OUTERMOST modifier (i.e. applied before
+                // .size()) to actually add extra space after the checkbox's fixed 20dp box,
+                // rather than just eating into that box's own content area — it's the gap to
+                // the product image right after it, previously 0dp (the two sat flush together).
+                Checkbox(
+                    checked = item.isChecked,
+                    onCheckedChange = onCheckedChange,
+                    modifier = Modifier.padding(end = 10.dp).size(20.dp).scale(0.7f),
                 )
+                ProductImage(
+                    imageUrl = item.imageUrl,
+                    fallbackIcon = category.icon,
+                    shape = RoundedCornerShape(8.dp),
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(32.dp),
+                )
+                Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
+                    Text(
+                        text = item.name,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textDecoration = if (item.isChecked) TextDecoration.LineThrough else null,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = listOfNotNull(stringResource(category.displayNameRes), item.note).joinToString(" · "),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                QuantityStepper(
+                    quantity = item.quantity,
+                    onDecrease = onDecrease,
+                    onIncrease = onIncrease,
+                    minQuantity = 1,
+                    dense = true,
+                    displayText = formatQuantityWithUnit(item.quantity, MeasurementUnit.fromStorageKey(item.unit)),
+                )
+                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        Icons.Filled.Delete,
+                        contentDescription = stringResource(R.string.shopping_list_delete_cd),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
             }
         }
     }
@@ -673,21 +703,31 @@ private fun ShoppingListGridTile(
     val category = Category.fromStorageKey(item.category)
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
-            if (value != SwipeToDismissBoxValue.Settled) onCheckedChange(!item.isChecked)
+            when (value) {
+                // Swipe right toggles checked/unchecked — "off the list" is the far more
+                // frequent gesture while shopping; the same action is also available via
+                // the icon row below, which (unlike this gesture) is part of the tile's
+                // resting appearance.
+                SwipeToDismissBoxValue.StartToEnd -> onCheckedChange(!item.isChecked)
+                // Swipe left deletes — same direction/treatment as Voorraad's InventoryRow
+                // and this screen's own list-view row above.
+                SwipeToDismissBoxValue.EndToStart -> onDelete()
+                SwipeToDismissBoxValue.Settled -> Unit
+            }
             true
         },
     )
-    // Swipe toggles checked/unchecked — "off the list" is the far more frequent gesture
-    // while shopping; the same action is also available via the icon row below, which
-    // (unlike this gesture) is part of the tile's resting appearance.
     SwipeToDismissBox(
         state = dismissState,
         modifier = Modifier.clip(SoftCardShapeCompact),
         backgroundContent = {
+            val isDelete = dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .background(
+                        if (isDelete) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
+                    )
                     .padding(horizontal = 16.dp),
                 contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
                     Alignment.CenterStart
@@ -696,9 +736,17 @@ private fun ShoppingListGridTile(
                 },
             ) {
                 Icon(
-                    imageVector = if (item.isChecked) Icons.Filled.RadioButtonUnchecked else Icons.Filled.CheckCircle,
+                    imageVector = when {
+                        isDelete -> Icons.Filled.Delete
+                        item.isChecked -> Icons.Filled.RadioButtonUnchecked
+                        else -> Icons.Filled.CheckCircle
+                    },
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    tint = if (isDelete) {
+                        MaterialTheme.colorScheme.onErrorContainer
+                    } else {
+                        MaterialTheme.colorScheme.onPrimaryContainer
+                    },
                 )
             }
         },

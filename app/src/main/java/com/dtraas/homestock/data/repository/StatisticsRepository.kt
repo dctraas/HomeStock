@@ -60,6 +60,8 @@ class StatisticsRepository(
 
     fun observeInventoryCount(): Flow<Int> = inventoryWithProducts().map { it.size }
 
+    fun observeFavoritesCount(): Flow<Int> = inventoryWithProducts().map { items -> items.count { (item, _) -> item.isFavorite } }
+
     /** Items whose expiration date has already passed, or falls within [withinDays] from now. */
     fun observeExpiringSoonCount(withinDays: Long = 3): Flow<Int> =
         inventoryWithProducts().map { items ->
@@ -107,11 +109,6 @@ class StatisticsRepository(
                 .eachCount()
                 .map { (category, count) -> CategoryCount(category, count) }
         }
-
-    fun observeTotalScanCount(): Flow<Int> = scanHistory().map { it.size }
-
-    fun observeScanCountSince(sinceMillis: Long): Flow<Int> =
-        scanHistory().map { history -> history.count { it.scannedAt >= sinceMillis } }
 
     fun observeTopScannedProducts(limit: Int = 5): Flow<List<TopScannedProduct>> =
         householdSession.householdId.flatMapLatest { householdId ->

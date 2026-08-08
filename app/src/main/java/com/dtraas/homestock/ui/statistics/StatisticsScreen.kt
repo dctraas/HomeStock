@@ -20,14 +20,14 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.Category
 import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PlaylistAddCheck
-import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.RemoveShoppingCart
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -195,6 +195,9 @@ private fun TimeRangeToggle(selected: StatisticsTimeRange, onSelect: (Statistics
     }
 }
 
+// Used to show total scans and "scans this week/month" here — dropped in favor of category
+// count and favorites count, which say more about what's actually in the household's
+// voorraad than a raw scan total and a time-boxed count with no comparison point ever could.
 @Composable
 private fun SummaryRow(uiState: StatisticsUiState) {
     Row(
@@ -208,15 +211,15 @@ private fun SummaryRow(uiState: StatisticsUiState) {
             modifier = Modifier.weight(1f),
         )
         StatCard(
-            icon = Icons.Filled.QrCodeScanner,
-            value = uiState.totalScansAllTime.toString(),
-            label = stringResource(R.string.statistics_total_scans),
+            icon = Icons.Filled.Category,
+            value = uiState.categoryDistribution.size.toString(),
+            label = stringResource(R.string.statistics_categories),
             modifier = Modifier.weight(1f),
         )
         StatCard(
-            icon = Icons.Filled.CalendarToday,
-            value = uiState.scansInRange.toString(),
-            label = stringResource(uiState.timeRange.labelRes),
+            icon = Icons.Filled.Star,
+            value = uiState.favoritesCount.toString(),
+            label = stringResource(R.string.statistics_favorites),
             modifier = Modifier.weight(1f),
         )
     }

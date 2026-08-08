@@ -261,7 +261,7 @@
     <string name="product_detail_delete_dialog_text">Voulez-vous vraiment supprimer ce produit de votre stock ?</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_ingredients_title">Ingrédients</string>
-    <string name="product_detail_nutrition_title">Valeurs nutritionnelles pour 100 g</string>
+    <string name="product_detail_nutrition_title">Valeurs nutritionnelles</string>
     <string name="product_detail_nutrition_energy">Énergie</string>
     <string name="product_detail_nutrition_fat">Matières grasses</string>
     <string name="product_detail_nutrition_saturated_fat">dont acides gras saturés</string>
@@ -378,7 +378,8 @@
     <string name="statistics_category_distribution">Répartition par catégorie</string>
     <string name="statistics_no_products_yet">Aucun produit en stock pour l\'instant.</string>
     <string name="statistics_in_stock">En stock</string>
-    <string name="statistics_total_scans">Total des scans</string>
+    <string name="statistics_categories">Catégories</string>
+    <string name="statistics_favorites">Favoris</string>
     <string name="statistics_this_week">Cette semaine</string>
     <string name="statistics_range_month">Ce mois-ci</string>
     <string name="statistics_by_actor">Par membre du foyer</string>
@@ -461,6 +462,7 @@
     <string name="ai_recognize_failed">Aucun produit reconnu sur la photo. Réessayez avec un meilleur éclairage.</string>
     <string name="ai_recognize_retry">Réessayer</string>
     <string name="ai_recognize_confidence_format">Reconnu comme \'%1$s\' (%2$d %% de confiance)</string>
+    <string name="ai_recognize_candidate_format">%1$s (%2$d %%)</string>
     <string name="ai_recognize_disclaimer">L\'IA donne une indication basée sur la photo — vérifiez et ajustez le nom et la catégorie ci-dessous avant d\'ajouter.</string>
     <string name="ai_recognize_confirm">Ajouter à l\'inventaire</string>
 

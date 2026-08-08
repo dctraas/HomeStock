@@ -1,6 +1,5 @@
 package com.dtraas.homestock.ui.productdetail
 
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -14,8 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.relocation.BringIntoViewRequester
-import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -60,10 +57,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
@@ -94,8 +94,9 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import kotlin.math.roundToInt
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProductDetailScreen(
     barcode: String,
@@ -132,12 +133,20 @@ fun ProductDetailScreen(
     var allergensExpanded by remember { mutableStateOf(false) }
     var dietLabelsExpanded by remember { mutableStateOf(false) }
     var productDetailsExpanded by remember { mutableStateOf(false) }
-    // Attached to a zero-height marker right after the Product details card (see below)
-    // rather than to the section header itself — bringIntoView() scrolls the minimum
-    // distance needed to reveal its target, so anchoring it past the card's last field
-    // is what makes the edit button scroll all the way to the BOTTOM of the section
-    // (showing the whole card) instead of stopping as soon as just the header is visible.
-    val productDetailsBringIntoViewRequester = remember { BringIntoViewRequester() }
+    // Hoisted (rather than inline in the Modifier chain below) so the edit button's scroll
+    // action can drive it directly — see productDetailsBottomOffset below for why this
+    // replaced an earlier BringIntoViewRequester-based attempt that didn't reliably land on
+    // the true bottom of the newly-expanded card.
+    val scrollState = rememberScrollState()
+    // Continuously updated (via onGloballyPositioned on a marker placed right after the
+    // Product details card) with that marker's Y offset within the scrollable Column's full
+    // content — i.e. exactly the value ScrollState.scrollTo/animateScrollTo expects. Reading
+    // this *after* the expand + a settle delay (see the edit button below) is what makes the
+    // scroll actually land on the bottom of the fully-expanded card, instead of racing the
+    // layout pass the way a bringIntoView() call fired synchronously from the click handler
+    // did — that request could still be evaluated against the OLD (collapsed) position if it
+    // ran before recomposition/layout for the newly-inserted card had completed.
+    var productDetailsBottomOffset by remember { mutableStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
@@ -155,7 +164,10 @@ fun ProductDetailScreen(
     Scaffold(
         topBar = {
             HomeStockTopAppBar(
-                title = { Text(uiState.product?.name ?: stringResource(R.string.product_detail_default_title)) },
+                // The product's own name is already shown prominently below the hero image
+                // right under it — repeating it as the title bar text was redundant, so this
+                // stays a generic label instead.
+                title = { Text(stringResource(R.string.product_detail_default_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
@@ -183,7 +195,14 @@ fun ProductDetailScreen(
                     if (uiState.product != null) {
                         IconButton(onClick = {
                             productDetailsExpanded = true
-                            coroutineScope.launch { productDetailsBringIntoViewRequester.bringIntoView() }
+                            coroutineScope.launch {
+                                // Let the expand actually apply — its own recomposition/layout
+                                // pass is what brings productDetailsBottomOffset up to date —
+                                // before scrolling to it.
+                                withFrameNanos {}
+                                withFrameNanos {}
+                                scrollState.animateScrollTo(productDetailsBottomOffset)
+                            }
                         }) {
                             Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.product_detail_edit_cd))
                         }
@@ -225,7 +244,7 @@ fun ProductDetailScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scrollState)
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
@@ -343,9 +362,10 @@ fun ProductDetailScreen(
                         modifier = Modifier.padding(top = headerToCardGap),
                     )
                 }
-                // Zero-height marker right after the card — see productDetailsBringIntoViewRequester
-                // above for why the edit button targets this instead of the header.
-                Spacer(modifier = Modifier.bringIntoViewRequester(productDetailsBringIntoViewRequester))
+                // Zero-height marker right after the card — its Y offset within the scrollable
+                // Column (see productDetailsBottomOffset above) is what the edit button scrolls
+                // to, so this needs to sit past the card's very last field.
+                Spacer(modifier = Modifier.onGloballyPositioned { productDetailsBottomOffset = it.positionInParent().y.roundToInt() })
             }
 
             // Voedingsinformatie — no overarching group header; each card is its own

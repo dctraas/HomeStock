@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit
 /** Everything except the time-range-dependent stats, which are combined in separately. */
 private data class StaticStats(
     val totalInInventory: Int,
-    val totalScansAllTime: Int,
+    val favoritesCount: Int,
     val topScannedProducts: List<TopScannedProduct>,
     val categoryDistribution: List<CategoryCount>,
     val scansByActor: List<ActorScanCount>,
@@ -38,7 +38,6 @@ private data class InventoryHealthStats(
 /** Everything the time-range toggle affects. */
 private data class RangeStats(
     val range: StatisticsTimeRange,
-    val scansInRange: Int,
     val removedInRange: Int,
     val addedToShoppingListInRange: Int,
 )
@@ -52,12 +51,11 @@ enum class StatisticsTimeRange(@StringRes val labelRes: Int, val days: Long) {
 data class StatisticsUiState(
     val isLoading: Boolean = true,
     val totalInInventory: Int = 0,
-    val totalScansAllTime: Int = 0,
+    val favoritesCount: Int = 0,
     val expiringSoonCount: Int = 0,
     val lowStockCount: Int = 0,
     val busiestWeekday: DayOfWeek? = null,
     val timeRange: StatisticsTimeRange = StatisticsTimeRange.WEEK,
-    val scansInRange: Int = 0,
     val removedInRange: Int = 0,
     val addedToShoppingListInRange: Int = 0,
     val topScannedProducts: List<TopScannedProduct> = emptyList(),
@@ -74,12 +72,12 @@ class StatisticsViewModel(
 
     private val staticStats = combine(
         statisticsRepository.observeInventoryCount(),
-        statisticsRepository.observeTotalScanCount(),
+        statisticsRepository.observeFavoritesCount(),
         statisticsRepository.observeTopScannedProducts(limit = 5),
         statisticsRepository.observeCategoryDistribution(),
         statisticsRepository.observeScansByActor(),
-    ) { totalInInventory, totalScans, topProducts, categoryCounts, scansByActor ->
-        StaticStats(totalInInventory, totalScans, topProducts, categoryCounts, scansByActor)
+    ) { totalInInventory, favoritesCount, topProducts, categoryCounts, scansByActor ->
+        StaticStats(totalInInventory, favoritesCount, topProducts, categoryCounts, scansByActor)
     }
 
     private val inventoryHealth = combine(
@@ -90,10 +88,9 @@ class StatisticsViewModel(
     private val rangeStats = timeRange.flatMapLatest { range ->
         val since = sinceMillis(range)
         combine(
-            statisticsRepository.observeScanCountSince(since),
             statisticsRepository.observeActivityCountByType(ActivityType.REMOVED, since),
             statisticsRepository.observeActivityCountByType(ActivityType.ADDED_TO_SHOPPING_LIST, since),
-        ) { scans, removed, addedToList -> RangeStats(range, scans, removed, addedToList) }
+        ) { removed, addedToList -> RangeStats(range, removed, addedToList) }
     }
 
     val uiState: StateFlow<StatisticsUiState> = combine(
@@ -105,12 +102,11 @@ class StatisticsViewModel(
         StatisticsUiState(
             isLoading = false,
             totalInInventory = stats.totalInInventory,
-            totalScansAllTime = stats.totalScansAllTime,
+            favoritesCount = stats.favoritesCount,
             expiringSoonCount = health.expiringSoonCount,
             lowStockCount = health.lowStockCount,
             busiestWeekday = busiestWeekday,
             timeRange = range.range,
-            scansInRange = range.scansInRange,
             removedInRange = range.removedInRange,
             addedToShoppingListInRange = range.addedToShoppingListInRange,
             topScannedProducts = stats.topScannedProducts,

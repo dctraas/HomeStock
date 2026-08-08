@@ -15,14 +15,17 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -32,6 +35,7 @@ import androidx.compose.material.icons.filled.Error
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -113,7 +117,7 @@ fun AiRecognizeScreen(onBack: () -> Unit, onNeedsConfirmation: (String) -> Unit)
         when (val current = step) {
             AiRecognizeStep.Capturing -> AiCamera(
                 padding = padding,
-                onLabelRecognized = viewModel::onLabelRecognized,
+                onLabelsRecognized = viewModel::onLabelsRecognized,
                 onCaptureFailed = viewModel::onCaptureFailed,
             )
             AiRecognizeStep.Failed -> Column(
@@ -140,6 +144,7 @@ fun AiRecognizeScreen(onBack: () -> Unit, onNeedsConfirmation: (String) -> Unit)
             is AiRecognizeStep.Recognized -> RecognizedResult(
                 padding = padding,
                 result = current,
+                onSelectCandidate = viewModel::selectCandidate,
                 onNameChange = viewModel::onNameChange,
                 onCategoryChange = viewModel::onCategoryChange,
                 onRetake = viewModel::retake,
@@ -152,7 +157,7 @@ fun AiRecognizeScreen(onBack: () -> Unit, onNeedsConfirmation: (String) -> Unit)
 @Composable
 private fun AiCamera(
     padding: PaddingValues,
-    onLabelRecognized: (label: String, confidencePercent: Int) -> Unit,
+    onLabelsRecognized: (candidates: List<Pair<String, Int>>) -> Unit,
     onCaptureFailed: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -273,11 +278,18 @@ private fun AiCamera(
                                 .addOnSuccessListener(mainExecutor) { labels ->
                                     image.close()
                                     isCapturing = false
-                                    val top = labels.maxByOrNull { it.confidence }
-                                    if (top == null) {
+                                    // Top 3 rather than just the single best match — the #1
+                                    // guess is sometimes a worse fit than #2 or #3, and this
+                                    // lets the user tap whichever one is actually right instead
+                                    // of being stuck with one possibly-wrong forced guess.
+                                    val candidates = labels
+                                        .sortedByDescending { it.confidence }
+                                        .take(3)
+                                        .map { it.text to (it.confidence * 100).toInt() }
+                                    if (candidates.isEmpty()) {
                                         onCaptureFailed()
                                     } else {
-                                        onLabelRecognized(top.text, (top.confidence * 100).toInt())
+                                        onLabelsRecognized(candidates)
                                     }
                                 }
                                 .addOnFailureListener(mainExecutor) {
@@ -321,6 +333,7 @@ private fun AiCamera(
 private fun RecognizedResult(
     padding: PaddingValues,
     result: AiRecognizeStep.Recognized,
+    onSelectCandidate: (label: String, confidencePercent: Int) -> Unit,
     onNameChange: (String) -> Unit,
     onCategoryChange: (Category) -> Unit,
     onRetake: () -> Unit,
@@ -334,15 +347,35 @@ private fun RecognizedResult(
         verticalArrangement = Arrangement.spacedBy(16.dp),
     ) {
         Text(
-            text = stringResource(R.string.ai_recognize_confidence_format, result.suggestedName, result.confidencePercent),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Text(
             text = stringResource(R.string.ai_recognize_disclaimer),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+
+        // More than one candidate is the common case (ML Kit rarely returns just one) — shown
+        // as tappable chips rather than silently picking #1, since the top-confidence label
+        // isn't always the best match. Selecting one fills both the name field and the
+        // category suggestion below with it; the name field stays freely editable regardless.
+        if (result.candidates.size > 1) {
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                result.candidates.forEach { (label, confidencePercent) ->
+                    FilterChip(
+                        selected = label == result.suggestedName,
+                        onClick = { onSelectCandidate(label, confidencePercent) },
+                        label = { Text(stringResource(R.string.ai_recognize_candidate_format, label, confidencePercent)) },
+                    )
+                }
+            }
+        } else {
+            Text(
+                text = stringResource(R.string.ai_recognize_confidence_format, result.suggestedName, result.confidencePercent),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
 
         OutlinedTextField(
             value = result.suggestedName,

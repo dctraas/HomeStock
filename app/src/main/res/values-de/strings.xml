@@ -261,7 +261,7 @@
     <string name="product_detail_delete_dialog_text">Möchtest du dieses Produkt wirklich aus deinem Vorrat entfernen?</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_ingredients_title">Zutaten</string>
-    <string name="product_detail_nutrition_title">Nährwerte pro 100 g</string>
+    <string name="product_detail_nutrition_title">Nährwerte</string>
     <string name="product_detail_nutrition_energy">Energie</string>
     <string name="product_detail_nutrition_fat">Fett</string>
     <string name="product_detail_nutrition_saturated_fat">davon gesättigte Fettsäuren</string>
@@ -378,7 +378,8 @@
     <string name="statistics_category_distribution">Verteilung nach Kategorie</string>
     <string name="statistics_no_products_yet">Noch keine Produkte im Vorrat.</string>
     <string name="statistics_in_stock">Auf Vorrat</string>
-    <string name="statistics_total_scans">Scans insgesamt</string>
+    <string name="statistics_categories">Kategorien</string>
+    <string name="statistics_favorites">Favoriten</string>
     <string name="statistics_this_week">Diese Woche</string>
     <string name="statistics_range_month">Diesen Monat</string>
     <string name="statistics_by_actor">Pro Haushaltsmitglied</string>
@@ -461,6 +462,7 @@
     <string name="ai_recognize_failed">Kein Produkt auf dem Foto erkannt. Versuche es mit besserer Beleuchtung erneut.</string>
     <string name="ai_recognize_retry">Erneut versuchen</string>
     <string name="ai_recognize_confidence_format">Erkannt als \'%1$s\' (%2$d %% sicher)</string>
+    <string name="ai_recognize_candidate_format">%1$s (%2$d %%)</string>
     <string name="ai_recognize_disclaimer">Die KI gibt eine Einschätzung anhand des Fotos — überprüfe Name und Kategorie unten, bevor du hinzufügst.</string>
     <string name="ai_recognize_confirm">Zum Vorrat hinzufügen</string>
 
