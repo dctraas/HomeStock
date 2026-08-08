@@ -48,7 +48,7 @@ fun CategoryDropdown(
             Category.entries.sortedBy { it.sortOrder }.forEach { category ->
                 DropdownMenuItem(
                     text = { Text(stringResource(category.displayNameRes)) },
-                    leadingIcon = { Icon(category.icon, contentDescription = null, tint = category.tint) },
+                    leadingIcon = { Icon(category.icon, contentDescription = null) },
                     onClick = {
                         onSelected(category)
                         expanded = false

@@ -96,8 +96,6 @@ import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.components.color
 import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.components.labelRes
-import com.dtraas.homestock.ui.components.tint
-import com.dtraas.homestock.ui.components.tintContainer
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
@@ -587,7 +585,7 @@ private fun FilterMenuButton(
                 DropdownMenuItem(
                     text = { Text(stringResource(category.displayNameRes)) },
                     leadingIcon = {
-                        Icon(category.icon, contentDescription = null, tint = category.tint, modifier = Modifier.size(20.dp))
+                        Icon(category.icon, contentDescription = null, modifier = Modifier.size(20.dp))
                     },
                     trailingIcon = {
                         if (selected == category) {
@@ -618,13 +616,13 @@ private fun CategoryHeader(category: Category, itemCount: Int) {
             Icon(
                 imageVector = category.icon,
                 contentDescription = null,
-                tint = category.tint,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp),
             )
             Text(
                 text = stringResource(category.displayNameRes),
                 style = MaterialTheme.typography.titleMedium,
-                color = category.tint,
+                color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(start = 8.dp),
             )
         }
@@ -712,14 +710,11 @@ private fun InventoryRow(
                         modifier = Modifier.size(32.dp),
                     )
                 } else {
-                    val rowCategory = Category.fromStorageKey(item.category)
                     Box(modifier = Modifier.size(32.dp)) {
                         ProductImage(
                             imageUrl = item.imageUrl,
-                            fallbackIcon = rowCategory.icon,
+                            fallbackIcon = Category.fromStorageKey(item.category).icon,
                             shape = RoundedCornerShape(8.dp),
-                            containerColor = rowCategory.tintContainer,
-                            iconTint = rowCategory.tint,
                             modifier = Modifier.fillMaxSize(),
                         )
                         StockStatusDot(status = stockStatus, modifier = Modifier.align(Alignment.BottomEnd))
@@ -797,7 +792,6 @@ private fun InventoryGridTile(
     onToggleFavorite: () -> Unit,
 ) {
     val stockStatus = InventoryStockStatus.of(item.quantity, item.minQuantity, item.expirationDate)
-    val tileCategory = Category.fromStorageKey(item.category)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -810,10 +804,8 @@ private fun InventoryGridTile(
         Box(modifier = Modifier.fillMaxWidth().aspectRatio(1.1f)) {
             ProductImage(
                 imageUrl = item.imageUrl,
-                fallbackIcon = tileCategory.icon,
+                fallbackIcon = Category.fromStorageKey(item.category).icon,
                 shape = SoftImageShape,
-                containerColor = tileCategory.tintContainer,
-                iconTint = tileCategory.tint,
                 modifier = Modifier.fillMaxSize(),
             )
             StockStatusDot(
