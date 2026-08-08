@@ -146,7 +146,13 @@ async function callAnthropic(apiKey: string, imageBase64: string, mimeType: stri
  * free. See README.md in this directory for the full deploy + secret setup.
  */
 export const recognizeProduct = onCall(
-  { secrets: [anthropicApiKey], cors: false, timeoutSeconds: 30 },
+  // `invoker: "public"` allows the Cloud Run service underneath this function to be reached
+  // at all — new GCP projects default to blocking unauthenticated (from IAM's point of view)
+  // invocations since late 2024. This is safe here: it only affects the network-layer IAM
+  // check, not application access — the actual sign-in + premium check below still runs on
+  // every call via Firebase's own callable-function auth (`request.auth`), which is separate
+  // from and unaffected by this setting.
+  { secrets: [anthropicApiKey], cors: false, timeoutSeconds: 30, invoker: "public" },
   async (request) => {
     const uid = request.auth?.uid;
     if (!uid) {
