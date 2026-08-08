@@ -383,6 +383,14 @@
     <string name="statistics_range_month">Diesen Monat</string>
     <string name="statistics_by_actor">Pro Haushaltsmitglied</string>
     <string name="statistics_scan_count_format">%1$dx</string>
+    <string name="statistics_section_health">Vorratsgesundheit</string>
+    <string name="statistics_expiring_soon">Bald ablaufend</string>
+    <string name="statistics_low_stock">Wenig Vorrat</string>
+    <string name="statistics_section_range_activity">Aktivität in diesem Zeitraum</string>
+    <string name="statistics_removed">Entfernt</string>
+    <string name="statistics_added_to_list">Zur Liste hinzugefügt</string>
+    <string name="statistics_busiest_day_title">Aktivster Scan-Tag</string>
+    <string name="statistics_busiest_day_format">%1$s ist meist dein aktivster Scan-Tag</string>
 
     <!-- Home screen widget -->
     <string name="widget_shopping_list_title">Einkaufsliste</string>
@@ -418,10 +426,14 @@
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Essensplaner</string>
-    <string name="meal_plan_empty_day">Rezept wählen</string>
-    <string name="meal_plan_clear_cd">Geplantes Rezept entfernen</string>
-    <string name="meal_plan_picker_title_format">Rezept wählen für %1$s</string>
+    <string name="meal_plan_empty_day">Mahlzeit hinzufügen</string>
+    <string name="meal_plan_clear_cd">Mahlzeit entfernen</string>
+    <string name="meal_plan_picker_title_format">Mahlzeit hinzufügen für %1$s</string>
     <string name="meal_plan_picker_empty">Keine Vorschläge gefunden. Füge mehr Produkte zu deinem Vorrat hinzu.</string>
+    <string name="meal_plan_manual_entry_label">Eigene Mahlzeit eingeben</string>
+    <string name="meal_plan_manual_entry_placeholder">Z. B. Pasta mit Tomatensauce</string>
+    <string name="meal_plan_manual_entry_add">Hinzufügen</string>
+    <string name="meal_plan_suggestions_label">Oder einen Vorschlag wählen</string>
     <string name="meal_plan_slot_breakfast">Frühstück</string>
     <string name="meal_plan_slot_lunch">Mittagessen</string>
     <string name="meal_plan_slot_dinner">Abendessen</string>
@@ -441,6 +453,16 @@
     <string name="receipt_scan_no_items">Auf diesem Kassenbon wurden keine Produkte erkannt.</string>
     <string name="receipt_scan_confirm_hint">Überprüfe und passe die erkannten Produkte an, bevor du sie hinzufügst.</string>
     <string name="receipt_scan_confirm_action">Zum Vorrat hinzufügen</string>
+
+    <!-- KI-Produkterkennung (Beta) -->
+    <string name="ai_recognize_title">KI-Produkterkennung</string>
+    <string name="ai_recognize_hint">Mach ein Foto vom Produkt</string>
+    <string name="ai_recognize_capture_cd">Foto aufnehmen</string>
+    <string name="ai_recognize_failed">Kein Produkt auf dem Foto erkannt. Versuche es mit besserer Beleuchtung erneut.</string>
+    <string name="ai_recognize_retry">Erneut versuchen</string>
+    <string name="ai_recognize_confidence_format">Erkannt als \'%1$s\' (%2$d %% sicher)</string>
+    <string name="ai_recognize_disclaimer">Die KI gibt eine Einschätzung anhand des Fotos — überprüfe Name und Kategorie unten, bevor du hinzufügst.</string>
+    <string name="ai_recognize_confirm">Zum Vorrat hinzufügen</string>
 
     <!-- Premium -->
     <string name="premium_title">Premium</string>

@@ -91,6 +91,7 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.mlkit.barcode.scanning)
     implementation(libs.mlkit.text.recognition)
+    implementation(libs.mlkit.image.labeling)
 
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.converter.gson)

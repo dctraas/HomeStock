@@ -21,9 +21,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CalendarToday
+import androidx.compose.material.icons.filled.EventBusy
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.PlaylistAddCheck
 import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.RemoveShoppingCart
+import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -40,11 +45,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import java.time.DayOfWeek
+import java.time.format.TextStyle
+import java.util.Locale
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -99,7 +108,25 @@ fun StatisticsScreen(onBack: () -> Unit) {
             item {
                 TimeRangeToggle(selected = uiState.timeRange, onSelect = viewModel::onTimeRangeChange)
             }
+
+            // Voorraadgezondheid — always current, not tied to the time-range toggle above
+            // (the toggle only affects "how far back" activity counts look; expiring/low-stock
+            // items are a snapshot of right now regardless of that setting).
+            item {
+                Text(stringResource(R.string.statistics_section_health), style = MaterialTheme.typography.titleMedium)
+            }
+            item { InventoryHealthRow(expiringSoonCount = uiState.expiringSoonCount, lowStockCount = uiState.lowStockCount) }
+
             item { SummaryRow(uiState) }
+
+            item {
+                Text(stringResource(R.string.statistics_section_range_activity), style = MaterialTheme.typography.titleMedium)
+            }
+            item { RangeActivityRow(removedInRange = uiState.removedInRange, addedToListInRange = uiState.addedToShoppingListInRange) }
+
+            uiState.busiestWeekday?.let { day ->
+                item { BusiestDayCard(day) }
+            }
 
             item {
                 Text(stringResource(R.string.statistics_most_scanned), style = MaterialTheme.typography.titleMedium)
@@ -196,7 +223,13 @@ private fun SummaryRow(uiState: StatisticsUiState) {
 }
 
 @Composable
-private fun StatCard(icon: ImageVector, value: String, label: String, modifier: Modifier = Modifier) {
+private fun StatCard(
+    icon: ImageVector,
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+    accentColor: Color = MaterialTheme.colorScheme.primary,
+) {
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -210,18 +243,101 @@ private fun StatCard(icon: ImageVector, value: String, label: String, modifier: 
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
+                tint = accentColor,
                 modifier = Modifier.size(22.dp),
             )
             Text(
                 text = value,
                 style = MaterialTheme.typography.titleLarge,
+                color = accentColor,
                 modifier = Modifier.padding(top = 8.dp),
             )
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/**
+ * A snapshot of current stock, not tied to the time-range toggle above — expiring or
+ * low-stock items are true right now regardless of which "since" window is selected.
+ * Both counts use the theme's error color once they're above zero, since both are
+ * actionable ("go check the fridge" / "add these to your list") rather than neutral facts.
+ */
+@Composable
+private fun InventoryHealthRow(expiringSoonCount: Int, lowStockCount: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        StatCard(
+            icon = Icons.Filled.EventBusy,
+            value = expiringSoonCount.toString(),
+            label = stringResource(R.string.statistics_expiring_soon),
+            accentColor = if (expiringSoonCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+            modifier = Modifier.weight(1f),
+        )
+        StatCard(
+            icon = Icons.Filled.TrendingDown,
+            value = lowStockCount.toString(),
+            label = stringResource(R.string.statistics_low_stock),
+            accentColor = if (lowStockCount > 0) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+/** Two more activity counts for the selected time range, alongside "scans" in [SummaryRow]. */
+@Composable
+private fun RangeActivityRow(removedInRange: Int, addedToListInRange: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        StatCard(
+            icon = Icons.Filled.RemoveShoppingCart,
+            value = removedInRange.toString(),
+            label = stringResource(R.string.statistics_removed),
+            modifier = Modifier.weight(1f),
+        )
+        StatCard(
+            icon = Icons.Filled.PlaylistAddCheck,
+            value = addedToListInRange.toString(),
+            label = stringResource(R.string.statistics_added_to_list),
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun BusiestDayCard(day: DayOfWeek) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = SoftCardShapeCompact,
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.Insights,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp),
+            )
+            Text(
+                text = stringResource(
+                    R.string.statistics_busiest_day_format,
+                    day.getDisplayName(TextStyle.FULL, Locale.getDefault())
+                        .replaceFirstChar { it.uppercase(Locale.getDefault()) },
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(start = 12.dp),
             )
         }
     }

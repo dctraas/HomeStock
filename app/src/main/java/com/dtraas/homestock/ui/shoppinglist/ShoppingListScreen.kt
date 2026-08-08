@@ -599,12 +599,16 @@ private fun ShoppingListRow(
             // Modifier.size() constrains its layout box to — a plain .size() only shrinks the
             // surrounding space (which is why this previously only affected the gap to the
             // image, not the checkbox itself). scale() is a render-layer transform and is what
-            // actually shrinks the drawn checkbox; .size() below just keeps its footprint in
-            // the row compact and proportional to the smaller visual.
+            // actually shrinks the drawn checkbox; .size() keeps its footprint in the row
+            // compact and proportional to the smaller visual. The leading `padding(end = ...)`
+            // has to be the OUTERMOST modifier (i.e. applied before .size()) to actually add
+            // extra space after the checkbox's fixed 20dp box, rather than just eating into
+            // that box's own content area — it's the gap to the product image right after it,
+            // previously 0dp (the two sat flush against each other).
             Checkbox(
                 checked = item.isChecked,
                 onCheckedChange = onCheckedChange,
-                modifier = Modifier.size(20.dp).scale(0.7f),
+                modifier = Modifier.padding(end = 10.dp).size(20.dp).scale(0.7f),
             )
             ProductImage(
                 imageUrl = item.imageUrl,

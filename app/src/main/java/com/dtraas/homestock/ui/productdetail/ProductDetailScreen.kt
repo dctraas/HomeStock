@@ -132,6 +132,11 @@ fun ProductDetailScreen(
     var allergensExpanded by remember { mutableStateOf(false) }
     var dietLabelsExpanded by remember { mutableStateOf(false) }
     var productDetailsExpanded by remember { mutableStateOf(false) }
+    // Attached to a zero-height marker right after the Product details card (see below)
+    // rather than to the section header itself — bringIntoView() scrolls the minimum
+    // distance needed to reveal its target, so anchoring it past the card's last field
+    // is what makes the edit button scroll all the way to the BOTTOM of the section
+    // (showing the whole card) instead of stopping as soon as just the header is visible.
     val productDetailsBringIntoViewRequester = remember { BringIntoViewRequester() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -157,6 +162,21 @@ fun ProductDetailScreen(
                     }
                 },
                 actions = {
+                    // Toevoegen aan boodschappenlijst / Verwijderen used to live buried inside
+                    // the Voorraad card; both act on the product as a whole (not specifically
+                    // its stock row), so they now sit here as top-level screen actions instead —
+                    // a more logical spot than tucked away in one particular section.
+                    if (stillInInventory) {
+                        IconButton(onClick = viewModel::addToShoppingList) {
+                            Icon(
+                                Icons.Filled.PlaylistAdd,
+                                contentDescription = stringResource(R.string.product_detail_add_to_shopping_list),
+                            )
+                        }
+                        IconButton(onClick = { showDeleteConfirm = true }) {
+                            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.product_detail_remove))
+                        }
+                    }
                     // The favorite star used to live here; it now sits on the hero image (see
                     // ProductHero) so this slot can host the edit button, which expands and
                     // scrolls to the "Product details" section below instead of navigating away.
@@ -294,40 +314,20 @@ fun ProductDetailScreen(
                             minQuantity = uiState.minQuantity,
                             onChange = viewModel::setMinQuantity,
                         )
-
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(24.dp, Alignment.CenterHorizontally),
-                        ) {
-                            IconButton(onClick = viewModel::addToShoppingList) {
-                                Icon(
-                                    Icons.Filled.PlaylistAdd,
-                                    contentDescription = stringResource(R.string.product_detail_add_to_shopping_list),
-                                )
-                            }
-                            IconButton(onClick = { showDeleteConfirm = true }) {
-                                Icon(
-                                    Icons.Filled.Delete,
-                                    contentDescription = stringResource(R.string.product_detail_remove),
-                                )
-                            }
-                        }
                     }
                 }
             }
 
             // Product details — editable name/brand/category/unit, collapsed by default. The
             // edit button in the top app bar (where the favorite star used to be) expands this
-            // and scrolls it into view rather than navigating to a separate screen, since it
-            // already lives right here.
+            // and scrolls all the way to its bottom rather than navigating to a separate
+            // screen, since it already lives right here.
             product?.let { p ->
                 CollapsibleSectionHeader(
                     title = stringResource(R.string.product_detail_editable_title),
                     expanded = productDetailsExpanded,
                     onToggle = { productDetailsExpanded = !productDetailsExpanded },
-                    modifier = Modifier
-                        .padding(top = sectionGap)
-                        .bringIntoViewRequester(productDetailsBringIntoViewRequester),
+                    modifier = Modifier.padding(top = sectionGap),
                 )
                 if (productDetailsExpanded) {
                     ProductDetailsCard(
@@ -343,6 +343,9 @@ fun ProductDetailScreen(
                         modifier = Modifier.padding(top = headerToCardGap),
                     )
                 }
+                // Zero-height marker right after the card — see productDetailsBringIntoViewRequester
+                // above for why the edit button targets this instead of the header.
+                Spacer(modifier = Modifier.bringIntoViewRequester(productDetailsBringIntoViewRequester))
             }
 
             // Voedingsinformatie — no overarching group header; each card is its own
@@ -643,15 +646,28 @@ private fun ProductDetailsCard(
             )
             // Note is a field on the inventory entry, not the catalog product — nothing to
             // save it against for a product that isn't (or no longer) in stock.
+            //
+            // Deliberately NOT using OutlinedTextField's own floating `label` here like the
+            // fields above do: with both `label` and `placeholder` set, Material3 only shows
+            // the placeholder once the field is focused (the unfocused, empty label sits
+            // exactly where the placeholder would go) — so the title would only sometimes be
+            // the small floated label, and the example text would stay hidden until tapped.
+            // A persistent title above the field keeps both visible at all times instead.
             if (showNote) {
-                OutlinedTextField(
-                    value = noteText,
-                    onValueChange = { noteText = it },
-                    label = { Text(stringResource(R.string.product_detail_note_title)) },
-                    placeholder = { Text(stringResource(R.string.product_detail_note_placeholder)) },
-                    minLines = 3,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Text(
+                        text = stringResource(R.string.product_detail_note_title),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    OutlinedTextField(
+                        value = noteText,
+                        onValueChange = { noteText = it },
+                        placeholder = { Text(stringResource(R.string.product_detail_note_placeholder)) },
+                        minLines = 3,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
             }
         }
     }

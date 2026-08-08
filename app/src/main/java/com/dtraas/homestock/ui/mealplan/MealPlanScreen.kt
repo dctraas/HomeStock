@@ -25,9 +25,11 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -127,10 +129,10 @@ fun MealPlanScreen(onBack: () -> Unit, onRecipeClick: (String) -> Unit) {
             MealSlot.ORDERED.forEach { slot ->
                 SlotCard(
                     label = stringResource(slot.labelRes),
-                    planned = uiState.plan[slot],
+                    planned = uiState.plan[slot].orEmpty(),
                     onAddClick = { viewModel.openPicker(slot) },
                     onOpenClick = onRecipeClick,
-                    onClear = { viewModel.clearSlot(slot) },
+                    onRemove = { meal -> viewModel.removeMeal(slot, meal) },
                 )
             }
         }
@@ -140,6 +142,9 @@ fun MealPlanScreen(onBack: () -> Unit, onRecipeClick: (String) -> Unit) {
     if (pickerSlot != null) {
         MealPickerDialog(
             titleText = stringResource(R.string.meal_plan_picker_title_format, stringResource(pickerSlot.labelRes)),
+            manualEntryText = uiState.manualEntryText,
+            onManualEntryTextChange = viewModel::onManualEntryTextChange,
+            onManualEntryAdd = viewModel::addManualMeal,
             isLoading = uiState.isPickerLoading,
             suggestions = uiState.pickerSuggestions,
             onSelect = viewModel::pickMeal,
@@ -148,70 +153,99 @@ fun MealPlanScreen(onBack: () -> Unit, onRecipeClick: (String) -> Unit) {
     }
 }
 
+/**
+ * A slot can now hold zero, one, or several planned meals — a household may want more than
+ * one dish lined up for e.g. avondeten — so this renders one row per [PlannedMeal] plus a
+ * trailing "add" row that's always present, rather than a single card that's either "empty"
+ * or "has one recipe". Only meals with a [PlannedMeal.recipeId] (picked from a suggestion,
+ * not typed by hand) are clickable through to the recipe detail screen.
+ */
 @Composable
 private fun SlotCard(
     label: String,
-    planned: PlannedMeal?,
+    planned: List<PlannedMeal>,
     onAddClick: () -> Unit,
     onOpenClick: (String) -> Unit,
-    onClear: () -> Unit,
+    onRemove: (PlannedMeal) -> Unit,
 ) {
     Card(
-        onClick = { if (planned != null) onOpenClick(planned.mealId) else onAddClick() },
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Text(text = label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+            planned.forEach { meal ->
+                PlannedMealRow(
+                    meal = meal,
+                    onClick = { if (meal.recipeId != null) onOpenClick(meal.recipeId) },
+                    onRemove = { onRemove(meal) },
+                )
+            }
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+                    .clickable(onClick = onAddClick),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (planned != null) {
-                    if (planned.thumbnailUrl != null) {
-                        AsyncImage(
-                            model = planned.thumbnailUrl,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.size(48.dp).clip(SoftImageShape),
-                        )
-                    }
-                    Text(
-                        text = planned.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f).padding(start = 12.dp),
-                    )
-                    IconButton(onClick = onClear) {
-                        Icon(
-                            imageVector = Icons.Filled.Close,
-                            contentDescription = stringResource(R.string.meal_plan_clear_cd),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                } else {
-                    Text(
-                        text = stringResource(R.string.meal_plan_empty_day),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.weight(1f),
-                    )
-                    Icon(
-                        imageVector = Icons.Filled.Add,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
+                Text(
+                    text = stringResource(R.string.meal_plan_empty_day),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    imageVector = Icons.Filled.Add,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
 }
 
 @Composable
+private fun PlannedMealRow(meal: PlannedMeal, onClick: () -> Unit, onRemove: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 8.dp)
+            .clickable(enabled = meal.recipeId != null, onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (meal.thumbnailUrl != null) {
+            AsyncImage(
+                model = meal.thumbnailUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.size(48.dp).clip(SoftImageShape),
+            )
+        }
+        Text(
+            text = meal.name,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f).padding(start = 12.dp),
+        )
+        IconButton(onClick = onRemove) {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = stringResource(R.string.meal_plan_clear_cd),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Offers both ways to add a meal to a slot: typing one by hand, or picking from recipe suggestions below it. */
+@Composable
 private fun MealPickerDialog(
     titleText: String,
+    manualEntryText: String,
+    onManualEntryTextChange: (String) -> Unit,
+    onManualEntryAdd: () -> Unit,
     isLoading: Boolean,
     suggestions: List<RecipeSuggestion>,
     onSelect: (RecipeSuggestion) -> Unit,
@@ -221,24 +255,58 @@ private fun MealPickerDialog(
         onDismissRequest = onDismiss,
         title = { Text(titleText) },
         text = {
-            when {
-                isLoading -> Box(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    CircularProgressIndicator()
-                }
-                suggestions.isEmpty() -> Text(
-                    text = stringResource(R.string.meal_plan_picker_empty),
-                    style = MaterialTheme.typography.bodyMedium,
+            Column {
+                Text(
+                    text = stringResource(R.string.meal_plan_manual_entry_label),
+                    style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                else -> LazyColumn(
-                    modifier = Modifier.heightIn(max = 400.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    items(suggestions, key = { it.meal.id }) { suggestion ->
-                        PickerRow(suggestion = suggestion, onClick = { onSelect(suggestion) })
+                    OutlinedTextField(
+                        value = manualEntryText,
+                        onValueChange = onManualEntryTextChange,
+                        placeholder = { Text(stringResource(R.string.meal_plan_manual_entry_placeholder)) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(
+                        onClick = onManualEntryAdd,
+                        enabled = manualEntryText.isNotBlank(),
+                        modifier = Modifier.padding(start = 8.dp),
+                    ) {
+                        Text(stringResource(R.string.meal_plan_manual_entry_add))
+                    }
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+                Text(
+                    text = stringResource(R.string.meal_plan_suggestions_label),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                when {
+                    isLoading -> Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                    suggestions.isEmpty() -> Text(
+                        text = stringResource(R.string.meal_plan_picker_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    else -> LazyColumn(
+                        modifier = Modifier.heightIn(max = 300.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        items(suggestions, key = { it.meal.id }) { suggestion ->
+                            PickerRow(suggestion = suggestion, onClick = { onSelect(suggestion) })
+                        }
                     }
                 }
             }

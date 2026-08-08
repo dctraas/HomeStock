@@ -383,6 +383,14 @@
     <string name="statistics_range_month">Este mes</string>
     <string name="statistics_by_actor">Por miembro del hogar</string>
     <string name="statistics_scan_count_format">%1$dx</string>
+    <string name="statistics_section_health">Salud del inventario</string>
+    <string name="statistics_expiring_soon">Por caducar</string>
+    <string name="statistics_low_stock">Poca existencia</string>
+    <string name="statistics_section_range_activity">Actividad en este período</string>
+    <string name="statistics_removed">Eliminado</string>
+    <string name="statistics_added_to_list">Añadido a la lista</string>
+    <string name="statistics_busiest_day_title">Día de más escaneos</string>
+    <string name="statistics_busiest_day_format">%1$s suele ser tu día con más escaneos</string>
 
     <!-- Home screen widget -->
     <string name="widget_shopping_list_title">Lista de la compra</string>
@@ -418,10 +426,14 @@
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Planificador de comidas</string>
-    <string name="meal_plan_empty_day">Elegir una receta</string>
-    <string name="meal_plan_clear_cd">Quitar receta planificada</string>
-    <string name="meal_plan_picker_title_format">Elige una receta para %1$s</string>
+    <string name="meal_plan_empty_day">Añadir una comida</string>
+    <string name="meal_plan_clear_cd">Quitar comida</string>
+    <string name="meal_plan_picker_title_format">Añadir una comida para %1$s</string>
     <string name="meal_plan_picker_empty">No se encontraron sugerencias. Añade más productos a tu inventario.</string>
+    <string name="meal_plan_manual_entry_label">Escribe tu propia comida</string>
+    <string name="meal_plan_manual_entry_placeholder">Ej. Pasta con salsa de tomate</string>
+    <string name="meal_plan_manual_entry_add">Añadir</string>
+    <string name="meal_plan_suggestions_label">O elige una sugerencia</string>
     <string name="meal_plan_slot_breakfast">Desayuno</string>
     <string name="meal_plan_slot_lunch">Comida</string>
     <string name="meal_plan_slot_dinner">Cena</string>
@@ -441,6 +453,16 @@
     <string name="receipt_scan_no_items">No se reconocieron productos en este ticket.</string>
     <string name="receipt_scan_confirm_hint">Revisa y ajusta los productos reconocidos antes de añadirlos.</string>
     <string name="receipt_scan_confirm_action">Añadir al inventario</string>
+
+    <!-- Reconocimiento de productos por IA (Beta) -->
+    <string name="ai_recognize_title">Reconocimiento por IA</string>
+    <string name="ai_recognize_hint">Haz una foto del producto</string>
+    <string name="ai_recognize_capture_cd">Hacer foto</string>
+    <string name="ai_recognize_failed">No se ha reconocido ningún producto en la foto. Inténtalo de nuevo con mejor iluminación.</string>
+    <string name="ai_recognize_retry">Intentar de nuevo</string>
+    <string name="ai_recognize_confidence_format">Reconocido como \'%1$s\' (%2$d%% de confianza)</string>
+    <string name="ai_recognize_disclaimer">La IA da una indicación basada en la foto — revisa y ajusta el nombre y la categoría abajo antes de añadirlo.</string>
+    <string name="ai_recognize_confirm">Añadir al inventario</string>
 
     <!-- Premium -->
     <string name="premium_title">Premium</string>

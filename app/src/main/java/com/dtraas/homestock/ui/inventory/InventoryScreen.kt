@@ -78,6 +78,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -447,7 +448,7 @@ fun InventoryScreen(
                     } else {
                         uiState.groupedInventory.forEach { (category, itemsInCategory) ->
                             item(span = { GridItemSpan(maxLineSpan) }) {
-                                CategoryHeader(category, itemCount = itemsInCategory.size)
+                                CategoryHeader(category, itemCount = itemsInCategory.size, horizontalPadding = 0.dp)
                             }
                             items(itemsInCategory, key = { it.barcode }) { item ->
                                 InventoryGridTile(
@@ -603,14 +604,25 @@ private fun FilterMenuButton(
 }
 
 @Composable
-private fun CategoryHeader(category: Category, itemCount: Int) {
+private fun CategoryHeader(
+    category: Category,
+    itemCount: Int,
+    // The list view's LazyColumn has no horizontal contentPadding of its own, so this
+    // header needs its own 16dp inset to land flush with InventoryRow's cards below it
+    // (which get that same 16dp from their own outer padding). The grid view is the
+    // opposite: its LazyVerticalGrid already applies a uniform 12dp contentPadding to
+    // every item including this header, so adding another 16dp on top of that pushed
+    // the header noticeably further from the edge than the tiles' own left edge below
+    // it — grid callers pass 0.dp here so the header lines up flush with the tiles.
+    horizontalPadding: Dp = 16.dp,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
         modifier = Modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.surface)
-            .padding(horizontal = 16.dp, vertical = 10.dp),
+            .padding(horizontal = horizontalPadding, vertical = 10.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
@@ -842,36 +854,41 @@ private fun InventoryGridTile(
                     modifier = Modifier.padding(top = 1.dp),
                 )
             }
+            // Two separate rows rather than one QuantityStepper-plus-two-icon-buttons row —
+            // in a 3-column grid a tile is only around 90-110dp wide, and the stepper (~100dp)
+            // plus both icon buttons (~64dp) together need well over that, which used to make
+            // the row overflow the tile: controls crowded together with no clean alignment,
+            // and the add-to-shopping-list button pushed out past the tile's edge entirely.
+            // Splitting them across two rows keeps each row comfortably within tile width.
+            QuantityStepper(
+                quantity = item.quantity,
+                onDecrease = onDecrease,
+                onIncrease = onIncrease,
+                dense = true,
+                modifier = Modifier.padding(top = 4.dp),
+            )
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.End,
             ) {
-                QuantityStepper(
-                    quantity = item.quantity,
-                    onDecrease = onDecrease,
-                    onIncrease = onIncrease,
-                    dense = true,
-                )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    IconButton(onClick = onToggleFavorite, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            imageVector = if (item.isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                            contentDescription = stringResource(
-                                if (item.isFavorite) R.string.inventory_unmark_favorite_cd else R.string.inventory_mark_favorite_cd,
-                            ),
-                            tint = if (item.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
-                    IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            Icons.Filled.AddShoppingCart,
-                            contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
+                IconButton(onClick = onToggleFavorite, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        imageVector = if (item.isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                        contentDescription = stringResource(
+                            if (item.isFavorite) R.string.inventory_unmark_favorite_cd else R.string.inventory_mark_favorite_cd,
+                        ),
+                        tint = if (item.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
+                IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        Icons.Filled.AddShoppingCart,
+                        contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp),
+                    )
                 }
             }
         }

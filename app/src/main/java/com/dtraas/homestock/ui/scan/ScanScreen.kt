@@ -12,6 +12,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
@@ -74,6 +76,7 @@ fun ScanScreen(
     isActive: Boolean,
     onNeedsConfirmation: (String) -> Unit,
     onSearchClick: () -> Unit,
+    onAiRecognizeClick: () -> Unit,
 ) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: ScanViewModel = viewModel(
@@ -146,22 +149,40 @@ fun ScanScreen(
                         }
                     },
                 )
-                Surface(
-                    onClick = onSearchClick,
+                Column(
                     modifier = Modifier
                         .padding(padding)
                         .padding(16.dp)
-                        .align(Alignment.TopEnd)
-                        .size(48.dp),
-                    shape = CircleShape,
-                    color = Color.Black.copy(alpha = 0.6f),
+                        .align(Alignment.TopEnd),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        Icon(
-                            imageVector = Icons.Filled.Search,
-                            contentDescription = stringResource(R.string.scan_search_by_name_cd),
-                            tint = Color.White,
-                        )
+                    Surface(
+                        onClick = onSearchClick,
+                        modifier = Modifier.size(48.dp),
+                        shape = CircleShape,
+                        color = Color.Black.copy(alpha = 0.6f),
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Icon(
+                                imageVector = Icons.Filled.Search,
+                                contentDescription = stringResource(R.string.scan_search_by_name_cd),
+                                tint = Color.White,
+                            )
+                        }
+                    }
+                    Surface(
+                        onClick = onAiRecognizeClick,
+                        modifier = Modifier.size(48.dp),
+                        shape = CircleShape,
+                        color = Color.Black.copy(alpha = 0.6f),
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Icon(
+                                imageVector = Icons.Filled.AutoAwesome,
+                                contentDescription = stringResource(R.string.ai_recognize_title),
+                                tint = Color.White,
+                            )
+                        }
                     }
                 }
             }

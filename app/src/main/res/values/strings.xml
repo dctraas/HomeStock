@@ -384,6 +384,14 @@
     <string name="statistics_range_month">Deze maand</string>
     <string name="statistics_by_actor">Per huisgenoot</string>
     <string name="statistics_scan_count_format">%1$dx</string>
+    <string name="statistics_section_health">Voorraadgezondheid</string>
+    <string name="statistics_expiring_soon">Bijna houdbaar</string>
+    <string name="statistics_low_stock">Laag op voorraad</string>
+    <string name="statistics_section_range_activity">Activiteit deze periode</string>
+    <string name="statistics_removed">Verwijderd</string>
+    <string name="statistics_added_to_list">Aan lijst toegevoegd</string>
+    <string name="statistics_busiest_day_title">Drukste scandag</string>
+    <string name="statistics_busiest_day_format">%1$s is doorgaans je drukste scandag</string>
 
     <!-- Home screen widget -->
     <string name="widget_shopping_list_title">Boodschappenlijst</string>
@@ -419,10 +427,14 @@
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Maaltijdplanner</string>
-    <string name="meal_plan_empty_day">Kies een recept</string>
-    <string name="meal_plan_clear_cd">Gepland recept verwijderen</string>
-    <string name="meal_plan_picker_title_format">Kies een recept voor %1$s</string>
+    <string name="meal_plan_empty_day">Maaltijd toevoegen</string>
+    <string name="meal_plan_clear_cd">Maaltijd verwijderen</string>
+    <string name="meal_plan_picker_title_format">Maaltijd toevoegen voor %1$s</string>
     <string name="meal_plan_picker_empty">Geen suggesties gevonden. Voeg meer producten toe aan je voorraad.</string>
+    <string name="meal_plan_manual_entry_label">Zelf een maaltijd invoeren</string>
+    <string name="meal_plan_manual_entry_placeholder">Bijv. Pasta met tomatensaus</string>
+    <string name="meal_plan_manual_entry_add">Toevoegen</string>
+    <string name="meal_plan_suggestions_label">Of kies een suggestie</string>
     <string name="meal_plan_slot_breakfast">Ontbijt</string>
     <string name="meal_plan_slot_lunch">Lunch</string>
     <string name="meal_plan_slot_dinner">Avondeten</string>
@@ -442,6 +454,16 @@
     <string name="receipt_scan_no_items">Geen producten herkend op dit bonnetje.</string>
     <string name="receipt_scan_confirm_hint">Controleer en pas de herkende producten aan voor je ze toevoegt.</string>
     <string name="receipt_scan_confirm_action">Toevoegen aan voorraad</string>
+
+    <!-- AI-productherkenning (Beta) -->
+    <string name="ai_recognize_title">AI-productherkenning</string>
+    <string name="ai_recognize_hint">Maak een foto van het product</string>
+    <string name="ai_recognize_capture_cd">Foto maken</string>
+    <string name="ai_recognize_failed">Geen product herkend op de foto. Probeer het opnieuw met betere belichting.</string>
+    <string name="ai_recognize_retry">Opnieuw proberen</string>
+    <string name="ai_recognize_confidence_format">Herkend als \'%1$s\' (%2$d%% zeker)</string>
+    <string name="ai_recognize_disclaimer">De AI geeft een indicatie op basis van de foto — controleer en pas de naam en categorie hieronder aan voordat je toevoegt.</string>
+    <string name="ai_recognize_confirm">Toevoegen aan voorraad</string>
 
     <!-- Premium -->
     <string name="premium_title">Premium</string>

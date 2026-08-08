@@ -32,6 +32,7 @@ fun HomeStockTopAppBar(
     scrollBehavior: TopAppBarScrollBehavior? = null,
 ) {
     val contentColor = LocalTopAppBarContentColor.current
+    val containerColor = LocalTopAppBarContainerColor.current
     CenterAlignedTopAppBar(
         title = title,
         modifier = modifier,
@@ -39,7 +40,19 @@ fun HomeStockTopAppBar(
         actions = actions,
         scrollBehavior = scrollBehavior,
         colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-            containerColor = LocalTopAppBarContainerColor.current,
+            containerColor = containerColor,
+            // Explicitly pinned to the same value as containerColor above — left at its
+            // Material3 default, scrolledContainerColor is a pale surfaceContainer tone
+            // completely unrelated to our bold custom containerColor. No screen currently
+            // attaches a scrollBehavior, so nothing should ever blend toward it, but
+            // CenterAlignedTopAppBar animates toward it via animateColorAsState on every
+            // recomposition regardless (its target only pins to containerColor when the
+            // fraction is exactly 0f) — on a screen swap, this bar is a brand-new instance
+            // (each destination composes its own), so the very first frame(s) of that
+            // animation could otherwise show a fraction >0f and briefly flash the pale
+            // default before settling back to containerColor. Matching the two colors
+            // makes that flash impossible regardless of the animation's transient state.
+            scrolledContainerColor = containerColor,
             titleContentColor = contentColor,
             navigationIconContentColor = contentColor,
             actionIconContentColor = contentColor,

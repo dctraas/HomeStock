@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
@@ -105,6 +106,7 @@ private enum class AppLanguage(val tag: String, val labelRes: Int) {
 fun MoreScreen(
     onNavigateToRecipes: () -> Unit = {},
     onNavigateToReceiptScan: () -> Unit = {},
+    onNavigateToAiRecognize: () -> Unit = {},
     onNavigateToMealPlan: () -> Unit = {},
     onNavigateToStatistics: () -> Unit = {},
     onNavigateToPremium: () -> Unit = {},
@@ -222,6 +224,15 @@ fun MoreScreen(
                 title = stringResource(R.string.more_beta_receipt_scan),
                 subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                 onClick = { if (isPremium) onNavigateToReceiptScan() else onNavigateToPremium() },
+            )
+            // Not premium-gated, unlike its siblings above — it's a sibling of "zoeken op
+            // naam" on the Scan tab (another free, barcode-less way to find/add a product),
+            // not a separate bigger "beta" destination the way Recepten/Bonnetje/Statistieken
+            // /Maaltijdplanner are.
+            SettingsRow(
+                icon = Icons.Filled.AutoAwesome,
+                title = stringResource(R.string.ai_recognize_title),
+                onClick = onNavigateToAiRecognize,
             )
             SettingsRow(
                 icon = Icons.Filled.CalendarMonth,

@@ -8,6 +8,7 @@ import com.dtraas.homestock.data.repository.MealPlanRepository
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
 import java.time.LocalDate
+import java.util.UUID
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -16,9 +17,10 @@ import kotlinx.coroutines.launch
 
 data class MealPlanUiState(
     val date: LocalDate = LocalDate.now(),
-    val plan: Map<MealSlot, PlannedMeal?> = emptyMap(),
-    /** Non-null while the "pick a recipe for this slot" dialog is open. */
+    val plan: Map<MealSlot, List<PlannedMeal>> = emptyMap(),
+    /** Non-null while the "add a meal for this slot" dialog is open — offers both a recipe picker and manual entry. */
     val pickerSlot: MealSlot? = null,
+    val manualEntryText: String = "",
     val isPickerLoading: Boolean = false,
     val pickerSuggestions: List<RecipeSuggestion> = emptyList(),
 )
@@ -59,9 +61,11 @@ class MealPlanViewModel(
         observeCurrentDate()
     }
 
-    /** Opens the recipe picker for [slot], loading suggestions fresh every time — inventory may have changed since it was last opened. */
+    /** Opens the "add a meal" dialog for [slot] — recipe suggestions load fresh every time, inventory may have changed since it was last opened. */
     fun openPicker(slot: MealSlot) {
-        _uiState.update { it.copy(pickerSlot = slot, isPickerLoading = true, pickerSuggestions = emptyList()) }
+        _uiState.update {
+            it.copy(pickerSlot = slot, manualEntryText = "", isPickerLoading = true, pickerSuggestions = emptyList())
+        }
         viewModelScope.launch {
             recipeRepository.suggestRecipes()
                 .onSuccess { suggestions -> _uiState.update { it.copy(isPickerLoading = false, pickerSuggestions = suggestions) } }
@@ -70,19 +74,39 @@ class MealPlanViewModel(
     }
 
     fun dismissPicker() {
-        _uiState.update { it.copy(pickerSlot = null, isPickerLoading = false, pickerSuggestions = emptyList()) }
+        _uiState.update { it.copy(pickerSlot = null, manualEntryText = "", isPickerLoading = false, pickerSuggestions = emptyList()) }
+    }
+
+    fun onManualEntryTextChange(text: String) {
+        _uiState.update { it.copy(manualEntryText = text) }
     }
 
     fun pickMeal(suggestion: RecipeSuggestion) {
         val slot = _uiState.value.pickerSlot ?: return
         val date = _uiState.value.date
-        val meal = PlannedMeal(suggestion.meal.id, suggestion.meal.name, suggestion.meal.thumbnailUrl)
-        viewModelScope.launch { mealPlanRepository.setMeal(date, slot, meal) }
+        val meal = PlannedMeal(
+            id = suggestion.meal.id,
+            name = suggestion.meal.name,
+            thumbnailUrl = suggestion.meal.thumbnailUrl,
+            recipeId = suggestion.meal.id,
+        )
+        viewModelScope.launch { mealPlanRepository.addMeal(date, slot, meal) }
         dismissPicker()
     }
 
-    fun clearSlot(slot: MealSlot) {
+    /** Adds the currently-typed [MealPlanUiState.manualEntryText] as a plain (non-recipe) meal — a no-op if it's blank. */
+    fun addManualMeal() {
+        val slot = _uiState.value.pickerSlot ?: return
+        val name = _uiState.value.manualEntryText.trim()
+        if (name.isEmpty()) return
         val date = _uiState.value.date
-        viewModelScope.launch { mealPlanRepository.clearMeal(date, slot) }
+        val meal = PlannedMeal(id = UUID.randomUUID().toString(), name = name)
+        viewModelScope.launch { mealPlanRepository.addMeal(date, slot, meal) }
+        dismissPicker()
+    }
+
+    fun removeMeal(slot: MealSlot, meal: PlannedMeal) {
+        val date = _uiState.value.date
+        viewModelScope.launch { mealPlanRepository.removeMeal(date, slot, meal) }
     }
 }

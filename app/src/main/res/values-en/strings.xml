@@ -383,6 +383,14 @@
     <string name="statistics_range_month">This month</string>
     <string name="statistics_by_actor">By household member</string>
     <string name="statistics_scan_count_format">%1$dx</string>
+    <string name="statistics_section_health">Inventory health</string>
+    <string name="statistics_expiring_soon">Expiring soon</string>
+    <string name="statistics_low_stock">Low stock</string>
+    <string name="statistics_section_range_activity">Activity this period</string>
+    <string name="statistics_removed">Removed</string>
+    <string name="statistics_added_to_list">Added to list</string>
+    <string name="statistics_busiest_day_title">Busiest scan day</string>
+    <string name="statistics_busiest_day_format">%1$s is usually your busiest scan day</string>
 
     <!-- Home screen widget -->
     <string name="widget_shopping_list_title">Shopping list</string>
@@ -418,10 +426,14 @@
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Meal planner</string>
-    <string name="meal_plan_empty_day">Choose a recipe</string>
-    <string name="meal_plan_clear_cd">Remove planned recipe</string>
-    <string name="meal_plan_picker_title_format">Choose a recipe for %1$s</string>
+    <string name="meal_plan_empty_day">Add a meal</string>
+    <string name="meal_plan_clear_cd">Remove meal</string>
+    <string name="meal_plan_picker_title_format">Add a meal for %1$s</string>
     <string name="meal_plan_picker_empty">No suggestions found. Add more products to your inventory.</string>
+    <string name="meal_plan_manual_entry_label">Type your own meal</string>
+    <string name="meal_plan_manual_entry_placeholder">E.g. Pasta with tomato sauce</string>
+    <string name="meal_plan_manual_entry_add">Add</string>
+    <string name="meal_plan_suggestions_label">Or pick a suggestion</string>
     <string name="meal_plan_slot_breakfast">Breakfast</string>
     <string name="meal_plan_slot_lunch">Lunch</string>
     <string name="meal_plan_slot_dinner">Dinner</string>
@@ -441,6 +453,16 @@
     <string name="receipt_scan_no_items">No products recognized on this receipt.</string>
     <string name="receipt_scan_confirm_hint">Check and adjust the recognized products before adding them.</string>
     <string name="receipt_scan_confirm_action">Add to inventory</string>
+
+    <!-- AI product recognition (Beta) -->
+    <string name="ai_recognize_title">AI product recognition</string>
+    <string name="ai_recognize_hint">Take a photo of the product</string>
+    <string name="ai_recognize_capture_cd">Take photo</string>
+    <string name="ai_recognize_failed">No product recognized in the photo. Try again with better lighting.</string>
+    <string name="ai_recognize_retry">Try again</string>
+    <string name="ai_recognize_confidence_format">Recognized as \'%1$s\' (%2$d%% confident)</string>
+    <string name="ai_recognize_disclaimer">The AI gives an indication based on the photo — review and adjust the name and category below before adding.</string>
+    <string name="ai_recognize_confirm">Add to inventory</string>
 
     <!-- Premium -->
     <string name="premium_title">Premium</string>

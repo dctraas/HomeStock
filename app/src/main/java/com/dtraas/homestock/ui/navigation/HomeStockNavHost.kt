@@ -39,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.ui.account.AccountLinkPromptDialog
+import com.dtraas.homestock.ui.airecognize.AiRecognizeScreen
 import com.dtraas.homestock.ui.account.AccountLinkScreen
 import com.dtraas.homestock.ui.household.HouseholdSettingsScreen
 import com.dtraas.homestock.ui.inventory.InventoryScreen
@@ -122,6 +123,7 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                         navController.navigate(Destination.ScanResult.createRoute(barcode))
                     },
                     onSearchClick = { navController.navigate(Destination.SearchProduct.route) },
+                    onAiRecognizeClick = { navController.navigate(Destination.AiRecognize.route) },
                 )
             }
             composable(Destination.Inventory.route) {
@@ -144,6 +146,7 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                 MoreScreen(
                     onNavigateToRecipes = { navController.navigate(Destination.Recipes.route) },
                     onNavigateToReceiptScan = { navController.navigate(Destination.ReceiptScan.route) },
+                    onNavigateToAiRecognize = { navController.navigate(Destination.AiRecognize.route) },
                     onNavigateToMealPlan = { navController.navigate(Destination.MealPlan.route) },
                     onNavigateToStatistics = { navController.navigate(Destination.Statistics.route) },
                     onNavigateToPremium = { navController.navigate(Destination.Premium.route) },
@@ -219,6 +222,14 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
             }
             composable(Destination.ReceiptScan.route) {
                 ReceiptScanScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Destination.AiRecognize.route) {
+                AiRecognizeScreen(
+                    onBack = { navController.popBackStack() },
+                    onNeedsConfirmation = { barcode ->
+                        navController.navigate(Destination.ScanResult.createRoute(barcode))
+                    },
+                )
             }
             composable(Destination.MealPlan.route) {
                 MealPlanScreen(

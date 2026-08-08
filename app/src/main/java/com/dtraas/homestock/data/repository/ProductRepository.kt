@@ -210,8 +210,18 @@ class ProductRepository(
             )
         }
         Result.success(results)
-    } catch (e: Exception) {
+    } catch (e: IOException) {
+        // A genuine connectivity failure (already retried once inside withNetworkRetry) —
+        // this is the only case the UI should show as "Geen verbinding".
         Result.failure(e)
+    } catch (e: Exception) {
+        // Anything else (an HTTP error status, or a response body that didn't parse as
+        // expected) isn't a connectivity problem — Open Food Facts' legacy search endpoint
+        // is known to occasionally answer unusual search terms with something other than
+        // the normal JSON shape. Same idea as the HTTP-404 handling in getOrFetchProduct
+        // above: don't let that surface as "no connection" when connectivity is fine and
+        // this particular search just didn't turn up a usable result.
+        Result.success(emptyList())
     }
 }
 

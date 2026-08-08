@@ -15,6 +15,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import java.time.DayOfWeek
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.ZoneOffset
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StatisticsRepository(
@@ -54,6 +59,47 @@ class StatisticsRepository(
         }
 
     fun observeInventoryCount(): Flow<Int> = inventoryWithProducts().map { it.size }
+
+    /** Items whose expiration date has already passed, or falls within [withinDays] from now. */
+    fun observeExpiringSoonCount(withinDays: Long = 3): Flow<Int> =
+        inventoryWithProducts().map { items ->
+            val cutoff = LocalDate.now().plusDays(withinDays).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+            items.count { (item, _) -> item.expirationDate != null && item.expirationDate <= cutoff }
+        }
+
+    /** Items at or below the minimum quantity threshold the household set for them. */
+    fun observeLowStockCount(): Flow<Int> =
+        inventoryWithProducts().map { items ->
+            items.count { (item, _) -> item.minQuantity != null && item.quantity <= item.minQuantity }
+        }
+
+    /**
+     * How many [type] entries were logged since [sinceMillis] — the same generic activity
+     * count backing "scans in range" above, reused for e.g. "removed in range" or "added to
+     * shopping list in range" to show more than just scan activity for the selected period.
+     */
+    fun observeActivityCountByType(type: ActivityType, sinceMillis: Long): Flow<Int> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(0)
+            } else {
+                collection(householdId, "activityLog").observeSnapshots().map { snapshot ->
+                    snapshot.documents.count {
+                        it.getString("type") == type.storageKey && (it.getLong("timestamp") ?: 0L) >= sinceMillis
+                    }
+                }
+            }
+        }
+
+    /** Which day of the week sees the most scans, all-time — null once there's no scan history yet. */
+    fun observeBusiestWeekday(): Flow<DayOfWeek?> =
+        scanHistory().map { history ->
+            history
+                .groupingBy { Instant.ofEpochMilli(it.scannedAt).atZone(ZoneId.systemDefault()).dayOfWeek }
+                .eachCount()
+                .maxByOrNull { it.value }
+                ?.key
+        }
 
     fun observeCategoryDistribution(): Flow<List<CategoryCount>> =
         inventoryWithProducts().map { items ->
