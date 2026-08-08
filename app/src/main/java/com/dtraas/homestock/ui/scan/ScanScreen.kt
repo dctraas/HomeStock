@@ -291,15 +291,12 @@ private fun CameraPreview(
 
 /**
  * Dims everything outside a centered scan frame and draws corner brackets
- * around it, like a typical barcode-scanner viewfinder. The bracket color is
- * the app's secondary (coral) accent — this is the one screen where that
- * accent gets to be the whole point, marking "aim here" rather than a small
- * badge among mostly-sage chrome.
+ * around it, like a typical barcode-scanner viewfinder.
  */
 @Composable
 private fun ScanOverlay(modifier: Modifier = Modifier) {
     val scrimColor = Color.Black.copy(alpha = 0.55f)
-    val frameColor = MaterialTheme.colorScheme.secondary
+    val frameColor = Color.White
 
     Canvas(modifier = modifier) {
         val frameWidth = size.width * 0.78f

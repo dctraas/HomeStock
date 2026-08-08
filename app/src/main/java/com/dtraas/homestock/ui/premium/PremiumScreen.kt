@@ -88,12 +88,9 @@ fun PremiumScreen(onBack: () -> Unit) {
                 .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Gold (tertiary), not sage — the one badge in the app that's explicitly a
-            // "premium" signifier gets the accent already associated with pantry-staple/
-            // gold-tier cues elsewhere, instead of borrowing the everyday primary color.
             Surface(
                 shape = SoftBadgeShape,
-                color = MaterialTheme.colorScheme.tertiaryContainer,
+                color = MaterialTheme.colorScheme.primaryContainer,
                 modifier = Modifier.size(88.dp),
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -101,7 +98,7 @@ fun PremiumScreen(onBack: () -> Unit) {
                         imageVector = Icons.Filled.WorkspacePremium,
                         contentDescription = null,
                         modifier = Modifier.size(44.dp),
-                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
             }

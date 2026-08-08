@@ -20,10 +20,6 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Cookie
-import androidx.compose.material.icons.filled.DinnerDining
-import androidx.compose.material.icons.filled.LunchDining
-import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,7 +38,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -131,7 +126,6 @@ fun MealPlanScreen(onBack: () -> Unit, onRecipeClick: (String) -> Unit) {
         ) {
             MealSlot.ORDERED.forEach { slot ->
                 SlotCard(
-                    icon = slot.icon,
                     label = stringResource(slot.labelRes),
                     planned = uiState.plan[slot],
                     onAddClick = { viewModel.openPicker(slot) },
@@ -154,21 +148,8 @@ fun MealPlanScreen(onBack: () -> Unit, onRecipeClick: (String) -> Unit) {
     }
 }
 
-// A distinct icon per moment of the day — gold (tertiary), the same accent the rest of
-// the app reserves for pantry/time-of-day cues — keeps this visually separate from the
-// green "in stock" language everywhere else, and lets the four slots be told apart at a
-// glance while scrolling, not just by reading the label.
-private val MealSlot.icon: ImageVector
-    get() = when (this) {
-        MealSlot.BREAKFAST -> Icons.Filled.WbSunny
-        MealSlot.LUNCH -> Icons.Filled.LunchDining
-        MealSlot.DINNER -> Icons.Filled.DinnerDining
-        MealSlot.SNACK -> Icons.Filled.Cookie
-    }
-
 @Composable
 private fun SlotCard(
-    icon: ImageVector,
     label: String,
     planned: PlannedMeal?,
     onAddClick: () -> Unit,
@@ -182,20 +163,7 @@ private fun SlotCard(
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.size(18.dp),
-                )
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.tertiary,
-                    modifier = Modifier.padding(start = 6.dp),
-                )
-            }
+            Text(text = label, style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
             Row(
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,

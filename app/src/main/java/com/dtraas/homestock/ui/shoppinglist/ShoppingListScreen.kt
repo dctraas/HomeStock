@@ -139,11 +139,7 @@ fun ShoppingListScreen() {
             HomeStockTopAppBar(title = { Text(stringResource(R.string.shopping_list_title)) })
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddDialog = true },
-                containerColor = MaterialTheme.colorScheme.secondary,
-                contentColor = MaterialTheme.colorScheme.onSecondary,
-            ) {
+            FloatingActionButton(onClick = { showAddDialog = true }) {
                 Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.shopping_list_add_item_cd))
             }
         },
