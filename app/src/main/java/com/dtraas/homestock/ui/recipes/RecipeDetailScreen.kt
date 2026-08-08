@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.material.icons.outlined.Circle
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -153,11 +154,17 @@ fun RecipeDetailScreen(
                                         modifier = Modifier.size(18.dp),
                                     )
                                 } else {
-                                    Box(modifier = Modifier.size(18.dp))
+                                    Icon(
+                                        imageVector = Icons.Outlined.Circle,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.outline,
+                                        modifier = Modifier.size(18.dp),
+                                    )
                                 }
                                 Text(
                                     text = listOfNotNull(measure.takeIf { it.isNotBlank() }, name).joinToString(" "),
                                     style = MaterialTheme.typography.bodyMedium,
+                                    color = if (haveIt) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(start = 10.dp),
                                 )
                             }

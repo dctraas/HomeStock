@@ -39,6 +39,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -212,12 +214,27 @@ private fun activityIcon(type: ActivityType): ImageVector = when (type) {
     ActivityType.ADDED_TO_SHOPPING_LIST -> Icons.Filled.AddShoppingCart
 }
 
+/**
+ * Badge color by kind of action, using the app's existing semantic tokens rather than a
+ * one-off palette: sage for something added to inventory, gold for a tweak, red for a
+ * removal, coral for a shopping-list action — so the type of activity reads at a glance,
+ * before the text is even read.
+ */
+@Composable
+private fun activityTint(type: ActivityType): Color = when (type) {
+    ActivityType.SCANNED -> MaterialTheme.colorScheme.primary
+    ActivityType.QUANTITY_CHANGED -> MaterialTheme.colorScheme.tertiary
+    ActivityType.REMOVED -> MaterialTheme.colorScheme.error
+    ActivityType.ADDED_TO_SHOPPING_LIST -> MaterialTheme.colorScheme.secondary
+}
+
 @Composable
 private fun AppActivityRow(entry: ActivityLogWithProduct) {
     val type = ActivityType.fromStorageKey(entry.type)
     val formatted = remember(entry.timestamp) {
         timestampFormatter.format(Instant.ofEpochMilli(entry.timestamp).atZone(ZoneId.systemDefault()))
     }
+    val tint = activityTint(type)
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -229,7 +246,7 @@ private fun AppActivityRow(entry: ActivityLogWithProduct) {
         ) {
             Surface(
                 shape = SoftBadgeShape,
-                color = MaterialTheme.colorScheme.secondaryContainer,
+                color = lerp(MaterialTheme.colorScheme.surfaceContainerHigh, tint, 0.28f),
                 modifier = Modifier.size(36.dp),
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -237,7 +254,7 @@ private fun AppActivityRow(entry: ActivityLogWithProduct) {
                         imageVector = activityIcon(type),
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                        tint = tint,
                     )
                 }
             }

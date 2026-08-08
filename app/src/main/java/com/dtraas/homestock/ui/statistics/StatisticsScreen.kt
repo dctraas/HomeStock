@@ -40,6 +40,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
@@ -55,6 +56,7 @@ import com.dtraas.homestock.data.local.dao.TopScannedProduct
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.icon
+import com.dtraas.homestock.ui.components.tint
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 
@@ -330,13 +332,14 @@ private fun CategoryDistributionCard(distribution: List<Pair<Category, Int>>) {
                     Icon(
                         imageVector = category.icon,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = category.tint,
                         modifier = Modifier.size(18.dp),
                     )
                     Column(modifier = Modifier.weight(1f).padding(horizontal = 10.dp)) {
                         Text(stringResource(category.displayNameRes), style = MaterialTheme.typography.bodySmall)
                         ProportionalBar(
                             fraction = count.toFloat() / maxCount.toFloat(),
+                            color = category.tint,
                             modifier = Modifier.padding(top = 4.dp),
                         )
                     }
@@ -352,7 +355,7 @@ private fun CategoryDistributionCard(distribution: List<Pair<Category, Int>>) {
 }
 
 @Composable
-private fun ProportionalBar(fraction: Float, modifier: Modifier = Modifier) {
+private fun ProportionalBar(fraction: Float, modifier: Modifier = Modifier, color: Color = MaterialTheme.colorScheme.primary) {
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -365,7 +368,7 @@ private fun ProportionalBar(fraction: Float, modifier: Modifier = Modifier) {
                 .fillMaxWidth(fraction.coerceIn(0.05f, 1f))
                 .fillMaxHeight()
                 .clip(RoundedCornerShape(3.dp))
-                .background(MaterialTheme.colorScheme.primary),
+                .background(color),
         )
     }
 }
