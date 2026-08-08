@@ -98,6 +98,8 @@ import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.components.StoreDropdown
 import com.dtraas.homestock.ui.components.formatQuantityWithUnit
 import com.dtraas.homestock.ui.components.icon
+import com.dtraas.homestock.ui.components.tint
+import com.dtraas.homestock.ui.components.tintContainer
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
@@ -610,8 +612,8 @@ private fun ShoppingListRow(
                 imageUrl = item.imageUrl,
                 fallbackIcon = category.icon,
                 shape = RoundedCornerShape(8.dp),
-                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
+                containerColor = category.tintContainer,
+                iconTint = category.tint,
                 modifier = Modifier.size(32.dp),
             )
             Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
@@ -711,8 +713,8 @@ private fun ShoppingListGridTile(
                     imageUrl = item.imageUrl,
                     fallbackIcon = category.icon,
                     shape = SoftImageShape,
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    containerColor = category.tintContainer,
+                    iconTint = category.tint,
                     modifier = Modifier.fillMaxSize(),
                 )
             }
@@ -922,6 +924,8 @@ private fun ItemFormAvatar(imageUrl: String?, category: Category) {
         imageUrl = imageUrl,
         fallbackIcon = category.icon,
         shape = RoundedCornerShape(24.dp),
+        containerColor = category.tintContainer,
+        iconTint = category.tint,
         modifier = Modifier.size(88.dp),
     )
 }

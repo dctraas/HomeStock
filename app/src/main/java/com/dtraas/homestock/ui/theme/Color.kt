@@ -25,35 +25,36 @@ val GoldTertiaryContainer = Color(0xFFEFE0BE)
 val OnGoldTertiaryContainer = Color(0xFF3D2C08)
 
 val LinenInk = Color(0xFF2E3B31)
-// The page background itself is plain white (see the Dark variant below) — an explicit
-// choice to keep the ground neutral, with the sage/coral/gold palette carried by
-// primary/secondary/tertiary (icons, badges, buttons). Elevated surfaces (top app bars,
-// cards) step away from that ground through the surfaceContainer* ramp just below: a
-// warm, neutral grey — not sage-tinted — so a card or bar always reads as a distinct
-// layer instead of blending into the page.
-val LinenBackground = Color(0xFFFFFFFF)
+// The page background is a warm, faintly sage-biased "linen" ivory — not pure white.
+// Pure white/black reads as unconsidered (the generic Material default), whereas a
+// neutral with a slight hue lean toward the palette reads as chosen; it's also simply
+// truer to the "Keukenlinnen" name. Elevated surfaces (top app bars, cards) step away
+// from that ground through the surfaceContainer* ramp just below — still a neutral, not
+// sage-tinted the way primary/secondary/tertiary are, so a card or bar always reads as
+// a distinct layer instead of blending into the page.
+val LinenBackground = Color(0xFFFBF7EE)
 val LinenSurfaceVariant = Color(0xFFCBD6C0)
 val OnLinenSurfaceVariant = Color(0xFF4A5B4D)
 val LinenOutline = Color(0xFF8B9686)
 val LinenOutlineVariant = Color(0xFFCBD6C0)
 
-// Ascending "distance" from the white page background — used for e.g. the top app bar
+// Ascending "distance" from the linen page background — used for e.g. the top app bar
 // (surfaceContainer) and cards (surfaceContainerHigh), each meant to read as clearly
 // separate from the page without shouting.
-val LinenSurfaceContainerLowest = Color(0xFFFFFFFF)
-val LinenSurfaceContainerLow = Color(0xFFF9F8F5)
-val LinenSurfaceContainer = Color(0xFFF3F1EC)
-val LinenSurfaceContainerHigh = Color(0xFFECE9E1)
-val LinenSurfaceContainerHighest = Color(0xFFE4E0D5)
+val LinenSurfaceContainerLowest = Color(0xFFFBF7EE)
+val LinenSurfaceContainerLow = Color(0xFFF7F3E4)
+val LinenSurfaceContainer = Color(0xFFF2ECDC)
+val LinenSurfaceContainerHigh = Color(0xFFEAE3CC)
+val LinenSurfaceContainerHighest = Color(0xFFE3D9BE)
 
 // Top app bar container — its own dedicated tone rather than a reuse of
 // surfaceContainer above: a soft, fresh sage tint (this app's primary hue, greatly
 // lightened) so the title bar reads as a deliberate splash of color rather than
-// another shade of grey. Cards stay neutral; this is the one elevated surface that
-// gets to carry the palette. Also pushed to the system status bar itself (see
-// MainActivity) so the color reaches the physical top edge of the screen, not just
-// the app bar's own bounds below it.
-val TopAppBarContainer = Color(0xFFDDEAD6)
+// another shade of the linen ramp. Cards stay neutral; this is the one elevated
+// surface that gets to carry the palette. Also pushed to the system status bar itself
+// (see MainActivity) so the color reaches the physical top edge of the screen, not
+// just the app bar's own bounds below it.
+val TopAppBarContainer = Color(0xFFDCE9D3)
 
 val LinenError = Color(0xFFB3392A)
 val OnLinenError = Color(0xFFFFFFFF)
@@ -76,23 +77,26 @@ val GoldTertiaryContainerDark = Color(0xFF5A431A)
 val OnGoldTertiaryContainerDark = Color(0xFFF3E2B8)
 
 val LinenInkDark = Color(0xFFE7ECE0)
-val LinenBackgroundDark = Color(0xFF000000)
+// Warm near-black rather than pure #000000, mirroring the light theme's linen ivory —
+// same reasoning: chosen, not inherited.
+val LinenBackgroundDark = Color(0xFF131209)
 val LinenSurfaceVariantDark = Color(0xFF2B3327)
 val OnLinenSurfaceVariantDark = Color(0xFFC4CFBD)
 val LinenOutlineDark = Color(0xFF8B9686)
 val LinenOutlineVariantDark = Color(0xFF3A4232)
 
-// Mirror of the light ramp above, but climbing away from black instead of white — still
-// subtle (this stays a dark theme), just no longer indistinguishable from the page.
-val LinenSurfaceContainerLowestDark = Color(0xFF000000)
-val LinenSurfaceContainerLowDark = Color(0xFF0B0C0A)
-val LinenSurfaceContainerDark = Color(0xFF141510)
-val LinenSurfaceContainerHighDark = Color(0xFF1C1D17)
-val LinenSurfaceContainerHighestDark = Color(0xFF25261E)
+// Mirror of the light ramp above, but climbing away from warm near-black instead of
+// linen ivory — still subtle (this stays a dark theme), just no longer indistinguishable
+// from the page.
+val LinenSurfaceContainerLowestDark = Color(0xFF131209)
+val LinenSurfaceContainerLowDark = Color(0xFF171509)
+val LinenSurfaceContainerDark = Color(0xFF1B1911)
+val LinenSurfaceContainerHighDark = Color(0xFF1E1C13)
+val LinenSurfaceContainerHighestDark = Color(0xFF262316)
 
 // Dark counterpart of TopAppBarContainer above — same idea, a dark, desaturated sage
 // rather than a shade of the neutral surfaceContainer ramp.
-val TopAppBarContainerDark = Color(0xFF15231A)
+val TopAppBarContainerDark = Color(0xFF192416)
 
 val LinenErrorDark = Color(0xFFF2A08F)
 val OnLinenErrorDark = Color(0xFF4A130A)

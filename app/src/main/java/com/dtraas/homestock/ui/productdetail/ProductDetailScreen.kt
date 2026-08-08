@@ -85,6 +85,8 @@ import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.CategoryDropdown
 import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.components.icon
+import com.dtraas.homestock.ui.components.tint
+import com.dtraas.homestock.ui.components.tintContainer
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -455,7 +457,7 @@ private fun ProductHero(
     Box(modifier = Modifier.size(160.dp)) {
         Surface(
             shape = RoundedCornerShape(28.dp),
-            color = MaterialTheme.colorScheme.primaryContainer,
+            color = category.tintContainer,
             modifier = Modifier.fillMaxSize(),
         ) {
             if (imageUrl != null) {
@@ -471,7 +473,7 @@ private fun ProductHero(
                         imageVector = category.icon,
                         contentDescription = null,
                         modifier = Modifier.size(64.dp),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        tint = category.tint,
                     )
                 }
             }
@@ -507,7 +509,7 @@ private fun ProductHero(
 private fun CategoryChip(category: Category) {
     Surface(
         shape = RoundedCornerShape(50),
-        color = MaterialTheme.colorScheme.secondaryContainer,
+        color = category.tintContainer,
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -517,12 +519,12 @@ private fun CategoryChip(category: Category) {
                 imageVector = category.icon,
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                tint = category.tint,
             )
             Text(
                 text = stringResource(category.displayNameRes),
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                color = category.tint,
                 modifier = Modifier.padding(start = 6.dp),
             )
         }
