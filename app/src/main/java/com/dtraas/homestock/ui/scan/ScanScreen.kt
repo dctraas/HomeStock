@@ -37,6 +37,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -77,6 +78,7 @@ fun ScanScreen(
     onNeedsConfirmation: (String) -> Unit,
     onSearchClick: () -> Unit,
     onAiRecognizeClick: () -> Unit,
+    onNavigateToPremium: () -> Unit,
 ) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: ScanViewModel = viewModel(
@@ -89,6 +91,12 @@ fun ScanScreen(
             }
         },
     )
+    // AI-productherkenning is premium-only — the photo actually leaves the device (to the
+    // recognizeProduct Cloud Function), unlike the on-device barcode scanner this screen
+    // otherwise is, so it carries a real per-scan cost the free tier shouldn't run up.
+    val isPremium by application.container.householdMembersRepository
+        .observeHouseholdIsPremium()
+        .collectAsState(initial = false)
     val context = LocalContext.current
     val activity = context as? Activity
     var hasCameraPermission by remember {
@@ -171,7 +179,7 @@ fun ScanScreen(
                         }
                     }
                     Surface(
-                        onClick = onAiRecognizeClick,
+                        onClick = { if (isPremium) onAiRecognizeClick() else onNavigateToPremium() },
                         modifier = Modifier.size(48.dp),
                         shape = CircleShape,
                         color = Color.Black.copy(alpha = 0.6f),

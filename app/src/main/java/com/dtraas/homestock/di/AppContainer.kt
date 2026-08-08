@@ -6,6 +6,7 @@ import com.dtraas.homestock.data.remote.OpenFoodFactsApi
 import com.dtraas.homestock.data.remote.TheMealDbApi
 import com.dtraas.homestock.data.repository.AccountLinkRepository
 import com.dtraas.homestock.data.repository.ActivityLogRepository
+import com.dtraas.homestock.data.repository.AiRecognitionRepository
 import com.dtraas.homestock.data.repository.BillingRepository
 import com.dtraas.homestock.data.repository.DeviceProfile
 import com.dtraas.homestock.data.repository.DismissedNoticesStore
@@ -26,6 +27,7 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.PersistentCacheSettings
+import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.storage.FirebaseStorage
 import java.util.concurrent.TimeUnit
 import okhttp3.Interceptor
@@ -85,6 +87,14 @@ class AppContainer(context: Context) {
 
     val householdMembersRepository: HouseholdMembersRepository by lazy {
         HouseholdMembersRepository(firestore, storage, householdSession, auth, billingRepository, deviceProfile)
+    }
+
+    // Region must match where the Cloud Function is deployed (see functions/src/index.ts's
+    // setGlobalOptions) — a mismatched region silently fails every call with NOT_FOUND.
+    private val functions: FirebaseFunctions = FirebaseFunctions.getInstance("europe-west1")
+
+    val aiRecognitionRepository: AiRecognitionRepository by lazy {
+        AiRecognitionRepository(functions, householdSession)
     }
 
     // Open Food Facts documents that it throttles/blocks requests carrying a generic HTTP

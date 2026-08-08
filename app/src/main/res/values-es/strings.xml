@@ -459,7 +459,10 @@
     <string name="ai_recognize_title">Reconocimiento por IA</string>
     <string name="ai_recognize_hint">Haz una foto del producto</string>
     <string name="ai_recognize_capture_cd">Hacer foto</string>
+    <string name="ai_recognize_analyzing">Reconociendo producto…</string>
     <string name="ai_recognize_failed">No se ha reconocido ningún producto en la foto. Inténtalo de nuevo con mejor iluminación.</string>
+    <string name="ai_recognize_failed_no_connection">Sin conexión. Comprueba tu conexión a internet e inténtalo de nuevo.</string>
+    <string name="ai_recognize_failed_premium">Esta función solo está disponible con Premium.</string>
     <string name="ai_recognize_retry">Intentar de nuevo</string>
     <string name="ai_recognize_confidence_format">Reconocido como \'%1$s\' (%2$d%% de confianza)</string>
     <string name="ai_recognize_candidate_format">%1$s (%2$d%%)</string>

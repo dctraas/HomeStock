@@ -225,14 +225,15 @@ fun MoreScreen(
                 subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                 onClick = { if (isPremium) onNavigateToReceiptScan() else onNavigateToPremium() },
             )
-            // Not premium-gated, unlike its siblings above — it's a sibling of "zoeken op
-            // naam" on the Scan tab (another free, barcode-less way to find/add a product),
-            // not a separate bigger "beta" destination the way Recepten/Bonnetje/Statistieken
-            // /Maaltijdplanner are.
+            // Premium-gated like its siblings above — unlike the on-device barcode scanner,
+            // the photo actually leaves the device (to the recognizeProduct Cloud Function,
+            // which calls Claude), so this carries a real per-scan cost the free tier
+            // shouldn't be able to run up.
             SettingsRow(
                 icon = Icons.Filled.AutoAwesome,
                 title = stringResource(R.string.ai_recognize_title),
-                onClick = onNavigateToAiRecognize,
+                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                onClick = { if (isPremium) onNavigateToAiRecognize() else onNavigateToPremium() },
             )
             SettingsRow(
                 icon = Icons.Filled.CalendarMonth,

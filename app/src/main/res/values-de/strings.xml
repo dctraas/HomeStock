@@ -459,7 +459,10 @@
     <string name="ai_recognize_title">KI-Produkterkennung</string>
     <string name="ai_recognize_hint">Mach ein Foto vom Produkt</string>
     <string name="ai_recognize_capture_cd">Foto aufnehmen</string>
+    <string name="ai_recognize_analyzing">Produkt wird erkannt…</string>
     <string name="ai_recognize_failed">Kein Produkt auf dem Foto erkannt. Versuche es mit besserer Beleuchtung erneut.</string>
+    <string name="ai_recognize_failed_no_connection">Keine Verbindung. Überprüfe deine Internetverbindung und versuche es erneut.</string>
+    <string name="ai_recognize_failed_premium">Diese Funktion ist nur mit Premium verfügbar.</string>
     <string name="ai_recognize_retry">Erneut versuchen</string>
     <string name="ai_recognize_confidence_format">Erkannt als \'%1$s\' (%2$d %% sicher)</string>
     <string name="ai_recognize_candidate_format">%1$s (%2$d %%)</string>

@@ -456,11 +456,14 @@
     <string name="receipt_scan_confirm_hint">Controleer en pas de herkende producten aan voor je ze toevoegt.</string>
     <string name="receipt_scan_confirm_action">Toevoegen aan voorraad</string>
 
-    <!-- AI-productherkenning (Beta) -->
+    <!-- AI-productherkenning (Premium) -->
     <string name="ai_recognize_title">AI-productherkenning</string>
     <string name="ai_recognize_hint">Maak een foto van het product</string>
     <string name="ai_recognize_capture_cd">Foto maken</string>
+    <string name="ai_recognize_analyzing">Product herkennen…</string>
     <string name="ai_recognize_failed">Geen product herkend op de foto. Probeer het opnieuw met betere belichting.</string>
+    <string name="ai_recognize_failed_no_connection">Geen verbinding. Controleer je internetverbinding en probeer het opnieuw.</string>
+    <string name="ai_recognize_failed_premium">Deze functie is alleen beschikbaar met Premium.</string>
     <string name="ai_recognize_retry">Opnieuw proberen</string>
     <string name="ai_recognize_confidence_format">Herkend als \'%1$s\' (%2$d%% zeker)</string>
     <string name="ai_recognize_candidate_format">%1$s (%2$d%%)</string>

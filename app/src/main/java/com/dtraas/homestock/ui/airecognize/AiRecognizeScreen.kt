@@ -11,7 +11,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -31,7 +30,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -73,19 +74,20 @@ import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.ui.components.CategoryDropdown
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.label.ImageLabeling
-import com.google.mlkit.vision.label.defaults.ImageLabelerOptions
+import java.io.File
 import java.util.concurrent.Executors
 
 /**
  * A camera-based alternative to barcode scanning for products that don't have (or don't need)
- * one: take a photo, ML Kit's on-device Image Labeling model suggests what it looks like, and
- * that suggestion — fully editable — becomes the starting point for the normal "add to
- * inventory" confirm screen (see [AiRecognizeViewModel.confirm]). The model runs entirely on
- * the device (no network call, no API key), but its vocabulary is generic visual categories
- * ("Food", "Produce", "Bread", "Dairy product") rather than specific product names or brands —
- * it's a head start for typing the real name in, not a barcode-accurate lookup.
+ * one: take a photo, an AI model (Claude, via the `recognizeProduct` Cloud Function — see
+ * `functions/src/index.ts`) suggests the actual product name and category, and that
+ * suggestion — fully editable — becomes the starting point for the normal "add to inventory"
+ * confirm screen (see [AiRecognizeViewModel.confirm]). This is a premium feature: the photo
+ * leaves the device (unlike the on-device barcode scanner), and the Cloud Function itself
+ * re-checks premium status server-side before spending anything on the Claude call, so this
+ * screen should only ever be reached from an already-premium-gated entry point (see
+ * MoreScreen/ScanScreen) — [FailReason.PREMIUM_REQUIRED] is the fallback for the rare case a
+ * subscription lapses mid-session.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -93,7 +95,12 @@ fun AiRecognizeScreen(onBack: () -> Unit, onNeedsConfirmation: (String) -> Unit)
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: AiRecognizeViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { AiRecognizeViewModel(application.container.productRepository) }
+            initializer {
+                AiRecognizeViewModel(
+                    productRepository = application.container.productRepository,
+                    aiRecognitionRepository = application.container.aiRecognitionRepository,
+                )
+            }
         },
     )
     val step by viewModel.step.collectAsState()
@@ -117,30 +124,23 @@ fun AiRecognizeScreen(onBack: () -> Unit, onNeedsConfirmation: (String) -> Unit)
         when (val current = step) {
             AiRecognizeStep.Capturing -> AiCamera(
                 padding = padding,
-                onLabelsRecognized = viewModel::onLabelsRecognized,
+                onPhotoCaptured = viewModel::onPhotoCaptured,
                 onCaptureFailed = viewModel::onCaptureFailed,
             )
-            AiRecognizeStep.Failed -> Column(
+            AiRecognizeStep.Analyzing -> Column(
                 modifier = Modifier.fillMaxSize().padding(padding).padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center,
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Error,
-                    contentDescription = null,
-                    modifier = Modifier.size(48.dp),
-                    tint = MaterialTheme.colorScheme.error,
-                )
+                CircularProgressIndicator()
                 Text(
-                    text = stringResource(R.string.ai_recognize_failed),
+                    text = stringResource(R.string.ai_recognize_analyzing),
                     style = MaterialTheme.typography.bodyLarge,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(top = 16.dp),
+                    modifier = Modifier.padding(top = 20.dp),
                 )
-                Button(onClick = viewModel::retake, modifier = Modifier.padding(top = 20.dp)) {
-                    Text(stringResource(R.string.ai_recognize_retry))
-                }
             }
+            is AiRecognizeStep.Failed -> AiRecognizeFailed(padding = padding, reason = current.reason, onRetake = viewModel::retake)
             is AiRecognizeStep.Recognized -> RecognizedResult(
                 padding = padding,
                 result = current,
@@ -155,9 +155,39 @@ fun AiRecognizeScreen(onBack: () -> Unit, onNeedsConfirmation: (String) -> Unit)
 }
 
 @Composable
+private fun AiRecognizeFailed(padding: PaddingValues, reason: FailReason, onRetake: () -> Unit) {
+    val (icon, messageRes) = when (reason) {
+        FailReason.PREMIUM_REQUIRED -> Icons.Filled.WorkspacePremium to R.string.ai_recognize_failed_premium
+        FailReason.NO_CONNECTION -> Icons.Filled.CloudOff to R.string.ai_recognize_failed_no_connection
+        FailReason.CAPTURE, FailReason.UNKNOWN -> Icons.Filled.Error to R.string.ai_recognize_failed
+    }
+    Column(
+        modifier = Modifier.fillMaxSize().padding(padding).padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(48.dp),
+            tint = MaterialTheme.colorScheme.error,
+        )
+        Text(
+            text = stringResource(messageRes),
+            style = MaterialTheme.typography.bodyLarge,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 16.dp),
+        )
+        Button(onClick = onRetake, modifier = Modifier.padding(top = 20.dp)) {
+            Text(stringResource(R.string.ai_recognize_retry))
+        }
+    }
+}
+
+@Composable
 private fun AiCamera(
     padding: PaddingValues,
-    onLabelsRecognized: (candidates: List<Pair<String, Int>>) -> Unit,
+    onPhotoCaptured: (jpegBytes: ByteArray) -> Unit,
     onCaptureFailed: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -217,7 +247,6 @@ private fun AiCamera(
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context) }
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
-    val labeler = remember { ImageLabeling.getClient(ImageLabelerOptions.DEFAULT_OPTIONS) }
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
     var isCapturing by remember { mutableStateOf(false) }
 
@@ -235,7 +264,6 @@ private fun AiCamera(
         onDispose {
             runCatching { ProcessCameraProvider.getInstance(context).get().unbindAll() }
             cameraExecutor.shutdown()
-            labeler.close()
         }
     }
 
@@ -261,45 +289,26 @@ private fun AiCamera(
                 val capture = imageCapture
                 if (capture == null || isCapturing) return@Surface
                 isCapturing = true
+                // Write straight to a JPEG file — CameraX handles the sensor-format-to-JPEG
+                // encoding internally, so this avoids hand-rolling a YUV/ImageProxy conversion
+                // just to get bytes suitable for uploading (this photo goes to the
+                // recognizeProduct Cloud Function, unlike the old on-device ML Kit pass, which
+                // could consume the ImageProxy's raw frame directly).
+                val outputFile = File.createTempFile("ai_recognize_", ".jpg", context.cacheDir)
+                val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
                 capture.takePicture(
+                    outputOptions,
                     cameraExecutor,
-                    object : ImageCapture.OnImageCapturedCallback() {
-                        override fun onCaptureSuccess(image: ImageProxy) {
-                            val mediaImage = image.image
-                            if (mediaImage == null) {
-                                image.close()
-                                isCapturing = false
-                                onCaptureFailed()
-                                return
-                            }
-                            val inputImage = InputImage.fromMediaImage(mediaImage, image.imageInfo.rotationDegrees)
-                            val mainExecutor = ContextCompat.getMainExecutor(context)
-                            labeler.process(inputImage)
-                                .addOnSuccessListener(mainExecutor) { labels ->
-                                    image.close()
-                                    isCapturing = false
-                                    // Top 3 rather than just the single best match — the #1
-                                    // guess is sometimes a worse fit than #2 or #3, and this
-                                    // lets the user tap whichever one is actually right instead
-                                    // of being stuck with one possibly-wrong forced guess.
-                                    val candidates = labels
-                                        .sortedByDescending { it.confidence }
-                                        .take(3)
-                                        .map { it.text to (it.confidence * 100).toInt() }
-                                    if (candidates.isEmpty()) {
-                                        onCaptureFailed()
-                                    } else {
-                                        onLabelsRecognized(candidates)
-                                    }
-                                }
-                                .addOnFailureListener(mainExecutor) {
-                                    image.close()
-                                    isCapturing = false
-                                    onCaptureFailed()
-                                }
+                    object : ImageCapture.OnImageSavedCallback {
+                        override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                            val bytes = runCatching { outputFile.readBytes() }.getOrNull()
+                            outputFile.delete()
+                            isCapturing = false
+                            if (bytes == null) onCaptureFailed() else onPhotoCaptured(bytes)
                         }
 
                         override fun onError(exception: ImageCaptureException) {
+                            outputFile.delete()
                             isCapturing = false
                             onCaptureFailed()
                         }
@@ -352,10 +361,10 @@ private fun RecognizedResult(
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
 
-        // More than one candidate is the common case (ML Kit rarely returns just one) — shown
-        // as tappable chips rather than silently picking #1, since the top-confidence label
-        // isn't always the best match. Selecting one fills both the name field and the
-        // category suggestion below with it; the name field stays freely editable regardless.
+        // More than one candidate is the common case — shown as tappable chips rather than
+        // silently picking #1, since the top-confidence guess isn't always the best match.
+        // Selecting one fills both the name field and the category suggestion below with it;
+        // the name field stays freely editable regardless.
         if (result.candidates.size > 1) {
             Row(
                 modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),

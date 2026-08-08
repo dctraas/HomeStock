@@ -78,6 +78,10 @@ dependencies {
     // profile photos were purely local before this; this is what lets a housemate's photo,
     // not just their name, show up on another device's members list.
     implementation(libs.firebase.storage.ktx)
+    // Callable backend for premium AI-productherkenning (recognizeProduct) — see
+    // AiRecognitionRepository and functions/src/index.ts. Keeps the Anthropic API key off
+    // the device entirely.
+    implementation(libs.firebase.functions.ktx)
     implementation(libs.kotlinx.coroutines.play.services)
     // Firestore pulls in gRPC, which drags in a plain (non-Android) Guava that can win
     // Gradle's version conflict resolution over CameraX's own Guava/ListenableFuture
@@ -91,7 +95,6 @@ dependencies {
     implementation(libs.androidx.camera.view)
     implementation(libs.mlkit.barcode.scanning)
     implementation(libs.mlkit.text.recognition)
-    implementation(libs.mlkit.image.labeling)
 
     implementation(libs.retrofit.core)
     implementation(libs.retrofit.converter.gson)
