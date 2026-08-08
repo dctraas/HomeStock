@@ -392,6 +392,7 @@ fun InventoryScreen(
                                 onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
                                 onDelete = { deleteWithUndo(item) },
                                 onAddToShoppingList = { addToShoppingListWithFeedback(item) },
+                                onToggleFavorite = { viewModel.toggleFavorite(item) },
                                 modifier = Modifier.animateItem(),
                             )
                         }
@@ -413,7 +414,8 @@ fun InventoryScreen(
                                     onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
                                     onDelete = { deleteWithUndo(item) },
                                     onAddToShoppingList = { addToShoppingListWithFeedback(item) },
-                                        modifier = Modifier.animateItem(),
+                                    onToggleFavorite = { viewModel.toggleFavorite(item) },
+                                    modifier = Modifier.animateItem(),
                                 )
                             }
                         }
