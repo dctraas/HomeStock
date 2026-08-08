@@ -84,6 +84,11 @@ private val DarkColors = darkColorScheme(
 // the exact same color — see its usage there) can read the same resolved value.
 val LocalTopAppBarContainerColor = compositionLocalOf { TopAppBarContainer }
 
+// Title/icon color to pair with LocalTopAppBarContainerColor above. The bar is now a
+// full-strength, saturated sage rather than a pale tint, so it needs a light content
+// color for contrast rather than MaterialTheme's usual ink-dark onSurface.
+val LocalTopAppBarContentColor = compositionLocalOf { OnTopAppBarContainer }
+
 /**
  * [dynamicColor] defaults to false: this app has a deliberately designed
  * "Keukenlinnen" palette, and letting Android 12+ override it with
@@ -109,8 +114,19 @@ fun HomeStockTheme(
         darkTheme -> TopAppBarContainerDark
         else -> TopAppBarContainer
     }
+    // Falls back to the theme's own onSurfaceVariant under dynamic color, since a
+    // wallpaper-derived surfaceContainer can land anywhere on the light/dark spectrum
+    // and the fixed light OnTopAppBarContainer would not reliably contrast against it.
+    val topAppBarContentColor = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> colorScheme.onSurfaceVariant
+        darkTheme -> OnTopAppBarContainerDark
+        else -> OnTopAppBarContainer
+    }
 
-    CompositionLocalProvider(LocalTopAppBarContainerColor provides topAppBarContainerColor) {
+    CompositionLocalProvider(
+        LocalTopAppBarContainerColor provides topAppBarContainerColor,
+        LocalTopAppBarContentColor provides topAppBarContentColor,
+    ) {
         MaterialTheme(
             colorScheme = colorScheme,
             typography = HomeStockTypography,

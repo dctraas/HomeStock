@@ -14,6 +14,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.view.WindowCompat
@@ -69,7 +70,11 @@ class MainActivity : AppCompatActivity() {
                 val insetsController = WindowCompat.getInsetsController(window, window.decorView)
                 SideEffect {
                     window.statusBarColor = topAppBarContainerColor.toArgb()
-                    insetsController.isAppearanceLightStatusBars = !darkTheme
+                    // Derived from the bar's own luminance rather than just darkTheme: the
+                    // bar is now a full-strength saturated sage in both themes, dark enough
+                    // to need light (white) status bar icons either way — but dynamic color
+                    // can still land on a pale, wallpaper-derived tone that needs dark icons.
+                    insetsController.isAppearanceLightStatusBars = topAppBarContainerColor.luminance() > 0.5f
                 }
                 Surface(modifier = Modifier.fillMaxSize()) {
                     val householdId by application.container.householdSession.householdId.collectAsState()

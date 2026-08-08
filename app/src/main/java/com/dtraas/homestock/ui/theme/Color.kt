@@ -47,13 +47,15 @@ val LinenSurfaceContainerHigh = Color(0xFFECE9E1)
 val LinenSurfaceContainerHighest = Color(0xFFE4E0D5)
 
 // Top app bar container — its own dedicated tone rather than a reuse of
-// surfaceContainer above: a soft, fresh sage tint (this app's primary hue, greatly
-// lightened) so the title bar reads as a deliberate splash of color rather than
-// another shade of grey. Cards stay neutral; this is the one elevated surface that
-// gets to carry the palette. Also pushed to the system status bar itself (see
+// surfaceContainer above: full-strength sage green (this app's actual primary color,
+// not a pale tint of it) so the title bar reads as a deliberate, confident band of
+// color instead of a faint wash. Cards stay neutral; this is the one elevated surface
+// that gets to carry the palette. Also pushed to the system status bar itself (see
 // MainActivity) so the color reaches the physical top edge of the screen, not just
-// the app bar's own bounds below it.
-val TopAppBarContainer = Color(0xFFDDEAD6)
+// the app bar's own bounds below it. Being this saturated, it needs a light (not the
+// usual ink-dark) title/icon color for contrast — see OnTopAppBarContainer.
+val TopAppBarContainer = Color(0xFF3F6B4A)
+val OnTopAppBarContainer = Color(0xFFFFFFFF)
 
 val LinenError = Color(0xFFB3392A)
 val OnLinenError = Color(0xFFFFFFFF)
@@ -90,9 +92,11 @@ val LinenSurfaceContainerDark = Color(0xFF141510)
 val LinenSurfaceContainerHighDark = Color(0xFF1C1D17)
 val LinenSurfaceContainerHighestDark = Color(0xFF25261E)
 
-// Dark counterpart of TopAppBarContainer above — same idea, a dark, desaturated sage
-// rather than a shade of the neutral surfaceContainer ramp.
-val TopAppBarContainerDark = Color(0xFF15231A)
+// Dark counterpart of TopAppBarContainer above — a deep, saturated forest green
+// (rather than the barely-there desaturated tone this used to be) so the bar stays
+// just as bold a splash of color against the near-black page in dark theme.
+val TopAppBarContainerDark = Color(0xFF25422E)
+val OnTopAppBarContainerDark = Color(0xFFDCEFDD)
 
 val LinenErrorDark = Color(0xFFF2A08F)
 val OnLinenErrorDark = Color(0xFF4A130A)
