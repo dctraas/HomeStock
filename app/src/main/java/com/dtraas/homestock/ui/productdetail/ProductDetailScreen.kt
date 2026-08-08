@@ -130,6 +130,7 @@ fun ProductDetailScreen(
     var nutritionExpanded by remember { mutableStateOf(false) }
     var ingredientsExpanded by remember { mutableStateOf(false) }
     var allergensExpanded by remember { mutableStateOf(false) }
+    var dietLabelsExpanded by remember { mutableStateOf(false) }
     var productDetailsExpanded by remember { mutableStateOf(false) }
     val productDetailsBringIntoViewRequester = remember { BringIntoViewRequester() }
     val coroutineScope = rememberCoroutineScope()
@@ -381,8 +382,15 @@ fun ProductDetailScreen(
                 }
             }
             if (dietLabels.isNotEmpty()) {
-                SectionHeader(stringResource(R.string.product_detail_diet_labels_title), modifier = Modifier.padding(top = sectionGap))
-                DietLabelsCard(dietLabels, modifier = Modifier.padding(top = headerToCardGap))
+                CollapsibleSectionHeader(
+                    title = stringResource(R.string.product_detail_diet_labels_title),
+                    expanded = dietLabelsExpanded,
+                    onToggle = { dietLabelsExpanded = !dietLabelsExpanded },
+                    modifier = Modifier.padding(top = sectionGap),
+                )
+                if (dietLabelsExpanded) {
+                    DietLabelsCard(dietLabels, modifier = Modifier.padding(top = headerToCardGap))
+                }
             }
         }
 
