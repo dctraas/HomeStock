@@ -1,8 +1,12 @@
 package com.dtraas.homestock.ui.navigation
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -91,6 +95,15 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
     }
 
     Scaffold(
+        // This Scaffold has no topBar of its own — every route below provides its own via
+        // HomeStockTopAppBar, which already fully draws through/pads for the status bar
+        // (see MainActivity's edge-to-edge + status bar color sync). Left at the Scaffold
+        // default, its top content padding falls back to the status bar inset (since there's
+        // no topBar height to base it on instead) and gets applied here to the whole NavHost
+        // — stacking a second, redundant status-bar-height gap on top of what each screen's
+        // own top app bar already accounts for, pushing every title bar down from the actual
+        // top edge. Only bottom/horizontal safe-area insets are still needed here.
+        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
         bottomBar = {
             if (showBottomBar) {
                 HomeStockBottomBar(navController, currentRoute)
