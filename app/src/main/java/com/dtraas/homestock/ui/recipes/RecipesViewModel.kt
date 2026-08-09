@@ -3,12 +3,17 @@ package com.dtraas.homestock.ui.recipes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.homestock.data.model.Allergen
+import com.dtraas.homestock.data.repository.GenerateRecipeResult
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+enum class GenerateRecipeError { NO_CONNECTION, PREMIUM_REQUIRED, UNKNOWN }
 
 data class RecipesUiState(
     val isLoading: Boolean = true,
@@ -16,14 +21,17 @@ data class RecipesUiState(
     val hasError: Boolean = false,
     val excludedAllergens: Set<Allergen> = emptySet(),
     val searchQuery: String = "",
+    val isGenerating: Boolean = false,
+    val generateError: GenerateRecipeError? = null,
 )
 
 /**
- * Browses TheMealDB's full recipe catalog by default (see [RecipeRepository.browseAllRecipes])
+ * Browses Spoonacular's recipe catalog by default (see [RecipeRepository.browseAllRecipes])
  * rather than only recipes matching household inventory — [search] switches to a name search
  * instead (see [RecipeRepository.searchRecipesByName]) when [RecipesUiState.searchQuery] is
  * non-blank. The inventory-based [RecipeRepository.suggestRecipes] is still used elsewhere (the
- * maaltijdplanner's "kies een recept" picker), just not here.
+ * maaltijdplanner's "kies een recept" picker), just not here. [generateRecipe] is a separate,
+ * AI-authored alternative (see [RecipeRepository.generateRecipe]) rather than a search at all.
  */
 class RecipesViewModel(
     private val recipeRepository: RecipeRepository,
@@ -32,8 +40,12 @@ class RecipesViewModel(
     private val _uiState = MutableStateFlow(RecipesUiState())
     val uiState: StateFlow<RecipesUiState> = _uiState
 
-    // Remembered from the last load() call so search()/toggleAllergen() don't need the caller
-    // (RecipesScreen) to keep threading the current app language through every action.
+    /** Emits the newly generated recipe's id once [generateRecipe] succeeds — the screen navigates to RecipeDetailScreen with it. */
+    private val _generatedRecipeId = MutableSharedFlow<String>()
+    val generatedRecipeId: SharedFlow<String> = _generatedRecipeId
+
+    // Remembered from the last load() call so search()/toggleAllergen()/generateRecipe() don't
+    // need the caller (RecipesScreen) to keep threading the current app language through every action.
     private var languageTag: String? = null
 
     /** [languageTag] (e.g. "nl") drives the cuisine/region boost in RecipeRepository — see its doc. */
@@ -73,5 +85,28 @@ class RecipesViewModel(
             it.copy(excludedAllergens = updated)
         }
         load(languageTag)
+    }
+
+    /** Asks Claude to invent one recipe from the household's current inventory, optionally steered by [wish]. */
+    fun generateRecipe(wish: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isGenerating = true, generateError = null) }
+            when (val result = recipeRepository.generateRecipe(wish.takeIf { it.isNotBlank() }, languageTag)) {
+                is GenerateRecipeResult.Success -> {
+                    _uiState.update { it.copy(isGenerating = false) }
+                    _generatedRecipeId.emit(result.detail.id)
+                }
+                GenerateRecipeResult.PremiumRequired ->
+                    _uiState.update { it.copy(isGenerating = false, generateError = GenerateRecipeError.PREMIUM_REQUIRED) }
+                GenerateRecipeResult.NoConnection ->
+                    _uiState.update { it.copy(isGenerating = false, generateError = GenerateRecipeError.NO_CONNECTION) }
+                GenerateRecipeResult.Failed ->
+                    _uiState.update { it.copy(isGenerating = false, generateError = GenerateRecipeError.UNKNOWN) }
+            }
+        }
+    }
+
+    fun dismissGenerateError() {
+        _uiState.update { it.copy(generateError = null) }
     }
 }

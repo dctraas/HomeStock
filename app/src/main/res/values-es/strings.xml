@@ -415,7 +415,7 @@
     <string name="recipes_error_subtitle">No pudimos cargar sugerencias de recetas. Comprueba tu conexión a internet e inténtalo de nuevo.</string>
     <string name="recipes_empty_title">No se encontraron recetas</string>
     <string name="recipes_empty_subtitle">Prueba otro término de búsqueda o ajusta tus filtros de alérgenos.</string>
-    <string name="recipes_beta_notice">Beta: las recetas provienen de una base de datos externa en inglés (TheMealDB). La coincidencia de ingredientes y alérgenos es aproximada y a veces puede ser inexacta.</string>
+    <string name="recipes_beta_notice">Beta: las recetas provienen de una base de datos externa (Spoonacular). La coincidencia de ingredientes es aproximada y a veces puede ser inexacta.</string>
     <string name="recipes_search_placeholder">Buscar recetas por nombre…</string>
     <string name="recipes_match_count_format">%1$d ingredientes que tienes</string>
     <string name="recipes_allergen_filter_label">Excluir alérgenos</string>
@@ -426,6 +426,17 @@
     <string name="recipes_added_to_shopping_list">Ingredientes que faltan añadidos a tu lista de la compra</string>
     <string name="recipes_add_missing_to_shopping_list">Añadir ingredientes que faltan a la lista de la compra</string>
     <string name="recipes_instructions_title">Instrucciones</string>
+    <string name="recipes_ready_in_minutes_format">%1$d min</string>
+    <string name="recipes_ai_generated_badge">Receta generada por IA</string>
+    <string name="recipes_generate_ai_button">Generar receta con IA</string>
+    <string name="recipes_generate_ai_title">Generar una receta con IA</string>
+    <string name="recipes_generate_ai_hint">Claude inventará una receta según tu inventario actual. ¿Algún deseo específico?</string>
+    <string name="recipes_generate_ai_placeholder">Ej. \'algo con pollo y arroz\' (opcional)</string>
+    <string name="recipes_generate_ai_action">Generar</string>
+    <string name="recipes_generate_ai_loading">Inventando una receta…</string>
+    <string name="recipes_generate_ai_failed_no_connection">Sin conexión. Comprueba tu conexión a internet e inténtalo de nuevo.</string>
+    <string name="recipes_generate_ai_failed_premium">Esta función solo está disponible con Premium.</string>
+    <string name="recipes_generate_ai_failed_unknown">No se pudo generar la receta. Inténtalo de nuevo.</string>
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Planificador de comidas</string>
@@ -446,12 +457,14 @@
 
     <!-- Escanear ticket (Beta) -->
     <string name="receipt_scan_title">Escanear ticket</string>
-    <string name="receipt_scan_processing">Procesando ticket…</string>
+    <string name="receipt_scan_processing">Analizando ticket…</string>
     <string name="receipt_scan_saving">Guardando productos…</string>
     <string name="receipt_scan_saved">Añadido al inventario</string>
     <string name="receipt_scan_hint">Haz una foto nítida de tu ticket</string>
     <string name="receipt_scan_capture_cd">Hacer foto</string>
     <string name="receipt_scan_failed">No se pudo procesar la foto. Inténtalo de nuevo.</string>
+    <string name="receipt_scan_failed_no_connection">Sin conexión. Comprueba tu conexión a internet e inténtalo de nuevo.</string>
+    <string name="receipt_scan_failed_premium">Esta función solo está disponible con Premium.</string>
     <string name="receipt_scan_retry">Intentar de nuevo</string>
     <string name="receipt_scan_no_items">No se reconocieron productos en este ticket.</string>
     <string name="receipt_scan_confirm_hint">Revisa y ajusta los productos reconocidos antes de añadirlos.</string>

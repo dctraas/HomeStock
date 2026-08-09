@@ -15,9 +15,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.material.icons.filled.WorkspacePremium
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -27,12 +31,17 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -58,9 +67,10 @@ import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
 
 /**
- * Browses TheMealDB's whole recipe catalog by default (see RecipeRepository.browseAllRecipes)
- * — not narrowed to what's in inventory, though a recipe from the household's language/cuisine
- * still gets a badge (see [RecipeRow]). The search field switches to a name search instead.
+ * Browses Spoonacular's recipe catalog by default (see RecipeRepository.browseAllRecipes) — not
+ * narrowed to what's in inventory, though a recipe from the household's language/cuisine still
+ * gets a badge (see [RecipeRow]). The search field switches to a name search instead, and
+ * "Genereer recept met AI" is a separate, AI-authored alternative to either.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -76,12 +86,22 @@ fun RecipesScreen(
     )
     val uiState by viewModel.uiState.collectAsState()
     val languageTag = LocalConfiguration.current.locales[0].language
+    var showGenerateDialog by remember { mutableStateOf(false) }
+    var generateWish by remember { mutableStateOf("") }
 
     // languageTag as the key rather than Unit: an in-app language switch (Instellingen >
     // Algemeen > Taal) recreates the whole activity, but keying here means this also behaves
     // correctly if that ever changes — refetches with the new cuisine/region boost instead of
     // silently keeping stale results for the old language.
     LaunchedEffect(languageTag) { viewModel.load(languageTag) }
+
+    LaunchedEffect(Unit) {
+        viewModel.generatedRecipeId.collect { id ->
+            showGenerateDialog = false
+            generateWish = ""
+            onRecipeClick(id)
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -116,6 +136,13 @@ fun RecipesScreen(
                 ) {
                     Text(stringResource(R.string.search_product_action))
                 }
+            }
+            TextButton(
+                onClick = { showGenerateDialog = true },
+                modifier = Modifier.padding(horizontal = 12.dp),
+            ) {
+                Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text(stringResource(R.string.recipes_generate_ai_button), modifier = Modifier.padding(start = 8.dp))
             }
             AllergenFilterRow(
                 excludedAllergens = uiState.excludedAllergens,
@@ -162,6 +189,97 @@ fun RecipesScreen(
             }
         }
     }
+
+    if (showGenerateDialog) {
+        GenerateRecipeDialog(
+            wish = generateWish,
+            onWishChange = { generateWish = it },
+            isGenerating = uiState.isGenerating,
+            error = uiState.generateError,
+            onGenerate = { viewModel.generateRecipe(generateWish) },
+            onDismiss = {
+                if (!uiState.isGenerating) {
+                    showGenerateDialog = false
+                    viewModel.dismissGenerateError()
+                }
+            },
+        )
+    }
+}
+
+/** Lets the user optionally steer [RecipesViewModel.generateRecipe] with a free-text wish (e.g. "iets met kip en rijst"), then shows its loading/error state inline instead of navigating away before it's done. */
+@Composable
+private fun GenerateRecipeDialog(
+    wish: String,
+    onWishChange: (String) -> Unit,
+    isGenerating: Boolean,
+    error: GenerateRecipeError?,
+    onGenerate: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.recipes_generate_ai_title)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.recipes_generate_ai_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedTextField(
+                    value = wish,
+                    onValueChange = onWishChange,
+                    placeholder = { Text(stringResource(R.string.recipes_generate_ai_placeholder)) },
+                    singleLine = true,
+                    enabled = !isGenerating,
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                )
+                if (isGenerating) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 16.dp),
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        Text(
+                            text = stringResource(R.string.recipes_generate_ai_loading),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(start = 12.dp),
+                        )
+                    }
+                }
+                if (error != null) {
+                    val (icon, messageRes) = when (error) {
+                        GenerateRecipeError.PREMIUM_REQUIRED -> Icons.Filled.WorkspacePremium to R.string.recipes_generate_ai_failed_premium
+                        GenerateRecipeError.NO_CONNECTION -> Icons.Filled.CloudOff to R.string.recipes_generate_ai_failed_no_connection
+                        GenerateRecipeError.UNKNOWN -> Icons.Filled.WifiOff to R.string.recipes_generate_ai_failed_unknown
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 16.dp),
+                    ) {
+                        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                        Text(
+                            text = stringResource(messageRes),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(start = 12.dp),
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onGenerate, enabled = !isGenerating) {
+                Text(stringResource(R.string.recipes_generate_ai_action))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isGenerating) {
+                Text(stringResource(R.string.common_cancel))
+            }
+        },
+    )
 }
 
 /** Toggleable chips for the curated allergen subset (see RecipeRepository.filterableAllergens) — a selected chip means that allergen is excluded. */

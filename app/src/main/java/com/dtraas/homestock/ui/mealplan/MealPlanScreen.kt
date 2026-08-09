@@ -249,8 +249,8 @@ private fun SlotCard(
 }
 
 /**
- * A recipe pick always has [PlannedMeal.thumbnailUrl] (from TheMealDB); a manually typed meal
- * never does. Rather than just skipping the image slot for those — which used to leave manual
+ * A recipe pick always has [PlannedMeal.thumbnailUrl] (from the recipe database); a manually
+ * typed meal never does. Rather than just skipping the image slot for those — which used to leave manual
  * entries looking bare and unfinished next to a recipe's photo, right when the user asked for
  * this to look nicer specifically for hand-typed meals — they get a colored fallback badge
  * with a fork-and-knife icon instead, the same "always a visual, real photo or otherwise"

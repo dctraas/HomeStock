@@ -11,7 +11,6 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
-import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
@@ -30,8 +29,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.PhotoCamera
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -72,13 +73,17 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
-import com.dtraas.homestock.data.receipt.OcrLine
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
-import com.google.mlkit.vision.common.InputImage
-import com.google.mlkit.vision.text.TextRecognition
-import com.google.mlkit.vision.text.latin.TextRecognizerOptions
+import java.io.File
 import java.util.concurrent.Executors
 
+/**
+ * Photographs a whole receipt and asks the `recognizeReceipt` Cloud Function (Claude Haiku 4.5
+ * server-side, see functions/src/index.ts) to read off every purchased product line, rather
+ * than the on-device ML Kit OCR + hand-rolled row/price parser this used to run locally — that
+ * approach was fragile against the wide variety of real supermarket receipt layouts. This is a
+ * premium feature; see [ReceiptFailReason.PREMIUM_REQUIRED].
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ReceiptScanScreen(onBack: () -> Unit) {
@@ -89,6 +94,7 @@ fun ReceiptScanScreen(onBack: () -> Unit) {
                 ReceiptScanViewModel(
                     productRepository = application.container.productRepository,
                     inventoryRepository = application.container.inventoryRepository,
+                    receiptRecognitionRepository = application.container.receiptRecognitionRepository,
                 )
             }
         },
@@ -114,10 +120,10 @@ fun ReceiptScanScreen(onBack: () -> Unit) {
         when (val current = step) {
             is ReceiptScanStep.Capturing -> ReceiptCamera(
                 padding = padding,
-                onTextRecognized = viewModel::onTextRecognized,
+                onPhotoCaptured = viewModel::onPhotoCaptured,
                 onCaptureFailed = viewModel::onCaptureFailed,
             )
-            is ReceiptScanStep.Processing -> ReceiptCenteredMessage(
+            is ReceiptScanStep.Analyzing -> ReceiptCenteredMessage(
                 padding = padding,
                 loading = true,
                 text = stringResource(R.string.receipt_scan_processing),
@@ -134,6 +140,7 @@ fun ReceiptScanScreen(onBack: () -> Unit) {
             )
             is ReceiptScanStep.Failed -> ReceiptFailedView(
                 padding = padding,
+                reason = current.reason,
                 onRetry = viewModel::retake,
             )
             is ReceiptScanStep.Confirming -> ReceiptConfirmList(
@@ -151,7 +158,7 @@ fun ReceiptScanScreen(onBack: () -> Unit) {
 @Composable
 private fun ReceiptCamera(
     padding: PaddingValues,
-    onTextRecognized: (List<OcrLine>) -> Unit,
+    onPhotoCaptured: (jpegBytes: ByteArray) -> Unit,
     onCaptureFailed: () -> Unit,
 ) {
     val context = LocalContext.current
@@ -211,25 +218,37 @@ private fun ReceiptCamera(
     val lifecycleOwner = LocalLifecycleOwner.current
     val previewView = remember { PreviewView(context) }
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
-    val recognizer = remember { TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS) }
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
     var isCapturing by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
+        // Tracks only the use cases bound here so cleanup can unbind exactly those instead of
+        // the process-wide unbindAll() — ProcessCameraProvider is a single shared instance
+        // app-wide, and a global unbindAll() on disposal can race with another camera screen's
+        // own bind/unbind (e.g. navigating here from the barcode scanner), tearing down
+        // whichever screen bound second. See AiRecognizeScreen/ScanScreen for the same fix.
+        var boundPreview: Preview? = null
+        var boundCapture: ImageCapture? = null
+
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
             val preview = Preview.Builder().build().also { it.surfaceProvider = previewView.surfaceProvider }
             val capture = ImageCapture.Builder().build()
-            cameraProvider.unbindAll()
+            boundPreview = preview
+            boundCapture = capture
             cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture)
             imageCapture = capture
         }, ContextCompat.getMainExecutor(context))
 
         onDispose {
-            runCatching { ProcessCameraProvider.getInstance(context).get().unbindAll() }
+            runCatching {
+                val useCases = listOfNotNull(boundPreview, boundCapture).toTypedArray()
+                if (useCases.isNotEmpty()) {
+                    ProcessCameraProvider.getInstance(context).get().unbind(*useCases)
+                }
+            }
             cameraExecutor.shutdown()
-            recognizer.close()
         }
     }
 
@@ -255,44 +274,24 @@ private fun ReceiptCamera(
                 val capture = imageCapture
                 if (capture == null || isCapturing) return@Surface
                 isCapturing = true
+                // Write straight to a JPEG file — this photo goes to the recognizeReceipt Cloud
+                // Function, unlike the old on-device ML Kit pass, which consumed the camera's
+                // raw frame directly instead of needing encoded bytes to upload.
+                val outputFile = File.createTempFile("receipt_scan_", ".jpg", context.cacheDir)
+                val outputOptions = ImageCapture.OutputFileOptions.Builder(outputFile).build()
                 capture.takePicture(
+                    outputOptions,
                     cameraExecutor,
-                    object : ImageCapture.OnImageCapturedCallback() {
-                        override fun onCaptureSuccess(image: ImageProxy) {
-                            val mediaImage = image.image
-                            if (mediaImage == null) {
-                                image.close()
-                                isCapturing = false
-                                onCaptureFailed()
-                                return
-                            }
-                            val inputImage = InputImage.fromMediaImage(mediaImage, image.imageInfo.rotationDegrees)
-                            val mainExecutor = ContextCompat.getMainExecutor(context)
-                            recognizer.process(inputImage)
-                                .addOnSuccessListener(mainExecutor) { visionText ->
-                                    image.close()
-                                    isCapturing = false
-                                    val ocrLines = visionText.textBlocks.flatMap { block ->
-                                        block.lines.mapNotNull { line ->
-                                            val box = line.boundingBox ?: return@mapNotNull null
-                                            OcrLine(
-                                                text = line.text,
-                                                top = box.top.toFloat(),
-                                                bottom = box.bottom.toFloat(),
-                                                left = box.left.toFloat(),
-                                            )
-                                        }
-                                    }
-                                    onTextRecognized(ocrLines)
-                                }
-                                .addOnFailureListener(mainExecutor) {
-                                    image.close()
-                                    isCapturing = false
-                                    onCaptureFailed()
-                                }
+                    object : ImageCapture.OnImageSavedCallback {
+                        override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                            val bytes = runCatching { outputFile.readBytes() }.getOrNull()
+                            outputFile.delete()
+                            isCapturing = false
+                            if (bytes == null) onCaptureFailed() else onPhotoCaptured(bytes)
                         }
 
                         override fun onError(exception: ImageCaptureException) {
+                            outputFile.delete()
                             isCapturing = false
                             onCaptureFailed()
                         }
@@ -337,20 +336,25 @@ private fun ReceiptCenteredMessage(padding: PaddingValues, loading: Boolean, tex
 }
 
 @Composable
-private fun ReceiptFailedView(padding: PaddingValues, onRetry: () -> Unit) {
+private fun ReceiptFailedView(padding: PaddingValues, reason: ReceiptFailReason, onRetry: () -> Unit) {
+    val (icon, messageRes) = when (reason) {
+        ReceiptFailReason.PREMIUM_REQUIRED -> Icons.Filled.WorkspacePremium to R.string.receipt_scan_failed_premium
+        ReceiptFailReason.NO_CONNECTION -> Icons.Filled.CloudOff to R.string.receipt_scan_failed_no_connection
+        ReceiptFailReason.CAPTURE, ReceiptFailReason.UNKNOWN -> Icons.Filled.Error to R.string.receipt_scan_failed
+    }
     Column(
         modifier = Modifier.fillMaxSize().padding(padding).padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
         Icon(
-            imageVector = Icons.Filled.Error,
+            imageVector = icon,
             contentDescription = null,
             modifier = Modifier.size(48.dp),
             tint = MaterialTheme.colorScheme.error,
         )
         Text(
-            text = stringResource(R.string.receipt_scan_failed),
+            text = stringResource(messageRes),
             style = MaterialTheme.typography.bodyLarge,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(top = 16.dp),
@@ -415,7 +419,16 @@ private fun ReceiptConfirmList(
                             value = item.name,
                             onValueChange = { onNameChange(item.id, it) },
                             singleLine = true,
-                            modifier = Modifier.weight(1f),
+                            modifier = Modifier.weight(1f).padding(end = 8.dp),
+                        )
+                        // AI-read quantity — same dense stepper as everywhere else in the app,
+                        // shown read-only here (no +/- wiring) since it's just a confirmation
+                        // aid; a genuinely wrong quantity is rare enough that editing it isn't
+                        // worth another interactive control on an already busy row.
+                        Text(
+                            text = "×${item.quantity}",
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
                     }
                 }

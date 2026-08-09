@@ -415,7 +415,7 @@
     <string name="recipes_error_subtitle">Wir konnten keine Rezeptvorschläge laden. Überprüfe deine Internetverbindung und versuche es erneut.</string>
     <string name="recipes_empty_title">Keine Rezepte gefunden</string>
     <string name="recipes_empty_subtitle">Versuche einen anderen Suchbegriff oder passe deine Allergenfilter an.</string>
-    <string name="recipes_beta_notice">Beta: Rezepte stammen aus einer externen, englischsprachigen Datenbank (TheMealDB). Zutaten- und Allergenabgleich ist ungefähr und kann manchmal ungenau sein.</string>
+    <string name="recipes_beta_notice">Beta: Rezepte stammen aus einer externen Datenbank (Spoonacular). Der Zutatenabgleich ist ungefähr und kann manchmal ungenau sein.</string>
     <string name="recipes_search_placeholder">Rezepte nach Name suchen…</string>
     <string name="recipes_match_count_format">%1$d Zutaten vorhanden</string>
     <string name="recipes_allergen_filter_label">Allergene ausschließen</string>
@@ -426,6 +426,17 @@
     <string name="recipes_added_to_shopping_list">Fehlende Zutaten zu deiner Einkaufsliste hinzugefügt</string>
     <string name="recipes_add_missing_to_shopping_list">Fehlende Zutaten zur Einkaufsliste hinzufügen</string>
     <string name="recipes_instructions_title">Zubereitung</string>
+    <string name="recipes_ready_in_minutes_format">%1$d Min.</string>
+    <string name="recipes_ai_generated_badge">KI-generiertes Rezept</string>
+    <string name="recipes_generate_ai_button">Rezept mit KI generieren</string>
+    <string name="recipes_generate_ai_title">Rezept mit KI generieren</string>
+    <string name="recipes_generate_ai_hint">Claude erstellt ein Rezept basierend auf deinem aktuellen Vorrat. Ein bestimmter Wunsch?</string>
+    <string name="recipes_generate_ai_placeholder">z. B. \'etwas mit Hähnchen und Reis\' (optional)</string>
+    <string name="recipes_generate_ai_action">Generieren</string>
+    <string name="recipes_generate_ai_loading">Rezept wird erstellt…</string>
+    <string name="recipes_generate_ai_failed_no_connection">Keine Verbindung. Überprüfe deine Internetverbindung und versuche es erneut.</string>
+    <string name="recipes_generate_ai_failed_premium">Diese Funktion ist nur mit Premium verfügbar.</string>
+    <string name="recipes_generate_ai_failed_unknown">Rezept konnte nicht erstellt werden. Bitte versuche es erneut.</string>
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Essensplaner</string>
@@ -446,12 +457,14 @@
 
     <!-- Kassenbon scannen (Beta) -->
     <string name="receipt_scan_title">Kassenbon scannen</string>
-    <string name="receipt_scan_processing">Kassenbon wird verarbeitet…</string>
+    <string name="receipt_scan_processing">Kassenbon wird analysiert…</string>
     <string name="receipt_scan_saving">Produkte werden gespeichert…</string>
     <string name="receipt_scan_saved">Zum Vorrat hinzugefügt</string>
     <string name="receipt_scan_hint">Mach ein scharfes Foto von deinem Kassenbon</string>
     <string name="receipt_scan_capture_cd">Foto aufnehmen</string>
     <string name="receipt_scan_failed">Das Foto konnte nicht verarbeitet werden. Bitte versuche es erneut.</string>
+    <string name="receipt_scan_failed_no_connection">Keine Verbindung. Überprüfe deine Internetverbindung und versuche es erneut.</string>
+    <string name="receipt_scan_failed_premium">Diese Funktion ist nur mit Premium verfügbar.</string>
     <string name="receipt_scan_retry">Erneut versuchen</string>
     <string name="receipt_scan_no_items">Auf diesem Kassenbon wurden keine Produkte erkannt.</string>
     <string name="receipt_scan_confirm_hint">Überprüfe und passe die erkannten Produkte an, bevor du sie hinzufügst.</string>

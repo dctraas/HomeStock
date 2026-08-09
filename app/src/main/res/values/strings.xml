@@ -416,7 +416,7 @@
     <string name="recipes_error_subtitle">We konden geen receptsuggesties ophalen. Controleer je internetverbinding en probeer het opnieuw.</string>
     <string name="recipes_empty_title">Geen recepten gevonden</string>
     <string name="recipes_empty_subtitle">Probeer een andere zoekterm of pas je allergeenfilters aan.</string>
-    <string name="recipes_beta_notice">Beta: recepten komen van een externe, Engelstalige database (TheMealDB). Ingrediënt- en allergeenmatching gebeurt bij benadering en kan soms niet kloppen.</string>
+    <string name="recipes_beta_notice">Beta: recepten komen van een externe database (Spoonacular). Ingrediëntmatching gebeurt bij benadering en kan soms niet kloppen.</string>
     <string name="recipes_search_placeholder">Zoek recepten op naam…</string>
     <string name="recipes_match_count_format">%1$d ingrediënten in huis</string>
     <string name="recipes_allergen_filter_label">Allergenen uitsluiten</string>
@@ -427,6 +427,17 @@
     <string name="recipes_added_to_shopping_list">Ontbrekende ingrediënten toegevoegd aan je boodschappenlijst</string>
     <string name="recipes_add_missing_to_shopping_list">Ontbrekende ingrediënten toevoegen aan boodschappenlijst</string>
     <string name="recipes_instructions_title">Instructies</string>
+    <string name="recipes_ready_in_minutes_format">%1$d min</string>
+    <string name="recipes_ai_generated_badge">AI-gegenereerd recept</string>
+    <string name="recipes_generate_ai_button">Genereer recept met AI</string>
+    <string name="recipes_generate_ai_title">Recept genereren met AI</string>
+    <string name="recipes_generate_ai_hint">Claude bedenkt een recept op basis van je huidige voorraad. Heb je nog een specifieke wens?</string>
+    <string name="recipes_generate_ai_placeholder">Bijv. \'iets met kip en rijst\' (optioneel)</string>
+    <string name="recipes_generate_ai_action">Genereer</string>
+    <string name="recipes_generate_ai_loading">Recept bedenken…</string>
+    <string name="recipes_generate_ai_failed_no_connection">Geen verbinding. Controleer je internetverbinding en probeer het opnieuw.</string>
+    <string name="recipes_generate_ai_failed_premium">Deze functie is alleen beschikbaar met Premium.</string>
+    <string name="recipes_generate_ai_failed_unknown">Kon geen recept genereren. Probeer het opnieuw.</string>
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Maaltijdplanner</string>
@@ -447,12 +458,14 @@
 
     <!-- Bonnetje scannen (Beta) -->
     <string name="receipt_scan_title">Bonnetje scannen</string>
-    <string name="receipt_scan_processing">Bonnetje verwerken…</string>
+    <string name="receipt_scan_processing">Bonnetje analyseren…</string>
     <string name="receipt_scan_saving">Producten opslaan…</string>
     <string name="receipt_scan_saved">Toegevoegd aan voorraad</string>
     <string name="receipt_scan_hint">Maak een scherpe foto van je kassabon</string>
     <string name="receipt_scan_capture_cd">Foto maken</string>
     <string name="receipt_scan_failed">Kon de foto niet verwerken. Probeer het opnieuw.</string>
+    <string name="receipt_scan_failed_no_connection">Geen verbinding. Controleer je internetverbinding en probeer het opnieuw.</string>
+    <string name="receipt_scan_failed_premium">Deze functie is alleen beschikbaar met Premium.</string>
     <string name="receipt_scan_retry">Opnieuw proberen</string>
     <string name="receipt_scan_no_items">Geen producten herkend op dit bonnetje.</string>
     <string name="receipt_scan_confirm_hint">Controleer en pas de herkende producten aan voor je ze toevoegt.</string>

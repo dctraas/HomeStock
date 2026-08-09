@@ -3,12 +3,10 @@ package com.dtraas.homestock.ui.receiptscan
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.homestock.data.model.Category
-import com.dtraas.homestock.data.receipt.OcrLine
-import com.dtraas.homestock.data.receipt.ReceiptParser
-import com.dtraas.homestock.data.receipt.ReceiptRowReconstructor
-import com.dtraas.homestock.data.remote.CategoryMapper
 import com.dtraas.homestock.data.repository.InventoryRepository
 import com.dtraas.homestock.data.repository.ProductRepository
+import com.dtraas.homestock.data.repository.ReceiptRecognitionRepository
+import com.dtraas.homestock.data.repository.RecognizeReceiptResult
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -18,41 +16,60 @@ data class ReceiptConfirmItem(
     val id: String,
     val name: String,
     val category: Category,
+    val quantity: Int = 1,
     val checked: Boolean = true,
 )
 
+enum class ReceiptFailReason {
+    /** Camera capture itself failed (device/CameraX issue), before any network call. */
+    CAPTURE,
+    NO_CONNECTION,
+
+    /** Server re-checked and this household isn't (or is no longer) premium. */
+    PREMIUM_REQUIRED,
+    UNKNOWN,
+}
+
 sealed interface ReceiptScanStep {
     data object Capturing : ReceiptScanStep
-    data object Processing : ReceiptScanStep
+
+    /** Photo taken, waiting on [ReceiptRecognitionRepository.recognize] — a real network round trip to the Cloud Function (which itself calls Claude). */
+    data object Analyzing : ReceiptScanStep
+
     data class Confirming(val items: List<ReceiptConfirmItem>) : ReceiptScanStep
     data object Saving : ReceiptScanStep
     data object Done : ReceiptScanStep
-    data object Failed : ReceiptScanStep
+    data class Failed(val reason: ReceiptFailReason) : ReceiptScanStep
 }
 
 class ReceiptScanViewModel(
     private val productRepository: ProductRepository,
     private val inventoryRepository: InventoryRepository,
+    private val receiptRecognitionRepository: ReceiptRecognitionRepository,
 ) : ViewModel() {
 
     private val _step = MutableStateFlow<ReceiptScanStep>(ReceiptScanStep.Capturing)
     val step: StateFlow<ReceiptScanStep> = _step
 
     fun onCaptureFailed() {
-        _step.value = ReceiptScanStep.Failed
+        _step.value = ReceiptScanStep.Failed(ReceiptFailReason.CAPTURE)
     }
 
-    fun onTextRecognized(ocrLines: List<OcrLine>) {
-        _step.value = ReceiptScanStep.Processing
-        val rows = ReceiptRowReconstructor.reconstructRows(ocrLines)
-        val items = ReceiptParser.parse(rows).mapIndexed { index, line ->
-            ReceiptConfirmItem(
-                id = index.toString(),
-                name = line.name,
-                category = CategoryMapper.guessCategory(categoriesTags = null, categoriesText = null, productName = line.name),
-            )
+    fun onPhotoCaptured(jpegBytes: ByteArray) {
+        _step.value = ReceiptScanStep.Analyzing
+        viewModelScope.launch {
+            when (val result = receiptRecognitionRepository.recognize(jpegBytes)) {
+                is RecognizeReceiptResult.Success -> {
+                    val items = result.items.mapIndexed { index, item ->
+                        ReceiptConfirmItem(id = index.toString(), name = item.name, category = item.category, quantity = item.quantity)
+                    }
+                    _step.value = ReceiptScanStep.Confirming(items)
+                }
+                RecognizeReceiptResult.PremiumRequired -> _step.value = ReceiptScanStep.Failed(ReceiptFailReason.PREMIUM_REQUIRED)
+                RecognizeReceiptResult.NoConnection -> _step.value = ReceiptScanStep.Failed(ReceiptFailReason.NO_CONNECTION)
+                RecognizeReceiptResult.Failed -> _step.value = ReceiptScanStep.Failed(ReceiptFailReason.UNKNOWN)
+            }
         }
-        _step.value = ReceiptScanStep.Confirming(items)
     }
 
     fun retake() {
@@ -87,7 +104,7 @@ class ReceiptScanViewModel(
                 // the same role a scanned barcode plays elsewhere as the product key.
                 val syntheticBarcode = "receipt-${UUID.randomUUID()}"
                 productRepository.saveManualProduct(syntheticBarcode, item.name, item.category)
-                inventoryRepository.recordScan(syntheticBarcode, 1)
+                inventoryRepository.recordScan(syntheticBarcode, item.quantity)
             }
             _step.value = ReceiptScanStep.Done
         }

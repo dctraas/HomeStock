@@ -3,7 +3,6 @@ package com.dtraas.homestock.di
 import android.content.Context
 import com.dtraas.homestock.BuildConfig
 import com.dtraas.homestock.data.remote.OpenFoodFactsApi
-import com.dtraas.homestock.data.remote.TheMealDbApi
 import com.dtraas.homestock.data.repository.AccountLinkRepository
 import com.dtraas.homestock.data.repository.ActivityLogRepository
 import com.dtraas.homestock.data.repository.AiRecognitionRepository
@@ -18,6 +17,7 @@ import com.dtraas.homestock.data.repository.InventoryRepository
 import com.dtraas.homestock.data.repository.MealPlanRepository
 import com.dtraas.homestock.data.repository.NotificationPreferences
 import com.dtraas.homestock.data.repository.ProductRepository
+import com.dtraas.homestock.data.repository.ReceiptRecognitionRepository
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.ShoppingListRepository
 import com.dtraas.homestock.data.repository.StatisticsRepository
@@ -97,6 +97,10 @@ class AppContainer(context: Context) {
         AiRecognitionRepository(functions, householdSession)
     }
 
+    val receiptRecognitionRepository: ReceiptRecognitionRepository by lazy {
+        ReceiptRecognitionRepository(functions, householdSession)
+    }
+
     // Open Food Facts documents that it throttles/blocks requests carrying a generic HTTP
     // client User-Agent (e.g. OkHttp's own default) to fight scraping abuse — without an
     // app-identifying one, barcode lookups intermittently or permanently fail with an HTTP
@@ -169,15 +173,8 @@ class AppContainer(context: Context) {
         FeedbackRepository(firestore, BuildConfig.VERSION_NAME)
     }
 
-    private val mealDbApi: TheMealDbApi = Retrofit.Builder()
-        .baseUrl(TheMealDbApi.BASE_URL)
-        .client(okHttpClient)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-        .create(TheMealDbApi::class.java)
-
     val recipeRepository: RecipeRepository by lazy {
-        RecipeRepository(mealDbApi, inventoryRepository, shoppingListRepository)
+        RecipeRepository(functions, householdSession, inventoryRepository, shoppingListRepository)
     }
 
     val mealPlanRepository: MealPlanRepository by lazy {
