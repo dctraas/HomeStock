@@ -4,6 +4,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,7 +26,9 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddShoppingCart
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -33,12 +36,15 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
@@ -46,6 +52,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -59,6 +66,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -71,12 +79,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -109,6 +119,11 @@ private enum class InventoryViewMode { LIST, GRID }
 @Composable
 fun InventoryScreen(
     onProductClick: (String) -> Unit,
+    onNavigateToScan: () -> Unit = {},
+    onNavigateToSearch: () -> Unit = {},
+    onNavigateToReceiptScan: () -> Unit = {},
+    onNavigateToAiRecognize: () -> Unit = {},
+    onNavigateToPremium: () -> Unit = {},
 ) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: InventoryViewModel = viewModel(
@@ -127,7 +142,13 @@ fun InventoryScreen(
     var viewMode by remember { mutableStateOf(InventoryViewMode.GRID) }
     var searchActive by remember { mutableStateOf(false) }
     var showProfileDialog by remember { mutableStateOf(false) }
+    var showAddMenu by remember { mutableStateOf(false) }
     var selectedBarcodes by remember { mutableStateOf(emptySet<String>()) }
+    // Bonnetje scannen / AI-productherkenning in the "+" menu below are premium-only, same
+    // gating as their entries in Instellingen/Meer and the (now-removed) Scannen tab.
+    val isPremium by application.container.householdMembersRepository
+        .observeHouseholdIsPremium()
+        .collectAsState(initial = false)
     val selectionMode = selectedBarcodes.isNotEmpty()
     val deviceProfile = application.container.deviceProfile
     val displayName by deviceProfile.displayName.collectAsState()
@@ -265,6 +286,13 @@ fun InventoryScreen(
                         }
                     },
                 )
+            }
+        },
+        floatingActionButton = {
+            if (!selectionMode) {
+                FloatingActionButton(onClick = { showAddMenu = true }) {
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.inventory_add_menu_cd))
+                }
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -483,6 +511,95 @@ fun InventoryScreen(
             },
             onDismiss = { showProfileDialog = false },
         )
+    }
+
+    if (showAddMenu) {
+        AddMenuDialog(
+            isPremium = isPremium,
+            onBarcodeScan = onNavigateToScan,
+            onSearchByName = onNavigateToSearch,
+            onReceiptScan = onNavigateToReceiptScan,
+            onAiRecognize = onNavigateToAiRecognize,
+            onNavigateToPremium = onNavigateToPremium,
+            onDismiss = { showAddMenu = false },
+        )
+    }
+}
+
+/**
+ * The "+" on Voorraad's four ways to add a product — barcode scannen and zoeken op naam are
+ * free, bonnetje scannen and AI-productherkenning are premium (locked options still open the
+ * paywall on tap rather than being disabled/hidden, so free users can see and go straight to
+ * upgrading instead of wondering why an option is greyed out).
+ */
+@Composable
+private fun AddMenuDialog(
+    isPremium: Boolean,
+    onBarcodeScan: () -> Unit,
+    onSearchByName: () -> Unit,
+    onReceiptScan: () -> Unit,
+    onAiRecognize: () -> Unit,
+    onNavigateToPremium: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.inventory_add_menu_title)) },
+        text = {
+            Column {
+                AddMenuRow(
+                    icon = Icons.Filled.QrCodeScanner,
+                    label = stringResource(R.string.inventory_add_menu_barcode),
+                    onClick = { onDismiss(); onBarcodeScan() },
+                )
+                AddMenuRow(
+                    icon = Icons.Filled.Search,
+                    label = stringResource(R.string.inventory_add_menu_search),
+                    onClick = { onDismiss(); onSearchByName() },
+                )
+                AddMenuRow(
+                    icon = Icons.Filled.Receipt,
+                    label = stringResource(R.string.more_beta_receipt_scan),
+                    premiumLocked = !isPremium,
+                    onClick = { onDismiss(); if (isPremium) onReceiptScan() else onNavigateToPremium() },
+                )
+                AddMenuRow(
+                    icon = Icons.Filled.AutoAwesome,
+                    label = stringResource(R.string.ai_recognize_title),
+                    premiumLocked = !isPremium,
+                    onClick = { onDismiss(); if (isPremium) onAiRecognize() else onNavigateToPremium() },
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun AddMenuRow(icon: ImageVector, label: String, premiumLocked: Boolean = false, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f).padding(start = 14.dp),
+        )
+        if (premiumLocked) {
+            Text(
+                text = stringResource(R.string.more_premium_locked_subtitle),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+            )
+        }
     }
 }
 

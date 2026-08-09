@@ -639,12 +639,15 @@ private fun ShoppingListRow(
                     onCheckedChange = onCheckedChange,
                     modifier = Modifier.padding(end = 10.dp).size(20.dp).scale(0.7f),
                 )
+                // No explicit containerColor/iconTint here any more — the coral secondaryContainer
+                // this used to pass showed up as an orange-ish tint/ring around every item without
+                // its own photo. Falling back to ProductImage's own default (primaryContainer)
+                // both fixes that and actually matches Voorraad's InventoryRow, which never
+                // overrode this in the first place.
                 ProductImage(
                     imageUrl = item.imageUrl,
                     fallbackIcon = category.icon,
                     shape = RoundedCornerShape(8.dp),
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.size(32.dp),
                 )
                 Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
@@ -759,12 +762,12 @@ private fun ShoppingListGridTile(
                 .clickable(onClick = onClick),
         ) {
             Box(modifier = Modifier.fillMaxWidth().aspectRatio(1.1f)) {
+                // Same fix as ShoppingListRow above — default ProductImage colors, not the
+                // coral secondaryContainer that used to read as an orange border/tint.
                 ProductImage(
                     imageUrl = item.imageUrl,
                     fallbackIcon = category.icon,
                     shape = SoftImageShape,
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    iconTint = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

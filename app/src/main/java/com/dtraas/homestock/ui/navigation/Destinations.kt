@@ -2,10 +2,10 @@ package com.dtraas.homestock.ui.navigation
 
 import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.dtraas.homestock.R
@@ -42,10 +42,14 @@ data class TopLevelDestination(
     val icon: ImageVector,
 )
 
+// Scannen used to sit here (middle slot) as the app's primary action; it's now reached via the
+// "+" on Voorraad instead (see InventoryScreen), which also offers zoeken/bonnetje/AI naast
+// barcode scannen in one place rather than needing its own permanent tab. Maaltijdplanner takes
+// its slot instead.
 val topLevelDestinations = listOf(
     TopLevelDestination(Destination.Inventory, R.string.nav_inventory, Icons.Filled.Inventory2),
     TopLevelDestination(Destination.ShoppingList, R.string.nav_shopping_list, Icons.Filled.ShoppingCart),
-    TopLevelDestination(Destination.Scan, R.string.nav_scan, Icons.Filled.CameraAlt),
+    TopLevelDestination(Destination.MealPlan, R.string.nav_meals, Icons.Filled.RestaurantMenu),
     TopLevelDestination(Destination.Notifications, R.string.nav_news, Icons.Filled.Notifications),
     TopLevelDestination(Destination.More, R.string.nav_more, Icons.Filled.MoreHoriz),
 )

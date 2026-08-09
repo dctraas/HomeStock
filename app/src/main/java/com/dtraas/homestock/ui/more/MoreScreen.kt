@@ -44,6 +44,7 @@ import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -75,6 +76,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
@@ -129,6 +131,7 @@ fun MoreScreen(
     val isAccountLinked by accountLinkRepository.observeIsLinked().collectAsState(initial = accountLinkRepository.linkedEmail != null)
     val householdMembersRepository = application.container.householdMembersRepository
     val isPremium by householdMembersRepository.observeHouseholdIsPremium().collectAsState(initial = false)
+    val memberCount by householdMembersRepository.observeMemberCount().collectAsState(initial = 0)
     val billingRepository = application.container.billingRepository
     val debugPremiumOverride by billingRepository.debugPremiumOverride.collectAsState()
     val storeRepository = application.container.storeRepository
@@ -196,33 +199,27 @@ fun MoreScreen(
             SettingsRow(
                 icon = Icons.Filled.Home,
                 title = stringResource(R.string.more_household_title),
-                subtitle = stringResource(R.string.more_household_code_format, householdId ?: "—"),
+                subtitle = stringResource(R.string.more_household_subtitle_format, memberCount, householdId ?: "—"),
                 onClick = onNavigateToHousehold,
-            )
-            SettingsRow(
-                icon = Icons.Filled.WorkspacePremium,
-                title = stringResource(R.string.more_premium_title),
-                subtitle = stringResource(if (isPremium) R.string.more_premium_active else R.string.more_premium_inactive),
-                onClick = onNavigateToPremium,
             )
 
             SectionHeader(stringResource(R.string.more_section_features))
             SettingsRow(
                 icon = Icons.Filled.BarChart,
                 title = stringResource(R.string.more_statistics_title),
-                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                 onClick = { if (isPremium) onNavigateToStatistics() else onNavigateToPremium() },
             )
             SettingsRow(
                 icon = Icons.Filled.RestaurantMenu,
                 title = stringResource(R.string.more_beta_recipes),
-                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                 onClick = { if (isPremium) onNavigateToRecipes() else onNavigateToPremium() },
             )
             SettingsRow(
                 icon = Icons.Filled.Receipt,
                 title = stringResource(R.string.more_beta_receipt_scan),
-                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                 onClick = { if (isPremium) onNavigateToReceiptScan() else onNavigateToPremium() },
             )
             // Premium-gated like its siblings above — unlike the on-device barcode scanner,
@@ -232,15 +229,16 @@ fun MoreScreen(
             SettingsRow(
                 icon = Icons.Filled.AutoAwesome,
                 title = stringResource(R.string.ai_recognize_title),
-                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                 onClick = { if (isPremium) onNavigateToAiRecognize() else onNavigateToPremium() },
             )
             SettingsRow(
                 icon = Icons.Filled.CalendarMonth,
                 title = stringResource(R.string.meal_plan_title),
-                subtitle = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                 onClick = { if (isPremium) onNavigateToMealPlan() else onNavigateToPremium() },
             )
+            PremiumPromoCard(isPremium = isPremium, onClick = onNavigateToPremium)
 
             SectionHeader(stringResource(R.string.more_section_preferences))
             SettingsRow(
@@ -500,9 +498,19 @@ private fun AccountCard(displayName: String?, photoPath: String?, onClick: () ->
     }
 }
 
-/** Generic tappable settings row: icon, title, optional subtitle. Opens a dialog on tap. */
+/**
+ * Generic tappable settings row: icon, title, optional subtitle. Opens a dialog on tap.
+ * [trailingLabel] is a short badge-like label at the far end of the row (e.g. "PREMIUM") —
+ * separate from [subtitle] since a row only ever needs one or the other, not both stacked.
+ */
 @Composable
-private fun SettingsRow(icon: ImageVector, title: String, subtitle: String? = null, onClick: () -> Unit) {
+private fun SettingsRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String? = null,
+    trailingLabel: String? = null,
+    onClick: () -> Unit,
+) {
     Card(
         modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -537,6 +545,70 @@ private fun SettingsRow(icon: ImageVector, title: String, subtitle: String? = nu
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
+                }
+            }
+            if (trailingLabel != null) {
+                Text(
+                    text = trailingLabel,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Promo card for upgrading, sitting at the bottom of Slimme Tools rather than a plain row in
+ * Account — the tools right above it are exactly what it's selling, so this reads as "here's
+ * what unlocks all of that" rather than a generic account-settings entry. Already-premium
+ * households still see it (as a quiet "Actief" confirmation, no Upgrade button) rather than
+ * having it disappear, so there's still an obvious place to check subscription status.
+ */
+@Composable
+private fun PremiumPromoCard(isPremium: Boolean, onClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+        shape = SoftCardShape,
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                shape = SoftBadgeShape,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(44.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = Icons.Filled.WorkspacePremium,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 12.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.more_premium_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+                Text(
+                    text = stringResource(if (isPremium) R.string.more_premium_active else R.string.more_premium_promo_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            }
+            if (!isPremium) {
+                Button(onClick = onClick) {
+                    Text(stringResource(R.string.more_premium_upgrade_action))
                 }
             }
         }

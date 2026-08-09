@@ -20,6 +20,7 @@
     <string name="nav_shopping_list">Liste</string>
     <string name="nav_inventory">Vorrat</string>
     <string name="nav_scan">Scannen</string>
+    <string name="nav_meals">Mahlzeiten</string>
     <string name="nav_news">Meldungen</string>
 
     <!-- Launcher shortcuts (long-press the app icon) -->
@@ -124,18 +125,21 @@
     <!-- Mehr -->
     <string name="more_household_title">Haushalt</string>
     <string name="more_household_code_format">Code: %1$s</string>
+    <string name="more_household_subtitle_format">%1$d Mitglieder · Code: %2$s</string>
     <string name="more_household_members_title">Mitglieder</string>
     <string name="more_household_member_unnamed">Namenloses Mitglied</string>
     <string name="more_household_member_you">Du</string>
     <string name="more_rename_household_error">Der Name konnte nicht geändert werden. Bitte versuche es erneut.</string>
-    <string name="more_premium_title">Premium</string>
+    <string name="more_premium_title">HomeStock Premium</string>
     <string name="more_premium_active">Aktiv</string>
     <string name="more_premium_inactive">Premium holen</string>
-    <string name="more_premium_locked_subtitle">Premium</string>
+    <string name="more_premium_locked_subtitle">PREMIUM</string>
+    <string name="more_premium_promo_subtitle">Schalte Rezepte, Essensplaner und mehr frei</string>
+    <string name="more_premium_upgrade_action">Upgrade</string>
     <string name="more_leave">Verlassen</string>
     <string name="more_leave_dialog_title">Haushalt verlassen?</string>
     <string name="more_leave_dialog_text">Du siehst den geteilten Vorrat und die Einkaufsliste dann nicht mehr auf diesem Gerät. Du kannst jederzeit mit dem Code wieder beitreten.</string>
-    <string name="more_delete_household">Haushalt löschen</string>
+    <string name="more_delete_household">Entfernen</string>
     <string name="more_delete_household_dialog_title">Haushalt endgültig löschen?</string>
     <string name="more_delete_household_dialog_text">Der gesamte Vorrat, die Einkaufsliste und der Verlauf dieses Haushalts werden für alle Mitglieder endgültig gelöscht. Dies kann nicht rückgängig gemacht werden.</string>
     <string name="more_delete_household_confirm">Löschen</string>
@@ -167,8 +171,8 @@
     <string name="account_link_unlink_dialog_title">Konto trennen?</string>
     <string name="account_link_unlink_dialog_text">Dein Haushaltszugriff ist dann nicht mehr geschützt — wenn du die App deinstallierst oder das Gerät wechselst, kannst du den Zugriff auf diesen Haushalt erneut verlieren.</string>
     <string name="account_link_unlink_error">Trennen ist fehlgeschlagen. Bitte versuche es erneut.</string>
-    <string name="more_section_preferences">Präferenzen</string>
-    <string name="more_theme_title">Anzeige</string>
+    <string name="more_section_preferences">APP-EINSTELLUNGEN</string>
+    <string name="more_theme_title">Design</string>
     <string name="more_theme_option_system">Systemstandard</string>
     <string name="more_theme_option_light">Hell</string>
     <string name="more_theme_option_dark">Dunkel</string>
@@ -184,18 +188,18 @@
     <string name="more_stores_empty">Noch keine Geschäfte hinzugefügt.</string>
     <string name="more_stores_remove_format">%1$s entfernen</string>
     <string name="more_statistics_title">Statistiken</string>
-    <string name="more_section_about">Über</string>
+    <string name="more_section_about">SUPPORT</string>
     <string name="more_about_version_format">App-Version %1$s</string>
-    <string name="more_about_feedback">Feedback</string>
+    <string name="more_about_feedback">Feedback geben</string>
     <string name="more_about_rate_app">App bewerten</string>
-    <string name="more_about_privacy_policy">Datenschutzerklärung</string>
+    <string name="more_about_privacy_policy">Datenschutzrichtlinie</string>
     <string name="more_about_licenses">Lizenzen</string>
     <string name="more_feedback_placeholder">Erzähl uns, was du denkst…</string>
     <string name="more_feedback_send">Senden</string>
     <string name="more_feedback_star_cd">Stern %1$d</string>
     <string name="more_feedback_sent_confirmation">Danke für dein Feedback!</string>
     <string name="more_feedback_error">Feedback konnte nicht gesendet werden. Bitte versuche es später erneut.</string>
-    <string name="more_section_features">Funktionen</string>
+    <string name="more_section_features">Smarte Tools</string>
     <string name="more_beta_recipes">Rezepte</string>
     <string name="more_beta_receipt_scan">Kassenbon scannen</string>
     <string name="more_section_debug">Debug</string>
@@ -217,6 +221,10 @@
     <string name="inventory_mark_favorite_cd">Als Favorit markieren</string>
     <string name="inventory_unmark_favorite_cd">Favorit entfernen</string>
     <string name="inventory_search_cd">Suchen</string>
+    <string name="inventory_add_menu_cd">Hinzufügen</string>
+    <string name="inventory_add_menu_title">Produkt hinzufügen</string>
+    <string name="inventory_add_menu_barcode">Barcode scannen</string>
+    <string name="inventory_add_menu_search">Nach Namen suchen</string>
     <string name="inventory_search_close_cd">Suche schließen</string>
     <string name="inventory_sort_active_cd_format">Sortieren (aktiv: %1$s)</string>
     <string name="inventory_removed_snackbar_format">%1$s entfernt</string>

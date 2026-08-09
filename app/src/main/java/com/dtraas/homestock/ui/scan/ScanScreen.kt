@@ -23,12 +23,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -68,6 +70,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
+import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.util.concurrent.Executors
@@ -75,6 +78,7 @@ import java.util.concurrent.Executors
 @Composable
 fun ScanScreen(
     isActive: Boolean,
+    onBack: () -> Unit,
     onNeedsConfirmation: (String) -> Unit,
     onSearchClick: () -> Unit,
     onAiRecognizeClick: () -> Unit,
@@ -132,6 +136,20 @@ fun ScanScreen(
     val restockedFormat = stringResource(R.string.inventory_restocked_snackbar_format)
 
     Scaffold(
+        // No top bar of its own before this — the barcode scanner used to be a persistent
+        // bottom-nav tab, which never needed a back action. Now reached via Voorraad's "+"
+        // menu (see InventoryScreen) instead, it's a normal pushed screen and needs one like
+        // any other.
+        topBar = {
+            HomeStockTopAppBar(
+                title = { Text(stringResource(R.string.nav_scan)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
+                    }
+                },
+            )
+        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         if (hasCameraPermission) {

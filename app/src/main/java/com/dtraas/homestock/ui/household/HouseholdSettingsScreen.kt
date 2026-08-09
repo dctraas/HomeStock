@@ -25,12 +25,14 @@ import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -207,12 +209,14 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                NameSection(
+                HouseholdSection(
                     nameInput = nameInput,
                     onNameInputChange = { if (it.length <= HouseholdRepository.HOUSEHOLD_NAME_MAX_LENGTH) nameInput = it },
+                    members = members,
+                    isDeleting = isDeleting,
+                    onLeaveClick = { showLeaveConfirm = true },
+                    onDeleteClick = { showDeleteConfirm = true },
                 )
-
-                MembersSection(members = members)
 
                 if (otherHouseholds.isNotEmpty()) {
                     SwitchHouseholdSection(
@@ -222,12 +226,6 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                         onForgetClick = { householdSession.forgetHousehold(it.id) },
                     )
                 }
-
-                ActionButtonsRow(
-                    isDeleting = isDeleting,
-                    onLeaveClick = { showLeaveConfirm = true },
-                    onDeleteClick = { showDeleteConfirm = true },
-                )
             }
 
             CodeSection(householdCode = householdId)
@@ -360,13 +358,26 @@ private fun CodeSection(householdCode: String?) {
 }
 
 /**
- * No explicit save button any more — a rename is saved when the screen is left (see
+ * Naam, Leden, and the leave/delete actions all in one card rather than three separate ones —
+ * they're all "manage this household" actions on the same object, and splitting them into
+ * their own cards mostly just added visual weight without actually separating unrelated
+ * concerns (unlike [SwitchHouseholdSection] below, which really is a different thing: switching
+ * *away* from this household to a different one).
+ *
+ * No explicit save button for the name field — a rename is saved when the screen is left (see
  * [HouseholdSettingsScreen]'s `saveNameAndGoBack`), which replaces both the old dialog's
  * disconnected "OK" button (that only ever dismissed, never saved) and this screen's earlier
  * always-visible save button.
  */
 @Composable
-private fun NameSection(nameInput: String, onNameInputChange: (String) -> Unit) {
+private fun HouseholdSection(
+    nameInput: String,
+    onNameInputChange: (String) -> Unit,
+    members: List<HouseholdMember>,
+    isDeleting: Boolean,
+    onLeaveClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+) {
     SectionCard {
         Text(stringResource(R.string.household_name_label), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         OutlinedTextField(
@@ -375,20 +386,22 @@ private fun NameSection(nameInput: String, onNameInputChange: (String) -> Unit) 
             singleLine = true,
             modifier = Modifier.fillMaxWidth(),
         )
-    }
-}
 
-@Composable
-private fun MembersSection(members: List<HouseholdMember>) {
-    SectionCard {
         Text(
             text = stringResource(R.string.more_household_members_title),
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 4.dp),
         )
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             members.forEach { member -> HouseholdMemberRow(member) }
         }
+
+        ActionButtonsRow(
+            isDeleting = isDeleting,
+            onLeaveClick = onLeaveClick,
+            onDeleteClick = onDeleteClick,
+        )
     }
 }
 
@@ -460,30 +473,40 @@ private fun RecentHouseholdRow(
 }
 
 /**
- * Leave/delete as two plain, right-aligned icon buttons — no card, no red background, no text
- * labels. A neutral (theme-aware "black") tint rather than the error color keeps them from
- * reading as loud/alarming at a glance; the actual warning is the confirmation dialog each one
- * opens (see [HouseholdSettingsScreen]'s showLeaveConfirm/showDeleteConfirm), not the icon color.
+ * Leave/delete as two plain, right-aligned, labeled buttons, side by side on one row. A
+ * neutral (theme-aware "black") tint rather than the error color keeps them from reading as
+ * loud/alarming at a glance; the actual warning is the confirmation dialog each one opens (see
+ * [HouseholdSettingsScreen]'s showLeaveConfirm/showDeleteConfirm), not the button color.
  */
 @Composable
 private fun ActionButtonsRow(isDeleting: Boolean, onLeaveClick: () -> Unit, onDeleteClick: () -> Unit) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
     ) {
-        IconButton(onClick = onLeaveClick, enabled = !isDeleting) {
+        OutlinedButton(
+            onClick = onLeaveClick,
+            enabled = !isDeleting,
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+        ) {
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.Logout,
-                contentDescription = stringResource(R.string.more_leave),
-                tint = MaterialTheme.colorScheme.onSurface,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
             )
+            Text(stringResource(R.string.more_leave), modifier = Modifier.padding(start = 6.dp))
         }
-        IconButton(onClick = onDeleteClick, enabled = !isDeleting) {
+        OutlinedButton(
+            onClick = onDeleteClick,
+            enabled = !isDeleting,
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+        ) {
             Icon(
                 imageVector = Icons.Filled.DeleteForever,
-                contentDescription = stringResource(R.string.more_delete_household),
-                tint = MaterialTheme.colorScheme.onSurface,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
             )
+            Text(stringResource(R.string.more_delete_household), modifier = Modifier.padding(start = 6.dp))
         }
     }
 }

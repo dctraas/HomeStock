@@ -20,6 +20,7 @@
     <string name="nav_shopping_list">Lijst</string>
     <string name="nav_inventory">Voorraad</string>
     <string name="nav_scan">Scannen</string>
+    <string name="nav_meals">Maaltijden</string>
     <string name="nav_news">Meldingen</string>
     <string name="nav_more">Meer</string>
 
@@ -125,18 +126,21 @@
     <!-- Meer -->
     <string name="more_household_title">Huishouden</string>
     <string name="more_household_code_format">Code: %1$s</string>
+    <string name="more_household_subtitle_format">%1$d leden · Code: %2$s</string>
     <string name="more_household_members_title">Leden</string>
     <string name="more_household_member_unnamed">Naamloos lid</string>
     <string name="more_household_member_you">Jij</string>
     <string name="more_rename_household_error">Kon de naam niet wijzigen. Probeer het opnieuw.</string>
-    <string name="more_premium_title">Premium</string>
+    <string name="more_premium_title">HomeStock Premium</string>
     <string name="more_premium_active">Actief</string>
     <string name="more_premium_inactive">Word Premium</string>
-    <string name="more_premium_locked_subtitle">Premium</string>
+    <string name="more_premium_locked_subtitle">PREMIUM</string>
+    <string name="more_premium_promo_subtitle">Ontgrendel recepten, maaltijdplanner en meer</string>
+    <string name="more_premium_upgrade_action">Upgrade</string>
     <string name="more_leave">Verlaten</string>
     <string name="more_leave_dialog_title">Huishouden verlaten?</string>
     <string name="more_leave_dialog_text">Je ziet de gedeelde voorraad en boodschappenlijst dan niet meer op dit toestel. Je kunt op elk moment weer aansluiten met de code.</string>
-    <string name="more_delete_household">Huishouden verwijderen</string>
+    <string name="more_delete_household">Verwijderen</string>
     <string name="more_delete_household_dialog_title">Huishouden permanent verwijderen?</string>
     <string name="more_delete_household_dialog_text">Alle voorraad, boodschappenlijst en geschiedenis van dit huishouden worden definitief verwijderd voor alle huisgenoten. Dit kan niet ongedaan worden gemaakt.</string>
     <string name="more_delete_household_confirm">Verwijderen</string>
@@ -168,8 +172,8 @@
     <string name="account_link_unlink_dialog_title">Account ontkoppelen?</string>
     <string name="account_link_unlink_dialog_text">Je huishouden-toegang is dan niet meer beschermd — als je de app verwijdert of van toestel wisselt, kun je opnieuw de toegang tot dit huishouden verliezen.</string>
     <string name="account_link_unlink_error">Ontkoppelen is niet gelukt. Probeer het opnieuw.</string>
-    <string name="more_section_preferences">Voorkeuren</string>
-    <string name="more_theme_title">Weergave</string>
+    <string name="more_section_preferences">APP-INSTELLINGEN</string>
+    <string name="more_theme_title">Thema</string>
     <string name="more_theme_option_system">Systeem standaard</string>
     <string name="more_theme_option_light">Licht</string>
     <string name="more_theme_option_dark">Donker</string>
@@ -185,18 +189,18 @@
     <string name="more_stores_empty">Nog geen winkels toegevoegd.</string>
     <string name="more_stores_remove_format">%1$s verwijderen</string>
     <string name="more_statistics_title">Statistieken</string>
-    <string name="more_section_about">Over</string>
+    <string name="more_section_about">ONDERSTEUNING</string>
     <string name="more_about_version_format">App versie %1$s</string>
-    <string name="more_about_feedback">Feedback</string>
+    <string name="more_about_feedback">Feedback geven</string>
     <string name="more_about_rate_app">Beoordeel de app</string>
-    <string name="more_about_privacy_policy">Privacyverklaring</string>
+    <string name="more_about_privacy_policy">Privacybeleid</string>
     <string name="more_about_licenses">Licenties</string>
     <string name="more_feedback_placeholder">Vertel ons wat je vindt…</string>
     <string name="more_feedback_send">Verzenden</string>
     <string name="more_feedback_star_cd">Ster %1$d</string>
     <string name="more_feedback_sent_confirmation">Bedankt voor je feedback!</string>
     <string name="more_feedback_error">Kon feedback niet verzenden. Probeer het later opnieuw.</string>
-    <string name="more_section_features">Functies</string>
+    <string name="more_section_features">Slimme Tools</string>
     <string name="more_beta_recipes">Recepten</string>
     <string name="more_beta_receipt_scan">Bonnetje scannen</string>
     <string name="more_section_debug">Debug</string>
@@ -218,6 +222,10 @@
     <string name="inventory_mark_favorite_cd">Markeren als favoriet</string>
     <string name="inventory_unmark_favorite_cd">Favoriet verwijderen</string>
     <string name="inventory_search_cd">Zoeken</string>
+    <string name="inventory_add_menu_cd">Toevoegen</string>
+    <string name="inventory_add_menu_title">Product toevoegen</string>
+    <string name="inventory_add_menu_barcode">Barcode scannen</string>
+    <string name="inventory_add_menu_search">Zoeken op naam</string>
     <string name="inventory_search_close_cd">Zoeken sluiten</string>
     <string name="inventory_sort_active_cd_format">Sorteren (actief: %1$s)</string>
     <string name="inventory_removed_snackbar_format">%1$s verwijderd</string>

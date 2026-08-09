@@ -1,28 +1,20 @@
 package com.dtraas.homestock.ui.navigation
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -56,7 +48,6 @@ import com.dtraas.homestock.ui.scanresult.ScanResultScreen
 import com.dtraas.homestock.ui.searchproduct.SearchProductScreen
 import com.dtraas.homestock.ui.shoppinglist.ShoppingListScreen
 import com.dtraas.homestock.ui.statistics.StatisticsScreen
-import com.dtraas.homestock.ui.theme.SoftBadgeShape
 
 @Composable
 fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Unit = {}) {
@@ -119,6 +110,7 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
             composable(Destination.Scan.route) {
                 ScanScreen(
                     isActive = currentRoute == Destination.Scan.route,
+                    onBack = { navController.popBackStack() },
                     onNeedsConfirmation = { barcode ->
                         navController.navigate(Destination.ScanResult.createRoute(barcode))
                     },
@@ -132,6 +124,11 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                     onProductClick = { barcode ->
                         navController.navigate(Destination.ProductDetail.createRoute(barcode))
                     },
+                    onNavigateToScan = { navController.navigate(Destination.Scan.route) },
+                    onNavigateToSearch = { navController.navigate(Destination.SearchProduct.route) },
+                    onNavigateToReceiptScan = { navController.navigate(Destination.ReceiptScan.route) },
+                    onNavigateToAiRecognize = { navController.navigate(Destination.AiRecognize.route) },
+                    onNavigateToPremium = { navController.navigate(Destination.Premium.route) },
                 )
             }
             composable(Destination.ShoppingList.route) {
@@ -265,7 +262,6 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
 private fun HomeStockBottomBar(navController: NavHostController, currentRoute: String?) {
     NavigationBar {
         topLevelDestinations.forEach { destination ->
-            val isScan = destination.destination == Destination.Scan
             val label = stringResource(destination.labelRes)
             NavigationBarItem(
                 selected = currentRoute == destination.destination.route,
@@ -290,34 +286,8 @@ private fun HomeStockBottomBar(navController: NavHostController, currentRoute: S
                         }
                     }
                 },
-                icon = {
-                    if (isScan) {
-                        // The scan action is the app's primary action, so it gets a
-                        // filled circular badge to stand out from the plain icons.
-                        Surface(
-                            shape = SoftBadgeShape,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(44.dp),
-                        ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                Icon(
-                                    imageVector = destination.icon,
-                                    contentDescription = label,
-                                    tint = MaterialTheme.colorScheme.onPrimary,
-                                    modifier = Modifier.size(24.dp),
-                                )
-                            }
-                        }
-                    } else {
-                        Icon(destination.icon, contentDescription = label)
-                    }
-                },
+                icon = { Icon(destination.icon, contentDescription = label) },
                 label = { Text(label) },
-                colors = if (isScan) {
-                    NavigationBarItemDefaults.colors(indicatorColor = Color.Transparent)
-                } else {
-                    NavigationBarItemDefaults.colors()
-                },
             )
         }
     }
