@@ -233,6 +233,18 @@ private fun CameraPreview(
     // tab becomes active — and resetting the "already scanned" guard with it — is what
     // actually makes scanning work again.
     DisposableEffect(isActive) {
+        // Tracks only the use cases *this* effect run bound, so cleanup below can unbind
+        // exactly those — never the process-wide unbindAll(). ProcessCameraProvider is a
+        // single shared instance across the whole app; a global unbindAll() here would also
+        // tear down another screen's camera (e.g. AiRecognizeScreen's) if its bind happened
+        // to land first, which is exactly what caused the frozen-preview bug: navigating to
+        // AI-productherkenning let it bind its own camera, then this effect's disposal
+        // (isActive turning false) called unbindAll() and ripped that fresh binding out from
+        // under it a moment later — and the same race in reverse froze the scanner again on
+        // the way back.
+        var boundPreview: Preview? = null
+        var boundAnalysis: ImageAnalysis? = null
+
         if (isActive) {
             scannedCode = null
             val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
@@ -266,7 +278,8 @@ private fun CameraPreview(
                         })
                     }
 
-                cameraProvider.unbindAll()
+                boundPreview = preview
+                boundAnalysis = analysis
                 cameraProvider.bindToLifecycle(
                     lifecycleOwner,
                     CameraSelector.DEFAULT_BACK_CAMERA,
@@ -277,7 +290,12 @@ private fun CameraPreview(
         }
 
         onDispose {
-            runCatching { ProcessCameraProvider.getInstance(context).get().unbindAll() }
+            runCatching {
+                val useCases = listOfNotNull(boundPreview, boundAnalysis).toTypedArray()
+                if (useCases.isNotEmpty()) {
+                    ProcessCameraProvider.getInstance(context).get().unbind(*useCases)
+                }
+            }
         }
     }
 

@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircleOutline
@@ -254,6 +255,10 @@ private fun SlotCard(
  * this to look nicer specifically for hand-typed meals — they get a colored fallback badge
  * with a fork-and-knife icon instead, the same "always a visual, real photo or otherwise"
  * treatment ProductImage gives products with no picture elsewhere in the app.
+ *
+ * Image and delete-icon sizing here deliberately match ShoppingListRow's (32dp rounded-rect
+ * thumbnail, 32dp/18dp icon button) so an added meal reads as the same kind of list row as a
+ * boodschappenlijst item, rather than the larger, looser spacing this used to have.
  */
 @Composable
 private fun PlannedMealRow(meal: PlannedMeal, onClick: () -> Unit, onRemove: () -> Unit) {
@@ -269,20 +274,20 @@ private fun PlannedMealRow(meal: PlannedMeal, onClick: () -> Unit, onRemove: () 
                 model = meal.thumbnailUrl,
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
-                modifier = Modifier.size(48.dp).clip(SoftImageShape),
+                modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)),
             )
         } else {
             Surface(
-                shape = SoftImageShape,
+                shape = RoundedCornerShape(8.dp),
                 color = MaterialTheme.colorScheme.tertiaryContainer,
-                modifier = Modifier.size(48.dp),
+                modifier = Modifier.size(32.dp),
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
                         imageVector = Icons.Filled.Restaurant,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                        modifier = Modifier.size(22.dp),
+                        modifier = Modifier.size(16.dp),
                     )
                 }
             }
@@ -292,13 +297,14 @@ private fun PlannedMealRow(meal: PlannedMeal, onClick: () -> Unit, onRemove: () 
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).padding(start = 12.dp),
+            modifier = Modifier.weight(1f).padding(start = 10.dp),
         )
-        IconButton(onClick = onRemove) {
+        IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
             Icon(
                 imageVector = Icons.Filled.Close,
                 contentDescription = stringResource(R.string.meal_plan_clear_cd),
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
             )
         }
     }

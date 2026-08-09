@@ -305,35 +305,28 @@ fun InventoryScreen(
                         .fillMaxWidth()
                         .padding(horizontal = 4.dp),
                 ) {
-                    IconButton(onClick = { searchActive = true }, modifier = Modifier.size(56.dp)) {
+                    IconButton(onClick = { searchActive = true }, modifier = Modifier.size(48.dp)) {
                         Icon(
                             Icons.Filled.Search,
                             contentDescription = stringResource(R.string.inventory_search_cd),
-                            modifier = Modifier.size(28.dp),
+                            modifier = Modifier.size(24.dp),
                         )
                     }
+                    // Icons here were 56dp each with 28dp glyphs — comfortably tap-able but
+                    // visually heavy for a row that's just filters/view options, not primary
+                    // actions. Shrinking to a standard 48dp touch target tightens the gaps
+                    // between them without making them harder to tap.
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        // Favorieten used to be its own star icon here; it's now one of the
+                        // choices inside the filter dropdown instead (alongside category),
+                        // which both saves a slot in this row and keeps every way of
+                        // narrowing the list in one place.
                         FilterMenuButton(
-                            selected = uiState.selectedCategory,
-                            onSelected = viewModel::onCategoryFilterChange,
+                            selectedCategory = uiState.selectedCategory,
+                            favoritesOnly = uiState.favoritesOnly,
+                            onCategorySelected = viewModel::onCategoryFilterChange,
+                            onFavoritesToggle = viewModel::onFavoritesFilterChange,
                         )
-                        IconButton(
-                            onClick = { viewModel.onFavoritesFilterChange(!uiState.favoritesOnly) },
-                            modifier = Modifier.size(56.dp),
-                        ) {
-                            Icon(
-                                imageVector = if (uiState.favoritesOnly) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                                contentDescription = stringResource(
-                                    if (uiState.favoritesOnly) {
-                                        R.string.inventory_favorites_filter_active_cd
-                                    } else {
-                                        R.string.inventory_favorites_filter_cd
-                                    },
-                                ),
-                                tint = if (uiState.favoritesOnly) MaterialTheme.colorScheme.primary else LocalContentColor.current,
-                                modifier = Modifier.size(28.dp),
-                            )
-                        }
                         SortMenuButton(
                             selected = uiState.sortOption,
                             onSelected = viewModel::onSortOptionChange,
@@ -346,7 +339,7 @@ fun InventoryScreen(
                                     InventoryViewMode.LIST
                                 }
                             },
-                            modifier = Modifier.size(56.dp),
+                            modifier = Modifier.size(48.dp),
                         ) {
                             Icon(
                                 imageVector = if (viewMode == InventoryViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
@@ -355,7 +348,7 @@ fun InventoryScreen(
                                 } else {
                                     stringResource(R.string.inventory_show_as_list_cd)
                                 },
-                                modifier = Modifier.size(28.dp),
+                                modifier = Modifier.size(24.dp),
                             )
                         }
                     }
@@ -501,21 +494,21 @@ private fun SortMenuButton(
     var menuExpanded by remember { mutableStateOf(false) }
     val isCustomSort = selected != InventorySortOption.NAME
     Box {
-        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(56.dp)) {
+        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(48.dp)) {
             if (isCustomSort) {
                 val activeFormat = stringResource(R.string.inventory_sort_active_cd_format)
                 BadgedBox(badge = { Badge() }) {
                     Icon(
                         Icons.Filled.Sort,
                         contentDescription = activeFormat.format(stringResource(selected.labelRes)),
-                        modifier = Modifier.size(28.dp),
+                        modifier = Modifier.size(24.dp),
                     )
                 }
             } else {
                 Icon(
                     Icons.Filled.Sort,
                     contentDescription = stringResource(R.string.inventory_sort_cd),
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(24.dp),
                 )
             }
         }
@@ -540,26 +533,36 @@ private fun SortMenuButton(
 
 @Composable
 private fun FilterMenuButton(
-    selected: Category?,
-    onSelected: (Category?) -> Unit,
+    selectedCategory: Category?,
+    favoritesOnly: Boolean,
+    onCategorySelected: (Category?) -> Unit,
+    onFavoritesToggle: (Boolean) -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
+    val isActive = selectedCategory != null || favoritesOnly
     Box {
-        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(56.dp)) {
-            if (selected != null) {
+        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(48.dp)) {
+            if (isActive) {
+                // Both filter dimensions can be active together (e.g. "Favorieten" within
+                // "Groente & fruit"), so the badge's description lists whichever are on
+                // rather than assuming just one.
+                val activeLabels = listOfNotNull(
+                    stringResource(R.string.inventory_favorites_filter_menu_item).takeIf { favoritesOnly },
+                    selectedCategory?.let { stringResource(it.displayNameRes) },
+                ).joinToString(", ")
                 val activeFormat = stringResource(R.string.inventory_filter_active_cd_format)
                 BadgedBox(badge = { Badge() }) {
                     Icon(
                         Icons.Filled.FilterAlt,
-                        contentDescription = activeFormat.format(stringResource(selected.displayNameRes)),
-                        modifier = Modifier.size(28.dp),
+                        contentDescription = activeFormat.format(activeLabels),
+                        modifier = Modifier.size(24.dp),
                     )
                 }
             } else {
                 Icon(
                     Icons.Filled.FilterAlt,
                     contentDescription = stringResource(R.string.inventory_filter_cd),
-                    modifier = Modifier.size(28.dp),
+                    modifier = Modifier.size(24.dp),
                 )
             }
         }
@@ -567,12 +570,36 @@ private fun FilterMenuButton(
             DropdownMenuItem(
                 text = { Text(stringResource(R.string.inventory_filter_all)) },
                 trailingIcon = {
-                    if (selected == null) {
+                    if (selectedCategory == null && !favoritesOnly) {
                         Icon(Icons.Filled.Check, contentDescription = null)
                     }
                 },
                 onClick = {
-                    onSelected(null)
+                    onCategorySelected(null)
+                    onFavoritesToggle(false)
+                    menuExpanded = false
+                },
+            )
+            // Favorieten used to be its own star icon next to this menu; folding it in here
+            // instead means every way of narrowing the list lives in one place. It's
+            // independent of the category choice below — both can be active at once.
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.inventory_favorites_filter_menu_item)) },
+                leadingIcon = {
+                    Icon(
+                        imageVector = if (favoritesOnly) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                        contentDescription = null,
+                        tint = if (favoritesOnly) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                        modifier = Modifier.size(20.dp),
+                    )
+                },
+                trailingIcon = {
+                    if (favoritesOnly) {
+                        Icon(Icons.Filled.Check, contentDescription = null)
+                    }
+                },
+                onClick = {
+                    onFavoritesToggle(!favoritesOnly)
                     menuExpanded = false
                 },
             )
@@ -587,12 +614,12 @@ private fun FilterMenuButton(
                         Icon(category.icon, contentDescription = null, modifier = Modifier.size(20.dp))
                     },
                     trailingIcon = {
-                        if (selected == category) {
+                        if (selectedCategory == category) {
                             Icon(Icons.Filled.Check, contentDescription = null)
                         }
                     },
                     onClick = {
-                        onSelected(if (selected == category) null else category)
+                        onCategorySelected(if (selectedCategory == category) null else category)
                         menuExpanded = false
                     },
                 )

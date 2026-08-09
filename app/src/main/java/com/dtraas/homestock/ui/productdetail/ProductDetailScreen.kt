@@ -23,6 +23,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
@@ -174,25 +175,12 @@ fun ProductDetailScreen(
                     }
                 },
                 actions = {
-                    // Toevoegen aan boodschappenlijst / Verwijderen used to live buried inside
-                    // the Voorraad card; both act on the product as a whole (not specifically
-                    // its stock row), so they now sit here as top-level screen actions instead —
-                    // a more logical spot than tucked away in one particular section.
-                    if (stillInInventory) {
-                        IconButton(onClick = viewModel::addToShoppingList) {
-                            Icon(
-                                Icons.Filled.PlaylistAdd,
-                                contentDescription = stringResource(R.string.product_detail_add_to_shopping_list),
-                            )
-                        }
-                        IconButton(onClick = { showDeleteConfirm = true }) {
-                            Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.product_detail_remove))
-                        }
-                    }
-                    // The favorite star used to live here; it now sits on the hero image (see
-                    // ProductHero) so this slot can host the edit button, which expands and
-                    // scrolls to the "Product details" section below instead of navigating away.
-                    if (uiState.product != null) {
+                    // Toevoegen aan boodschappenlijst / Verwijderen / Bewerken now sit together
+                    // on the "Voorraad" heading row below instead (right-aligned, equal sizing)
+                    // so they're grouped with the stock controls they act on. This top-bar slot
+                    // stays only as a fallback for products no longer in inventory, where there
+                    // is no Voorraad row to anchor them to.
+                    if (!stillInInventory && uiState.product != null) {
                         IconButton(onClick = {
                             productDetailsExpanded = true
                             coroutineScope.launch {
@@ -276,8 +264,16 @@ fun ProductDetailScreen(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 CategoryChip(category)
-                product?.nutriScoreGrade?.let {
-                    GradeBadge(it, stringResource(R.string.product_detail_nutriscore_format, it.uppercase(Locale.ROOT)))
+                val nutriScoreGrade = product?.nutriScoreGrade
+                if (nutriScoreGrade != null) {
+                    GradeBadge(
+                        nutriScoreGrade,
+                        stringResource(R.string.product_detail_nutriscore_format, nutriScoreGrade.uppercase(Locale.ROOT)),
+                    )
+                } else if (product != null) {
+                    // No Nutri-Score data for this product — show an explicit "unknown" badge
+                    // instead of silently omitting it, so it's clear this isn't a loading gap.
+                    NutriScoreUnavailableBadge(stringResource(R.string.product_detail_nutriscore_unavailable))
                 }
             }
 
@@ -301,7 +297,57 @@ fun ProductDetailScreen(
             // specifically because it sits right under the category/Nutri-Score icon row
             // rather than under a card like the rest do.
             if (stillInInventory) {
-                SectionHeader(stringResource(R.string.section_stock), modifier = Modifier.padding(top = sectionGap + 8.dp))
+                // Toevoegen aan boodschappenlijst / Bewerken / Verwijderen live here, right-
+                // aligned against the "Voorraad" heading — they all act on this product's stock,
+                // so this groups them with the section they belong to instead of the generic top
+                // bar. All three share the same 36dp footprint / 20dp glyph so none reads heavier
+                // than the others.
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = sectionGap + 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = stringResource(R.string.section_stock),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        IconButton(onClick = viewModel::addToShoppingList, modifier = Modifier.size(36.dp)) {
+                            Icon(
+                                Icons.Filled.PlaylistAdd,
+                                contentDescription = stringResource(R.string.product_detail_add_to_shopping_list),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                        if (uiState.product != null) {
+                            IconButton(
+                                onClick = {
+                                    productDetailsExpanded = true
+                                    coroutineScope.launch {
+                                        withFrameNanos {}
+                                        withFrameNanos {}
+                                        scrollState.animateScrollTo(productDetailsBottomOffset)
+                                    }
+                                },
+                                modifier = Modifier.size(36.dp),
+                            ) {
+                                Icon(
+                                    Icons.Filled.Edit,
+                                    contentDescription = stringResource(R.string.product_detail_edit_cd),
+                                    modifier = Modifier.size(20.dp),
+                                )
+                            }
+                        }
+                        IconButton(onClick = { showDeleteConfirm = true }, modifier = Modifier.size(36.dp)) {
+                            Icon(
+                                Icons.Filled.Delete,
+                                contentDescription = stringResource(R.string.product_detail_remove),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
+                    }
+                }
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(top = headerToCardGap),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -439,17 +485,7 @@ fun ProductDetailScreen(
     }
 }
 
-@Composable
-private fun SectionHeader(title: String, modifier: Modifier = Modifier) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium,
-        color = MaterialTheme.colorScheme.primary,
-        modifier = modifier.fillMaxWidth(),
-    )
-}
-
-/** Same as [SectionHeader], but with a plus/minus toggle to expand or collapse the section below it. */
+/** A plain section title, with a plus/minus toggle to expand or collapse the section below it. */
 @Composable
 private fun CollapsibleSectionHeader(title: String, expanded: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
     Row(
@@ -584,6 +620,28 @@ private fun GradeBadge(grade: String, contentDescription: String) {
                 text = grade.uppercase(Locale.ROOT),
                 style = MaterialTheme.typography.titleSmall,
                 color = Color.White,
+            )
+        }
+    }
+}
+
+/** Shown in place of [GradeBadge] when a product has no known Nutri-Score, so the absence of
+ *  data reads as an explicit "unknown" state rather than a blank gap next to the category chip. */
+@Composable
+private fun NutriScoreUnavailableBadge(contentDescription: String) {
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        modifier = Modifier
+            .size(32.dp)
+            .semantics { this.contentDescription = contentDescription },
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+            Icon(
+                Icons.Filled.HelpOutline,
+                contentDescription = null,
+                modifier = Modifier.size(18.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

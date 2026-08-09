@@ -213,6 +213,7 @@
     <string name="inventory_filter_active_cd_format">Filtrer (actif : %1$s)</string>
     <string name="inventory_favorites_filter_cd">Afficher uniquement les favoris</string>
     <string name="inventory_favorites_filter_active_cd">Afficher uniquement les favoris (actif)</string>
+    <string name="inventory_favorites_filter_menu_item">Favoris</string>
     <string name="inventory_mark_favorite_cd">Marquer comme favori</string>
     <string name="inventory_unmark_favorite_cd">Retirer des favoris</string>
     <string name="inventory_search_cd">Rechercher</string>
@@ -260,6 +261,7 @@
     <string name="product_detail_delete_dialog_title">Supprimer le produit ?</string>
     <string name="product_detail_delete_dialog_text">Voulez-vous vraiment supprimer ce produit de votre stock ?</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
+    <string name="product_detail_nutriscore_unavailable">Nutri-Score non disponible</string>
     <string name="product_detail_ingredients_title">Ingrédients</string>
     <string name="product_detail_nutrition_title">Valeurs nutritionnelles</string>
     <string name="product_detail_nutrition_energy">Énergie</string>

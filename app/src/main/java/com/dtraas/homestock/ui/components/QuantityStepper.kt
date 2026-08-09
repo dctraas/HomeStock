@@ -1,25 +1,31 @@
 package com.dtraas.homestock.ui.components
 
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dtraas.homestock.R
@@ -69,11 +75,11 @@ fun QuantityStepper(
 }
 
 /**
- * An [IconButton] that also repeats [onClick] while held down, for quickly running a
- * quantity up or down instead of tapping one-by-one. Observes the button's own press
- * state via its [MutableInteractionSource] rather than adding a second, competing touch
+ * A small tappable icon button that also repeats [onClick] while held down, for quickly
+ * running a quantity up or down instead of tapping one-by-one. Observes the button's own
+ * press state via its [MutableInteractionSource] rather than adding a second, competing touch
  * handler — a plain tap releases well before the initial repeat delay elapses, so it
- * still results in exactly the one click [IconButton] already fires on its own.
+ * still results in exactly the one click the underlying `clickable` already fires on its own.
  *
  * [collectLatest] does the cancellation bookkeeping for us: a Release/Cancel interaction
  * (or another Press) arriving while the block below is still waiting out the initial
@@ -101,13 +107,31 @@ private fun RepeatingIconButton(
         }
     }
 
-    IconButton(
-        onClick = onClick,
-        enabled = enabled,
-        interactionSource = interactionSource,
-        modifier = modifier,
-        content = content,
-    )
+    // A plain clickable Box instead of Material3's IconButton: IconButton enforces its own
+    // built-in minimum touch-target size internally, which silently overrides a smaller
+    // explicit .size() passed in from the caller — the dense stepper variant asks for a 32dp
+    // button, but IconButton kept rendering (and reserving Row space for) its own larger
+    // default regardless, throwing off centering between the "-", count and "+" — the
+    // "niet gelijkmatig uitgelijnd" complaint. A custom Box gives this exact control over its
+    // own footprint instead of fighting IconButton's internal sizing.
+    Box(
+        modifier = modifier
+            .clip(CircleShape)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                enabled = enabled,
+                onClick = onClick,
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        val contentColor = if (enabled) {
+            LocalContentColor.current
+        } else {
+            LocalContentColor.current.copy(alpha = 0.38f)
+        }
+        CompositionLocalProvider(LocalContentColor provides contentColor, content = content)
+    }
 }
 
 /** Formats e.g. 500+GRAM as "500g", 1+LITER as "1L", 6+STUKS as "6 stuks". */

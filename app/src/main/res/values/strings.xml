@@ -214,6 +214,7 @@
     <string name="inventory_filter_active_cd_format">Filteren (actief: %1$s)</string>
     <string name="inventory_favorites_filter_cd">Alleen favorieten tonen</string>
     <string name="inventory_favorites_filter_active_cd">Alleen favorieten tonen (actief)</string>
+    <string name="inventory_favorites_filter_menu_item">Favorieten</string>
     <string name="inventory_mark_favorite_cd">Markeren als favoriet</string>
     <string name="inventory_unmark_favorite_cd">Favoriet verwijderen</string>
     <string name="inventory_search_cd">Zoeken</string>
@@ -261,6 +262,7 @@
     <string name="product_detail_delete_dialog_title">Product verwijderen?</string>
     <string name="product_detail_delete_dialog_text">Weet je zeker dat je dit product uit je voorraad wilt verwijderen?</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
+    <string name="product_detail_nutriscore_unavailable">Nutri-Score niet beschikbaar</string>
     <string name="product_detail_ingredients_title">Ingrediënten</string>
     <string name="product_detail_nutrition_title">Voedingswaarden</string>
     <string name="product_detail_nutrition_energy">Energie</string>

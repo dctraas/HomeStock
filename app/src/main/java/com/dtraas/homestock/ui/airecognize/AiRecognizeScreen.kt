@@ -251,18 +251,33 @@ private fun AiCamera(
     var isCapturing by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
+        // Tracks only the use cases bound here, so cleanup can unbind exactly those instead
+        // of the process-wide unbindAll() — ProcessCameraProvider is a single shared instance
+        // app-wide, and a global unbindAll() on disposal can race with ScanScreen's own
+        // camera bind/unbind (e.g. when navigating back), tearing down whichever screen bound
+        // second. That race was the cause of the preview freezing shortly after opening this
+        // screen, and again after returning to the barcode scanner.
+        var boundPreview: Preview? = null
+        var boundCapture: ImageCapture? = null
+
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
         cameraProviderFuture.addListener({
             val cameraProvider = cameraProviderFuture.get()
             val preview = Preview.Builder().build().also { it.surfaceProvider = previewView.surfaceProvider }
             val capture = ImageCapture.Builder().build()
-            cameraProvider.unbindAll()
+            boundPreview = preview
+            boundCapture = capture
             cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture)
             imageCapture = capture
         }, ContextCompat.getMainExecutor(context))
 
         onDispose {
-            runCatching { ProcessCameraProvider.getInstance(context).get().unbindAll() }
+            runCatching {
+                val useCases = listOfNotNull(boundPreview, boundCapture).toTypedArray()
+                if (useCases.isNotEmpty()) {
+                    ProcessCameraProvider.getInstance(context).get().unbind(*useCases)
+                }
+            }
             cameraExecutor.shutdown()
         }
     }
