@@ -28,6 +28,11 @@ sealed class Destination(val route: String) {
     data object RecipeDetail : Destination("recipe_detail/{mealId}") {
         fun createRoute(mealId: String) = "recipe_detail/$mealId"
     }
+    data object CustomRecipeEdit : Destination("custom_recipe_edit?recipeId={recipeId}") {
+        /** [recipeId] null creates a new recipe; non-null edits an existing one. */
+        fun createRoute(recipeId: String? = null) =
+            if (recipeId != null) "custom_recipe_edit?recipeId=$recipeId" else "custom_recipe_edit"
+    }
     data object ReceiptScan : Destination("receipt_scan")
     data object AiRecognize : Destination("ai_recognize")
     data object MealPlan : Destination("meal_plan")

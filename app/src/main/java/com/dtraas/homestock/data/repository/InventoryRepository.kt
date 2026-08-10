@@ -4,6 +4,7 @@ import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.local.entity.InventoryItemEntity
 import com.dtraas.homestock.data.local.entity.ProductEntity
 import com.dtraas.homestock.data.model.Category
+import com.dtraas.homestock.data.model.ExpiryEstimator
 import com.dtraas.homestock.data.remote.observeSnapshot
 import com.dtraas.homestock.data.remote.observeSnapshots
 import com.google.firebase.firestore.FirebaseFirestore
@@ -71,17 +72,23 @@ class InventoryRepository(
      * Registers a barcode scan: bumps (or creates) the inventory quantity by
      * [quantityDelta] and appends a scan-history entry.
      *
+     * [category], when given, seeds a suggested houdbaarheidsdatum (see [ExpiryEstimator]) —
+     * but only the first time this barcode enters inventory (`existing == null`). A restock of
+     * an item that's already here keeps whatever expiry it already has (including none, if the
+     * user cleared it), rather than silently reintroducing a guessed date.
+     *
      * Returns the product name if this scan dropped the quantity below its
      * minimum and triggered an auto-restock onto the shopping list, so the
      * caller can tell the user why an item just appeared there.
      */
-    suspend fun recordScan(barcode: String, quantityDelta: Int = 1): String? {
+    suspend fun recordScan(barcode: String, quantityDelta: Int = 1, category: Category? = null): String? {
         val householdId = householdSession.householdId.value ?: return null
         val inventoryDoc = inventoryCollection(householdId).document(barcode)
         val existing = InventoryItemEntity.fromDocument(inventoryDoc.get().await())
         val newQuantity = (existing?.quantity ?: 0) + quantityDelta
+        val expirationDate = if (existing == null) category?.let { ExpiryEstimator.estimate(it) } else existing.expirationDate
         val updated = (existing ?: InventoryItemEntity(barcode = barcode, quantity = 0, updatedAt = 0L))
-            .copy(quantity = newQuantity.coerceAtLeast(0), updatedAt = System.currentTimeMillis())
+            .copy(quantity = newQuantity.coerceAtLeast(0), updatedAt = System.currentTimeMillis(), expirationDate = expirationDate)
         inventoryDoc.set(updated.toMap()).await()
         scanHistoryCollection(householdId).add(
             mapOf(

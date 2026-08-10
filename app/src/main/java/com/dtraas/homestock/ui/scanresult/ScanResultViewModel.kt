@@ -87,7 +87,7 @@ class ScanResultViewModel(
             } else {
                 productRepository.saveManualProduct(barcode, state.name, state.category)
             }
-            inventoryRepository.recordScan(barcode, state.quantity)
+            inventoryRepository.recordScan(barcode, state.quantity, state.category)
             _uiState.update { it.copy(savedToInventory = true) }
         }
     }

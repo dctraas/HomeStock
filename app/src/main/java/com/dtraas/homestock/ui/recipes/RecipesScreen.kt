@@ -14,9 +14,11 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.WifiOff
@@ -77,6 +79,7 @@ import com.dtraas.homestock.ui.theme.SoftImageShape
 fun RecipesScreen(
     onBack: () -> Unit,
     onRecipeClick: (String) -> Unit,
+    onAddCustomRecipe: () -> Unit = {},
 ) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: RecipesViewModel = viewModel(
@@ -116,38 +119,51 @@ fun RecipesScreen(
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            ) {
-                SearchField(
-                    query = uiState.searchQuery,
-                    onQueryChange = { query ->
-                        viewModel.onSearchQueryChange(query)
-                        if (query.isEmpty()) viewModel.clearSearch()
-                    },
-                    placeholder = stringResource(R.string.recipes_search_placeholder),
-                    modifier = Modifier.weight(1f),
-                )
-                Button(
-                    onClick = viewModel::search,
-                    enabled = uiState.searchQuery.isNotBlank() && !uiState.isLoading,
-                    modifier = Modifier.padding(start = 8.dp),
+            RecipesTabRow(selected = uiState.tab, onSelect = viewModel::selectTab)
+
+            if (uiState.tab == RecipesTab.BROWSE) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 ) {
-                    Text(stringResource(R.string.search_product_action))
+                    SearchField(
+                        query = uiState.searchQuery,
+                        onQueryChange = { query ->
+                            viewModel.onSearchQueryChange(query)
+                            if (query.isEmpty()) viewModel.clearSearch()
+                        },
+                        placeholder = stringResource(R.string.recipes_search_placeholder),
+                        modifier = Modifier.weight(1f),
+                    )
+                    Button(
+                        onClick = viewModel::search,
+                        enabled = uiState.searchQuery.isNotBlank() && !uiState.isLoading,
+                        modifier = Modifier.padding(start = 8.dp),
+                    ) {
+                        Text(stringResource(R.string.search_product_action))
+                    }
+                }
+                TextButton(
+                    onClick = { showGenerateDialog = true },
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                ) {
+                    Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(stringResource(R.string.recipes_generate_ai_button), modifier = Modifier.padding(start = 8.dp))
+                }
+                AllergenFilterRow(
+                    excludedAllergens = uiState.excludedAllergens,
+                    onToggle = viewModel::toggleAllergen,
+                )
+            } else if (uiState.tab == RecipesTab.CUSTOM) {
+                TextButton(
+                    onClick = onAddCustomRecipe,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                ) {
+                    Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(stringResource(R.string.recipes_add_custom_button), modifier = Modifier.padding(start = 8.dp))
                 }
             }
-            TextButton(
-                onClick = { showGenerateDialog = true },
-                modifier = Modifier.padding(horizontal = 12.dp),
-            ) {
-                Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
-                Text(stringResource(R.string.recipes_generate_ai_button), modifier = Modifier.padding(start = 8.dp))
-            }
-            AllergenFilterRow(
-                excludedAllergens = uiState.excludedAllergens,
-                onToggle = viewModel::toggleAllergen,
-            )
+
             when {
                 uiState.isLoading -> Box(
                     modifier = Modifier.fillMaxSize(),
@@ -163,19 +179,28 @@ fun RecipesScreen(
                     retryLabel = stringResource(R.string.scan_result_retry),
                     onRetry = viewModel::search,
                 )
-                uiState.recipes.isEmpty() -> RecipesMessage(
-                    modifier = Modifier.fillMaxSize(),
-                    icon = Icons.Filled.RestaurantMenu,
-                    title = stringResource(R.string.recipes_empty_title),
-                    subtitle = stringResource(R.string.recipes_empty_subtitle),
-                )
-                else -> Column(modifier = Modifier.fillMaxSize()) {
-                    Text(
-                        text = stringResource(R.string.recipes_beta_notice),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                uiState.recipes.isEmpty() -> {
+                    val (emptyTitle, emptySubtitle) = when (uiState.tab) {
+                        RecipesTab.BROWSE -> stringResource(R.string.recipes_empty_title) to stringResource(R.string.recipes_empty_subtitle)
+                        RecipesTab.FAVORITES -> stringResource(R.string.recipes_favorites_empty_title) to stringResource(R.string.recipes_favorites_empty_subtitle)
+                        RecipesTab.CUSTOM -> stringResource(R.string.recipes_custom_empty_title) to stringResource(R.string.recipes_custom_empty_subtitle)
+                    }
+                    RecipesMessage(
+                        modifier = Modifier.fillMaxSize(),
+                        icon = if (uiState.tab == RecipesTab.FAVORITES) Icons.Filled.Favorite else Icons.Filled.RestaurantMenu,
+                        title = emptyTitle,
+                        subtitle = emptySubtitle,
                     )
+                }
+                else -> Column(modifier = Modifier.fillMaxSize()) {
+                    if (uiState.tab == RecipesTab.BROWSE) {
+                        Text(
+                            text = stringResource(R.string.recipes_beta_notice),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        )
+                    }
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -280,6 +305,32 @@ private fun GenerateRecipeDialog(
             }
         },
     )
+}
+
+/** Switches between browsing Spoonacular, the household's favorites, and its own custom recipes — see [RecipesTab]. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RecipesTabRow(selected: RecipesTab, onSelect: (RecipesTab) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        val tabs = listOf(
+            RecipesTab.BROWSE to R.string.recipes_tab_browse,
+            RecipesTab.FAVORITES to R.string.recipes_tab_favorites,
+            RecipesTab.CUSTOM to R.string.recipes_tab_custom,
+        )
+        tabs.forEach { (tab, labelRes) ->
+            FilterChip(
+                selected = selected == tab,
+                onClick = { onSelect(tab) },
+                label = { Text(stringResource(labelRes)) },
+            )
+        }
+    }
 }
 
 /** Toggleable chips for the curated allergen subset (see RecipeRepository.filterableAllergens) — a selected chip means that allergen is excluded. */

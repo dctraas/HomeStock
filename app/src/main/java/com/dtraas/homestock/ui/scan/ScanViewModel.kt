@@ -1,6 +1,7 @@
 package com.dtraas.homestock.ui.scan
 
 import androidx.lifecycle.ViewModel
+import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.repository.InventoryRepository
 import com.dtraas.homestock.data.repository.ProductRepository
 
@@ -29,7 +30,7 @@ class ScanViewModel(
     suspend fun handleScannedBarcode(barcode: String): ScanOutcome {
         val cached = productRepository.findCached(barcode)
         return if (cached != null) {
-            val restockedProductName = inventoryRepository.recordScan(barcode, 1)
+            val restockedProductName = inventoryRepository.recordScan(barcode, 1, Category.fromStorageKey(cached.category))
             ScanOutcome.QuickAdded(cached.name, restockedProductName)
         } else {
             ScanOutcome.NeedsConfirmation

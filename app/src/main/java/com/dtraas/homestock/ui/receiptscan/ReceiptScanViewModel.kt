@@ -149,13 +149,13 @@ class ReceiptScanViewModel(
                     // category read (same "found online" convention as ScanResultViewModel:
                     // keep the database's name/brand/unit, only the category comes from us).
                     productRepository.updateCategory(matchedBarcode, item.category)
-                    inventoryRepository.recordScan(matchedBarcode, item.quantity)
+                    inventoryRepository.recordScan(matchedBarcode, item.quantity, item.category)
                 } else {
                     // No database match — synthesize a barcode, same role a scanned barcode
                     // plays elsewhere as the product key.
                     val syntheticBarcode = "receipt-${UUID.randomUUID()}"
                     productRepository.saveManualProduct(syntheticBarcode, item.name, item.category)
-                    inventoryRepository.recordScan(syntheticBarcode, item.quantity)
+                    inventoryRepository.recordScan(syntheticBarcode, item.quantity, item.category)
                 }
             }
             _step.value = ReceiptScanStep.Done

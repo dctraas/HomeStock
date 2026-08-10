@@ -16,9 +16,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -56,6 +59,7 @@ import com.dtraas.homestock.ui.theme.SoftCardShape
 fun RecipeDetailScreen(
     mealId: String,
     onBack: () -> Unit,
+    onEdit: (String) -> Unit = {},
 ) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val languageTag = LocalConfiguration.current.locales[0].language
@@ -74,6 +78,24 @@ fun RecipeDetailScreen(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
+                    }
+                },
+                actions = {
+                    if (detail != null) {
+                        IconButton(onClick = viewModel::toggleFavorite) {
+                            Icon(
+                                imageVector = if (uiState.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                                contentDescription = stringResource(
+                                    if (uiState.isFavorite) R.string.recipes_favorite_remove_cd else R.string.recipes_favorite_add_cd,
+                                ),
+                                tint = if (uiState.isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                        if (detail.isCustom) {
+                            IconButton(onClick = { onEdit(mealId) }) {
+                                Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.recipes_edit_custom_cd))
+                            }
+                        }
                     }
                 },
             )
@@ -137,6 +159,8 @@ fun RecipeDetailScreen(
                 }
                 if (detail.isAiGenerated) {
                     RecipeBadge(icon = Icons.Filled.AutoAwesome, label = stringResource(R.string.recipes_ai_generated_badge))
+                } else if (detail.isCustom) {
+                    RecipeBadge(icon = Icons.Filled.Edit, label = stringResource(R.string.recipes_custom_badge))
                 } else if (detail.translatedForLocale != null) {
                     RecipeBadge(icon = Icons.Filled.Translate, label = stringResource(R.string.recipes_translated_badge))
                 }

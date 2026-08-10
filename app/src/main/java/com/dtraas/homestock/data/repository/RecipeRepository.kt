@@ -2,13 +2,21 @@ package com.dtraas.homestock.data.repository
 
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.model.Category
+import com.dtraas.homestock.data.remote.observeSnapshots
+import com.google.firebase.firestore.DocumentSnapshot
+import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.functions.FirebaseFunctionsException
 import java.io.IOException
 import java.util.Locale
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
 
 /** A [meal] suggestion. [matchCount] is how many of the searched-for inventory ingredients it
@@ -46,13 +54,25 @@ sealed interface GenerateRecipeResult {
  *   language (see [withTranslatedTitles]/[translatedDetailIfNeeded]) — Spoonacular itself is
  *   English-only, unlike TheMealDB-era KitchenPal-style localized databases.
  *
+ * Two more recipe sources live entirely in this household's own Firestore, no Cloud Function
+ * involved (nothing to keep server-side, no AI/API cost):
+ * - Custom recipes ([saveCustomRecipe]/[observeCustomRecipes]) — hand-entered by the household,
+ *   `custom-`-prefixed ids, stored in full so they don't depend on any external database.
+ * - Favorites ([addFavorite]/[observeFavoriteRecipes]) — a bookmark on *any* recipe (Spoonacular,
+ *   AI-generated, or custom), storing a full [RecipeDetail] snapshot rather than just an id. That
+ *   matters most for AI-generated recipes, whose only other home is [detailCache] — gone the
+ *   moment the process dies — and it also means opening a favorited Spoonacular recipe never
+ *   needs a network round trip either.
+ *
  * Inventory item names are typically Dutch grocery-brand names while Spoonacular (like TheMealDB
  * before it) only really understands English ingredient terms, so [dutchToEnglishIngredient] is
  * still a small, best-effort keyword dictionary bridging the two for [suggestRecipes] — not a
  * real translation, just enough overlap to turn "kipfilet" into a "Chicken" search term.
  * [generateRecipe] doesn't need this: Claude is given the raw (Dutch) inventory names directly.
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 class RecipeRepository(
+    private val firestore: FirebaseFirestore,
     private val functions: FirebaseFunctions,
     private val householdSession: HouseholdSession,
     private val inventoryRepository: InventoryRepository,
@@ -62,6 +82,12 @@ class RecipeRepository(
     // fetch, or an AI generation) are kept here so opening one doesn't need a second network
     // call/Spoonacular point spend — see [getRecipeDetail].
     private val detailCache = ConcurrentHashMap<String, RecipeDetail>()
+
+    private fun customRecipesCollection(householdId: String) =
+        firestore.collection("households").document(householdId).collection("customRecipes")
+
+    private fun favoriteRecipesCollection(householdId: String) =
+        firestore.collection("households").document(householdId).collection("favoriteRecipes")
 
     /**
      * Looks at what's in inventory, picks a handful of recognized ingredient terms from it, and
@@ -158,16 +184,46 @@ class RecipeRepository(
     }
 
     /**
-     * Fetches one recipe's full detail — from cache if a search/browse/generation already put it
-     * there, otherwise via `getRecipeInformation` (always English — see that Cloud Function). If
-     * [languageTag] isn't English, also fetches/attaches a machine translation (see
+     * Fetches one recipe's full detail. Checked in order:
+     * 1. [detailCache] — a search/browse/generation already put it there.
+     * 2. [customRecipesCollection] when [mealId] is `custom-`-prefixed — the household's own
+     *    recipe, source of truth regardless of favorite status.
+     * 3. [favoriteRecipesCollection] — covers an AI-generated recipe that outlived the process
+     *    (see the class doc) and saves a network call for an already-favorited Spoonacular one.
+     * 4. `getRecipeInformation` (always English — see that Cloud Function), for everything else.
+     *
+     * If [languageTag] isn't English, also fetches/attaches a machine translation (see
      * [translatedDetailIfNeeded]) before returning, so RecipeDetailScreen never has to juggle a
      * separate translation call itself.
      */
     suspend fun getRecipeDetail(mealId: String, languageTag: String? = null): Result<RecipeDetail> {
         detailCache[mealId]?.let { return Result.success(translatedDetailIfNeeded(it, languageTag)) }
+        val householdId = householdSession.householdId.value ?: return Result.failure(IllegalStateException("no_household"))
+
+        if (mealId.startsWith(CUSTOM_ID_PREFIX)) {
+            return try {
+                val snapshot = customRecipesCollection(householdId).document(mealId).get().await()
+                val detail = mapFirestoreDocToDetail(snapshot, isCustom = true)
+                    ?: return Result.failure(NoSuchElementException("Recipe $mealId not found"))
+                cacheDetail(detail)
+                Result.success(detail)
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+
+        try {
+            val favoriteSnapshot = favoriteRecipesCollection(householdId).document(mealId).get().await()
+            mapFirestoreDocToDetail(favoriteSnapshot)?.let { detail ->
+                cacheDetail(detail)
+                return Result.success(translatedDetailIfNeeded(detail, languageTag))
+            }
+        } catch (e: Exception) {
+            // Falls through to the normal Spoonacular fetch below — a favorites lookup hiccup
+            // shouldn't stop the recipe from loading the usual way.
+        }
+
         return try {
-            val householdId = householdSession.householdId.value ?: return Result.failure(IllegalStateException("no_household"))
             val requestData = hashMapOf("householdId" to householdId, "id" to mealId)
             val result = functions.getHttpsCallable("getRecipeInformation").call(requestData).await()
             val response = result.getData() as? Map<*, *> ?: return Result.failure(NoSuchElementException("Recipe $mealId not found"))
@@ -178,6 +234,104 @@ class RecipeRepository(
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    /** The household's own hand-entered recipes (see [saveCustomRecipe]), alphabetical by name. */
+    fun observeCustomRecipes(): Flow<List<RecipeSuggestion>> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(emptyList())
+            } else {
+                customRecipesCollection(householdId).observeSnapshots().map { snapshot ->
+                    snapshot.documents
+                        .mapNotNull { mapFirestoreDocToDetail(it, isCustom = true) }
+                        .sortedBy { it.name.lowercase() }
+                        .map { RecipeSuggestion(RecipeSummary(it.id, it.name, it.thumbnailUrl)) }
+                }
+            }
+        }
+
+    /**
+     * Creates a new hand-entered recipe when [id] is null, or overwrites an existing one when
+     * it isn't (RecipeDetailScreen's edit flow) — either way the result is already in
+     * [detailCache], ready for immediate navigation to RecipeDetailScreen without a re-fetch.
+     * No thumbnail: this app has no image-upload flow anywhere, so custom recipes simply don't
+     * get one rather than needing one built just for this.
+     */
+    suspend fun saveCustomRecipe(
+        id: String?,
+        name: String,
+        category: String?,
+        area: String?,
+        readyInMinutes: Int?,
+        instructions: String?,
+        ingredients: List<Pair<String, String>>,
+    ): Result<RecipeDetail> {
+        val trimmedName = name.trim()
+        if (trimmedName.isEmpty()) return Result.failure(IllegalArgumentException("name is required"))
+        val householdId = householdSession.householdId.value ?: return Result.failure(IllegalStateException("no_household"))
+        val recipeId = id ?: "$CUSTOM_ID_PREFIX${UUID.randomUUID()}"
+        val detail = RecipeDetail(
+            id = recipeId,
+            name = trimmedName,
+            thumbnailUrl = null,
+            category = category?.trim()?.takeIf { it.isNotEmpty() },
+            area = area?.trim()?.takeIf { it.isNotEmpty() },
+            instructions = instructions?.trim()?.takeIf { it.isNotEmpty() },
+            ingredients = ingredients,
+            readyInMinutes = readyInMinutes,
+            isCustom = true,
+        )
+        return try {
+            customRecipesCollection(householdId).document(recipeId).set(detailToFirestoreMap(detail)).await()
+            // Keeps an already-favorited custom recipe's bookmark showing the freshly edited
+            // content instead of a stale snapshot from before this save.
+            if (favoriteRecipesCollection(householdId).document(recipeId).get().await().exists()) {
+                favoriteRecipesCollection(householdId).document(recipeId).set(detailToFirestoreMap(detail)).await()
+            }
+            cacheDetail(detail)
+            Result.success(detail)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun deleteCustomRecipe(id: String) {
+        val householdId = householdSession.householdId.value ?: return
+        customRecipesCollection(householdId).document(id).delete().await()
+        favoriteRecipesCollection(householdId).document(id).delete().await()
+        detailCache.remove(id)
+    }
+
+    /** Bookmarked recipes (any source — Spoonacular, AI-generated, or custom), alphabetical by name. */
+    fun observeFavoriteRecipes(): Flow<List<RecipeSuggestion>> =
+        observeFavoriteSnapshots().map { docs ->
+            docs.mapNotNull { mapFirestoreDocToDetail(it) }
+                .sortedBy { it.name.lowercase() }
+                .map { RecipeSuggestion(RecipeSummary(it.id, it.name, it.thumbnailUrl)) }
+        }
+
+    /** Cheap membership check for RecipeDetailScreen's favorite toggle — avoids mapping full detail just to know one id's state. */
+    fun observeFavoriteIds(): Flow<Set<String>> = observeFavoriteSnapshots().map { docs -> docs.map { it.id }.toSet() }
+
+    private fun observeFavoriteSnapshots(): Flow<List<DocumentSnapshot>> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(emptyList())
+            } else {
+                favoriteRecipesCollection(householdId).observeSnapshots().map { it.documents }
+            }
+        }
+
+    /** Stores a full snapshot of [detail] as a favorite — see the class doc for why a snapshot rather than just the id. */
+    suspend fun addFavorite(detail: RecipeDetail) {
+        val householdId = householdSession.householdId.value ?: return
+        favoriteRecipesCollection(householdId).document(detail.id).set(detailToFirestoreMap(detail)).await()
+    }
+
+    suspend fun removeFavorite(id: String) {
+        val householdId = householdSession.householdId.value ?: return
+        favoriteRecipesCollection(householdId).document(id).delete().await()
     }
 
     /**
@@ -322,13 +476,14 @@ class RecipeRepository(
      * [matchedIngredients]/[missingIngredients] depend on) via the `translateRecipe` Cloud
      * Function ("detail" mode), re-caching the translated result so re-opening the same recipe
      * doesn't re-translate it. Returns [detail] unchanged when no translation is needed: no/
-     * English [languageTag], an [RecipeDetail.isAiGenerated] recipe (Claude already generates
-     * those directly in the target language), a translation already cached for this exact
-     * locale, or a translation attempt that failed — English content is still useful.
+     * English [languageTag], an [RecipeDetail.isAiGenerated] or [RecipeDetail.isCustom] recipe
+     * (both already in whatever language the household typed/generated them in), a translation
+     * already cached for this exact locale, or a translation attempt that failed — English
+     * content is still useful.
      */
     private suspend fun translatedDetailIfNeeded(detail: RecipeDetail, languageTag: String?): RecipeDetail {
         if (languageTag == null || languageTag == "en") return detail
-        if (detail.isAiGenerated) return detail
+        if (detail.isAiGenerated || detail.isCustom) return detail
         if (detail.translatedForLocale == languageTag) return detail
         return try {
             val householdId = householdSession.householdId.value ?: return detail
@@ -435,6 +590,52 @@ class RecipeRepository(
         )
     }
 
+    /**
+     * Maps a `customRecipes`/`favoriteRecipes` Firestore doc back into a [RecipeDetail] — both
+     * collections store the same field shape (see [detailToFirestoreMap]), so one mapper covers
+     * both. [isCustom] is forced true for reads from `customRecipesCollection`, since a favorited
+     * custom recipe's own doc there is the one place that still needs the flag stamped on read
+     * rather than trusted from the stored data (a favorite of a *non*-custom recipe correctly
+     * carries `isCustom = false` in its own doc already).
+     */
+    private fun mapFirestoreDocToDetail(doc: DocumentSnapshot, isCustom: Boolean = false): RecipeDetail? {
+        val data = doc.data ?: return null
+        val name = (data["name"] as? String)?.trim().orEmpty()
+        if (name.isEmpty()) return null
+        val rawIngredients = data["ingredients"] as? List<*> ?: emptyList<Any?>()
+        val ingredients = rawIngredients.mapNotNull { entry ->
+            val ingredientMap = entry as? Map<*, *> ?: return@mapNotNull null
+            val ingredientName = (ingredientMap["name"] as? String)?.trim().orEmpty()
+            if (ingredientName.isEmpty()) return@mapNotNull null
+            ingredientName to ((ingredientMap["measure"] as? String)?.trim().orEmpty())
+        }
+        return RecipeDetail(
+            id = doc.id,
+            name = name,
+            thumbnailUrl = data["thumbnailUrl"] as? String,
+            category = data["category"] as? String,
+            area = data["area"] as? String,
+            instructions = data["instructions"] as? String,
+            ingredients = ingredients,
+            readyInMinutes = (data["readyInMinutes"] as? Number)?.toInt(),
+            isAiGenerated = (data["isAiGenerated"] as? Boolean) ?: false,
+            isCustom = isCustom || (data["isCustom"] as? Boolean) ?: false,
+        )
+    }
+
+    /** Inverse of [mapFirestoreDocToDetail] — only the plain English/original fields, never `translatedX`: a favorite should re-translate fresh next time it's opened, same as any other cached detail. */
+    private fun detailToFirestoreMap(detail: RecipeDetail): Map<String, Any?> = mapOf(
+        "name" to detail.name,
+        "thumbnailUrl" to detail.thumbnailUrl,
+        "category" to detail.category,
+        "area" to detail.area,
+        "instructions" to detail.instructions,
+        "ingredients" to detail.ingredients.map { (name, measure) -> mapOf("name" to name, "measure" to measure) },
+        "readyInMinutes" to detail.readyInMinutes,
+        "isAiGenerated" to detail.isAiGenerated,
+        "isCustom" to detail.isCustom,
+    )
+
     /** Maps `generateRecipe`'s {title, cuisine, estimatedMinutes, ingredients, instructions} shape into the same [RecipeDetail] the rest of the app already knows how to render. */
     private fun mapGeneratedRecipeToDetail(map: Map<*, *>): RecipeDetail? {
         val title = (map["title"] as? String)?.trim().orEmpty()
@@ -489,6 +690,9 @@ class RecipeRepository(
         excludedAllergens.mapNotNull { allergenToSpoonacularIntolerance[it] }
 
     companion object {
+        /** Id prefix for hand-entered recipes (see [saveCustomRecipe]) — lets [getRecipeDetail] route straight to Firestore instead of guessing from a failed Spoonacular lookup. */
+        const val CUSTOM_ID_PREFIX = "custom-"
+
         // Most common/relevant allergens for everyday recipes, out of the full 14 EU-regulated
         // ones in [Allergen] — the rarer ones (sesame, sulphites, lupin, molluscs, mustard,
         // celery) aren't worth a filter chip here and don't map cleanly onto Spoonacular's

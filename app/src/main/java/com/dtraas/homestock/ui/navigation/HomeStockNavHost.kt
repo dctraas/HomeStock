@@ -43,6 +43,7 @@ import com.dtraas.homestock.ui.notifications.NotificationsScreen
 import com.dtraas.homestock.ui.premium.PremiumScreen
 import com.dtraas.homestock.ui.productdetail.ProductDetailScreen
 import com.dtraas.homestock.ui.receiptscan.ReceiptScanScreen
+import com.dtraas.homestock.ui.recipes.CustomRecipeEditScreen
 import com.dtraas.homestock.ui.recipes.RecipeDetailScreen
 import com.dtraas.homestock.ui.recipes.RecipesScreen
 import com.dtraas.homestock.ui.scan.ScanScreen
@@ -217,6 +218,7 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                     onRecipeClick = { mealId ->
                         navController.navigate(Destination.RecipeDetail.createRoute(mealId))
                     },
+                    onAddCustomRecipe = { navController.navigate(Destination.CustomRecipeEdit.createRoute()) },
                 )
             }
             composable(
@@ -227,6 +229,36 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                 RecipeDetailScreen(
                     mealId = mealId,
                     onBack = { navController.popBackStack() },
+                    onEdit = { recipeId -> navController.navigate(Destination.CustomRecipeEdit.createRoute(recipeId)) },
+                )
+            }
+            composable(
+                route = Destination.CustomRecipeEdit.route,
+                arguments = listOf(navArgument("recipeId") { type = NavType.StringType; nullable = true; defaultValue = null }),
+            ) { entry ->
+                val recipeId = entry.arguments?.getString("recipeId")
+                CustomRecipeEditScreen(
+                    recipeId = recipeId,
+                    onBack = { navController.popBackStack() },
+                    onSaved = { savedId ->
+                        // Always a fresh navigate rather than popping back to an existing
+                        // RecipeDetailScreen instance (the edit flow) — that screen's ViewModel
+                        // already fetched detail before this save and has no reason to refresh
+                        // on its own, so it would otherwise show stale pre-edit content. Popping
+                        // up to Recipes first clears both the editor and any such stale detail
+                        // screen; the fresh RecipeDetailScreen this pushes reads the just-saved
+                        // detail straight from RecipeRepository's cache, no network round trip.
+                        navController.navigate(Destination.RecipeDetail.createRoute(savedId)) {
+                            popUpTo(Destination.Recipes.route) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    },
+                    onDeleted = {
+                        // Pop both the editor and the detail screen underneath it — the recipe
+                        // it showed no longer exists.
+                        val popped = navController.popBackStack(Destination.Recipes.route, inclusive = false)
+                        if (!popped) navController.popBackStack()
+                    },
                 )
             }
             composable(Destination.ReceiptScan.route) {

@@ -10,7 +10,10 @@ data class RecipeSummary(val id: String, val name: String, val thumbnailUrl: Str
  *
  * [isAiGenerated] recipes (see [RecipeRepository.generateRecipe]) come from Claude rather than
  * the Spoonacular database — RecipeDetailScreen shows a small badge for these so it's clear
- * they're AI-invented rather than a real, tested recipe.
+ * they're AI-invented rather than a real, tested recipe. [isCustom] recipes (see
+ * [RecipeRepository.saveCustomRecipe]) are hand-entered by the household itself — like
+ * [isAiGenerated] ones they're already in whatever language the household typed them in, so
+ * [RecipeRepository.translatedDetailIfNeeded] skips both rather than machine-translating them.
  *
  * Spoonacular's content is always English. When the app's language isn't English,
  * [RecipeRepository.getRecipeDetail] fetches an AI translation into the separate `translatedX`
@@ -33,6 +36,7 @@ data class RecipeDetail(
     val ingredients: List<Pair<String, String>>,
     val readyInMinutes: Int? = null,
     val isAiGenerated: Boolean = false,
+    val isCustom: Boolean = false,
     val translatedForLocale: String? = null,
     val translatedName: String? = null,
     val translatedCategory: String? = null,

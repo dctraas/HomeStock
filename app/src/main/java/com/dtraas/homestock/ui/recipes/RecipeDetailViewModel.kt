@@ -6,6 +6,7 @@ import com.dtraas.homestock.data.repository.RecipeDetail
 import com.dtraas.homestock.data.repository.RecipeRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -15,6 +16,7 @@ data class RecipeDetailUiState(
     val matchedIngredients: Set<String> = emptySet(),
     val hasError: Boolean = false,
     val addedToShoppingList: Boolean = false,
+    val isFavorite: Boolean = false,
 )
 
 class RecipeDetailViewModel(
@@ -28,6 +30,14 @@ class RecipeDetailViewModel(
 
     init {
         load()
+        // A separate collector rather than folded into load(): favorite state can change (from
+        // this screen's own toggle, or another device in the household) without needing to
+        // re-fetch/re-translate the whole recipe detail again.
+        viewModelScope.launch {
+            recipeRepository.observeFavoriteIds().collectLatest { ids ->
+                _uiState.update { it.copy(isFavorite = mealId in ids) }
+            }
+        }
     }
 
     private fun load() {
@@ -49,6 +59,15 @@ class RecipeDetailViewModel(
         viewModelScope.launch {
             recipeRepository.addMissingIngredientsToShoppingList(detail)
             _uiState.update { it.copy(addedToShoppingList = true) }
+        }
+    }
+
+    /** Bookmarks/un-bookmarks the currently loaded recipe — see [RecipeRepository.addFavorite]. */
+    fun toggleFavorite() {
+        val detail = _uiState.value.detail ?: return
+        val currentlyFavorite = _uiState.value.isFavorite
+        viewModelScope.launch {
+            if (currentlyFavorite) recipeRepository.removeFavorite(detail.id) else recipeRepository.addFavorite(detail)
         }
     }
 }
