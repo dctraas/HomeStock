@@ -467,6 +467,7 @@
     <!-- Scan receipt (Beta) -->
     <string name="receipt_scan_title">Scan receipt</string>
     <string name="receipt_scan_processing">Analyzing receipt…</string>
+    <string name="receipt_scan_matching">Looking up products…</string>
     <string name="receipt_scan_saving">Saving products…</string>
     <string name="receipt_scan_saved">Added to inventory</string>
     <string name="receipt_scan_hint">Take a sharp photo of your receipt</string>

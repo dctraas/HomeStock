@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
@@ -62,6 +63,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.app.ActivityCompat
@@ -73,6 +75,9 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
+import com.dtraas.homestock.ui.components.ProductImage
+import com.dtraas.homestock.ui.components.QuantityStepper
+import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import java.io.File
 import java.util.concurrent.Executors
@@ -128,6 +133,11 @@ fun ReceiptScanScreen(onBack: () -> Unit) {
                 loading = true,
                 text = stringResource(R.string.receipt_scan_processing),
             )
+            is ReceiptScanStep.Matching -> ReceiptCenteredMessage(
+                padding = padding,
+                loading = true,
+                text = stringResource(R.string.receipt_scan_matching),
+            )
             is ReceiptScanStep.Saving -> ReceiptCenteredMessage(
                 padding = padding,
                 loading = true,
@@ -148,6 +158,8 @@ fun ReceiptScanScreen(onBack: () -> Unit) {
                 items = current.items,
                 onToggle = viewModel::toggleItem,
                 onNameChange = viewModel::updateItemName,
+                onIncrease = viewModel::increaseQuantity,
+                onDecrease = viewModel::decreaseQuantity,
                 onRetake = viewModel::retake,
                 onConfirm = viewModel::confirmAndSave,
             )
@@ -371,6 +383,8 @@ private fun ReceiptConfirmList(
     items: List<ReceiptConfirmItem>,
     onToggle: (String) -> Unit,
     onNameChange: (String, String) -> Unit,
+    onIncrease: (String) -> Unit,
+    onDecrease: (String) -> Unit,
     onRetake: () -> Unit,
     onConfirm: () -> Unit,
 ) {
@@ -405,33 +419,13 @@ private fun ReceiptConfirmList(
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(items, key = { it.id }) { item ->
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                    shape = SoftCardShapeCompact,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Checkbox(checked = item.checked, onCheckedChange = { onToggle(item.id) })
-                        OutlinedTextField(
-                            value = item.name,
-                            onValueChange = { onNameChange(item.id, it) },
-                            singleLine = true,
-                            modifier = Modifier.weight(1f).padding(end = 8.dp),
-                        )
-                        // AI-read quantity — same dense stepper as everywhere else in the app,
-                        // shown read-only here (no +/- wiring) since it's just a confirmation
-                        // aid; a genuinely wrong quantity is rare enough that editing it isn't
-                        // worth another interactive control on an already busy row.
-                        Text(
-                            text = "×${item.quantity}",
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                }
+                ReceiptConfirmRow(
+                    item = item,
+                    onToggle = { onToggle(item.id) },
+                    onNameChange = { onNameChange(item.id, it) },
+                    onIncrease = { onIncrease(item.id) },
+                    onDecrease = { onDecrease(item.id) },
+                )
             }
         }
         Button(
@@ -440,6 +434,69 @@ private fun ReceiptConfirmList(
             modifier = Modifier.fillMaxWidth().padding(16.dp),
         ) {
             Text(stringResource(R.string.receipt_scan_confirm_action))
+        }
+    }
+}
+
+/**
+ * One receipt line on the confirm screen — laid out like a Voorraad list row (foto, naam, merk ·
+ * eenheid, +/- stepper) once [ReceiptScanViewModel.matchItem] has found a database match, so a
+ * scanned bonnetje reads the same way the rest of the app already presents a product. Unmatched
+ * items (no [ReceiptConfirmItem.matchedBarcode]) fall back to the fallback category icon and no
+ * subtitle — still editable via the name field, same as before matching existed.
+ */
+@Composable
+private fun ReceiptConfirmRow(
+    item: ReceiptConfirmItem,
+    onToggle: () -> Unit,
+    onNameChange: (String) -> Unit,
+    onIncrease: () -> Unit,
+    onDecrease: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = SoftCardShapeCompact,
+    ) {
+        Row(
+            modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Checkbox(checked = item.checked, onCheckedChange = { onToggle() })
+            Box(modifier = Modifier.size(32.dp)) {
+                ProductImage(
+                    imageUrl = item.imageUrl,
+                    fallbackIcon = item.category.icon,
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
+            Column(modifier = Modifier.weight(1f).padding(horizontal = 10.dp)) {
+                OutlinedTextField(
+                    value = item.name,
+                    onValueChange = onNameChange,
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                val subtitle = listOfNotNull(item.brand, item.unit).joinToString(" · ")
+                if (subtitle.isNotEmpty()) {
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(start = 4.dp, top = 2.dp),
+                    )
+                }
+            }
+            QuantityStepper(
+                quantity = item.quantity,
+                onDecrease = onDecrease,
+                onIncrease = onIncrease,
+                minQuantity = 1,
+                dense = true,
+            )
         }
     }
 }

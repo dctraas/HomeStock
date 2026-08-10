@@ -467,6 +467,7 @@
     <!-- Kassenbon scannen (Beta) -->
     <string name="receipt_scan_title">Kassenbon scannen</string>
     <string name="receipt_scan_processing">Kassenbon wird analysiert…</string>
+    <string name="receipt_scan_matching">Produkte werden gesucht…</string>
     <string name="receipt_scan_saving">Produkte werden gespeichert…</string>
     <string name="receipt_scan_saved">Zum Vorrat hinzugefügt</string>
     <string name="receipt_scan_hint">Mach ein scharfes Foto von deinem Kassenbon</string>

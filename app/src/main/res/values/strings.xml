@@ -468,6 +468,7 @@
     <!-- Bonnetje scannen (Beta) -->
     <string name="receipt_scan_title">Bonnetje scannen</string>
     <string name="receipt_scan_processing">Bonnetje analyseren…</string>
+    <string name="receipt_scan_matching">Producten opzoeken…</string>
     <string name="receipt_scan_saving">Producten opslaan…</string>
     <string name="receipt_scan_saved">Toegevoegd aan voorraad</string>
     <string name="receipt_scan_hint">Maak een scherpe foto van je kassabon</string>

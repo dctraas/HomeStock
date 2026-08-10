@@ -467,6 +467,7 @@
     <!-- Escanear ticket (Beta) -->
     <string name="receipt_scan_title">Escanear ticket</string>
     <string name="receipt_scan_processing">Analizando ticket…</string>
+    <string name="receipt_scan_matching">Buscando productos…</string>
     <string name="receipt_scan_saving">Guardando productos…</string>
     <string name="receipt_scan_saved">Añadido al inventario</string>
     <string name="receipt_scan_hint">Haz una foto nítida de tu ticket</string>

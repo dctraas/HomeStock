@@ -467,6 +467,7 @@
     <!-- Scanner un ticket (Bêta) -->
     <string name="receipt_scan_title">Scanner un ticket</string>
     <string name="receipt_scan_processing">Analyse du ticket…</string>
+    <string name="receipt_scan_matching">Recherche des produits…</string>
     <string name="receipt_scan_saving">Enregistrement des produits…</string>
     <string name="receipt_scan_saved">Ajouté à l\'inventaire</string>
     <string name="receipt_scan_hint">Prenez une photo nette de votre ticket de caisse</string>

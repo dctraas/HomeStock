@@ -7,17 +7,32 @@ import com.dtraas.homestock.data.repository.InventoryRepository
 import com.dtraas.homestock.data.repository.ProductRepository
 import com.dtraas.homestock.data.repository.ReceiptRecognitionRepository
 import com.dtraas.homestock.data.repository.RecognizeReceiptResult
+import com.dtraas.homestock.data.repository.RecognizedReceiptItem
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import java.util.UUID
 
+/**
+ * One receipt line, ready for the confirm screen. [matchedBarcode]/[brand]/[unit]/[imageUrl] come
+ * from looking [name] up in the product database (see [ReceiptScanViewModel.matchItem]) so the
+ * confirm row can show the same name/merk/eenheid + stepper layout as a Voorraad list row rather
+ * than bare text — null when nothing matched, which just falls back to a manually-entered product
+ * at save time, exactly like today.
+ */
 data class ReceiptConfirmItem(
     val id: String,
     val name: String,
     val category: Category,
     val quantity: Int = 1,
     val checked: Boolean = true,
+    val matchedBarcode: String? = null,
+    val brand: String? = null,
+    val unit: String? = null,
+    val imageUrl: String? = null,
 )
 
 enum class ReceiptFailReason {
@@ -35,6 +50,9 @@ sealed interface ReceiptScanStep {
 
     /** Photo taken, waiting on [ReceiptRecognitionRepository.recognize] — a real network round trip to the Cloud Function (which itself calls Claude). */
     data object Analyzing : ReceiptScanStep
+
+    /** Looking each read-off item up in the product database (see [ReceiptScanViewModel.matchItem]) before showing the confirm list. */
+    data object Matching : ReceiptScanStep
 
     data class Confirming(val items: List<ReceiptConfirmItem>) : ReceiptScanStep
     data object Saving : ReceiptScanStep
@@ -60,8 +78,9 @@ class ReceiptScanViewModel(
         viewModelScope.launch {
             when (val result = receiptRecognitionRepository.recognize(jpegBytes)) {
                 is RecognizeReceiptResult.Success -> {
-                    val items = result.items.mapIndexed { index, item ->
-                        ReceiptConfirmItem(id = index.toString(), name = item.name, category = item.category, quantity = item.quantity)
+                    _step.value = ReceiptScanStep.Matching
+                    val items = coroutineScope {
+                        result.items.mapIndexed { index, item -> async { matchItem(index.toString(), item) } }.awaitAll()
                     }
                     _step.value = ReceiptScanStep.Confirming(items)
                 }
@@ -70,6 +89,22 @@ class ReceiptScanViewModel(
                 RecognizeReceiptResult.Failed -> _step.value = ReceiptScanStep.Failed(ReceiptFailReason.UNKNOWN)
             }
         }
+    }
+
+    /**
+     * Looks [item] up by name in the product database (same free-text search as "Zoeken op
+     * naam" — see [ProductRepository.searchByName]) and, on a hit, fetches that product's full
+     * detail so the confirm row can show brand/eenheid/foto like a real Voorraad item. Best
+     * effort only: any failure (no match, offline, a flaky single request) just falls back to an
+     * unmatched [ReceiptConfirmItem] — one bad lookup shouldn't block the rest of the receipt,
+     * and [confirmAndSave] already knows how to save an unmatched item manually, same as before
+     * this matching pass existed.
+     */
+    private suspend fun matchItem(id: String, item: RecognizedReceiptItem): ReceiptConfirmItem {
+        val base = ReceiptConfirmItem(id = id, name = item.name, category = item.category, quantity = item.quantity)
+        val barcode = productRepository.searchByName(item.name).getOrNull()?.firstOrNull()?.barcode ?: return base
+        val product = productRepository.getOrFetchProduct(barcode).getOrNull() ?: return base
+        return base.copy(matchedBarcode = product.barcode, brand = product.brand, unit = product.unit, imageUrl = product.imageUrl)
     }
 
     fun retake() {
@@ -82,6 +117,14 @@ class ReceiptScanViewModel(
 
     fun updateItemName(id: String, name: String) {
         updateConfirming { items -> items.map { if (it.id == id) it.copy(name = name) else it } }
+    }
+
+    fun increaseQuantity(id: String) {
+        updateConfirming { items -> items.map { if (it.id == id) it.copy(quantity = it.quantity + 1) else it } }
+    }
+
+    fun decreaseQuantity(id: String) {
+        updateConfirming { items -> items.map { if (it.id == id) it.copy(quantity = (it.quantity - 1).coerceAtLeast(1)) else it } }
     }
 
     private inline fun updateConfirming(transform: (List<ReceiptConfirmItem>) -> List<ReceiptConfirmItem>) {
@@ -100,11 +143,20 @@ class ReceiptScanViewModel(
         _step.value = ReceiptScanStep.Saving
         viewModelScope.launch {
             toAdd.forEach { item ->
-                // Receipt items have no real barcode, so each gets a synthetic one —
-                // the same role a scanned barcode plays elsewhere as the product key.
-                val syntheticBarcode = "receipt-${UUID.randomUUID()}"
-                productRepository.saveManualProduct(syntheticBarcode, item.name, item.category)
-                inventoryRepository.recordScan(syntheticBarcode, item.quantity)
+                val matchedBarcode = item.matchedBarcode
+                if (matchedBarcode != null) {
+                    // Already fetched/cached during matchItem() — just apply the receipt's own
+                    // category read (same "found online" convention as ScanResultViewModel:
+                    // keep the database's name/brand/unit, only the category comes from us).
+                    productRepository.updateCategory(matchedBarcode, item.category)
+                    inventoryRepository.recordScan(matchedBarcode, item.quantity)
+                } else {
+                    // No database match — synthesize a barcode, same role a scanned barcode
+                    // plays elsewhere as the product key.
+                    val syntheticBarcode = "receipt-${UUID.randomUUID()}"
+                    productRepository.saveManualProduct(syntheticBarcode, item.name, item.category)
+                    inventoryRepository.recordScan(syntheticBarcode, item.quantity)
+                }
             }
             _step.value = ReceiptScanStep.Done
         }
