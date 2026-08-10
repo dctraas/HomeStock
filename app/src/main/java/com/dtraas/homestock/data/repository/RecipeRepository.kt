@@ -30,18 +30,21 @@ sealed interface GenerateRecipeResult {
 
 /**
  * Recipe search, browsing, and AI generation — a premium feature (see MoreScreen). Backed by
- * two Cloud Functions (see `functions/src/index.ts`), both of which keep their respective API
- * key server-side and re-check premium status themselves:
+ * Cloud Functions (see `functions/src/index.ts`), all of which keep their respective API key
+ * server-side and re-check premium status themselves:
  *
  * - `searchRecipes`/`getRecipeInformation` proxy the Spoonacular recipe database — this used to
  *   call TheMealDB directly from the device (a small, English-only, keyless database); moving
  *   it behind a Cloud Function let it switch to a much larger, keyed database without shipping
  *   that key in the APK, and its `intolerances` param replaces what used to be an approximate
- *   client-side ingredient-keyword allergen filter.
+ *   client-side ingredient-keyword allergen filter. Always returns English content.
  * - `generateRecipe` asks Claude Haiku 4.5 to invent a recipe from the household's current
  *   inventory (+ an optional free-text wish) — a complement to the real, tested Spoonacular
  *   recipes above, for "I have no idea what to make with this" moments a fixed database might
  *   not have a good match for. See [RecipeDetail.isAiGenerated].
+ * - `translateRecipe` machine-translates Spoonacular's English content into the household's app
+ *   language (see [withTranslatedTitles]/[translatedDetailIfNeeded]) — Spoonacular itself is
+ *   English-only, unlike TheMealDB-era KitchenPal-style localized databases.
  *
  * Inventory item names are typically Dutch grocery-brand names while Spoonacular (like TheMealDB
  * before it) only really understands English ingredient terms, so [dutchToEnglishIngredient] is
@@ -101,7 +104,8 @@ class RecipeRepository(
             }
         }
 
-        Result.success(suggestions.values.sortedByDescending { it.matchCount ?: 0 })
+        val sorted = suggestions.values.sortedByDescending { it.matchCount ?: 0 }
+        Result.success(withTranslatedTitles(sorted, languageTag))
     } catch (e: Exception) {
         Result.failure(e)
     }
@@ -134,22 +138,34 @@ class RecipeRepository(
             .map { detail -> RecipeSuggestion(RecipeSummary(detail.id, detail.name, detail.thumbnailUrl), matchCount = null, matchesArea = detail.id in areaIds) }
             .sortedWith(compareByDescending<RecipeSuggestion> { it.matchesArea }.thenBy { it.meal.name })
 
-        Result.success(list)
+        Result.success(withTranslatedTitles(list, languageTag))
     } catch (e: Exception) {
         Result.failure(e)
     }
 
     /** Free-text search by recipe name (e.g. typed into RecipesScreen's search field), independent of inventory or category. */
-    suspend fun searchRecipesByName(query: String, excludedAllergens: Set<Allergen> = emptySet()): Result<List<RecipeSuggestion>> = try {
+    suspend fun searchRecipesByName(
+        query: String,
+        excludedAllergens: Set<Allergen> = emptySet(),
+        languageTag: String? = null,
+    ): Result<List<RecipeSuggestion>> = try {
         val details = parseDetails(callSearchRecipes(mode = "query", query = query, number = 24, intolerances = spoonacularIntolerances(excludedAllergens)))
         details.forEach { cacheDetail(it) }
-        Result.success(details.map { RecipeSuggestion(RecipeSummary(it.id, it.name, it.thumbnailUrl), matchCount = null) })
+        val suggestions = details.map { RecipeSuggestion(RecipeSummary(it.id, it.name, it.thumbnailUrl), matchCount = null) }
+        Result.success(withTranslatedTitles(suggestions, languageTag))
     } catch (e: Exception) {
         Result.failure(e)
     }
 
-    suspend fun getRecipeDetail(mealId: String): Result<RecipeDetail> {
-        detailCache[mealId]?.let { return Result.success(it) }
+    /**
+     * Fetches one recipe's full detail — from cache if a search/browse/generation already put it
+     * there, otherwise via `getRecipeInformation` (always English — see that Cloud Function). If
+     * [languageTag] isn't English, also fetches/attaches a machine translation (see
+     * [translatedDetailIfNeeded]) before returning, so RecipeDetailScreen never has to juggle a
+     * separate translation call itself.
+     */
+    suspend fun getRecipeDetail(mealId: String, languageTag: String? = null): Result<RecipeDetail> {
+        detailCache[mealId]?.let { return Result.success(translatedDetailIfNeeded(it, languageTag)) }
         return try {
             val householdId = householdSession.householdId.value ?: return Result.failure(IllegalStateException("no_household"))
             val requestData = hashMapOf("householdId" to householdId, "id" to mealId)
@@ -158,7 +174,7 @@ class RecipeRepository(
             val detail = (response["detail"] as? Map<*, *>)?.let(::mapToDetail)
                 ?: return Result.failure(NoSuchElementException("Recipe $mealId not found"))
             cacheDetail(detail)
-            Result.success(detail)
+            Result.success(translatedDetailIfNeeded(detail, languageTag))
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -255,6 +271,104 @@ class RecipeRepository(
 
     private fun cacheDetail(detail: RecipeDetail) {
         detailCache[detail.id] = detail
+    }
+
+    /**
+     * Translates [suggestions]' titles into [languageTag] via the `translateRecipe` Cloud
+     * Function ("titles" mode) — a title-only pass rather than translating full detail, since
+     * most list rows never get opened (see `translateRecipe`'s own doc comment). Unlike
+     * [RecipeDetail]'s parallel `translatedX` fields, [RecipeSummary.name] is overwritten
+     * directly: summaries don't feed the ingredient-matching logic, so there's nothing to keep
+     * in English for. Best-effort — returns [suggestions] unchanged on any failure or when
+     * [languageTag] is null/English/there's nothing to translate.
+     */
+    private suspend fun withTranslatedTitles(
+        suggestions: List<RecipeSuggestion>,
+        languageTag: String?,
+    ): List<RecipeSuggestion> {
+        if (languageTag == null || languageTag == "en" || suggestions.isEmpty()) return suggestions
+        return try {
+            val householdId = householdSession.householdId.value ?: return suggestions
+            val items = suggestions.map { mapOf("id" to it.meal.id, "name" to it.meal.name) }
+            val requestData = hashMapOf<String, Any?>(
+                "householdId" to householdId,
+                "locale" to languageTag,
+                "mode" to "titles",
+                "items" to items,
+            )
+            val result = functions.getHttpsCallable("translateRecipe").call(requestData).await()
+            val response = result.getData() as? Map<*, *> ?: return suggestions
+            val rawItems = response["items"] as? List<*> ?: return suggestions
+            val translatedNameById = rawItems.mapNotNull { entry ->
+                val map = entry as? Map<*, *> ?: return@mapNotNull null
+                val id = map["id"] as? String ?: return@mapNotNull null
+                val name = (map["name"] as? String)?.trim().orEmpty()
+                if (name.isEmpty()) null else id to name
+            }.toMap()
+            if (translatedNameById.isEmpty()) return suggestions
+            suggestions.map { suggestion ->
+                translatedNameById[suggestion.meal.id]?.let { translatedName ->
+                    suggestion.copy(meal = suggestion.meal.copy(name = translatedName))
+                } ?: suggestion
+            }
+        } catch (e: Exception) {
+            suggestions
+        }
+    }
+
+    /**
+     * Attaches a machine translation of [detail] into [languageTag] (the parallel `translatedX`
+     * fields on [RecipeDetail] — never the plain English fields, which
+     * [matchedIngredients]/[missingIngredients] depend on) via the `translateRecipe` Cloud
+     * Function ("detail" mode), re-caching the translated result so re-opening the same recipe
+     * doesn't re-translate it. Returns [detail] unchanged when no translation is needed: no/
+     * English [languageTag], an [RecipeDetail.isAiGenerated] recipe (Claude already generates
+     * those directly in the target language), a translation already cached for this exact
+     * locale, or a translation attempt that failed — English content is still useful.
+     */
+    private suspend fun translatedDetailIfNeeded(detail: RecipeDetail, languageTag: String?): RecipeDetail {
+        if (languageTag == null || languageTag == "en") return detail
+        if (detail.isAiGenerated) return detail
+        if (detail.translatedForLocale == languageTag) return detail
+        return try {
+            val householdId = householdSession.householdId.value ?: return detail
+            val requestData = hashMapOf<String, Any?>(
+                "householdId" to householdId,
+                "locale" to languageTag,
+                "mode" to "detail",
+                "name" to detail.name,
+                "category" to detail.category,
+                "area" to detail.area,
+                "instructions" to detail.instructions,
+                "ingredients" to detail.ingredients.map { (name, measure) -> mapOf("name" to name, "measure" to measure) },
+            )
+            val result = functions.getHttpsCallable("translateRecipe").call(requestData).await()
+            val response = result.getData() as? Map<*, *> ?: return detail
+            val translated = response["detail"] as? Map<*, *> ?: return detail
+            val translatedIngredients = (translated["ingredients"] as? List<*>)?.mapNotNull { entry ->
+                val ingredientMap = entry as? Map<*, *> ?: return@mapNotNull null
+                val ingredientName = (ingredientMap["name"] as? String)?.trim().orEmpty()
+                if (ingredientName.isEmpty()) return@mapNotNull null
+                ingredientName to ((ingredientMap["measure"] as? String)?.trim().orEmpty())
+            }
+            // RecipeDetailScreen zips [RecipeDetail.ingredients] (for inventory matching) with
+            // [RecipeDetail.displayIngredients] (for display) by index — only accept the
+            // translation if it kept the same ingredient count, so that pairing stays aligned.
+            val alignedTranslatedIngredients = translatedIngredients
+                ?.takeIf { it.isNotEmpty() && it.size == detail.ingredients.size }
+            val translatedDetail = detail.copy(
+                translatedForLocale = languageTag,
+                translatedName = (translated["name"] as? String)?.trim()?.takeIf { it.isNotEmpty() },
+                translatedCategory = (translated["category"] as? String)?.trim()?.takeIf { it.isNotEmpty() },
+                translatedArea = (translated["area"] as? String)?.trim()?.takeIf { it.isNotEmpty() },
+                translatedInstructions = (translated["instructions"] as? String)?.trim()?.takeIf { it.isNotEmpty() },
+                translatedIngredients = alignedTranslatedIngredients,
+            )
+            cacheDetail(translatedDetail)
+            translatedDetail
+        } catch (e: Exception) {
+            detail
+        }
     }
 
     private suspend fun callSearchRecipes(

@@ -1,6 +1,6 @@
 # HomeStock Cloud Functions
 
-Backend for HomeStock's premium AI/data features — four callable functions, all gated on the
+Backend for HomeStock's premium AI/data features — callable functions, all gated on the
 caller's household having an active Premium subscription (re-checked server-side, not just in
 the app UI):
 
@@ -10,6 +10,7 @@ the app UI):
 | `recognizeReceipt` | Bonnetje scannen | Claude API (Anthropic) |
 | `generateRecipe` | Recepten → "Genereer met AI" | Claude API (Anthropic) |
 | `searchRecipes` / `getRecipeInformation` | Recepten (browse/zoek/detail) | Spoonacular API |
+| `translateRecipe` | Recepten (titels + detail, wanneer app-taal ≠ Engels) | Claude API (Anthropic) |
 
 Two external API keys are involved, and **neither ever reaches the Android app** — they live
 only in this project's Secret Manager config, which is the whole reason these go through a
@@ -96,6 +97,9 @@ this directory — see the
 - `recognizeReceipt` (one receipt photo): similar image cost, more output tokens for a full
   line-item list — roughly **$0.004–0.008 per scan** depending on receipt length.
 - `generateRecipe` (text-only): a few hundred tokens each way — roughly **$0.001 per recipe**.
+- `translateRecipe` (text-only): "titles" mode is a batch of short strings (~$0.0005 for a
+  24-recipe list); "detail" mode is one recipe's full text — roughly **$0.001–0.002 per recipe**,
+  and only spent once per recipe since the client caches the translated result.
 
 **Spoonacular**: free tier is 150 points/day. `complexSearch`/`findByIngredients` cost a handful
 of points per call (more with `addRecipeInformation=true`, used for browse/search so opening a

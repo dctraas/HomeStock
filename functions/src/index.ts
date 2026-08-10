@@ -620,7 +620,14 @@ interface GetRecipeInformationRequest {
   id: string;
 }
 
-/** Fetches one recipe's full detail by id — used when opening a recipe that wasn't already returned with full detail (see [searchRecipes]'s "ingredients" mode). */
+/**
+ * Fetches one recipe's full detail by id — used when opening a recipe that wasn't already
+ * returned with full detail (see [searchRecipes]'s "ingredients" mode). Always returns
+ * Spoonacular's original English content: the client keeps this untouched for ingredient
+ * matching against the household's inventory, and calls [translateRecipe] separately (into
+ * parallel fields) when the app's language isn't English. Don't merge translation in here —
+ * overwriting `detail.ingredients` in place would break that matching.
+ */
 export const getRecipeInformation = onCall(
   { secrets: [spoonacularApiKey], cors: false, timeoutSeconds: 20, invoker: "public" },
   async (request) => {
@@ -642,5 +649,192 @@ export const getRecipeInformation = onCall(
       spoonacularApiKey.value(),
     );
     return { detail: toRecipeDetail(result) };
+  },
+);
+
+// ---------------------------------------------------------------------------
+// translateRecipe — AI translation for the recipe list/detail screens when the
+// household's app language isn't English (Spoonacular's own content always is).
+// ---------------------------------------------------------------------------
+
+// English is the only locale Spoonacular itself speaks; every other app language routes
+// through here. Keeping the language name in English in the prompt (rather than the locale's
+// own endonym) reads more reliably for the model regardless of target language.
+const LOCALE_LANGUAGE_NAMES: Record<string, string> = {
+  nl: "Dutch",
+  de: "German",
+  es: "Spanish",
+  fr: "French",
+};
+
+function languageNameForLocale(locale: string): string {
+  return LOCALE_LANGUAGE_NAMES[locale] ?? locale;
+}
+
+interface TranslatableIngredient {
+  name: string;
+  measure: string;
+}
+
+interface TranslatableDetailFields {
+  name: string;
+  category: string | null;
+  area: string | null;
+  instructions: string | null;
+  ingredients: TranslatableIngredient[];
+}
+
+/** Raw shape Claude actually returns for [TRANSLATE_DETAIL_SCHEMA] — empty string, not null, for the optional fields (see the schema's own comment). */
+interface RawTranslatedDetailFields {
+  name: string;
+  category: string;
+  area: string;
+  instructions: string;
+  ingredients: TranslatableIngredient[];
+}
+
+const TRANSLATE_DETAIL_SCHEMA = {
+  type: "object",
+  properties: {
+    name: { type: "string" },
+    // Empty string rather than null for the optional fields — keeps the schema flat (no
+    // nullable-type unions to worry about across json_schema implementations), converted back
+    // to null on the way out (see the two call sites below).
+    category: { type: "string" },
+    area: { type: "string" },
+    instructions: { type: "string" },
+    ingredients: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { name: { type: "string" }, measure: { type: "string" } },
+        required: ["name", "measure"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["name", "category", "area", "instructions", "ingredients"],
+  additionalProperties: false,
+} as const;
+
+async function translateDetailFields(
+  apiKey: string,
+  locale: string,
+  fields: TranslatableDetailFields,
+): Promise<TranslatableDetailFields> {
+  const language = languageNameForLocale(locale);
+  const input = {
+    name: fields.name,
+    category: fields.category ?? "",
+    area: fields.area ?? "",
+    instructions: fields.instructions ?? "",
+    ingredients: fields.ingredients,
+  };
+  const prompt =
+    `Translate this recipe into ${language}, the way a native speaker would naturally write it — not a ` +
+    "stiff word-for-word translation. Keep every ingredient's numeric amount and unit exactly as given, " +
+    "only translate the words. Keep the instructions as clear, natural step-by-step cooking instructions. " +
+    "Leave category/area/instructions as an empty string if the input for that field is already empty.\n\n" +
+    `Recipe (JSON): ${JSON.stringify(input)}`;
+  const responseText = await callAnthropicTextOnly(apiKey, prompt, TRANSLATE_DETAIL_SCHEMA);
+  const parsed = JSON.parse(responseText) as RawTranslatedDetailFields;
+  return {
+    name: parsed.name || fields.name,
+    category: parsed.category || null,
+    area: parsed.area || null,
+    instructions: parsed.instructions || null,
+    ingredients: parsed.ingredients?.length ? parsed.ingredients : fields.ingredients,
+  };
+}
+
+const TRANSLATE_TITLES_SCHEMA = {
+  type: "object",
+  properties: {
+    items: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { id: { type: "string" }, name: { type: "string" } },
+        required: ["id", "name"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["items"],
+  additionalProperties: false,
+} as const;
+
+async function translateTitles(
+  apiKey: string,
+  locale: string,
+  items: Array<{ id: string; name: string }>,
+): Promise<Array<{ id: string; name: string }>> {
+  const language = languageNameForLocale(locale);
+  const prompt =
+    `Translate these recipe titles into ${language}, the way a native speaker would naturally title each ` +
+    "dish — not a literal word-for-word translation. Return every item with the same id it came in with, " +
+    `so the caller can match translated names back to the right recipe.\n\nTitles (JSON): ${JSON.stringify(items)}`;
+  const responseText = await callAnthropicTextOnly(apiKey, prompt, TRANSLATE_TITLES_SCHEMA);
+  const parsed = JSON.parse(responseText) as { items: Array<{ id: string; name: string }> };
+  return Array.isArray(parsed.items) ? parsed.items : [];
+}
+
+interface TranslateRecipeRequest {
+  householdId: string;
+  locale: string;
+  mode: "titles" | "detail";
+  items?: Array<{ id: string; name: string }>;
+  name?: string;
+  category?: string | null;
+  area?: string | null;
+  instructions?: string | null;
+  ingredients?: TranslatableIngredient[];
+}
+
+/**
+ * Translates recipe list titles ("titles" mode) or a full recipe's name/category/area/
+ * instructions/ingredients ("detail" mode) into the household's app language. Two cases:
+ * - Recipe list rows, which only need a translated title, not the whole recipe — most never
+ *   get opened, so translating everything upfront in [searchRecipes] would waste spend on
+ *   recipes nobody looks at further.
+ * - A recipe's full detail (from [getRecipeInformation] or a search result that already
+ *   included it), translated into parallel fields client-side — the original English fields
+ *   are left untouched so ingredient matching against the household's inventory keeps working.
+ */
+export const translateRecipe = onCall(
+  { secrets: [anthropicApiKey], cors: false, timeoutSeconds: 30, invoker: "public" },
+  async (request) => {
+    const uid = requireUid(request.auth);
+    const data = request.data as Partial<TranslateRecipeRequest> | undefined;
+    const householdId = data?.householdId;
+    const locale = data?.locale;
+    if (!householdId || typeof householdId !== "string") {
+      throw new HttpsError("invalid-argument", "householdId is required.");
+    }
+    if (!locale || typeof locale !== "string") {
+      throw new HttpsError("invalid-argument", "locale is required.");
+    }
+    await requirePremiumHousehold(uid, householdId);
+
+    const apiKey = anthropicApiKey.value();
+
+    if (data?.mode === "titles") {
+      const items = Array.isArray(data.items) ? data.items.slice(0, 40) : [];
+      if (items.length === 0) return { items: [] };
+      const translated = await translateTitles(apiKey, locale, items);
+      return { items: translated };
+    }
+
+    if (!data?.name) {
+      throw new HttpsError("invalid-argument", "name is required for mode \"detail\".");
+    }
+    const translated = await translateDetailFields(apiKey, locale, {
+      name: data.name,
+      category: data.category ?? null,
+      area: data.area ?? null,
+      instructions: data.instructions ?? null,
+      ingredients: Array.isArray(data.ingredients) ? data.ingredients : [],
+    });
+    return { detail: translated };
   },
 );

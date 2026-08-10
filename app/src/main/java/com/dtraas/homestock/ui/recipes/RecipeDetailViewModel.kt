@@ -19,6 +19,7 @@ data class RecipeDetailUiState(
 
 class RecipeDetailViewModel(
     private val mealId: String,
+    private val languageTag: String?,
     private val recipeRepository: RecipeRepository,
 ) : ViewModel() {
 
@@ -32,7 +33,7 @@ class RecipeDetailViewModel(
     private fun load() {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, hasError = false) }
-            recipeRepository.getRecipeDetail(mealId)
+            recipeRepository.getRecipeDetail(mealId, languageTag)
                 .onSuccess { detail ->
                     val matched = recipeRepository.matchedIngredients(detail)
                     _uiState.update { it.copy(isLoading = false, detail = detail, matchedIngredients = matched, hasError = false) }

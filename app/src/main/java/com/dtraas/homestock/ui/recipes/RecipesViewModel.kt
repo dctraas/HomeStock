@@ -55,7 +55,7 @@ class RecipesViewModel(
             _uiState.update { it.copy(isLoading = true, hasError = false) }
             val state = _uiState.value
             val result = if (state.searchQuery.isNotBlank()) {
-                recipeRepository.searchRecipesByName(state.searchQuery.trim(), state.excludedAllergens)
+                recipeRepository.searchRecipesByName(state.searchQuery.trim(), state.excludedAllergens, languageTag)
             } else {
                 recipeRepository.browseAllRecipes(languageTag, state.excludedAllergens)
             }

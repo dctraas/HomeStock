@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -35,7 +36,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -55,9 +58,10 @@ fun RecipeDetailScreen(
     onBack: () -> Unit,
 ) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
+    val languageTag = LocalConfiguration.current.locales[0].language
     val viewModel: RecipeDetailViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { RecipeDetailViewModel(mealId, application.container.recipeRepository) }
+            initializer { RecipeDetailViewModel(mealId, languageTag, application.container.recipeRepository) }
         },
     )
     val uiState by viewModel.uiState.collectAsState()
@@ -66,7 +70,7 @@ fun RecipeDetailScreen(
     Scaffold(
         topBar = {
             HomeStockTopAppBar(
-                title = { Text(detail?.name ?: stringResource(R.string.recipes_title)) },
+                title = { Text(detail?.displayName ?: stringResource(R.string.recipes_title)) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
@@ -109,7 +113,7 @@ fun RecipeDetailScreen(
                 detail.thumbnailUrl?.let { url ->
                     AsyncImage(
                         model = url,
-                        contentDescription = detail.name,
+                        contentDescription = detail.displayName,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -119,8 +123,8 @@ fun RecipeDetailScreen(
                 }
 
                 val subtitle = listOfNotNull(
-                    detail.category,
-                    detail.area,
+                    detail.displayCategory,
+                    detail.displayArea,
                     detail.readyInMinutes?.let { stringResource(R.string.recipes_ready_in_minutes_format, it) },
                 ).joinToString(" · ")
                 if (subtitle.isNotEmpty()) {
@@ -132,29 +136,9 @@ fun RecipeDetailScreen(
                     )
                 }
                 if (detail.isAiGenerated) {
-                    Surface(
-                        shape = RoundedCornerShape(50),
-                        color = MaterialTheme.colorScheme.tertiaryContainer,
-                        modifier = Modifier.padding(top = 8.dp),
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                        ) {
-                            Icon(
-                                Icons.Filled.AutoAwesome,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp),
-                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                            )
-                            Text(
-                                text = stringResource(R.string.recipes_ai_generated_badge),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onTertiaryContainer,
-                                modifier = Modifier.padding(start = 6.dp),
-                            )
-                        }
-                    }
+                    RecipeBadge(icon = Icons.Filled.AutoAwesome, label = stringResource(R.string.recipes_ai_generated_badge))
+                } else if (detail.translatedForLocale != null) {
+                    RecipeBadge(icon = Icons.Filled.Translate, label = stringResource(R.string.recipes_translated_badge))
                 }
 
                 Text(
@@ -169,8 +153,12 @@ fun RecipeDetailScreen(
                     shape = SoftCardShape,
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
-                        detail.ingredients.forEach { (name, measure) ->
-                            val haveIt = uiState.matchedIngredients.contains(name)
+                        // Zipped rather than iterating displayIngredients alone: matching against
+                        // inventory (uiState.matchedIngredients) only works on the original
+                        // English ingredient names — see [RecipeDetail]'s doc — while the shown
+                        // name/measure should still prefer the translation.
+                        detail.ingredients.zip(detail.displayIngredients).forEach { (original, display) ->
+                            val haveIt = uiState.matchedIngredients.contains(original.first)
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -186,7 +174,7 @@ fun RecipeDetailScreen(
                                     Box(modifier = Modifier.size(18.dp))
                                 }
                                 Text(
-                                    text = listOfNotNull(measure.takeIf { it.isNotBlank() }, name).joinToString(" "),
+                                    text = listOfNotNull(display.second.takeIf { it.isNotBlank() }, display.first).joinToString(" "),
                                     style = MaterialTheme.typography.bodyMedium,
                                     modifier = Modifier.padding(start = 10.dp),
                                 )
@@ -215,7 +203,7 @@ fun RecipeDetailScreen(
                     }
                 }
 
-                detail.instructions?.takeIf { it.isNotBlank() }?.let { instructions ->
+                detail.displayInstructions?.takeIf { it.isNotBlank() }?.let { instructions ->
                     Text(
                         text = stringResource(R.string.recipes_instructions_title),
                         style = MaterialTheme.typography.titleMedium,
@@ -235,6 +223,34 @@ fun RecipeDetailScreen(
                     }
                 }
             }
+        }
+    }
+}
+
+/** Small pill badge (AI-generated / AI-translated) shown under RecipeDetailScreen's subtitle. */
+@Composable
+private fun RecipeBadge(icon: ImageVector, label: String) {
+    Surface(
+        shape = RoundedCornerShape(50),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        modifier = Modifier.padding(top = 8.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                modifier = Modifier.size(14.dp),
+                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.padding(start = 6.dp),
+            )
         }
     }
 }
