@@ -36,7 +36,9 @@ import com.dtraas.homestock.ui.account.AccountLinkScreen
 import com.dtraas.homestock.ui.household.HouseholdSettingsScreen
 import com.dtraas.homestock.ui.inventory.InventoryScreen
 import com.dtraas.homestock.ui.mealplan.MealPlanScreen
+import com.dtraas.homestock.ui.more.LicensesScreen
 import com.dtraas.homestock.ui.more.MoreScreen
+import com.dtraas.homestock.ui.more.PrivacyPolicyScreen
 import com.dtraas.homestock.ui.notifications.NotificationsScreen
 import com.dtraas.homestock.ui.premium.PremiumScreen
 import com.dtraas.homestock.ui.productdetail.ProductDetailScreen
@@ -129,6 +131,7 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                     onNavigateToReceiptScan = { navController.navigate(Destination.ReceiptScan.route) },
                     onNavigateToAiRecognize = { navController.navigate(Destination.AiRecognize.route) },
                     onNavigateToPremium = { navController.navigate(Destination.Premium.route) },
+                    onNavigateToNotifications = { navController.navigate(Destination.Notifications.route) },
                 )
             }
             composable(Destination.ShoppingList.route) {
@@ -138,7 +141,7 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                 StatisticsScreen(onBack = { navController.popBackStack() })
             }
             composable(Destination.Notifications.route) {
-                NotificationsScreen()
+                NotificationsScreen(onBack = { navController.popBackStack() })
             }
             composable(Destination.More.route) {
                 MoreScreen(
@@ -150,7 +153,15 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                     onNavigateToPremium = { navController.navigate(Destination.Premium.route) },
                     onNavigateToHousehold = { navController.navigate(Destination.Household.route) },
                     onNavigateToAccountLink = { navController.navigate(Destination.AccountLink.route) },
+                    onNavigateToPrivacyPolicy = { navController.navigate(Destination.PrivacyPolicy.route) },
+                    onNavigateToLicenses = { navController.navigate(Destination.Licenses.route) },
                 )
+            }
+            composable(Destination.PrivacyPolicy.route) {
+                PrivacyPolicyScreen(onBack = { navController.popBackStack() })
+            }
+            composable(Destination.Licenses.route) {
+                LicensesScreen(onBack = { navController.popBackStack() })
             }
             composable(
                 route = Destination.ScanResult.route,
@@ -260,29 +271,42 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
 
 @Composable
 private fun HomeStockBottomBar(navController: NavHostController, currentRoute: String?) {
+    val application = LocalContext.current.applicationContext as HomeStockApplication
+    // Recepten is premium-only, like it already was as a Meer entry — this tab needs the same
+    // check since it's now reachable directly from the bar instead of always going through
+    // that gated row first.
+    val isPremium by application.container.householdMembersRepository
+        .observeHouseholdIsPremium()
+        .collectAsState(initial = false)
+
     NavigationBar {
         topLevelDestinations.forEach { destination ->
             val label = stringResource(destination.labelRes)
+            val isLockedRecipes = destination.destination == Destination.Recipes && !isPremium
             NavigationBarItem(
                 selected = currentRoute == destination.destination.route,
                 onClick = {
-                    val startRoute = navController.graph.findStartDestination().route
-                    if (destination.destination.route == startRoute) {
-                        // navigate(startRoute) { popUpTo(startRoute) { ... } } is a known
-                        // no-op edge case in Navigation Compose when the target IS the
-                        // popUpTo anchor — it silently fails to update the displayed
-                        // screen. Popping back to it directly sidesteps that entirely.
-                        navController.popBackStack(
-                            route = startRoute!!,
-                            inclusive = false,
-                        )
+                    if (isLockedRecipes) {
+                        navController.navigate(Destination.Premium.route)
                     } else {
-                        navController.navigate(destination.destination.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
+                        val startRoute = navController.graph.findStartDestination().route
+                        if (destination.destination.route == startRoute) {
+                            // navigate(startRoute) { popUpTo(startRoute) { ... } } is a known
+                            // no-op edge case in Navigation Compose when the target IS the
+                            // popUpTo anchor — it silently fails to update the displayed
+                            // screen. Popping back to it directly sidesteps that entirely.
+                            navController.popBackStack(
+                                route = startRoute!!,
+                                inclusive = false,
+                            )
+                        } else {
+                            navController.navigate(destination.destination.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
                             }
-                            launchSingleTop = true
-                            restoreState = true
                         }
                     }
                 },

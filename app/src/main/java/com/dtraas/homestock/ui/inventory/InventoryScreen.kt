@@ -2,7 +2,6 @@ package com.dtraas.homestock.ui.inventory
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -36,6 +35,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Receipt
@@ -82,7 +82,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -124,6 +123,7 @@ fun InventoryScreen(
     onNavigateToReceiptScan: () -> Unit = {},
     onNavigateToAiRecognize: () -> Unit = {},
     onNavigateToPremium: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
 ) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: InventoryViewModel = viewModel(
@@ -248,28 +248,9 @@ fun InventoryScreen(
                         )
                     },
                     navigationIcon = {
-                        // R.mipmap.ic_launcher is an <adaptive-icon> XML (background + foreground
-                        // layers); painterResource only supports plain VectorDrawable/raster assets
-                        // and crashes on it, so the two vector layers are composited by hand instead.
-                        Box(
-                            modifier = Modifier
-                                .padding(start = 16.dp)
-                                .size(32.dp)
-                                .clip(CircleShape),
-                        ) {
-                            Image(
-                                painter = painterResource(R.drawable.ic_launcher_background),
-                                contentDescription = null,
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                            Image(
-                                painter = painterResource(R.drawable.ic_launcher_foreground),
-                                contentDescription = stringResource(R.string.app_name),
-                                modifier = Modifier.fillMaxSize(),
-                            )
-                        }
-                    },
-                    actions = {
+                        // The app logo used to sit here; the profile photo takes its place now
+                        // (still opens the same ProfileEditDialog) so the most personal, most
+                        // frequently relevant icon is the one at the far-left glance position.
                         IconButton(onClick = { showProfileDialog = true }) {
                             if (photoPath != null) {
                                 AsyncImage(
@@ -283,6 +264,14 @@ fun InventoryScreen(
                             } else {
                                 Icon(Icons.Filled.AccountCircle, contentDescription = stringResource(R.string.more_profile_title))
                             }
+                        }
+                    },
+                    actions = {
+                        // Meldingen is no longer its own bottom-nav tab (see topLevelDestinations)
+                        // — this is now the way to reach it, right where a notifications icon is
+                        // conventionally expected.
+                        IconButton(onClick = onNavigateToNotifications) {
+                            Icon(Icons.Filled.Notifications, contentDescription = stringResource(R.string.nav_news))
                         }
                     },
                 )

@@ -48,7 +48,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -114,6 +113,8 @@ fun MoreScreen(
     onNavigateToPremium: () -> Unit = {},
     onNavigateToHousehold: () -> Unit = {},
     onNavigateToAccountLink: () -> Unit = {},
+    onNavigateToPrivacyPolicy: () -> Unit = {},
+    onNavigateToLicenses: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as HomeStockApplication
@@ -149,8 +150,6 @@ fun MoreScreen(
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showStoresDialog by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
-    var showPrivacyPolicyDialog by remember { mutableStateOf(false) }
-    var showLicensesDialog by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -204,6 +203,7 @@ fun MoreScreen(
             )
 
             SectionHeader(stringResource(R.string.more_section_features))
+            PremiumPromoCard(isPremium = isPremium, onClick = onNavigateToPremium)
             SettingsRow(
                 icon = Icons.Filled.BarChart,
                 title = stringResource(R.string.more_statistics_title),
@@ -238,7 +238,6 @@ fun MoreScreen(
                 trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                 onClick = { if (isPremium) onNavigateToMealPlan() else onNavigateToPremium() },
             )
-            PremiumPromoCard(isPremium = isPremium, onClick = onNavigateToPremium)
 
             SectionHeader(stringResource(R.string.more_section_preferences))
             SettingsRow(
@@ -280,12 +279,12 @@ fun MoreScreen(
             SettingsRow(
                 icon = Icons.Filled.PrivacyTip,
                 title = stringResource(R.string.more_about_privacy_policy),
-                onClick = { showPrivacyPolicyDialog = true },
+                onClick = onNavigateToPrivacyPolicy,
             )
             SettingsRow(
                 icon = Icons.Filled.Description,
                 title = stringResource(R.string.more_about_licenses),
-                onClick = { showLicensesDialog = true },
+                onClick = onNavigateToLicenses,
             )
 
             if (BuildConfig.DEBUG) {
@@ -398,14 +397,6 @@ fun MoreScreen(
             onRemove = { id -> coroutineScope.launch { storeRepository.removeStore(id) } },
             onDismiss = { showStoresDialog = false },
         )
-    }
-
-    if (showPrivacyPolicyDialog) {
-        PrivacyPolicyDialog(onDismiss = { showPrivacyPolicyDialog = false })
-    }
-
-    if (showLicensesDialog) {
-        LicensesDialog(onDismiss = { showLicensesDialog = false })
     }
 
     if (showFeedbackDialog) {
@@ -828,87 +819,6 @@ private fun FeedbackDialog(onSend: (rating: Int, message: String) -> Unit, onDis
     )
 }
 
-@Composable
-private fun PrivacyPolicyDialog(onDismiss: () -> Unit) {
-    val context = LocalContext.current
-    // Bundled as a plain-text asset rather than a string resource: it's long-form legal
-    // prose, not UI chrome, and keeping it out of strings.xml avoids bloating that file
-    // and awkward XML-escaping of a multi-paragraph document.
-    val policyText = remember {
-        context.assets.open("privacy_policy_nl.txt").bufferedReader().use { it.readText() }
-    }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.more_about_privacy_policy)) },
-        text = {
-            Text(
-                text = policyText,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 420.dp)
-                    .verticalScroll(rememberScrollState()),
-            )
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) }
-        },
-    )
-}
-
-private data class LicenseEntry(val name: String, val license: String)
-
-// License names are intentionally left untranslated, matching how every OSS-licenses
-// screen (including Android's own Settings > About > Legal information) shows them —
-// these are the licenses' authoritative names, not app copy.
-private val softwareLicenses = listOf(
-    LicenseEntry("Kotlin & kotlinx.coroutines (JetBrains)", "Apache License 2.0"),
-    LicenseEntry("AndroidX Jetpack (Core, Lifecycle, Activity, Compose, Navigation, CameraX, WorkManager, Glance, AppCompat)", "Apache License 2.0"),
-    LicenseEntry("Material Components & Material Icons", "Apache License 2.0"),
-    LicenseEntry("Retrofit, OkHttp & Gson", "Apache License 2.0"),
-    LicenseEntry("Coil", "Apache License 2.0"),
-    LicenseEntry("Guava", "Apache License 2.0"),
-    LicenseEntry("Google ML Kit (Barcode Scanning)", "Google APIs Terms of Service"),
-    LicenseEntry("Firebase SDK (Authentication, Firestore)", "Google APIs Terms of Service"),
-    LicenseEntry("Baloo 2 & Nunito (Google Fonts)", "SIL Open Font License 1.1"),
-)
-
-private val dataLicenses = listOf(
-    LicenseEntry("Open Food Facts", "Open Database License (ODbL)"),
-)
-
-@Composable
-private fun LicensesDialog(onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.more_about_licenses)) },
-        text = {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 420.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                softwareLicenses.forEach { entry -> LicenseRow(entry) }
-                HorizontalDivider()
-                dataLicenses.forEach { entry -> LicenseRow(entry) }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) }
-        },
-    )
-}
-
-@Composable
-private fun LicenseRow(entry: LicenseEntry) {
-    Column {
-        Text(entry.name, style = MaterialTheme.typography.bodyMedium)
-        Text(
-            text = entry.license,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-    }
-}
+// Privacy policy / open-source licenses now live on their own screens (see LegalScreens.kt) —
+// long-form, read-only legal text reads better with a full page to scroll in than cramped into
+// a dialog's fixed-height box.

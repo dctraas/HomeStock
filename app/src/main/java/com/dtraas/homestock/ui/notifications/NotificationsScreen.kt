@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddShoppingCart
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.QrCodeScanner
@@ -21,6 +22,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SwipeToDismissBox
@@ -61,7 +63,7 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotificationsScreen() {
+fun NotificationsScreen(onBack: () -> Unit) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: NotificationsViewModel = viewModel(
         factory = viewModelFactory {
@@ -82,7 +84,18 @@ fun NotificationsScreen() {
     )
 
     Scaffold(
-        topBar = { HomeStockTopAppBar(title = { Text(stringResource(R.string.nav_news)) }) },
+        // No longer a permanent bottom-nav tab — reached via the meldingen icon on Voorraad
+        // instead, so this needs a real back action now like any other pushed screen.
+        topBar = {
+            HomeStockTopAppBar(
+                title = { Text(stringResource(R.string.nav_news)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
+                    }
+                },
+            )
+        },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             TabRow(selectedTabIndex = selectedTab) {
