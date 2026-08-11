@@ -80,7 +80,13 @@ class RecipeRepository(
 ) {
     // Recipes already fetched with full detail (from a search/browse result, a direct detail
     // fetch, or an AI generation) are kept here so opening one doesn't need a second network
-    // call/Spoonacular point spend — see [getRecipeDetail].
+    // call/Spoonacular point spend — see [getRecipeDetail]. Deliberately process-lifetime only,
+    // not persisted: for real Spoonacular recipes, getRecipeInformation/translateRecipe already
+    // persist across app restarts *and* across households on the server side (see
+    // functions/src/index.ts's recipeDetailCache/recipeTranslations), which is strictly better
+    // than a second, per-household-only local copy — favorites/custom recipes get their own
+    // Firestore persistence (see [observeFavoriteRecipes]/[observeCustomRecipes]) for the same
+    // reason a plain in-memory cache alone wouldn't survive a restart.
     private val detailCache = ConcurrentHashMap<String, RecipeDetail>()
 
     private fun customRecipesCollection(householdId: String) =
@@ -491,6 +497,13 @@ class RecipeRepository(
                 "householdId" to householdId,
                 "locale" to languageTag,
                 "mode" to "detail",
+                // Lets the Cloud Function serve this from its cross-household translation cache
+                // when another household already translated this exact recipe — see
+                // translateRecipe's doc comment in functions/src/index.ts. Omitted entirely for
+                // AI-generated/custom recipes since detail.id then starts with "ai-"/"custom-",
+                // which the function already treats as "don't cache", but passing null here
+                // instead of the id is clearer about intent than relying on that prefix check twice.
+                "id" to detail.id,
                 "name" to detail.name,
                 "category" to detail.category,
                 "area" to detail.area,

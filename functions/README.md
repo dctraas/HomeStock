@@ -88,6 +88,28 @@ this directory — see the
     configured here.
   - A simple per-household daily counter in Firestore, checked before the external API call.
 
+## Caching
+
+Spoonacular recipe content and its Claude translations are identical for every household that
+looks at the same recipe/locale — a photo scan or a freeform AI recipe is inherently per-call
+and can't be cached, but "recipe #12345" and "recipe #12345 translated into Dutch" are the same
+answer no matter who asks. Three Firestore collections cache these **across households**
+(top-level, not nested under `households/{id}` — see `firestore.rules`, which denies the client
+any direct access; only these functions, via the Admin SDK, ever touch them):
+
+| Collection | Written by | TTL | What it saves |
+| --- | --- | --- | --- |
+| `recipeDetailCache/{spoonacularId}` | `searchRecipes` (backfill), `getRecipeInformation` | 30 days | A Spoonacular `recipes/{id}/information` call, the second+ time *any* household opens that recipe. |
+| `recipeSearchCache/{browseParams}` | `searchRecipes` ("browse" mode only) | 12 hours | A full `complexSearch` call for the filterless "browse popular recipes" list every Recepten screen opens with — by far the most repeated query. |
+| `recipeTranslations/{spoonacularId}_{locale}` | `translateRecipe` | 90 days | A Claude translation call, the second+ time *any* household opens/lists that recipe in that language. AI-generated and hand-entered recipes are deliberately excluded (private, household-specific content — see `isCacheableRecipeId`). |
+
+All three are best-effort: a cache read/write failure is logged and swallowed, never thrown —
+worst case a call falls back to a live Spoonacular/Claude request instead of failing outright.
+
+Open Food Facts barcode lookups and free-text searches get the same cross-household treatment,
+just client-side (`products`/`productSearchCache` — see `ProductRepository.kt`) since OFF needs
+no secret key and is already called directly from the app.
+
 ## Cost
 
 **Claude Haiku 4.5** pricing: $1 / $5 per million input/output tokens.
@@ -98,14 +120,19 @@ this directory — see the
   line-item list — roughly **$0.004–0.008 per scan** depending on receipt length.
 - `generateRecipe` (text-only): a few hundred tokens each way — roughly **$0.001 per recipe**.
 - `translateRecipe` (text-only): "titles" mode is a batch of short strings (~$0.0005 for a
-  24-recipe list); "detail" mode is one recipe's full text — roughly **$0.001–0.002 per recipe**,
-  and only spent once per recipe since the client caches the translated result.
+  24-recipe list); "detail" mode is one recipe's full text — roughly **$0.001–0.002 per recipe**.
+  With the `recipeTranslations` cache above, this is spent once per (recipe, locale) pair across
+  **all** households, not once per household — the more overlap in what people browse (likely
+  high, since "browse" itself is now also cached and shared), the closer actual spend gets to
+  that one-time cost regardless of user count.
 
 **Spoonacular**: free tier is 150 points/day. `complexSearch`/`findByIngredients` cost a handful
 of points per call (more with `addRecipeInformation=true`, used for browse/search so opening a
-result doesn't need a second call), `recipes/{id}/information` costs ~1 point. This comfortably
-covers casual personal/household use; if a household browses recipes heavily, Spoonacular's paid
-tiers start around $10/month for a much higher quota.
+result doesn't need a second call), `recipes/{id}/information` costs ~1 point. The caching above
+means the single most common call (browsing with no filters) only actually hits Spoonacular once
+per 12 hours total, not once per household per screen-open — this is what determines how many
+active households the free tier can support before needing a paid plan (starting around
+$10/month for a much higher quota).
 
 Cloud Functions itself has a generous free tier and every function's own compute cost is
 negligible next to the external API calls.

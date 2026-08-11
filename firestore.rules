@@ -39,5 +39,36 @@ service cloud.firestore {
       allow create: if request.auth != null;
       allow read, list, update, delete: if false;
     }
+
+    // Shared, cross-household caches (see ProductRepository.kt) — Open Food Facts' own data
+    // for a barcode, and its free-text search results, are identical for every household, so
+    // these sit at the top level instead of duplicated under each households/{id} the way
+    // personalized data does. Same trust model as the rest of this app (anyone signed in can
+    // read/write): the worst a malicious client can do is write garbage into one cache entry
+    // for one barcode/query, not access anything private. "list" stays denied for the same
+    // reason as households/{householdId} above — the app only ever reads a single doc by id.
+    match /products/{barcode} {
+      allow get, create, update: if request.auth != null;
+      allow list, delete: if false;
+    }
+    match /productSearchCache/{cacheId} {
+      allow get, create, update: if request.auth != null;
+      allow list, delete: if false;
+    }
+
+    // Shared caches written only by the Cloud Functions in functions/src/index.ts (via the
+    // Admin SDK, which bypasses these rules entirely) — searchRecipes/getRecipeInformation/
+    // translateRecipe. Denied to the client on every operation: unlike products/
+    // productSearchCache above, there's no legitimate reason for the app itself to touch these
+    // directly, so this is a hard deny rather than the same "anyone signed in" model.
+    match /recipeSearchCache/{cacheId} {
+      allow read, write: if false;
+    }
+    match /recipeDetailCache/{recipeId} {
+      allow read, write: if false;
+    }
+    match /recipeTranslations/{docId} {
+      allow read, write: if false;
+    }
   }
 }

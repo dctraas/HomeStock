@@ -7,6 +7,8 @@ import * as admin from "firebase-admin";
 admin.initializeApp();
 setGlobalOptions({ region: "europe-west1", maxInstances: 10 });
 
+const db = admin.firestore();
+
 // Stored via `firebase functions:secrets:set ANTHROPIC_API_KEY` — never committed, never
 // visible client-side. See functions/README.md for the full deploy walkthrough.
 const anthropicApiKey = defineSecret("ANTHROPIC_API_KEY");
@@ -49,7 +51,7 @@ const MAX_BASE64_LENGTH = 8_000_000; // ~6 MB decoded
  * arbitrary caller from probing an unrelated household's premium status by guessing its id.
  */
 async function requirePremiumHousehold(uid: string, householdId: string): Promise<void> {
-  const membersSnapshot = await admin.firestore().collection("households").doc(householdId).collection("members").get();
+  const membersSnapshot = await db.collection("households").doc(householdId).collection("members").get();
 
   const isMember = membersSnapshot.docs.some((doc) => doc.id === uid);
   if (!isMember) {
@@ -66,6 +68,39 @@ function requireUid(auth: { uid: string } | undefined): string {
   const uid = auth?.uid;
   if (!uid) throw new HttpsError("unauthenticated", "Sign-in required.");
   return uid;
+}
+
+// ---------------------------------------------------------------------------
+// Shared cross-household caches. Spoonacular recipe content and its translations are
+// identical for every household that looks at the same recipe/locale — caching them
+// per-household (like the rest of this app's data) would mean every household pays the
+// same Spoonacular-point/Claude-token cost for content someone else already fetched. These
+// collections live at the top level (not under households/{id}) and are never written by
+// the client directly — see firestore.rules — so a household's own Firestore usage never
+// grows from this, it's purely a shared, server-managed cache. Read/write failures here are
+// swallowed rather than thrown: a cache hiccup should degrade to "fetch it live", never
+// break the feature it's speeding up.
+// ---------------------------------------------------------------------------
+
+async function getFreshCache<T>(collection: string, docId: string, ttlMs: number): Promise<T | null> {
+  try {
+    const snapshot = await db.collection(collection).doc(docId).get();
+    if (!snapshot.exists) return null;
+    const cachedAt = snapshot.get("cachedAt") as number | undefined;
+    if (typeof cachedAt !== "number" || Date.now() - cachedAt > ttlMs) return null;
+    return (snapshot.get("data") as T | undefined) ?? null;
+  } catch (error) {
+    logger.error("cache read failed, falling back to a live fetch", { collection, docId, error });
+    return null;
+  }
+}
+
+async function setCache(collection: string, docId: string, data: unknown): Promise<void> {
+  try {
+    await db.collection(collection).doc(docId).set({ data, cachedAt: Date.now() });
+  } catch (error) {
+    logger.error("cache write failed (non-fatal)", { collection, docId, error });
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -532,6 +567,24 @@ function toRecipeDetail(result: SpoonacularInfoResult) {
   };
 }
 
+// Spoonacular recipe content is effectively static once published (a title/ingredient list
+// doesn't change day to day), so a long TTL is safe — this mainly guards against permanently
+// caching a mistake rather than against real staleness.
+const RECIPE_DETAIL_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+// "Popular recipes" ranking (the filterless browse call, by far the most common one — every
+// household's Recepten screen hits this on open) can shift day to day, so this stays much
+// shorter than the detail cache above.
+const RECIPE_BROWSE_CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
+
+type RecipeDetailPayload = ReturnType<typeof toRecipeDetail>;
+
+/** Deterministic key for a "browse" mode call's exact param combination — order-independent on intolerances so ["Gluten","Dairy"] and ["Dairy","Gluten"] share a cache entry. */
+function browseCacheKey(cuisine: string | undefined, intolerances: string[] | undefined, number: number): string {
+  const intolerancesKey = intolerances && intolerances.length > 0 ? [...intolerances].sort().join(",") : "none";
+  return `browse_${cuisine ?? "none"}_${intolerancesKey}_${number}`;
+}
+
 async function spoonacularGet<T>(path: string, params: Record<string, string>, apiKey: string): Promise<T> {
   const url = new URL(`${SPOONACULAR_BASE}${path}`);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
@@ -600,6 +653,17 @@ export const searchRecipes = onCall(
       };
     }
 
+    // Only "browse" (no query, no household-specific ingredient combo) is cached as a whole
+    // list — "query"/"ingredients" results are shaped by what this particular household typed
+    // or has in stock, too personalized to expect much reuse from caching the result set itself.
+    // Individual recipes surfaced by ANY mode still get backfilled into recipeDetailCache below,
+    // since a given recipe's own content is shared regardless of how it was found.
+    const cacheKey = data?.mode === "browse" ? browseCacheKey(data?.cuisine, data?.intolerances, number) : null;
+    if (cacheKey) {
+      const cached = await getFreshCache<RecipeDetailPayload[]>("recipeSearchCache", cacheKey, RECIPE_BROWSE_CACHE_TTL_MS);
+      if (cached) return { details: cached };
+    }
+
     const params: Record<string, string> = {
       number: String(number),
       addRecipeInformation: "true",
@@ -611,7 +675,17 @@ export const searchRecipes = onCall(
     if (data?.intolerances && data.intolerances.length > 0) params.intolerances = data.intolerances.join(",");
 
     const response = await spoonacularGet<SpoonacularComplexSearchResponse>("/recipes/complexSearch", params, apiKey);
-    return { details: response.results.map(toRecipeDetail) };
+    const details = response.results.map(toRecipeDetail);
+
+    // Awaited (not fire-and-forget) so these are guaranteed to land before the function's
+    // container can be frozen post-response, but run in parallel so a cache-miss response isn't
+    // slowed down by writing each entry one at a time.
+    await Promise.all([
+      ...(cacheKey ? [setCache("recipeSearchCache", cacheKey, details)] : []),
+      ...details.map((detail) => setCache("recipeDetailCache", detail.id, detail)),
+    ]);
+
+    return { details };
   },
 );
 
@@ -643,12 +717,17 @@ export const getRecipeInformation = onCall(
     }
     await requirePremiumHousehold(uid, householdId);
 
+    const cached = await getFreshCache<RecipeDetailPayload>("recipeDetailCache", id, RECIPE_DETAIL_CACHE_TTL_MS);
+    if (cached) return { detail: cached };
+
     const result = await spoonacularGet<SpoonacularInfoResult>(
       `/recipes/${encodeURIComponent(id)}/information`,
       {},
       spoonacularApiKey.value(),
     );
-    return { detail: toRecipeDetail(result) };
+    const detail = toRecipeDetail(result);
+    await setCache("recipeDetailCache", id, detail);
+    return { detail };
   },
 );
 
@@ -784,11 +863,65 @@ interface TranslateRecipeRequest {
   locale: string;
   mode: "titles" | "detail";
   items?: Array<{ id: string; name: string }>;
+  /** Spoonacular recipe id for mode "detail" — enables [getCachedTranslation]/[setCachedTranslation] below. Omitted (or an "ai-"/"custom-"-prefixed id) for AI-generated/hand-entered recipes, which are never cached here — see [isCacheableRecipeId]. */
+  id?: string;
   name?: string;
   category?: string | null;
   area?: string | null;
   instructions?: string | null;
   ingredients?: TranslatableIngredient[];
+}
+
+// A recipe's translation into a given locale is the same for every household that asks for
+// it — cached at the top level (not per household) so the *second* household ever to open
+// "Spaghetti Bolognese" in Dutch pays nothing, regardless of which household went first. Long
+// TTL: a translation only really goes stale if this function's own prompt/schema changes, not
+// because the underlying recipe changed.
+const RECIPE_TRANSLATION_CACHE_TTL_MS = 90 * 24 * 60 * 60 * 1000; // 90 days
+
+interface CachedRecipeTranslation {
+  name?: string;
+  category?: string | null;
+  area?: string | null;
+  instructions?: string | null;
+  ingredients?: TranslatableIngredient[];
+  /** Only set once a "detail" translation has actually run — a "titles"-only cache entry (just `name`) must not be mistaken for a full detail translation. */
+  hasDetail?: boolean;
+  cachedAt?: number;
+}
+
+/** AI-generated and hand-entered recipes are private, household-specific content — never worth (or safe) sharing in a cross-household cache, unlike real Spoonacular recipes. */
+function isCacheableRecipeId(id: string | null | undefined): id is string {
+  return typeof id === "string" && id.length > 0 && !id.startsWith("ai-") && !id.startsWith("custom-");
+}
+
+function translationDocId(id: string, locale: string): string {
+  return `${id}_${locale}`;
+}
+
+async function getCachedTranslation(id: string, locale: string): Promise<CachedRecipeTranslation | null> {
+  try {
+    const snapshot = await db.collection("recipeTranslations").doc(translationDocId(id, locale)).get();
+    if (!snapshot.exists) return null;
+    const cachedAt = snapshot.get("cachedAt") as number | undefined;
+    if (typeof cachedAt !== "number" || Date.now() - cachedAt > RECIPE_TRANSLATION_CACHE_TTL_MS) return null;
+    return snapshot.data() as CachedRecipeTranslation;
+  } catch (error) {
+    logger.error("recipeTranslations read failed, falling back to a live translation", { id, locale, error });
+    return null;
+  }
+}
+
+/** Merges rather than overwrites — a "titles"-only write must not erase an already-cached detail translation (or vice versa) for the same recipe/locale. */
+async function setCachedTranslation(id: string, locale: string, fields: Partial<CachedRecipeTranslation>): Promise<void> {
+  try {
+    await db.collection("recipeTranslations").doc(translationDocId(id, locale)).set(
+      { ...fields, cachedAt: Date.now() },
+      { merge: true },
+    );
+  } catch (error) {
+    logger.error("recipeTranslations write failed (non-fatal)", { id, locale, error });
+  }
 }
 
 /**
@@ -800,6 +933,11 @@ interface TranslateRecipeRequest {
  * - A recipe's full detail (from [getRecipeInformation] or a search result that already
  *   included it), translated into parallel fields client-side — the original English fields
  *   are left untouched so ingredient matching against the household's inventory keeps working.
+ *
+ * Both modes check [getCachedTranslation] first for any real Spoonacular recipe id (see
+ * [isCacheableRecipeId]) — this is the single biggest lever this app has on Claude spend, since
+ * unlike a photo scan or a freeform AI recipe, "translate recipe #12345 into Dutch" produces the
+ * exact same output for every household that ever asks.
  */
 export const translateRecipe = onCall(
   { secrets: [anthropicApiKey], cors: false, timeoutSeconds: 30, invoker: "public" },
@@ -821,13 +959,54 @@ export const translateRecipe = onCall(
     if (data?.mode === "titles") {
       const items = Array.isArray(data.items) ? data.items.slice(0, 40) : [];
       if (items.length === 0) return { items: [] };
-      const translated = await translateTitles(apiKey, locale, items);
-      return { items: translated };
+
+      const cachedNameById = new Map<string, string>();
+      await Promise.all(
+        items.map(async (item) => {
+          if (!isCacheableRecipeId(item.id)) return;
+          const cached = await getCachedTranslation(item.id, locale);
+          if (cached?.name) cachedNameById.set(item.id, cached.name);
+        }),
+      );
+
+      const uncached = items.filter((item) => !cachedNameById.has(item.id));
+      let freshlyTranslated: Array<{ id: string; name: string }> = [];
+      if (uncached.length > 0) {
+        freshlyTranslated = await translateTitles(apiKey, locale, uncached);
+        await Promise.all(
+          freshlyTranslated
+            .filter((t) => isCacheableRecipeId(t.id))
+            .map((t) => setCachedTranslation(t.id, locale, { name: t.name })),
+        );
+      }
+      const freshNameById = new Map(freshlyTranslated.map((t) => [t.id, t.name]));
+      const merged = items.map((item) => ({
+        id: item.id,
+        name: cachedNameById.get(item.id) ?? freshNameById.get(item.id) ?? item.name,
+      }));
+      return { items: merged };
     }
 
     if (!data?.name) {
       throw new HttpsError("invalid-argument", "name is required for mode \"detail\".");
     }
+
+    const cacheId = isCacheableRecipeId(data.id) ? data.id : null;
+    if (cacheId) {
+      const cached = await getCachedTranslation(cacheId, locale);
+      if (cached?.hasDetail) {
+        return {
+          detail: {
+            name: cached.name || data.name,
+            category: cached.category ?? null,
+            area: cached.area ?? null,
+            instructions: cached.instructions ?? null,
+            ingredients: cached.ingredients?.length ? cached.ingredients : (data.ingredients ?? []),
+          },
+        };
+      }
+    }
+
     const translated = await translateDetailFields(apiKey, locale, {
       name: data.name,
       category: data.category ?? null,
@@ -835,6 +1014,11 @@ export const translateRecipe = onCall(
       instructions: data.instructions ?? null,
       ingredients: Array.isArray(data.ingredients) ? data.ingredients : [],
     });
+
+    if (cacheId) {
+      await setCachedTranslation(cacheId, locale, { ...translated, hasDetail: true });
+    }
+
     return { detail: translated };
   },
 );
