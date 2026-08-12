@@ -630,6 +630,10 @@ class RecipeRepository(
             instructions = map["instructions"] as? String,
             ingredients = ingredients,
             readyInMinutes = (map["readyInMinutes"] as? Number)?.toInt(),
+            calories = (map["calories"] as? Number)?.toDouble(),
+            protein = (map["protein"] as? Number)?.toDouble(),
+            fat = (map["fat"] as? Number)?.toDouble(),
+            carbohydrates = (map["carbohydrates"] as? Number)?.toDouble(),
         )
     }
 
@@ -661,6 +665,10 @@ class RecipeRepository(
             instructions = data["instructions"] as? String,
             ingredients = ingredients,
             readyInMinutes = (data["readyInMinutes"] as? Number)?.toInt(),
+            calories = (data["calories"] as? Number)?.toDouble(),
+            protein = (data["protein"] as? Number)?.toDouble(),
+            fat = (data["fat"] as? Number)?.toDouble(),
+            carbohydrates = (data["carbohydrates"] as? Number)?.toDouble(),
             isAiGenerated = (data["isAiGenerated"] as? Boolean) ?: false,
             isCustom = isCustom || (data["isCustom"] as? Boolean) ?: false,
         )
@@ -675,6 +683,10 @@ class RecipeRepository(
         "instructions" to detail.instructions,
         "ingredients" to detail.ingredients.map { (name, measure) -> mapOf("name" to name, "measure" to measure) },
         "readyInMinutes" to detail.readyInMinutes,
+        "calories" to detail.calories,
+        "protein" to detail.protein,
+        "fat" to detail.fat,
+        "carbohydrates" to detail.carbohydrates,
         "isAiGenerated" to detail.isAiGenerated,
         "isCustom" to detail.isCustom,
     )

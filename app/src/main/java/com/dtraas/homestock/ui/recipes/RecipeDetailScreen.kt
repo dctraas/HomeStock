@@ -53,6 +53,7 @@ import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.theme.SoftCardShape
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -207,6 +208,51 @@ fun RecipeDetailScreen(
                     }
                 }
 
+                // Per serving (Spoonacular's own breakdown, see RecipeDetail's doc) — absent
+                // entirely for AI-generated/custom recipes and any Spoonacular recipe that
+                // simply has no nutrition data, so the whole section is skipped rather than
+                // showing a card of dashes.
+                val hasNutrition = detail.calories != null || detail.protein != null ||
+                    detail.fat != null || detail.carbohydrates != null
+                if (hasNutrition) {
+                    Row(
+                        verticalAlignment = Alignment.Bottom,
+                        modifier = Modifier.padding(top = 20.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.product_detail_nutrition_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Text(
+                            text = stringResource(R.string.recipes_nutrition_per_serving),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 6.dp, bottom = 1.dp),
+                        )
+                    }
+                    Card(
+                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                        shape = SoftCardShape,
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            detail.calories?.let {
+                                NutritionValueRow(stringResource(R.string.product_detail_nutrition_energy), formatRecipeKcal(it))
+                            }
+                            detail.fat?.let {
+                                NutritionValueRow(stringResource(R.string.product_detail_nutrition_fat), formatRecipeGrams(it))
+                            }
+                            detail.carbohydrates?.let {
+                                NutritionValueRow(stringResource(R.string.product_detail_nutrition_carbohydrates), formatRecipeGrams(it))
+                            }
+                            detail.protein?.let {
+                                NutritionValueRow(stringResource(R.string.product_detail_nutrition_proteins), formatRecipeGrams(it))
+                            }
+                        }
+                    }
+                }
+
                 if (uiState.addedToShoppingList) {
                     Text(
                         text = stringResource(R.string.recipes_added_to_shopping_list),
@@ -250,6 +296,21 @@ fun RecipeDetailScreen(
         }
     }
 }
+
+/** One label/value line in the nutrition card — mirrors ProductDetailScreen's NutritionRow, just without the indented-subtotal styling that only applies there (saturated fat/sugars aren't part of Spoonacular's per-serving breakdown). */
+@Composable
+private fun NutritionValueRow(label: String, value: String) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyMedium)
+        Text(text = value, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+private fun formatRecipeKcal(value: Double): String = String.format(Locale.getDefault(), "%.0f kcal", value)
+private fun formatRecipeGrams(value: Double): String = String.format(Locale.getDefault(), "%.1f g", value)
 
 /** Small pill badge (AI-generated / AI-translated) shown under RecipeDetailScreen's subtitle. */
 @Composable

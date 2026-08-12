@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Description
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Language
@@ -81,7 +82,12 @@ import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.BuildConfig
 import com.dtraas.homestock.R
+import com.dtraas.homestock.data.export.CsvExporter
+import com.dtraas.homestock.data.export.InventoryCsvHeaders
+import com.dtraas.homestock.data.export.ShoppingListCsvHeaders
 import com.dtraas.homestock.data.local.entity.StoreEntity
+import com.dtraas.homestock.data.model.Category
+import com.dtraas.homestock.data.model.MeasurementUnit
 import com.dtraas.homestock.data.repository.ThemeMode
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.ProfileEditDialog
@@ -89,6 +95,7 @@ import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.work.ExpiryCheckWorker
 import java.io.File
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 private enum class AppLanguage(val tag: String, val labelRes: Int) {
@@ -157,6 +164,87 @@ fun MoreScreen(
                 permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
             }
             ExpiryCheckWorker.runOnce(context)
+        }
+    }
+
+    // CSV export (Voorraad/Boodschappenlijst) — the CSV content has to be built *before* the
+    // system's "save to..." picker is launched (it needs a filename up front, but only hands
+    // back a Uri once the user has actually picked a location, well after this composable has
+    // moved on), so it's held here and written once that callback fires.
+    var pendingExportCsv by remember { mutableStateOf<String?>(null) }
+    val exportErrorMessage = stringResource(R.string.more_export_error)
+    val exportSuccessMessage = stringResource(R.string.more_export_success)
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv"),
+    ) { uri ->
+        val csv = pendingExportCsv
+        pendingExportCsv = null
+        if (uri == null || csv == null) return@rememberLauncherForActivityResult
+        coroutineScope.launch {
+            val message = try {
+                context.contentResolver.openOutputStream(uri)?.use { it.write(csv.toByteArray(Charsets.UTF_8)) }
+                exportSuccessMessage
+            } catch (e: Exception) {
+                exportErrorMessage
+            }
+            snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Short)
+        }
+    }
+    // Built once via stringResource (a composable-only call) rather than inside the plain
+    // lambdas below, which run outside composition — CsvExporter itself is Compose-independent
+    // so it takes these as plain parameters instead of resolving them itself.
+    val categoryLabels = Category.entries.associate { it.storageKey to stringResource(it.displayNameRes) }
+    val unitLabels = MeasurementUnit.entries.associate { it.storageKey to stringResource(it.shortLabelRes) }
+    val csvYes = stringResource(R.string.common_yes)
+    val csvNo = stringResource(R.string.common_no)
+    val inventoryCsvHeaders = InventoryCsvHeaders(
+        name = stringResource(R.string.common_name),
+        brand = stringResource(R.string.product_detail_field_brand),
+        category = stringResource(R.string.category_dropdown_label),
+        quantity = stringResource(R.string.common_quantity),
+        unit = stringResource(R.string.product_detail_field_unit),
+        expiration = stringResource(R.string.product_detail_expiration_label),
+        minQuantity = stringResource(R.string.product_detail_min_quantity_label),
+        favorite = stringResource(R.string.more_export_header_favorite),
+        note = stringResource(R.string.shopping_list_note_label),
+    )
+    val shoppingListCsvHeaders = ShoppingListCsvHeaders(
+        name = stringResource(R.string.common_name),
+        category = stringResource(R.string.category_dropdown_label),
+        store = stringResource(R.string.store_dropdown_label),
+        quantity = stringResource(R.string.common_quantity),
+        unit = stringResource(R.string.product_detail_field_unit),
+        checked = stringResource(R.string.more_export_header_checked),
+        note = stringResource(R.string.shopping_list_note_label),
+    )
+
+    fun exportInventory() {
+        coroutineScope.launch {
+            val items = application.container.inventoryRepository.observeInventoryWithProduct().first()
+            pendingExportCsv = CsvExporter.inventoryToCsv(
+                items,
+                inventoryCsvHeaders,
+                categoryLabel = { key -> categoryLabels[key] ?: key },
+                unitLabel = { key -> unitLabels[key] ?: (key ?: "") },
+                yesLabel = csvYes,
+                noLabel = csvNo,
+            )
+            exportLauncher.launch("voorraad.csv")
+        }
+    }
+
+    fun exportShoppingList() {
+        coroutineScope.launch {
+            val items = application.container.shoppingListRepository.observeShoppingList().first()
+            pendingExportCsv = CsvExporter.shoppingListToCsv(
+                items,
+                shoppingListCsvHeaders,
+                categoryLabel = { key -> categoryLabels[key] ?: key },
+                unitLabel = { key -> unitLabels[key] ?: (key ?: "") },
+                yesLabel = csvYes,
+                noLabel = csvNo,
+            )
+            exportLauncher.launch("boodschappenlijst.csv")
         }
     }
 
@@ -242,6 +330,18 @@ fun MoreScreen(
                 title = stringResource(R.string.more_stores_title),
                 subtitle = stringResource(R.string.more_stores_count_format, stores.size),
                 onClick = { showStoresDialog = true },
+            )
+
+            SectionHeader(stringResource(R.string.more_section_data))
+            SettingsRow(
+                icon = Icons.Filled.Download,
+                title = stringResource(R.string.more_export_inventory_title),
+                onClick = ::exportInventory,
+            )
+            SettingsRow(
+                icon = Icons.Filled.Download,
+                title = stringResource(R.string.more_export_shopping_list_title),
+                onClick = ::exportShoppingList,
             )
 
             SectionHeader(stringResource(R.string.more_section_about))

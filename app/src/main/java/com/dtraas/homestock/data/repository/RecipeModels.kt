@@ -35,6 +35,14 @@ data class RecipeDetail(
     val instructions: String?,
     val ingredients: List<Pair<String, String>>,
     val readyInMinutes: Int? = null,
+    // Per serving (Spoonacular's own recipe-level nutrition, divided by its serving count) —
+    // not per 100g like a product's NutritionInfo, since a whole recipe has no fixed weight.
+    // Null for AI-generated/custom recipes (Claude doesn't estimate this) and for any recipe
+    // Spoonacular simply has no nutrition breakdown for.
+    val calories: Double? = null,
+    val protein: Double? = null,
+    val fat: Double? = null,
+    val carbohydrates: Double? = null,
     val isAiGenerated: Boolean = false,
     val isCustom: Boolean = false,
     val translatedForLocale: String? = null,

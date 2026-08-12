@@ -8,6 +8,8 @@
     <string name="common_ok">OK</string>
     <string name="common_on">On</string>
     <string name="common_off">Off</string>
+    <string name="common_yes">Yes</string>
+    <string name="common_no">No</string>
     <string name="common_quantity">Quantity</string>
     <string name="common_save">Save</string>
     <string name="common_undo">Undo</string>
@@ -191,6 +193,13 @@
     <string name="more_stores_empty">No stores added yet.</string>
     <string name="more_stores_remove_format">Remove %1$s</string>
     <string name="more_statistics_title">Statistics</string>
+    <string name="more_section_data">DATA</string>
+    <string name="more_export_inventory_title">Export inventory (CSV)</string>
+    <string name="more_export_shopping_list_title">Export shopping list (CSV)</string>
+    <string name="more_export_header_favorite">Favorite</string>
+    <string name="more_export_header_checked">Checked</string>
+    <string name="more_export_success">File saved</string>
+    <string name="more_export_error">Export failed</string>
     <string name="more_section_about">SUPPORT</string>
     <string name="more_about_version_format">App version %1$s</string>
     <string name="more_about_feedback">Give feedback</string>
@@ -436,6 +445,7 @@
     <string name="recipes_area_match_cd">Matches your language/region</string>
     <string name="recipes_detail_error">Couldn\'t load this recipe. Please try again.</string>
     <string name="recipes_ingredients_title">Ingredients</string>
+    <string name="recipes_nutrition_per_serving">per serving</string>
     <string name="recipes_ingredient_in_inventory_cd">Already in stock</string>
     <string name="recipes_added_to_shopping_list">Missing ingredients added to your shopping list</string>
     <string name="recipes_add_missing_to_shopping_list">Add missing ingredients to shopping list</string>

@@ -8,6 +8,8 @@
     <string name="common_ok">OK</string>
     <string name="common_on">Activé</string>
     <string name="common_off">Désactivé</string>
+    <string name="common_yes">Oui</string>
+    <string name="common_no">Non</string>
     <string name="common_quantity">Quantité</string>
     <string name="common_save">Enregistrer</string>
     <string name="common_undo">Annuler</string>
@@ -191,6 +193,13 @@
     <string name="more_stores_empty">Aucun magasin ajouté pour l\'instant.</string>
     <string name="more_stores_remove_format">Supprimer %1$s</string>
     <string name="more_statistics_title">Statistiques</string>
+    <string name="more_section_data">DONNÉES</string>
+    <string name="more_export_inventory_title">Exporter le stock (CSV)</string>
+    <string name="more_export_shopping_list_title">Exporter la liste de courses (CSV)</string>
+    <string name="more_export_header_favorite">Favori</string>
+    <string name="more_export_header_checked">Coché</string>
+    <string name="more_export_success">Fichier enregistré</string>
+    <string name="more_export_error">Échec de l'exportation</string>
     <string name="more_section_about">ASSISTANCE</string>
     <string name="more_about_version_format">Version de l\'app %1$s</string>
     <string name="more_about_feedback">Donner mon avis</string>
@@ -436,6 +445,7 @@
     <string name="recipes_area_match_cd">Correspond à ta langue/région</string>
     <string name="recipes_detail_error">Impossible de charger cette recette. Réessayez.</string>
     <string name="recipes_ingredients_title">Ingrédients</string>
+    <string name="recipes_nutrition_per_serving">par portion</string>
     <string name="recipes_ingredient_in_inventory_cd">Déjà en stock</string>
     <string name="recipes_added_to_shopping_list">Ingrédients manquants ajoutés à votre liste de courses</string>
     <string name="recipes_add_missing_to_shopping_list">Ajouter les ingrédients manquants à la liste de courses</string>

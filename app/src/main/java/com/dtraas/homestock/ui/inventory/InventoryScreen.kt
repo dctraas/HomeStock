@@ -5,6 +5,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +55,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -374,6 +377,18 @@ fun InventoryScreen(
                 }
             }
 
+            // One-tap quick filters for the two conditions Statistieken already surfaces as
+            // counts ("Laag op voorraad" / "Bijna houdbaar") — glanceable chips rather than
+            // folded into FilterMenuButton's dropdown, since checking these is meant to be a
+            // single tap, not a couple of taps deep in a menu. Independent of each other and
+            // of the category/favorites filter above; both can be on at once.
+            QuickFilterRow(
+                lowStockOnly = uiState.lowStockOnly,
+                expiringSoonOnly = uiState.expiringSoonOnly,
+                onLowStockToggle = viewModel::onLowStockFilterChange,
+                onExpiringSoonToggle = viewModel::onExpiringSoonFilterChange,
+            )
+
             // Grouping by category loses the order between categories (each still shows in
             // category order, not by whichever item within it sorts first) — for Houdbaarheid,
             // where seeing what's soonest across the whole voorraad is the point, render one
@@ -382,7 +397,8 @@ fun InventoryScreen(
 
             if (uiState.groupedInventory.isEmpty()) {
                 EmptyInventory(
-                    isFiltered = uiState.searchQuery.isNotBlank() || uiState.selectedCategory != null || uiState.favoritesOnly,
+                    isFiltered = uiState.searchQuery.isNotBlank() || uiState.selectedCategory != null ||
+                        uiState.favoritesOnly || uiState.lowStockOnly || uiState.expiringSoonOnly,
                     modifier = Modifier.fillMaxSize(),
                 )
             } else if (viewMode == InventoryViewMode.LIST) {
@@ -689,6 +705,45 @@ private fun SortMenuButton(
                 )
             }
         }
+    }
+}
+
+/** Quick-filter chips for "Laag op voorraad" / "Bijna houdbaar" — see the call site's doc. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun QuickFilterRow(
+    lowStockOnly: Boolean,
+    expiringSoonOnly: Boolean,
+    onLowStockToggle: (Boolean) -> Unit,
+    onExpiringSoonToggle: (Boolean) -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 12.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        FilterChip(
+            selected = lowStockOnly,
+            onClick = { onLowStockToggle(!lowStockOnly) },
+            label = { Text(stringResource(R.string.statistics_low_stock)) },
+            leadingIcon = if (lowStockOnly) {
+                { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+            } else {
+                null
+            },
+        )
+        FilterChip(
+            selected = expiringSoonOnly,
+            onClick = { onExpiringSoonToggle(!expiringSoonOnly) },
+            label = { Text(stringResource(R.string.statistics_expiring_soon)) },
+            leadingIcon = if (expiringSoonOnly) {
+                { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
+            } else {
+                null
+            },
+        )
     }
 }
 

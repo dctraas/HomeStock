@@ -514,6 +514,16 @@ interface SpoonacularIngredient {
   unit: string;
 }
 
+interface SpoonacularNutrient {
+  name: string;
+  amount: number;
+  unit: string;
+}
+
+interface SpoonacularNutrition {
+  nutrients?: SpoonacularNutrient[];
+}
+
 interface SpoonacularInfoResult {
   id: number;
   title: string;
@@ -523,6 +533,7 @@ interface SpoonacularInfoResult {
   instructions?: string;
   extendedIngredients?: SpoonacularIngredient[];
   readyInMinutes?: number;
+  nutrition?: SpoonacularNutrition;
 }
 
 interface SpoonacularComplexSearchResponse {
@@ -552,7 +563,14 @@ function cleanInstructions(html: string | undefined): string | null {
   return text.length > 0 ? text : null;
 }
 
+/** Looks up one named nutrient (e.g. "Calories", "Protein") from Spoonacular's per-serving nutrition breakdown, rounded to 1 decimal — null if that recipe has no nutrition data (older cache entries from before this field existed, or Spoonacular simply not having it for that recipe) or doesn't list this particular nutrient. */
+function findNutrientAmount(nutrients: SpoonacularNutrient[] | undefined, name: string): number | null {
+  const nutrient = nutrients?.find((n) => n.name === name);
+  return nutrient ? Math.round(nutrient.amount * 10) / 10 : null;
+}
+
 function toRecipeDetail(result: SpoonacularInfoResult) {
+  const nutrients = result.nutrition?.nutrients;
   return {
     id: String(result.id),
     name: result.title,
@@ -565,6 +583,12 @@ function toRecipeDetail(result: SpoonacularInfoResult) {
       measure: [ingredient.amount, ingredient.unit].filter((part) => part !== undefined && part !== "").join(" "),
     })),
     readyInMinutes: result.readyInMinutes ?? null,
+    // Per serving, not per 100g (unlike a product's NutritionInfo) — Spoonacular reports a
+    // whole recipe's nutrition divided by its own serving count, there's no per-100g figure.
+    calories: findNutrientAmount(nutrients, "Calories"),
+    protein: findNutrientAmount(nutrients, "Protein"),
+    fat: findNutrientAmount(nutrients, "Fat"),
+    carbohydrates: findNutrientAmount(nutrients, "Carbohydrates"),
   };
 }
 
@@ -707,6 +731,7 @@ export const searchRecipes = onCall(
       number: String(number),
       offset: String(offset),
       addRecipeInformation: "true",
+      addRecipeNutrition: "true",
       fillIngredients: "true",
       sort: "popularity",
     };
@@ -764,7 +789,9 @@ export const getRecipeInformation = onCall(
 
     const result = await spoonacularGet<SpoonacularInfoResult>(
       `/recipes/${encodeURIComponent(id)}/information`,
-      {},
+      // Same nutrition data as complexSearch's addRecipeNutrition, just a differently-named
+      // param on this endpoint — Spoonacular isn't consistent about that between the two.
+      { includeNutrition: "true" },
       spoonacularApiKey.value(),
     );
     const detail = toRecipeDetail(result);

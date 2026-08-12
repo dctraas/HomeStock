@@ -128,7 +128,10 @@ no secret key and is already called directly from the app.
 
 **Spoonacular**: free tier is 150 points/day. `complexSearch`/`findByIngredients` cost a handful
 of points per call (more with `addRecipeInformation=true`, used for browse/search so opening a
-result doesn't need a second call), `recipes/{id}/information` costs ~1 point. The caching above
+result doesn't need a second call, and `addRecipeNutrition=true`/`includeNutrition=true`, used
+everywhere full detail is fetched so RecipeDetailScreen can show per-serving calories/macros —
+each adds roughly another point per call), `recipes/{id}/information` costs ~1 point plus that
+nutrition surcharge. The caching above
 means the single most common call (browsing with no filters) only actually hits Spoonacular once
 per 12 hours total, not once per household per screen-open — this is what determines how many
 active households the free tier can support before needing a paid plan (starting around

@@ -8,6 +8,8 @@
     <string name="common_ok">OK</string>
     <string name="common_on">Aan</string>
     <string name="common_off">Uit</string>
+    <string name="common_yes">Ja</string>
+    <string name="common_no">Nee</string>
     <string name="common_quantity">Aantal</string>
     <string name="common_save">Opslaan</string>
     <string name="common_undo">Ongedaan maken</string>
@@ -192,6 +194,13 @@
     <string name="more_stores_empty">Nog geen winkels toegevoegd.</string>
     <string name="more_stores_remove_format">%1$s verwijderen</string>
     <string name="more_statistics_title">Statistieken</string>
+    <string name="more_section_data">GEGEVENS</string>
+    <string name="more_export_inventory_title">Voorraad exporteren (CSV)</string>
+    <string name="more_export_shopping_list_title">Boodschappenlijst exporteren (CSV)</string>
+    <string name="more_export_header_favorite">Favoriet</string>
+    <string name="more_export_header_checked">Afgevinkt</string>
+    <string name="more_export_success">Bestand opgeslagen</string>
+    <string name="more_export_error">Exporteren mislukt</string>
     <string name="more_section_about">ONDERSTEUNING</string>
     <string name="more_about_version_format">App versie %1$s</string>
     <string name="more_about_feedback">Feedback geven</string>
@@ -437,6 +446,7 @@
     <string name="recipes_area_match_cd">Sluit aan bij jouw taal/regio</string>
     <string name="recipes_detail_error">Kon dit recept niet laden. Probeer het opnieuw.</string>
     <string name="recipes_ingredients_title">Ingrediënten</string>
+    <string name="recipes_nutrition_per_serving">per portie</string>
     <string name="recipes_ingredient_in_inventory_cd">Al in voorraad</string>
     <string name="recipes_added_to_shopping_list">Ontbrekende ingrediënten toegevoegd aan je boodschappenlijst</string>
     <string name="recipes_add_missing_to_shopping_list">Ontbrekende ingrediënten toevoegen aan boodschappenlijst</string>

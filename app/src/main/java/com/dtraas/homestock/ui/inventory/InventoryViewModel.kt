@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.model.Category
+import com.dtraas.homestock.data.model.InventoryStockStatus
 import com.dtraas.homestock.data.repository.ActivityLogRepository
 import com.dtraas.homestock.data.repository.HouseholdRepository
 import com.dtraas.homestock.data.repository.InventoryRepository
@@ -33,6 +34,12 @@ data class InventoryUiState(
     val selectedCategory: Category? = null,
     val sortOption: InventorySortOption = InventorySortOption.NAME,
     val favoritesOnly: Boolean = false,
+    // Independent of each other and of favoritesOnly/selectedCategory — all narrow the same
+    // list together, shown as chips (see InventoryScreen) rather than folded into the filter
+    // dropdown like favoritesOnly, since these two are meant to be glanceable/one-tap rather
+    // than a couple of taps deep in a menu.
+    val lowStockOnly: Boolean = false,
+    val expiringSoonOnly: Boolean = false,
     val groupedInventory: Map<Category, List<InventoryItemWithProduct>> = emptyMap(),
     // Same items as groupedInventory, but as one globally ordered list rather than grouped
     // by category — grouping loses the overall order between categories (each category's
@@ -56,16 +63,21 @@ class InventoryViewModel(
     private val selectedCategory = MutableStateFlow<Category?>(null)
     private val sortOption = MutableStateFlow(InventorySortOption.NAME)
     private val favoritesOnly = MutableStateFlow(false)
+    private val lowStockOnly = MutableStateFlow(false)
+    private val expiringSoonOnly = MutableStateFlow(false)
 
-    // combine() only has direct overloads up to 5 flows, and there are 6 inputs here — the
-    // filter/sort controls are combined into one flow first so the outer combine stays within
-    // that limit.
+    // combine() only has direct overloads up to 5 flows, and there are 7 inputs here — the
+    // filter/sort controls are combined into one flow first (itself built from two nested
+    // combines, for the same reason) so the outer combine stays within that limit.
+    private data class QuickFilters(val lowStockOnly: Boolean, val expiringSoonOnly: Boolean)
+
     private data class FilterState(
         val query: String,
         val category: Category?,
         val sort: InventorySortOption,
         val favoritesOnly: Boolean,
         val householdName: String?,
+        val quickFilters: QuickFilters,
     )
 
     val uiState: StateFlow<InventoryUiState> = combine(
@@ -75,9 +87,11 @@ class InventoryViewModel(
             selectedCategory,
             sortOption,
             favoritesOnly,
-            householdRepository.observeHouseholdName(),
-        ) { query, category, sort, favOnly, householdName ->
-            FilterState(query, category, sort, favOnly, householdName)
+            combine(householdRepository.observeHouseholdName(), lowStockOnly, expiringSoonOnly) { householdName, lowStock, expiringSoon ->
+                householdName to QuickFilters(lowStock, expiringSoon)
+            },
+        ) { query, category, sort, favOnly, (householdName, quickFilters) ->
+            FilterState(query, category, sort, favOnly, householdName, quickFilters)
         },
     ) { items, filters ->
         val filtered = items.filter { item ->
@@ -86,7 +100,15 @@ class InventoryViewModel(
                 item.name.contains(filters.query, ignoreCase = true) ||
                 item.brand?.contains(filters.query, ignoreCase = true) == true
             val matchesFavorite = !filters.favoritesOnly || item.isFavorite
-            matchesCategory && matchesQuery && matchesFavorite
+            // Each independently checked against the item's raw fields (not the single,
+            // priority-ordered InventoryStockStatus.of() the status dot uses) — an item that's
+            // both below its minimum *and* expiring soon should still show up under either
+            // chip, not just whichever one of the two of() would have picked.
+            val matchesLowStock = !filters.quickFilters.lowStockOnly ||
+                InventoryStockStatus.isLowStock(item.quantity, item.minQuantity)
+            val matchesExpiringSoon = !filters.quickFilters.expiringSoonOnly ||
+                InventoryStockStatus.isExpiringSoon(item.expirationDate)
+            matchesCategory && matchesQuery && matchesFavorite && matchesLowStock && matchesExpiringSoon
         }
         val sorted = when (filters.sort) {
             InventorySortOption.NAME -> filtered.sortedBy { it.name.lowercase() }
@@ -100,6 +122,8 @@ class InventoryViewModel(
             selectedCategory = filters.category,
             sortOption = filters.sort,
             favoritesOnly = filters.favoritesOnly,
+            lowStockOnly = filters.quickFilters.lowStockOnly,
+            expiringSoonOnly = filters.quickFilters.expiringSoonOnly,
             groupedInventory = sorted
                 .groupBy { Category.fromStorageKey(it.category) }
                 .toSortedMap(compareBy { it.sortOrder }),
@@ -110,6 +134,14 @@ class InventoryViewModel(
 
     fun onSearchQueryChange(query: String) {
         searchQuery.value = query
+    }
+
+    fun onLowStockFilterChange(enabled: Boolean) {
+        lowStockOnly.value = enabled
+    }
+
+    fun onExpiringSoonFilterChange(enabled: Boolean) {
+        expiringSoonOnly.value = enabled
     }
 
     fun onCategoryFilterChange(category: Category?) {

@@ -25,13 +25,27 @@ enum class InventoryStockStatus {
 
         fun of(quantity: Int, minQuantity: Int?, expirationDate: Long?): InventoryStockStatus {
             if (quantity <= 0) return OUT_OF_STOCK
-            if (expirationDate != null) {
-                val date = Instant.ofEpochMilli(expirationDate).atZone(ZoneOffset.UTC).toLocalDate()
-                val daysUntilExpiry = ChronoUnit.DAYS.between(LocalDate.now(ZoneOffset.UTC), date)
-                if (daysUntilExpiry <= EXPIRING_SOON_THRESHOLD_DAYS) return EXPIRING_SOON
-            }
-            if (minQuantity != null && quantity < minQuantity) return LOW_STOCK
+            if (isExpiringSoon(expirationDate)) return EXPIRING_SOON
+            if (isLowStock(quantity, minQuantity)) return LOW_STOCK
             return SUFFICIENT
         }
+
+        /**
+         * Standalone version of the "expiring soon" check [of] folds into its single combined
+         * status — exposed separately so InventoryViewModel's "Verloopt binnenkort" quick
+         * filter can match on it directly, without also excluding an item that's expiring soon
+         * *and* below its minimum quantity (which [of] would only ever report as one or the
+         * other, by priority).
+         */
+        fun isExpiringSoon(expirationDate: Long?): Boolean {
+            if (expirationDate == null) return false
+            val date = Instant.ofEpochMilli(expirationDate).atZone(ZoneOffset.UTC).toLocalDate()
+            val daysUntilExpiry = ChronoUnit.DAYS.between(LocalDate.now(ZoneOffset.UTC), date)
+            return daysUntilExpiry <= EXPIRING_SOON_THRESHOLD_DAYS
+        }
+
+        /** Standalone version of the "low stock" check — see [isExpiringSoon]'s doc for why. */
+        fun isLowStock(quantity: Int, minQuantity: Int?): Boolean =
+            quantity > 0 && minQuantity != null && quantity < minQuantity
     }
 }
