@@ -201,14 +201,16 @@ fun MoreScreen(
                 ),
                 onClick = onNavigateToHousehold,
             )
-
-            SectionHeader(stringResource(R.string.more_section_features))
+            // Premium and Statistieken folded into Account rather than their own "Slimme
+            // Tools" section — both are account-level concerns (subscription status, usage),
+            // not "tools" alongside things like the barcode scanner, and having them share
+            // Account's header keeps the screen from splitting into an extra section for just
+            // two rows. Recepten, Bonnetje scannen, AI-productherkenning en Maaltijdplanner
+            // used to have rows here too, but all four already have a real entry point
+            // elsewhere (Recepten/Maaltijdplanner are bottom-nav tabs, Bonnetje scannen/
+            // AI-productherkenning live in Voorraad's "+" menu — see AddMenuDialog in
+            // InventoryScreen.kt) — duplicating them here just added clutter, not reach.
             PremiumPromoCard(isPremium = isPremium, onClick = onNavigateToPremium)
-            // Recepten, Bonnetje scannen, AI-productherkenning en Maaltijdplanner used to have
-            // rows here too, but all four already have a real entry point elsewhere (Recepten/
-            // Maaltijdplanner are bottom-nav tabs, Bonnetje scannen/AI-productherkenning live
-            // in Voorraad's "+" menu — see AddMenuDialog in InventoryScreen.kt) — duplicating
-            // them here just added clutter, not reach.
             SettingsRow(
                 icon = Icons.Filled.BarChart,
                 title = stringResource(R.string.more_statistics_title),

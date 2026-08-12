@@ -537,7 +537,13 @@ private fun AddMenuDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.inventory_add_menu_title)) },
+        title = {
+            Text(
+                text = stringResource(R.string.inventory_add_menu_title),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(
@@ -579,7 +585,13 @@ private fun AddMenuDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+            // AlertDialog right-aligns its button row by default (fine when there's a
+            // confirm+dismiss pair, but reads oddly for this dialog's single "Annuleren"
+            // button, tucked in a corner under a centered title/grid) — filling the row's
+            // width here and centering within it overrides that default placement.
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+            }
         },
     )
 }
@@ -846,14 +858,15 @@ private fun InventoryRow(
     )
     SwipeToDismissBox(
         state = dismissState,
-        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp),
+        // Clipped to the card's own shape (see ShoppingListRow's identical fix for why) so the
+        // swipe-to-delete background can never render past the rounded corners at rest.
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp).clip(SoftCardShapeCompact),
         enableDismissFromStartToEnd = !selectionMode,
         enableDismissFromEndToStart = !selectionMode,
         backgroundContent = {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(SoftCardShapeCompact)
                     .background(MaterialTheme.colorScheme.errorContainer)
                     .padding(horizontal = 20.dp),
                 contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {

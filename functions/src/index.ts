@@ -598,19 +598,37 @@ async function spoonacularGet<T>(path: string, params: Record<string, string>, a
   url.searchParams.set("apiKey", apiKey);
 
   const response = await fetch(url.toString());
+  const bodyText = await response.text();
+
+  // 402 = daily point quota used up, 429 = too many requests per minute — both mean "try again
+  // later", not "something's broken". Spoonacular doesn't consistently signal this as an HTTP
+  // error status either: some responses carry it as a 402/429 status, others come back as a
+  // plain 200 OK with a {"status":"failure","code":402,...} JSON body instead — checking the
+  // body's own code alongside the HTTP status catches both, so this can't silently fall through
+  // as a generic failure just because the transport-level status looked fine.
+  let parsedBody: { status?: string; code?: number } | undefined;
+  try {
+    parsedBody = bodyText ? (JSON.parse(bodyText) as { status?: string; code?: number }) : undefined;
+  } catch {
+    parsedBody = undefined;
+  }
+  const quotaCodes = [402, 429];
+  const isQuotaExceeded =
+    quotaCodes.includes(response.status) ||
+    (parsedBody?.status === "failure" && parsedBody.code !== undefined && quotaCodes.includes(parsedBody.code));
+
+  if (isQuotaExceeded) {
+    logger.warn("Spoonacular quota/rate limit hit", { status: response.status, body: bodyText, path });
+    // Surfacing a distinct code lets the client show a message that actually says that,
+    // instead of the generic "no connection" one it'd otherwise fall back to for every kind
+    // of failure here.
+    throw new HttpsError("resource-exhausted", "recipe_quota_exceeded");
+  }
   if (!response.ok) {
-    const body = await response.text().catch(() => "");
-    logger.error("Spoonacular API returned an error", { status: response.status, body, path });
-    // 402 = daily point quota used up, 429 = too many requests per minute — both mean "try
-    // again later", not "something's broken". Surfacing a distinct code lets the client show
-    // a message that actually says that, instead of the generic "no connection" one it'd
-    // otherwise fall back to for every kind of failure here.
-    if (response.status === 402 || response.status === 429) {
-      throw new HttpsError("resource-exhausted", "recipe_quota_exceeded");
-    }
+    logger.error("Spoonacular API returned an error", { status: response.status, body: bodyText, path });
     throw new HttpsError("unavailable", "recipe_search_failed");
   }
-  return (await response.json()) as T;
+  return JSON.parse(bodyText) as T;
 }
 
 interface SearchRecipesRequest {

@@ -581,13 +581,20 @@ private fun ShoppingListRow(
     )
     SwipeToDismissBox(
         state = dismissState,
-        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp),
+        // .clip(SoftCardShapeCompact) on the box itself (not just its children below) — same
+        // as ShoppingListGridTile/InventoryGridTile already do. Without this, nothing stops
+        // the swipe-to-delete background's errorContainer color (a warm salmon/orange tone,
+        // see Theme.kt's LinenErrorContainer) from rendering past the card's rounded corners
+        // at rest, which is what read as an orange outline around every item — a plain border
+        // drawn on the Card sits on *top* of that, it doesn't stop it from showing at all.
+        // Clipping the whole swipe container to the same rounded rect the Card uses guarantees
+        // nothing can ever render outside those bounds, matching Voorraad's InventoryRow.
+        modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp).clip(SoftCardShapeCompact),
         enableDismissFromStartToEnd = false,
         backgroundContent = {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(SoftCardShapeCompact)
                     .background(MaterialTheme.colorScheme.errorContainer)
                     .padding(horizontal = 20.dp),
                 contentAlignment = Alignment.CenterEnd,
@@ -619,12 +626,7 @@ private fun ShoppingListRow(
                     )
                 },
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-            // Matches InventoryRow's list row exactly (same color/width) — without this, a
-            // thin sliver of the swipe-to-delete background's errorContainer color (a warm
-            // salmon/orange tone, see Theme.kt's LinenErrorContainer) shows through right at
-            // the card's edge on some devices, reading as an unwanted orange outline around
-            // every item. The border sits right on that seam and covers it, the same way it
-            // already does for Voorraad's rows.
+            // Matches InventoryRow's list row exactly.
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             shape = SoftCardShapeCompact,
         ) {
