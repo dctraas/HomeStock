@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircleOutline
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
@@ -81,7 +80,7 @@ import java.util.Locale
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MealPlanScreen(onBack: () -> Unit, onRecipeClick: (String) -> Unit) {
+fun MealPlanScreen(onRecipeClick: (String) -> Unit) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: MealPlanViewModel = viewModel(
         factory = viewModelFactory {
@@ -117,11 +116,6 @@ fun MealPlanScreen(onBack: () -> Unit, onRecipeClick: (String) -> Unit) {
                         IconButton(onClick = viewModel::goToNextDay) {
                             Icon(Icons.Filled.ChevronRight, contentDescription = stringResource(R.string.meal_plan_next_day_cd))
                         }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
             )

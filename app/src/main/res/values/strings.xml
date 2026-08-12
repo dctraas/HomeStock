@@ -232,6 +232,8 @@
     <string name="inventory_favorites_filter_active_cd">Alleen favorieten tonen (actief)</string>
     <string name="inventory_favorites_filter_menu_item">Favorieten</string>
     <string name="inventory_mark_favorite_cd">Markeren als favoriet</string>
+    <string name="inventory_quick_filter_low_stock">Weinig voorraad</string>
+    <string name="inventory_quick_filter_expiring_soon">Verloopt bijna</string>
     <string name="inventory_unmark_favorite_cd">Favoriet verwijderen</string>
     <string name="inventory_search_cd">Zoeken</string>
     <string name="inventory_add_menu_cd">Toevoegen</string>
@@ -443,6 +445,7 @@
     <string name="recipes_load_more">Meer laden</string>
     <string name="recipes_match_count_format">%1$d ingrediënten in huis</string>
     <string name="recipes_allergen_filter_label">Allergenen uitsluiten</string>
+    <string name="recipes_allergen_filter_active_cd_format">Allergenen uitsluiten (actief: %1$s)</string>
     <string name="recipes_area_match_cd">Sluit aan bij jouw taal/regio</string>
     <string name="recipes_detail_error">Kon dit recept niet laden. Probeer het opnieuw.</string>
     <string name="recipes_ingredients_title">Ingrediënten</string>

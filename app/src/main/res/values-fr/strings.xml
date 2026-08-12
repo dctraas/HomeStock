@@ -231,6 +231,8 @@
     <string name="inventory_favorites_filter_active_cd">Afficher uniquement les favoris (actif)</string>
     <string name="inventory_favorites_filter_menu_item">Favoris</string>
     <string name="inventory_mark_favorite_cd">Marquer comme favori</string>
+    <string name="inventory_quick_filter_low_stock">Stock faible</string>
+    <string name="inventory_quick_filter_expiring_soon">Bientôt périmé</string>
     <string name="inventory_unmark_favorite_cd">Retirer des favoris</string>
     <string name="inventory_search_cd">Rechercher</string>
     <string name="inventory_add_menu_cd">Ajouter</string>
@@ -442,6 +444,7 @@
     <string name="recipes_load_more">Charger plus</string>
     <string name="recipes_match_count_format">%1$d ingrédients disponibles</string>
     <string name="recipes_allergen_filter_label">Exclure les allergènes</string>
+    <string name="recipes_allergen_filter_active_cd_format">Exclure les allergènes (actif : %1$s)</string>
     <string name="recipes_area_match_cd">Correspond à ta langue/région</string>
     <string name="recipes_detail_error">Impossible de charger cette recette. Réessayez.</string>
     <string name="recipes_ingredients_title">Ingrédients</string>

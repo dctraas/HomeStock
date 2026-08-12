@@ -15,8 +15,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FilterAlt
@@ -27,12 +27,15 @@ import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -81,7 +84,6 @@ import com.dtraas.homestock.ui.theme.SoftImageShape
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RecipesScreen(
-    onBack: () -> Unit,
     onRecipeClick: (String) -> Unit,
     onAddCustomRecipe: () -> Unit = {},
 ) {
@@ -114,25 +116,22 @@ fun RecipesScreen(
         topBar = {
             HomeStockTopAppBar(
                 title = { Text(stringResource(R.string.recipes_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
+                // Recepten is a bottom-nav tab, not a screen pushed onto the back stack — a
+                // "Terug" button here had nowhere meaningful to go.
+                actions = {
+                    // Only on BROWSE — Favorieten/Eigen recepten are the household's own short
+                    // lists, nothing there to "genereer met AI" against. Moved off its own FAB
+                    // (which sat on top of the list) into a top-bar action instead.
+                    if (uiState.tab == RecipesTab.BROWSE) {
+                        IconButton(onClick = { showGenerateDialog = true }) {
+                            Icon(
+                                Icons.Filled.AutoAwesome,
+                                contentDescription = stringResource(R.string.recipes_generate_ai_button),
+                            )
+                        }
                     }
                 },
             )
-        },
-        // Only on BROWSE — Favorieten/Eigen recepten are the household's own short lists,
-        // nothing there to "genereer met AI" against. Moved off an inline row into the FAB
-        // slot so the space above the list isn't stacked three rows deep (search, generate,
-        // allergens) before any actual content shows.
-        floatingActionButton = {
-            if (uiState.tab == RecipesTab.BROWSE) {
-                ExtendedFloatingActionButton(
-                    onClick = { showGenerateDialog = true },
-                    icon = { Icon(Icons.Filled.AutoAwesome, contentDescription = null) },
-                    text = { Text(stringResource(R.string.recipes_generate_ai_button)) },
-                )
-            }
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -162,11 +161,14 @@ fun RecipesScreen(
                     ) {
                         Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.search_product_action))
                     }
+                    // Used to be an always-visible chip row of its own between the search bar
+                    // and the list; folded into this dropdown instead so BROWSE's first
+                    // screenful is mostly recipes, not filter chrome.
+                    AllergenFilterMenuButton(
+                        excludedAllergens = uiState.excludedAllergens,
+                        onToggle = viewModel::toggleAllergen,
+                    )
                 }
-                AllergenFilterRow(
-                    excludedAllergens = uiState.excludedAllergens,
-                    onToggle = viewModel::toggleAllergen,
-                )
             } else if (uiState.tab == RecipesTab.CUSTOM) {
                 TextButton(
                     onClick = onAddCustomRecipe,
@@ -375,34 +377,40 @@ private fun RecipesTabRow(selected: RecipesTab, onSelect: (RecipesTab) -> Unit) 
 }
 
 /**
- * Toggleable chips for the curated allergen subset (see RecipeRepository.filterableAllergens) —
- * a selected chip means that allergen is excluded. A leading icon takes the place of a separate
- * "Allergenen uitsluiten" label line above the chips, so this is one compact row instead of two.
+ * Filter icon + dropdown for the curated allergen subset (see
+ * [RecipeRepository.filterableAllergens]) — a checked item means that allergen is excluded.
+ * Used to be an always-visible chip row of its own between the search bar and the list; folded
+ * into a dropdown instead (same pattern as Voorraad's filter menu) so BROWSE's first screenful
+ * is mostly recipes, not filter chrome.
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun AllergenFilterRow(excludedAllergens: Set<Allergen>, onToggle: (Allergen) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Icon(
-            imageVector = Icons.Filled.FilterAlt,
-            contentDescription = stringResource(R.string.recipes_allergen_filter_label),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(18.dp),
-        )
-        RecipeRepository.filterableAllergens.forEach { allergen ->
-            val selected = allergen in excludedAllergens
-            FilterChip(
-                selected = selected,
-                onClick = { onToggle(allergen) },
-                label = { Text(stringResource(allergen.labelRes)) },
-            )
+private fun AllergenFilterMenuButton(excludedAllergens: Set<Allergen>, onToggle: (Allergen) -> Unit) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.padding(start = 4.dp)) {
+            if (excludedAllergens.isEmpty()) {
+                Icon(Icons.Filled.FilterAlt, contentDescription = stringResource(R.string.recipes_allergen_filter_label))
+            } else {
+                val activeLabels = excludedAllergens.map { stringResource(it.labelRes) }.joinToString(", ")
+                BadgedBox(badge = { Badge() }) {
+                    Icon(
+                        Icons.Filled.FilterAlt,
+                        contentDescription = stringResource(R.string.recipes_allergen_filter_active_cd_format, activeLabels),
+                    )
+                }
+            }
+        }
+        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+            RecipeRepository.filterableAllergens.forEach { allergen ->
+                val selected = allergen in excludedAllergens
+                DropdownMenuItem(
+                    text = { Text(stringResource(allergen.labelRes)) },
+                    trailingIcon = {
+                        if (selected) Icon(Icons.Filled.Check, contentDescription = null)
+                    },
+                    onClick = { onToggle(allergen) },
+                )
+            }
         }
     }
 }

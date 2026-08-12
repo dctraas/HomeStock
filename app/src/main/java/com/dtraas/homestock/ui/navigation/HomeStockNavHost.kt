@@ -210,7 +210,6 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
             }
             composable(Destination.Recipes.route) {
                 RecipesScreen(
-                    onBack = { navController.popBackStack() },
                     onRecipeClick = { mealId ->
                         navController.navigate(Destination.RecipeDetail.createRoute(mealId))
                     },
@@ -270,7 +269,6 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
             }
             composable(Destination.MealPlan.route) {
                 MealPlanScreen(
-                    onBack = { navController.popBackStack() },
                     onRecipeClick = { mealId -> navController.navigate(Destination.RecipeDetail.createRoute(mealId)) },
                 )
             }

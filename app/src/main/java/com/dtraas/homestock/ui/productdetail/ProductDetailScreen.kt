@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -296,30 +297,30 @@ fun ProductDetailScreen(
                         color = MaterialTheme.colorScheme.primary,
                     )
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = viewModel::addToShoppingList, modifier = Modifier.size(36.dp)) {
+                        IconButton(onClick = viewModel::addToShoppingList, modifier = Modifier.size(40.dp)) {
                             Icon(
                                 Icons.Filled.PlaylistAdd,
                                 contentDescription = stringResource(R.string.product_detail_add_to_shopping_list),
-                                modifier = Modifier.size(20.dp),
+                                modifier = Modifier.size(24.dp),
                             )
                         }
                         if (uiState.product != null) {
                             IconButton(
                                 onClick = { productDetailsSection.expand() },
-                                modifier = Modifier.size(36.dp),
+                                modifier = Modifier.size(40.dp),
                             ) {
                                 Icon(
                                     Icons.Filled.Edit,
                                     contentDescription = stringResource(R.string.product_detail_edit_cd),
-                                    modifier = Modifier.size(20.dp),
+                                    modifier = Modifier.size(24.dp),
                                 )
                             }
                         }
-                        IconButton(onClick = { showDeleteConfirm = true }, modifier = Modifier.size(36.dp)) {
+                        IconButton(onClick = { showDeleteConfirm = true }, modifier = Modifier.size(40.dp)) {
                             Icon(
                                 Icons.Filled.Delete,
                                 contentDescription = stringResource(R.string.product_detail_remove),
-                                modifier = Modifier.size(20.dp),
+                                modifier = Modifier.size(24.dp),
                             )
                         }
                     }
@@ -932,13 +933,24 @@ private fun ExpirationStatusRow(expirationDate: Long?) {
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(stringResource(R.string.product_detail_status_label), style = MaterialTheme.typography.bodyLarge)
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (isWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-        )
+        // Same min-width, left-aligned box as ExpirationRow's value below it — "Niet ingesteld"
+        // and "Instellen" are both short strings, so without this a right-flush Text would
+        // start at a different x per row (the shorter word starting further right), reading as
+        // misaligned even though both ends are flush with the card's edge.
+        Box(modifier = Modifier.widthIn(min = statusValueMinWidth), contentAlignment = Alignment.CenterStart) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (isWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+            )
+        }
     }
 }
+
+/** Shared min-width for [ExpirationStatusRow]'s and [ExpirationRow]'s value slot, so "Niet
+ *  ingesteld" and "Instellen" — the two rows' respective "nothing set yet" values — start at
+ *  the same x instead of each hugging flush right at their own length. */
+private val statusValueMinWidth = 130.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -952,22 +964,24 @@ private fun ExpirationRow(expirationDate: Long?, onDateChange: (Long?) -> Unit) 
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(stringResource(R.string.product_detail_expiration_label), style = MaterialTheme.typography.bodyLarge)
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Text(
-                text = expirationDate?.let { formatExpirationDate(it) }
-                    ?: stringResource(R.string.product_detail_expiration_set),
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (isNearExpiry) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                modifier = Modifier.clickable { showPicker = true },
-            )
-            if (expirationDate != null) {
-                IconButton(onClick = { onDateChange(null) }, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        Icons.Filled.Close,
-                        contentDescription = stringResource(R.string.product_detail_expiration_clear_cd),
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+        Box(modifier = Modifier.widthIn(min = statusValueMinWidth), contentAlignment = Alignment.CenterStart) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = expirationDate?.let { formatExpirationDate(it) }
+                        ?: stringResource(R.string.product_detail_expiration_set),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (isNearExpiry) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.clickable { showPicker = true },
+                )
+                if (expirationDate != null) {
+                    IconButton(onClick = { onDateChange(null) }, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.product_detail_expiration_clear_cd),
+                            modifier = Modifier.size(18.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
         }

@@ -298,13 +298,13 @@ fun MoreScreen(
             // elsewhere (Recepten/Maaltijdplanner are bottom-nav tabs, Bonnetje scannen/
             // AI-productherkenning live in Voorraad's "+" menu — see AddMenuDialog in
             // InventoryScreen.kt) — duplicating them here just added clutter, not reach.
-            PremiumPromoCard(isPremium = isPremium, onClick = onNavigateToPremium)
             SettingsRow(
                 icon = Icons.Filled.BarChart,
                 title = stringResource(R.string.more_statistics_title),
                 trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                 onClick = { if (isPremium) onNavigateToStatistics() else onNavigateToPremium() },
             )
+            PremiumPromoCard(isPremium = isPremium, onClick = onNavigateToPremium)
 
             SectionHeader(stringResource(R.string.more_section_preferences))
             SettingsRow(

@@ -5,8 +5,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,16 +32,18 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.outlined.StarBorder
@@ -55,8 +55,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -253,9 +253,17 @@ fun InventoryScreen(
                         )
                     },
                     navigationIcon = {
+                        // Meldingen is no longer its own bottom-nav tab (see topLevelDestinations)
+                        // — this is now the way to reach it, at the far-left glance position. An
+                        // envelope icon rather than a bell — the bell reads as "push
+                        // notification", which this isn't; it's a list of past activity.
+                        IconButton(onClick = onNavigateToNotifications) {
+                            Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news))
+                        }
+                    },
+                    actions = {
                         // The app logo used to sit here; the profile photo takes its place now
-                        // (still opens the same ProfileEditDialog) so the most personal, most
-                        // frequently relevant icon is the one at the far-left glance position.
+                        // (still opens the same ProfileEditDialog).
                         IconButton(onClick = { showProfileDialog = true }) {
                             if (photoPath != null) {
                                 AsyncImage(
@@ -269,14 +277,6 @@ fun InventoryScreen(
                             } else {
                                 Icon(Icons.Filled.AccountCircle, contentDescription = stringResource(R.string.more_profile_title))
                             }
-                        }
-                    },
-                    actions = {
-                        // Meldingen is no longer its own bottom-nav tab (see topLevelDestinations)
-                        // — this is now the way to reach it, right where a notifications icon is
-                        // conventionally expected.
-                        IconButton(onClick = onNavigateToNotifications) {
-                            Icon(Icons.Filled.Notifications, contentDescription = stringResource(R.string.nav_news))
                         }
                     },
                 )
@@ -346,8 +346,12 @@ fun InventoryScreen(
                         FilterMenuButton(
                             selectedCategory = uiState.selectedCategory,
                             favoritesOnly = uiState.favoritesOnly,
+                            lowStockOnly = uiState.lowStockOnly,
+                            expiringSoonOnly = uiState.expiringSoonOnly,
                             onCategorySelected = viewModel::onCategoryFilterChange,
                             onFavoritesToggle = viewModel::onFavoritesFilterChange,
+                            onLowStockToggle = viewModel::onLowStockFilterChange,
+                            onExpiringSoonToggle = viewModel::onExpiringSoonFilterChange,
                         )
                         SortMenuButton(
                             selected = uiState.sortOption,
@@ -376,18 +380,6 @@ fun InventoryScreen(
                     }
                 }
             }
-
-            // One-tap quick filters for the two conditions Statistieken already surfaces as
-            // counts ("Laag op voorraad" / "Bijna houdbaar") — glanceable chips rather than
-            // folded into FilterMenuButton's dropdown, since checking these is meant to be a
-            // single tap, not a couple of taps deep in a menu. Independent of each other and
-            // of the category/favorites filter above; both can be on at once.
-            QuickFilterRow(
-                lowStockOnly = uiState.lowStockOnly,
-                expiringSoonOnly = uiState.expiringSoonOnly,
-                onLowStockToggle = viewModel::onLowStockFilterChange,
-                onExpiringSoonToggle = viewModel::onExpiringSoonFilterChange,
-            )
 
             // Grouping by category loses the order between categories (each still shows in
             // category order, not by whichever item within it sorts first) — for Houdbaarheid,
@@ -708,63 +700,30 @@ private fun SortMenuButton(
     }
 }
 
-/** Quick-filter chips for "Laag op voorraad" / "Bijna houdbaar" — see the call site's doc. */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun QuickFilterRow(
-    lowStockOnly: Boolean,
-    expiringSoonOnly: Boolean,
-    onLowStockToggle: (Boolean) -> Unit,
-    onExpiringSoonToggle: (Boolean) -> Unit,
-) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(horizontal = 12.dp, vertical = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        FilterChip(
-            selected = lowStockOnly,
-            onClick = { onLowStockToggle(!lowStockOnly) },
-            label = { Text(stringResource(R.string.statistics_low_stock)) },
-            leadingIcon = if (lowStockOnly) {
-                { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-            } else {
-                null
-            },
-        )
-        FilterChip(
-            selected = expiringSoonOnly,
-            onClick = { onExpiringSoonToggle(!expiringSoonOnly) },
-            label = { Text(stringResource(R.string.statistics_expiring_soon)) },
-            leadingIcon = if (expiringSoonOnly) {
-                { Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(18.dp)) }
-            } else {
-                null
-            },
-        )
-    }
-}
-
 @Composable
 private fun FilterMenuButton(
     selectedCategory: Category?,
     favoritesOnly: Boolean,
+    lowStockOnly: Boolean,
+    expiringSoonOnly: Boolean,
     onCategorySelected: (Category?) -> Unit,
     onFavoritesToggle: (Boolean) -> Unit,
+    onLowStockToggle: (Boolean) -> Unit,
+    onExpiringSoonToggle: (Boolean) -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
-    val isActive = selectedCategory != null || favoritesOnly
+    val isActive = selectedCategory != null || favoritesOnly || lowStockOnly || expiringSoonOnly
     Box {
         IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(48.dp)) {
             if (isActive) {
-                // Both filter dimensions can be active together (e.g. "Favorieten" within
-                // "Groente & fruit"), so the badge's description lists whichever are on
-                // rather than assuming just one.
+                // Every filter dimension can be active together (e.g. "Weinig voorraad"
+                // within "Groente & fruit"), so the badge's description lists whichever
+                // are on rather than assuming just one.
                 val activeLabels = listOfNotNull(
                     stringResource(R.string.inventory_favorites_filter_menu_item).takeIf { favoritesOnly },
                     selectedCategory?.let { stringResource(it.displayNameRes) },
+                    stringResource(R.string.inventory_quick_filter_low_stock).takeIf { lowStockOnly },
+                    stringResource(R.string.inventory_quick_filter_expiring_soon).takeIf { expiringSoonOnly },
                 ).joinToString(", ")
                 val activeFormat = stringResource(R.string.inventory_filter_active_cd_format)
                 BadgedBox(badge = { Badge() }) {
@@ -840,6 +799,52 @@ private fun FilterMenuButton(
                     },
                 )
             }
+            // "Weinig voorraad" / "Verloopt bijna" used to be their own always-visible chip
+            // row above this menu; folded in here instead to give the list more breathing
+            // room. A divider sets them apart from the category/favorites choices above —
+            // those narrow *what* shows, these flag stock conditions on top of that, and
+            // both groups are independent (any combination can be active at once).
+            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.inventory_quick_filter_low_stock)) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Filled.TrendingDown,
+                        contentDescription = null,
+                        tint = if (lowStockOnly) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                        modifier = Modifier.size(20.dp),
+                    )
+                },
+                trailingIcon = {
+                    if (lowStockOnly) {
+                        Icon(Icons.Filled.Check, contentDescription = null)
+                    }
+                },
+                onClick = {
+                    onLowStockToggle(!lowStockOnly)
+                    menuExpanded = false
+                },
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.inventory_quick_filter_expiring_soon)) },
+                leadingIcon = {
+                    Icon(
+                        Icons.Filled.EventBusy,
+                        contentDescription = null,
+                        tint = if (expiringSoonOnly) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                        modifier = Modifier.size(20.dp),
+                    )
+                },
+                trailingIcon = {
+                    if (expiringSoonOnly) {
+                        Icon(Icons.Filled.Check, contentDescription = null)
+                    }
+                },
+                onClick = {
+                    onExpiringSoonToggle(!expiringSoonOnly)
+                    menuExpanded = false
+                },
+            )
         }
     }
 }

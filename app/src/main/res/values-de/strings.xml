@@ -231,6 +231,8 @@
     <string name="inventory_favorites_filter_active_cd">Nur Favoriten anzeigen (aktiv)</string>
     <string name="inventory_favorites_filter_menu_item">Favoriten</string>
     <string name="inventory_mark_favorite_cd">Als Favorit markieren</string>
+    <string name="inventory_quick_filter_low_stock">Wenig Vorrat</string>
+    <string name="inventory_quick_filter_expiring_soon">Bald ablaufend</string>
     <string name="inventory_unmark_favorite_cd">Favorit entfernen</string>
     <string name="inventory_search_cd">Suchen</string>
     <string name="inventory_add_menu_cd">Hinzufügen</string>
@@ -442,6 +444,7 @@
     <string name="recipes_load_more">Mehr laden</string>
     <string name="recipes_match_count_format">%1$d Zutaten vorhanden</string>
     <string name="recipes_allergen_filter_label">Allergene ausschließen</string>
+    <string name="recipes_allergen_filter_active_cd_format">Allergene ausschließen (aktiv: %1$s)</string>
     <string name="recipes_area_match_cd">Passt zu deiner Sprache/Region</string>
     <string name="recipes_detail_error">Dieses Rezept konnte nicht geladen werden. Bitte versuche es erneut.</string>
     <string name="recipes_ingredients_title">Zutaten</string>
