@@ -1,5 +1,6 @@
 package com.dtraas.homestock.ui.productdetail
 
+import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -87,6 +88,7 @@ import com.dtraas.homestock.ui.components.CategoryDropdown
 import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.theme.SoftCardShape
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.Instant
@@ -128,27 +130,18 @@ fun ProductDetailScreen(
 
     // Collapsed by default — the plus icon on each header expands it. Product details also
     // starts collapsed; the edit button in the top app bar (see below) expands it and scrolls
-    // it into view, which doubles as this screen's "product details page".
-    var nutritionExpanded by remember { mutableStateOf(false) }
-    var ingredientsExpanded by remember { mutableStateOf(false) }
-    var allergensExpanded by remember { mutableStateOf(false) }
-    var dietLabelsExpanded by remember { mutableStateOf(false) }
-    var productDetailsExpanded by remember { mutableStateOf(false) }
-    // Hoisted (rather than inline in the Modifier chain below) so the edit button's scroll
-    // action can drive it directly — see productDetailsBottomOffset below for why this
-    // replaced an earlier BringIntoViewRequester-based attempt that didn't reliably land on
-    // the true bottom of the newly-expanded card.
+    // it into view, which doubles as this screen's "product details page". Every section uses
+    // the same [ExpandableSection] helper so expanding *any* of them (not just Product
+    // details, which used to be the only one that did this) scrolls its newly-revealed bottom
+    // into view — a long card like Voedingswaarden or Ingrediënten no longer gets left cut off
+    // below the fold after tapping its "+".
     val scrollState = rememberScrollState()
-    // Continuously updated (via onGloballyPositioned on a marker placed right after the
-    // Product details card) with that marker's Y offset within the scrollable Column's full
-    // content — i.e. exactly the value ScrollState.scrollTo/animateScrollTo expects. Reading
-    // this *after* the expand + a settle delay (see the edit button below) is what makes the
-    // scroll actually land on the bottom of the fully-expanded card, instead of racing the
-    // layout pass the way a bringIntoView() call fired synchronously from the click handler
-    // did — that request could still be evaluated against the OLD (collapsed) position if it
-    // ran before recomposition/layout for the newly-inserted card had completed.
-    var productDetailsBottomOffset by remember { mutableStateOf(0) }
     val coroutineScope = rememberCoroutineScope()
+    val productDetailsSection = remember { ExpandableSection(scrollState, coroutineScope) }
+    val nutritionSection = remember { ExpandableSection(scrollState, coroutineScope) }
+    val ingredientsSection = remember { ExpandableSection(scrollState, coroutineScope) }
+    val allergensSection = remember { ExpandableSection(scrollState, coroutineScope) }
+    val dietLabelsSection = remember { ExpandableSection(scrollState, coroutineScope) }
 
     LaunchedEffect(Unit) {
         viewModel.restockEvents.collect { name ->
@@ -181,17 +174,7 @@ fun ProductDetailScreen(
                     // stays only as a fallback for products no longer in inventory, where there
                     // is no Voorraad row to anchor them to.
                     if (!stillInInventory && uiState.product != null) {
-                        IconButton(onClick = {
-                            productDetailsExpanded = true
-                            coroutineScope.launch {
-                                // Let the expand actually apply — its own recomposition/layout
-                                // pass is what brings productDetailsBottomOffset up to date —
-                                // before scrolling to it.
-                                withFrameNanos {}
-                                withFrameNanos {}
-                                scrollState.animateScrollTo(productDetailsBottomOffset)
-                            }
-                        }) {
+                        IconButton(onClick = { productDetailsSection.expand() }) {
                             Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.product_detail_edit_cd))
                         }
                     }
@@ -225,8 +208,8 @@ fun ProductDetailScreen(
         // Gap before each section header (Voorraad, Voedingswaarden, Ingrediënten, ...) and
         // between a header and its own card below it — shared so e.g. "Voorraad" -> its card
         // and "Ingrediënten" -> its card line up at the same distance.
-        val sectionGap = 16.dp
-        val headerToCardGap = 8.dp
+        val sectionGap = 24.dp
+        val headerToCardGap = 12.dp
 
         Column(
             modifier = Modifier
@@ -322,14 +305,7 @@ fun ProductDetailScreen(
                         }
                         if (uiState.product != null) {
                             IconButton(
-                                onClick = {
-                                    productDetailsExpanded = true
-                                    coroutineScope.launch {
-                                        withFrameNanos {}
-                                        withFrameNanos {}
-                                        scrollState.animateScrollTo(productDetailsBottomOffset)
-                                    }
-                                },
+                                onClick = { productDetailsSection.expand() },
                                 modifier = Modifier.size(36.dp),
                             ) {
                                 Icon(
@@ -390,11 +366,11 @@ fun ProductDetailScreen(
             product?.let { p ->
                 CollapsibleSectionHeader(
                     title = stringResource(R.string.product_detail_editable_title),
-                    expanded = productDetailsExpanded,
-                    onToggle = { productDetailsExpanded = !productDetailsExpanded },
+                    expanded = productDetailsSection.expanded,
+                    onToggle = productDetailsSection::toggle,
                     modifier = Modifier.padding(top = sectionGap),
                 )
-                if (productDetailsExpanded) {
+                if (productDetailsSection.expanded) {
                     ProductDetailsCard(
                         product = p,
                         category = category,
@@ -409,9 +385,9 @@ fun ProductDetailScreen(
                     )
                 }
                 // Zero-height marker right after the card — its Y offset within the scrollable
-                // Column (see productDetailsBottomOffset above) is what the edit button scrolls
-                // to, so this needs to sit past the card's very last field.
-                Spacer(modifier = Modifier.onGloballyPositioned { productDetailsBottomOffset = it.positionInParent().y.roundToInt() })
+                // Column (see [ExpandableSection.bottomOffset]) is what expanding this section
+                // scrolls to, so this needs to sit past the card's very last field.
+                Spacer(modifier = Modifier.onGloballyPositioned { productDetailsSection.bottomOffset = it.positionInParent().y.roundToInt() })
             }
 
             // Voedingsinformatie — no overarching group header; each card is its own
@@ -420,46 +396,50 @@ fun ProductDetailScreen(
             product?.nutrition?.let { nutrition ->
                 CollapsibleSectionHeader(
                     title = stringResource(R.string.product_detail_nutrition_title),
-                    expanded = nutritionExpanded,
-                    onToggle = { nutritionExpanded = !nutritionExpanded },
+                    expanded = nutritionSection.expanded,
+                    onToggle = nutritionSection::toggle,
                     modifier = Modifier.padding(top = sectionGap),
                 )
-                if (nutritionExpanded) {
+                if (nutritionSection.expanded) {
                     NutritionCard(nutrition, modifier = Modifier.padding(top = headerToCardGap))
                 }
+                Spacer(modifier = Modifier.onGloballyPositioned { nutritionSection.bottomOffset = it.positionInParent().y.roundToInt() })
             }
             product?.ingredients?.let { ingredients ->
                 CollapsibleSectionHeader(
                     title = stringResource(R.string.product_detail_ingredients_title),
-                    expanded = ingredientsExpanded,
-                    onToggle = { ingredientsExpanded = !ingredientsExpanded },
+                    expanded = ingredientsSection.expanded,
+                    onToggle = ingredientsSection::toggle,
                     modifier = Modifier.padding(top = sectionGap),
                 )
-                if (ingredientsExpanded) {
+                if (ingredientsSection.expanded) {
                     IngredientsCard(ingredients, modifier = Modifier.padding(top = headerToCardGap))
                 }
+                Spacer(modifier = Modifier.onGloballyPositioned { ingredientsSection.bottomOffset = it.positionInParent().y.roundToInt() })
             }
             if (allergens.isNotEmpty()) {
                 CollapsibleSectionHeader(
                     title = stringResource(R.string.product_detail_allergens_title),
-                    expanded = allergensExpanded,
-                    onToggle = { allergensExpanded = !allergensExpanded },
+                    expanded = allergensSection.expanded,
+                    onToggle = allergensSection::toggle,
                     modifier = Modifier.padding(top = sectionGap),
                 )
-                if (allergensExpanded) {
+                if (allergensSection.expanded) {
                     AllergensCard(allergens, modifier = Modifier.padding(top = headerToCardGap))
                 }
+                Spacer(modifier = Modifier.onGloballyPositioned { allergensSection.bottomOffset = it.positionInParent().y.roundToInt() })
             }
             if (dietLabels.isNotEmpty()) {
                 CollapsibleSectionHeader(
                     title = stringResource(R.string.product_detail_diet_labels_title),
-                    expanded = dietLabelsExpanded,
-                    onToggle = { dietLabelsExpanded = !dietLabelsExpanded },
+                    expanded = dietLabelsSection.expanded,
+                    onToggle = dietLabelsSection::toggle,
                     modifier = Modifier.padding(top = sectionGap),
                 )
-                if (dietLabelsExpanded) {
+                if (dietLabelsSection.expanded) {
                     DietLabelsCard(dietLabels, modifier = Modifier.padding(top = headerToCardGap))
                 }
+                Spacer(modifier = Modifier.onGloballyPositioned { dietLabelsSection.bottomOffset = it.positionInParent().y.roundToInt() })
             }
         }
 
@@ -481,6 +461,39 @@ fun ProductDetailScreen(
                     TextButton(onClick = { showDeleteConfirm = false }) { Text(stringResource(R.string.common_cancel)) }
                 },
             )
+        }
+    }
+}
+
+/**
+ * Tracks one collapsible section's expand state and where its bottom sits within the
+ * scrollable Column (via a zero-height marker `Spacer`/`onGloballyPositioned` placed right
+ * after the section, see the call sites above) — [toggle]/[expand] flip it on, and expanding
+ * also scrolls the section's newly-revealed bottom into view so a long card (Voedingswaarden,
+ * Ingrediënten, ...) never gets left cut off below the fold after tapping its "+". The
+ * two-frame delay before scrolling lets the expand's own recomposition/layout pass actually
+ * update [bottomOffset] first — scrolling synchronously from the click handler would still see
+ * the section's old (collapsed) position.
+ */
+private class ExpandableSection(private val scrollState: ScrollState, private val coroutineScope: CoroutineScope) {
+    var expanded by mutableStateOf(false)
+        private set
+    var bottomOffset by mutableStateOf(0)
+
+    fun toggle() {
+        if (expanded) collapse() else expand()
+    }
+
+    fun collapse() {
+        expanded = false
+    }
+
+    fun expand() {
+        expanded = true
+        coroutineScope.launch {
+            withFrameNanos {}
+            withFrameNanos {}
+            scrollState.animateScrollTo(bottomOffset)
         }
     }
 }

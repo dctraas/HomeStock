@@ -20,8 +20,11 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.RestaurantMenu
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
@@ -30,6 +33,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -118,6 +122,19 @@ fun RecipesScreen(
                 },
             )
         },
+        // Only on BROWSE — Favorieten/Eigen recepten are the household's own short lists,
+        // nothing there to "genereer met AI" against. Moved off an inline row into the FAB
+        // slot so the space above the list isn't stacked three rows deep (search, generate,
+        // allergens) before any actual content shows.
+        floatingActionButton = {
+            if (uiState.tab == RecipesTab.BROWSE) {
+                ExtendedFloatingActionButton(
+                    onClick = { showGenerateDialog = true },
+                    icon = { Icon(Icons.Filled.AutoAwesome, contentDescription = null) },
+                    text = { Text(stringResource(R.string.recipes_generate_ai_button)) },
+                )
+            }
+        },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             RecipesTabRow(selected = uiState.tab, onSelect = viewModel::selectTab)
@@ -136,20 +153,16 @@ fun RecipesScreen(
                         placeholder = stringResource(R.string.recipes_search_placeholder),
                         modifier = Modifier.weight(1f),
                     )
-                    Button(
+                    // Icon-only rather than a labeled Button — this row already reads as
+                    // "search" from the field's own placeholder/icon, so a second "Zoeken"
+                    // label next to it was redundant weight.
+                    IconButton(
                         onClick = viewModel::search,
                         enabled = uiState.searchQuery.isNotBlank() && !uiState.isLoading,
-                        modifier = Modifier.padding(start = 8.dp),
+                        modifier = Modifier.padding(start = 4.dp),
                     ) {
-                        Text(stringResource(R.string.search_product_action))
+                        Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.search_product_action))
                     }
-                }
-                TextButton(
-                    onClick = { showGenerateDialog = true },
-                    modifier = Modifier.padding(horizontal = 12.dp),
-                ) {
-                    Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Text(stringResource(R.string.recipes_generate_ai_button), modifier = Modifier.padding(start = 8.dp))
                 }
                 AllergenFilterRow(
                     excludedAllergens = uiState.excludedAllergens,
@@ -172,14 +185,32 @@ fun RecipesScreen(
                 ) {
                     CircularProgressIndicator()
                 }
-                uiState.hasError -> RecipesMessage(
-                    modifier = Modifier.fillMaxSize(),
-                    icon = Icons.Filled.WifiOff,
-                    title = stringResource(R.string.recipes_error_title),
-                    subtitle = stringResource(R.string.recipes_error_subtitle),
-                    retryLabel = stringResource(R.string.scan_result_retry),
-                    onRetry = viewModel::search,
-                )
+                uiState.loadError != null -> {
+                    // QUOTA_EXCEEDED gets its own icon/message — "Geen verbinding" would be
+                    // actively wrong here (the device is fine; Spoonacular's own rate/point
+                    // limit is what's blocking this) and would send someone off troubleshooting
+                    // their wifi for nothing.
+                    val (errorIcon, errorTitle, errorSubtitle) = when (uiState.loadError) {
+                        RecipesLoadError.QUOTA_EXCEEDED -> Triple(
+                            Icons.Filled.Timer,
+                            stringResource(R.string.recipes_error_quota_title),
+                            stringResource(R.string.recipes_error_quota_subtitle),
+                        )
+                        else -> Triple(
+                            Icons.Filled.WifiOff,
+                            stringResource(R.string.recipes_error_title),
+                            stringResource(R.string.recipes_error_subtitle),
+                        )
+                    }
+                    RecipesMessage(
+                        modifier = Modifier.fillMaxSize(),
+                        icon = errorIcon,
+                        title = errorTitle,
+                        subtitle = errorSubtitle,
+                        retryLabel = stringResource(R.string.scan_result_retry),
+                        onRetry = viewModel::search,
+                    )
+                }
                 uiState.recipes.isEmpty() -> {
                     val (emptyTitle, emptySubtitle) = when (uiState.tab) {
                         RecipesTab.BROWSE -> stringResource(R.string.recipes_empty_title) to stringResource(R.string.recipes_empty_subtitle)
@@ -344,32 +375,35 @@ private fun RecipesTabRow(selected: RecipesTab, onSelect: (RecipesTab) -> Unit) 
     }
 }
 
-/** Toggleable chips for the curated allergen subset (see RecipeRepository.filterableAllergens) — a selected chip means that allergen is excluded. */
+/**
+ * Toggleable chips for the curated allergen subset (see RecipeRepository.filterableAllergens) —
+ * a selected chip means that allergen is excluded. A leading icon takes the place of a separate
+ * "Allergenen uitsluiten" label line above the chips, so this is one compact row instead of two.
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AllergenFilterRow(excludedAllergens: Set<Allergen>, onToggle: (Allergen) -> Unit) {
-    Column(modifier = Modifier.padding(top = 8.dp)) {
-        Text(
-            text = stringResource(R.string.recipes_allergen_filter_label),
-            style = MaterialTheme.typography.labelMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(horizontal = 16.dp),
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(
+            imageVector = Icons.Filled.FilterAlt,
+            contentDescription = stringResource(R.string.recipes_allergen_filter_label),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(18.dp),
         )
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            RecipeRepository.filterableAllergens.forEach { allergen ->
-                val selected = allergen in excludedAllergens
-                FilterChip(
-                    selected = selected,
-                    onClick = { onToggle(allergen) },
-                    label = { Text(stringResource(allergen.labelRes)) },
-                )
-            }
+        RecipeRepository.filterableAllergens.forEach { allergen ->
+            val selected = allergen in excludedAllergens
+            FilterChip(
+                selected = selected,
+                onClick = { onToggle(allergen) },
+                label = { Text(stringResource(allergen.labelRes)) },
+            )
         }
     }
 }

@@ -1,5 +1,6 @@
 package com.dtraas.homestock.ui.mealplan
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -176,9 +177,10 @@ private val MealSlot.icon: ImageVector
  * one dish lined up for e.g. avondeten — so this renders one row per [PlannedMeal] plus a
  * trailing "add" row that's always present, rather than a single card that's either "empty"
  * or "has one recipe". Only meals with a [PlannedMeal.recipeId] (picked from a suggestion,
- * not typed by hand) are clickable through to the recipe detail screen. A thin divider
- * separates multiple meals within the same slot, so a busier day (say, two snacks) still
- * reads as clearly distinct dishes rather than a run-on list.
+ * not typed by hand) are clickable through to the recipe detail screen. Each meal gets its own
+ * small background chip (see [PlannedMealRow]) rather than being separated by a thin divider —
+ * that reads as one continuous, cramped list once a slot holds several meals; a stack of
+ * clearly bounded rows scales much better to "two, three, four snacks" than a flat list does.
  */
 @Composable
 private fun SlotCard(
@@ -194,7 +196,7 @@ private fun SlotCard(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         shape = SoftCardShape,
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = slot.icon,
@@ -209,23 +211,20 @@ private fun SlotCard(
                     modifier = Modifier.padding(start = 8.dp),
                 )
             }
-            planned.forEachIndexed { index, meal ->
-                if (index > 0) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(top = 8.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    )
+            if (planned.isNotEmpty()) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    planned.forEach { meal ->
+                        PlannedMealRow(
+                            meal = meal,
+                            onClick = { if (meal.recipeId != null) onOpenClick(meal.recipeId) },
+                            onRemove = { onRemove(meal) },
+                        )
+                    }
                 }
-                PlannedMealRow(
-                    meal = meal,
-                    onClick = { if (meal.recipeId != null) onOpenClick(meal.recipeId) },
-                    onRemove = { onRemove(meal) },
-                )
             }
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp)
                     .clip(SoftImageShape)
                     .clickable(onClick = onAddClick)
                     .padding(vertical = 4.dp),
@@ -256,6 +255,9 @@ private fun SlotCard(
  * with a fork-and-knife icon instead, the same "always a visual, real photo or otherwise"
  * treatment ProductImage gives products with no picture elsewhere in the app.
  *
+ * Sits on its own subtly-tinted background (rather than plain text on the card, separated only
+ * by a divider) so each meal reads as one clearly bounded item — this is what keeps a slot with
+ * several meals looking like a tidy little stack instead of a run-on list (see [SlotCard]).
  * Image and delete-icon sizing here deliberately match ShoppingListRow's (32dp rounded-rect
  * thumbnail, 32dp/18dp icon button) so an added meal reads as the same kind of list row as a
  * boodschappenlijst item, rather than the larger, looser spacing this used to have.
@@ -265,8 +267,10 @@ private fun PlannedMealRow(meal: PlannedMeal, onClick: () -> Unit, onRemove: () 
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 8.dp)
-            .clickable(enabled = meal.recipeId != null, onClick = onClick),
+            .clip(SoftImageShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+            .clickable(enabled = meal.recipeId != null, onClick = onClick)
+            .padding(start = 8.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (meal.thumbnailUrl != null) {

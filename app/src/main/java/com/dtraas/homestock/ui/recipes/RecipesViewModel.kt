@@ -7,6 +7,8 @@ import com.dtraas.homestock.data.repository.GenerateRecipeResult
 import com.dtraas.homestock.data.repository.RecipePage
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
+import com.google.firebase.functions.FirebaseFunctionsException
+import java.io.IOException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -21,11 +23,16 @@ enum class GenerateRecipeError { NO_CONNECTION, PREMIUM_REQUIRED, UNKNOWN }
 /** Which recipe source RecipesScreen is currently showing — see [RecipesViewModel.selectTab]. */
 enum class RecipesTab { BROWSE, FAVORITES, CUSTOM }
 
+/** Why a browse/search load failed — [QUOTA_EXCEEDED] gets its own, more accurate message
+ *  instead of being lumped in with [NO_CONNECTION] (see `spoonacularGet` in
+ *  functions/src/index.ts, which is what actually tells these apart). */
+enum class RecipesLoadError { NO_CONNECTION, QUOTA_EXCEEDED, UNKNOWN }
+
 data class RecipesUiState(
     val tab: RecipesTab = RecipesTab.BROWSE,
     val isLoading: Boolean = true,
     val recipes: List<RecipeSuggestion> = emptyList(),
-    val hasError: Boolean = false,
+    val loadError: RecipesLoadError? = null,
     val excludedAllergens: Set<Allergen> = emptySet(),
     val searchQuery: String = "",
     val isGenerating: Boolean = false,
@@ -102,19 +109,21 @@ class RecipesViewModel(
 
     private fun launchLiveList(source: () -> Flow<List<RecipeSuggestion>>): Job =
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, hasError = false) }
-            source().collect { list -> _uiState.update { it.copy(isLoading = false, recipes = list, hasError = false) } }
+            _uiState.update { it.copy(isLoading = true, loadError = null) }
+            source().collect { list -> _uiState.update { it.copy(isLoading = false, recipes = list, loadError = null) } }
         }
 
     private fun launchBrowseOrSearch(): Job = viewModelScope.launch {
         nextOffset = 0
-        _uiState.update { it.copy(isLoading = true, hasError = false, hasMore = false, isLoadingMore = false) }
+        _uiState.update { it.copy(isLoading = true, loadError = null, hasMore = false, isLoadingMore = false) }
         fetchPage(_uiState.value, offset = 0)
             .onSuccess { page ->
                 nextOffset = RecipeRepository.PAGE_SIZE
-                _uiState.update { it.copy(isLoading = false, recipes = page.suggestions, hasError = false, hasMore = page.hasMore) }
+                _uiState.update { it.copy(isLoading = false, recipes = page.suggestions, loadError = null, hasMore = page.hasMore) }
             }
-            .onFailure { _uiState.update { it.copy(isLoading = false, recipes = emptyList(), hasError = true, hasMore = false) } }
+            .onFailure { e ->
+                _uiState.update { it.copy(isLoading = false, recipes = emptyList(), loadError = classifyLoadError(e), hasMore = false) }
+            }
     }
 
     /**
@@ -147,6 +156,18 @@ class RecipesViewModel(
         } else {
             recipeRepository.browseAllRecipes(languageTag, state.excludedAllergens, offset)
         }
+
+    /** Distinguishes "Spoonacular's quota is used up, try later" from a real connectivity
+     *  problem — see `spoonacularGet`'s `resource-exhausted` throw in functions/src/index.ts,
+     *  the only place this distinction is actually made. */
+    private fun classifyLoadError(e: Throwable): RecipesLoadError = when {
+        e is FirebaseFunctionsException && e.code == FirebaseFunctionsException.Code.RESOURCE_EXHAUSTED -> RecipesLoadError.QUOTA_EXCEEDED
+        e is FirebaseFunctionsException && (
+            e.code == FirebaseFunctionsException.Code.UNAVAILABLE || e.code == FirebaseFunctionsException.Code.DEADLINE_EXCEEDED
+        ) -> RecipesLoadError.NO_CONNECTION
+        e is IOException -> RecipesLoadError.NO_CONNECTION
+        else -> RecipesLoadError.UNKNOWN
+    }
 
     fun onSearchQueryChange(query: String) {
         _uiState.update { it.copy(searchQuery = query) }

@@ -125,7 +125,10 @@
     <!-- More -->
     <string name="more_household_title">Household</string>
     <string name="more_household_code_format">Code: %1$s</string>
-    <string name="more_household_subtitle_format">%1$d members · Code: %2$s</string>
+    <plurals name="more_household_subtitle_format">
+        <item quantity="one">%1$d member · Code: %2$s</item>
+        <item quantity="other">%1$d members · Code: %2$s</item>
+    </plurals>
     <string name="more_household_members_title">Members</string>
     <string name="more_household_member_unnamed">Unnamed member</string>
     <string name="more_household_member_you">You</string>
@@ -421,6 +424,8 @@
     <string name="recipes_title">Recipes</string>
     <string name="recipes_error_title">No connection</string>
     <string name="recipes_error_subtitle">We couldn\'t load recipe suggestions. Check your internet connection and try again.</string>
+    <string name="recipes_error_quota_title">No recipes available right now</string>
+    <string name="recipes_error_quota_subtitle">Our recipe source has had too many requests for a bit. Try again in a few minutes.</string>
     <string name="recipes_empty_title">No recipes found</string>
     <string name="recipes_empty_subtitle">Try a different search term or adjust your allergen filters.</string>
     <string name="recipes_beta_notice">Beta: recipes come from an external database (Spoonacular). Ingredient matching is approximate and may sometimes be inaccurate.</string>

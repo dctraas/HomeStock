@@ -24,9 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.BarChart
-import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Description
@@ -35,8 +33,6 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PrivacyTip
-import androidx.compose.material.icons.filled.Receipt
-import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarRate
 import androidx.compose.material.icons.filled.Storefront
@@ -74,6 +70,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -105,10 +102,6 @@ private enum class AppLanguage(val tag: String, val labelRes: Int) {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MoreScreen(
-    onNavigateToRecipes: () -> Unit = {},
-    onNavigateToReceiptScan: () -> Unit = {},
-    onNavigateToAiRecognize: () -> Unit = {},
-    onNavigateToMealPlan: () -> Unit = {},
     onNavigateToStatistics: () -> Unit = {},
     onNavigateToPremium: () -> Unit = {},
     onNavigateToHousehold: () -> Unit = {},
@@ -198,45 +191,29 @@ fun MoreScreen(
             SettingsRow(
                 icon = Icons.Filled.Home,
                 title = stringResource(R.string.more_household_title),
-                subtitle = stringResource(R.string.more_household_subtitle_format, memberCount, householdId ?: "—"),
+                // Plural-aware: "1 lid" vs. "2 leden" (and the equivalent in every other
+                // locale) — a plain %d format string can't express that agreement on its own.
+                subtitle = pluralStringResource(
+                    R.plurals.more_household_subtitle_format,
+                    memberCount,
+                    memberCount,
+                    householdId ?: "—",
+                ),
                 onClick = onNavigateToHousehold,
             )
 
             SectionHeader(stringResource(R.string.more_section_features))
             PremiumPromoCard(isPremium = isPremium, onClick = onNavigateToPremium)
+            // Recepten, Bonnetje scannen, AI-productherkenning en Maaltijdplanner used to have
+            // rows here too, but all four already have a real entry point elsewhere (Recepten/
+            // Maaltijdplanner are bottom-nav tabs, Bonnetje scannen/AI-productherkenning live
+            // in Voorraad's "+" menu — see AddMenuDialog in InventoryScreen.kt) — duplicating
+            // them here just added clutter, not reach.
             SettingsRow(
                 icon = Icons.Filled.BarChart,
                 title = stringResource(R.string.more_statistics_title),
                 trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                 onClick = { if (isPremium) onNavigateToStatistics() else onNavigateToPremium() },
-            )
-            SettingsRow(
-                icon = Icons.Filled.RestaurantMenu,
-                title = stringResource(R.string.more_beta_recipes),
-                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
-                onClick = { if (isPremium) onNavigateToRecipes() else onNavigateToPremium() },
-            )
-            SettingsRow(
-                icon = Icons.Filled.Receipt,
-                title = stringResource(R.string.more_beta_receipt_scan),
-                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
-                onClick = { if (isPremium) onNavigateToReceiptScan() else onNavigateToPremium() },
-            )
-            // Premium-gated like its siblings above — unlike the on-device barcode scanner,
-            // the photo actually leaves the device (to the recognizeProduct Cloud Function,
-            // which calls Claude), so this carries a real per-scan cost the free tier
-            // shouldn't be able to run up.
-            SettingsRow(
-                icon = Icons.Filled.AutoAwesome,
-                title = stringResource(R.string.ai_recognize_title),
-                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
-                onClick = { if (isPremium) onNavigateToAiRecognize() else onNavigateToPremium() },
-            )
-            SettingsRow(
-                icon = Icons.Filled.CalendarMonth,
-                title = stringResource(R.string.meal_plan_title),
-                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
-                onClick = { if (isPremium) onNavigateToMealPlan() else onNavigateToPremium() },
             )
 
             SectionHeader(stringResource(R.string.more_section_preferences))

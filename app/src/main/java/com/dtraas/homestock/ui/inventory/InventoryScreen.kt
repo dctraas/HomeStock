@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.ViewList
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BadgedBox
@@ -86,6 +87,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -519,7 +521,9 @@ fun InventoryScreen(
  * The "+" on Voorraad's four ways to add a product — barcode scannen and zoeken op naam are
  * free, bonnetje scannen and AI-productherkenning are premium (locked options still open the
  * paywall on tap rather than being disabled/hidden, so free users can see and go straight to
- * upgrading instead of wondering why an option is greyed out).
+ * upgrading instead of wondering why an option is greyed out). A 2x2 grid of large icon tiles
+ * rather than a single-column list of small icon+label rows — all four options are visible at
+ * a glance this way instead of needing to be read top to bottom.
  */
 @Composable
 private fun AddMenuDialog(
@@ -535,29 +539,43 @@ private fun AddMenuDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.inventory_add_menu_title)) },
         text = {
-            Column {
-                AddMenuRow(
-                    icon = Icons.Filled.QrCodeScanner,
-                    label = stringResource(R.string.inventory_add_menu_barcode),
-                    onClick = { onDismiss(); onBarcodeScan() },
-                )
-                AddMenuRow(
-                    icon = Icons.Filled.Search,
-                    label = stringResource(R.string.inventory_add_menu_search),
-                    onClick = { onDismiss(); onSearchByName() },
-                )
-                AddMenuRow(
-                    icon = Icons.Filled.Receipt,
-                    label = stringResource(R.string.more_beta_receipt_scan),
-                    premiumLocked = !isPremium,
-                    onClick = { onDismiss(); if (isPremium) onReceiptScan() else onNavigateToPremium() },
-                )
-                AddMenuRow(
-                    icon = Icons.Filled.AutoAwesome,
-                    label = stringResource(R.string.ai_recognize_title),
-                    premiumLocked = !isPremium,
-                    onClick = { onDismiss(); if (isPremium) onAiRecognize() else onNavigateToPremium() },
-                )
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    AddMenuTile(
+                        icon = Icons.Filled.QrCodeScanner,
+                        label = stringResource(R.string.inventory_add_menu_barcode),
+                        onClick = { onDismiss(); onBarcodeScan() },
+                        modifier = Modifier.weight(1f),
+                    )
+                    AddMenuTile(
+                        icon = Icons.Filled.Search,
+                        label = stringResource(R.string.inventory_add_menu_search),
+                        onClick = { onDismiss(); onSearchByName() },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
+                    AddMenuTile(
+                        icon = Icons.Filled.Receipt,
+                        label = stringResource(R.string.more_beta_receipt_scan),
+                        premiumLocked = !isPremium,
+                        onClick = { onDismiss(); if (isPremium) onReceiptScan() else onNavigateToPremium() },
+                        modifier = Modifier.weight(1f),
+                    )
+                    AddMenuTile(
+                        icon = Icons.Filled.AutoAwesome,
+                        label = stringResource(R.string.ai_recognize_title),
+                        premiumLocked = !isPremium,
+                        onClick = { onDismiss(); if (isPremium) onAiRecognize() else onNavigateToPremium() },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
             }
         },
         confirmButton = {
@@ -566,20 +584,44 @@ private fun AddMenuDialog(
     )
 }
 
+/** One tile of the "+" menu's 2x2 grid — a large icon with its description underneath (see [AddMenuDialog]). */
 @Composable
-private fun AddMenuRow(icon: ImageVector, label: String, premiumLocked: Boolean = false, onClick: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
+private fun AddMenuTile(
+    icon: ImageVector,
+    label: String,
+    premiumLocked: Boolean = false,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .clip(SoftCardShapeCompact)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
             .clickable(onClick = onClick)
-            .padding(vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(vertical = 16.dp, horizontal = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(22.dp))
+        Box {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(36.dp),
+            )
+            if (premiumLocked) {
+                Icon(
+                    imageVector = Icons.Filled.WorkspacePremium,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.align(Alignment.TopEnd).size(14.dp),
+                )
+            }
+        }
         Text(
             text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f).padding(start = 14.dp),
+            style = MaterialTheme.typography.labelMedium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 10.dp),
         )
         if (premiumLocked) {
             Text(
@@ -587,6 +629,7 @@ private fun AddMenuRow(icon: ImageVector, label: String, premiumLocked: Boolean 
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.primary,
                 fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 2.dp),
             )
         }
     }
@@ -977,14 +1020,14 @@ private fun InventoryGridTile(
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(6.dp)
-                        .size(28.dp),
+                        .size(20.dp),
                 ) {
                     IconButton(onClick = onAddToShoppingList, modifier = Modifier.fillMaxSize()) {
                         Icon(
                             Icons.Filled.AddShoppingCart,
                             contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
                             tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(12.dp),
                         )
                     }
                 }

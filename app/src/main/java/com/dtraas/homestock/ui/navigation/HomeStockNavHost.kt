@@ -146,10 +146,6 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
             }
             composable(Destination.More.route) {
                 MoreScreen(
-                    onNavigateToRecipes = { navController.navigate(Destination.Recipes.route) },
-                    onNavigateToReceiptScan = { navController.navigate(Destination.ReceiptScan.route) },
-                    onNavigateToAiRecognize = { navController.navigate(Destination.AiRecognize.route) },
-                    onNavigateToMealPlan = { navController.navigate(Destination.MealPlan.route) },
                     onNavigateToStatistics = { navController.navigate(Destination.Statistics.route) },
                     onNavigateToPremium = { navController.navigate(Destination.Premium.route) },
                     onNavigateToHousehold = { navController.navigate(Destination.Household.route) },

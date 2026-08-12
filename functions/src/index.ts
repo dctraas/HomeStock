@@ -601,6 +601,13 @@ async function spoonacularGet<T>(path: string, params: Record<string, string>, a
   if (!response.ok) {
     const body = await response.text().catch(() => "");
     logger.error("Spoonacular API returned an error", { status: response.status, body, path });
+    // 402 = daily point quota used up, 429 = too many requests per minute — both mean "try
+    // again later", not "something's broken". Surfacing a distinct code lets the client show
+    // a message that actually says that, instead of the generic "no connection" one it'd
+    // otherwise fall back to for every kind of failure here.
+    if (response.status === 402 || response.status === 429) {
+      throw new HttpsError("resource-exhausted", "recipe_quota_exceeded");
+    }
     throw new HttpsError("unavailable", "recipe_search_failed");
   }
   return (await response.json()) as T;

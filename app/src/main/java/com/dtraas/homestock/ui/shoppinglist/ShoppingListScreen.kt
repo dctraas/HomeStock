@@ -1,5 +1,6 @@
 package com.dtraas.homestock.ui.shoppinglist
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -618,6 +619,13 @@ private fun ShoppingListRow(
                     )
                 },
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            // Matches InventoryRow's list row exactly (same color/width) — without this, a
+            // thin sliver of the swipe-to-delete background's errorContainer color (a warm
+            // salmon/orange tone, see Theme.kt's LinenErrorContainer) shows through right at
+            // the card's edge on some devices, reading as an unwanted orange outline around
+            // every item. The border sits right on that seam and covers it, the same way it
+            // already does for Voorraad's rows.
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             shape = SoftCardShapeCompact,
         ) {
             Row(
