@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.item
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
@@ -209,6 +210,16 @@ fun RecipesScreen(
                         items(uiState.recipes, key = { it.meal.id }) { recipe ->
                             RecipeRow(recipe = recipe, onClick = { onRecipeClick(recipe.meal.id) })
                         }
+                        // Only BROWSE ever has more than one page — see RecipesViewModel.loadMore.
+                        // A tappable "load more" row rather than infinite-scroll-on-appear: this
+                        // list already renders full detail (image + name) per row, so scroll-
+                        // triggered loading would fire a Spoonacular call just from fast flinging
+                        // past the bottom, not necessarily genuine interest in more results.
+                        if (uiState.tab == RecipesTab.BROWSE && (uiState.hasMore || uiState.isLoadingMore)) {
+                            item(key = "load_more") {
+                                LoadMoreRow(isLoading = uiState.isLoadingMore, onClick = viewModel::loadMore)
+                            }
+                        }
                     }
                 }
             }
@@ -397,6 +408,23 @@ private fun RecipesMessage(
         if (retryLabel != null && onRetry != null) {
             Button(onClick = onRetry, modifier = Modifier.padding(top = 20.dp)) {
                 Text(retryLabel)
+            }
+        }
+    }
+}
+
+/** Bottom-of-list row for [RecipesViewModel.loadMore] — a button while idle, a spinner while [isLoading] (a page fetch in flight). */
+@Composable
+private fun LoadMoreRow(isLoading: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (isLoading) {
+            CircularProgressIndicator(modifier = Modifier.size(28.dp), strokeWidth = 2.dp)
+        } else {
+            TextButton(onClick = onClick) {
+                Text(stringResource(R.string.recipes_load_more))
             }
         }
     }

@@ -425,6 +425,7 @@
     <string name="recipes_empty_subtitle">Essaie un autre terme de recherche ou ajuste tes filtres d\'allergènes.</string>
     <string name="recipes_beta_notice">Bêta : les recettes proviennent d\'une base de données externe (Spoonacular). La correspondance des ingrédients est approximative et peut parfois être inexacte.</string>
     <string name="recipes_search_placeholder">Rechercher des recettes par nom…</string>
+    <string name="recipes_load_more">Charger plus</string>
     <string name="recipes_match_count_format">%1$d ingrédients disponibles</string>
     <string name="recipes_allergen_filter_label">Exclure les allergènes</string>
     <string name="recipes_area_match_cd">Correspond à ta langue/région</string>

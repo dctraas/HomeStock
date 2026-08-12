@@ -27,6 +27,9 @@ import kotlinx.coroutines.tasks.await
  */
 data class RecipeSuggestion(val meal: RecipeSummary, val matchCount: Int? = null, val matchesArea: Boolean = false)
 
+/** One page of [RecipeRepository.browseAllRecipes]/[RecipeRepository.searchRecipesByName] — [hasMore] mirrors Spoonacular's own `totalResults` for that exact query, so the caller knows whether a further [loadMore]-style call (same params, next `offset`) is worth making. */
+data class RecipePage(val suggestions: List<RecipeSuggestion>, val hasMore: Boolean)
+
 sealed interface GenerateRecipeResult {
     data class Success(val detail: RecipeDetail) : GenerateRecipeResult
 
@@ -146,20 +149,31 @@ class RecipeRepository(
      * Browses Spoonacular's catalog by popularity — not narrowed to inventory at all, unlike
      * [suggestRecipes]. A second, small cuisine-filtered call (see [languageToCuisine]) is
      * merged in as an area-matched badge (see [RecipeSuggestion.matchesArea]) the same way
-     * [suggestRecipes] does, rather than hard-filtering the whole list to one cuisine.
+     * [suggestRecipes] does, rather than hard-filtering the whole list to one cuisine — only on
+     * the first page ([offset] 0): it's a first-glance boost, not something worth re-fetching
+     * (and re-deduping against) on every subsequent page.
+     *
+     * [offset] pages through Spoonacular's own result ordering (see `searchRecipes` in
+     * functions/src/index.ts) — call again with `offset = <recipes shown so far>` for a "load
+     * more" action, and stop once [RecipePage.hasMore] is false. Spoonacular caps `offset` at
+     * 900 itself, so that's the deepest any single filter combination can ever page — there's no
+     * way to browse "everything", only progressively further into one popularity-sorted list.
      */
     suspend fun browseAllRecipes(
         languageTag: String? = null,
         excludedAllergens: Set<Allergen> = emptySet(),
-    ): Result<List<RecipeSuggestion>> = try {
+        offset: Int = 0,
+    ): Result<RecipePage> = try {
         val intolerances = spoonacularIntolerances(excludedAllergens)
-        val plain = parseDetails(callSearchRecipes(mode = "browse", number = 24, intolerances = intolerances))
+        val (plain, hasMore) = parseSearchResults(callSearchRecipes(mode = "browse", number = PAGE_SIZE, offset = offset, intolerances = intolerances))
         plain.forEach { cacheDetail(it) }
 
         val areaIds = LinkedHashSet<String>()
-        languageToCuisine[languageTag]?.let { cuisine ->
-            val boosted = parseDetails(callSearchRecipes(mode = "browse", cuisine = cuisine, number = 8, intolerances = intolerances))
-            boosted.forEach { detail -> cacheDetail(detail); areaIds += detail.id }
+        if (offset == 0) {
+            languageToCuisine[languageTag]?.let { cuisine ->
+                val (boosted, _) = parseSearchResults(callSearchRecipes(mode = "browse", cuisine = cuisine, number = 8, intolerances = intolerances))
+                boosted.forEach { detail -> cacheDetail(detail); areaIds += detail.id }
+            }
         }
 
         val merged = LinkedHashMap<String, RecipeDetail>()
@@ -170,21 +184,28 @@ class RecipeRepository(
             .map { detail -> RecipeSuggestion(RecipeSummary(detail.id, detail.name, detail.thumbnailUrl), matchCount = null, matchesArea = detail.id in areaIds) }
             .sortedWith(compareByDescending<RecipeSuggestion> { it.matchesArea }.thenBy { it.meal.name })
 
-        Result.success(withTranslatedTitles(list, languageTag))
+        Result.success(RecipePage(withTranslatedTitles(list, languageTag), hasMore))
     } catch (e: Exception) {
         Result.failure(e)
     }
 
-    /** Free-text search by recipe name (e.g. typed into RecipesScreen's search field), independent of inventory or category. */
+    /**
+     * Free-text search by recipe name (e.g. typed into RecipesScreen's search field), independent
+     * of inventory or category. Pages the same way [browseAllRecipes] does — see its doc for how
+     * [offset]/[RecipePage.hasMore] work and their 900-result ceiling.
+     */
     suspend fun searchRecipesByName(
         query: String,
         excludedAllergens: Set<Allergen> = emptySet(),
         languageTag: String? = null,
-    ): Result<List<RecipeSuggestion>> = try {
-        val details = parseDetails(callSearchRecipes(mode = "query", query = query, number = 24, intolerances = spoonacularIntolerances(excludedAllergens)))
+        offset: Int = 0,
+    ): Result<RecipePage> = try {
+        val (details, hasMore) = parseSearchResults(
+            callSearchRecipes(mode = "query", query = query, number = PAGE_SIZE, offset = offset, intolerances = spoonacularIntolerances(excludedAllergens)),
+        )
         details.forEach { cacheDetail(it) }
         val suggestions = details.map { RecipeSuggestion(RecipeSummary(it.id, it.name, it.thumbnailUrl), matchCount = null) }
-        Result.success(withTranslatedTitles(suggestions, languageTag))
+        Result.success(RecipePage(withTranslatedTitles(suggestions, languageTag), hasMore))
     } catch (e: Exception) {
         Result.failure(e)
     }
@@ -546,12 +567,14 @@ class RecipeRepository(
         cuisine: String? = null,
         intolerances: List<String> = emptyList(),
         number: Int,
+        offset: Int = 0,
     ): Map<*, *> {
         val householdId = householdSession.householdId.value ?: return emptyMap<String, Any?>()
         val requestData = hashMapOf<String, Any?>(
             "householdId" to householdId,
             "mode" to mode,
             "number" to number,
+            "offset" to offset,
         )
         query?.let { requestData["query"] = it }
         ingredients?.let { requestData["ingredients"] = it }
@@ -565,6 +588,13 @@ class RecipeRepository(
     private fun parseDetails(response: Map<*, *>): List<RecipeDetail> {
         val rawDetails = response["details"] as? List<*> ?: return emptyList()
         return rawDetails.mapNotNull { (it as? Map<*, *>)?.let(::mapToDetail) }
+    }
+
+    /** Like [parseDetails], plus the server's `hasMore` flag for [browseAllRecipes]/[searchRecipesByName]'s pagination. */
+    private fun parseSearchResults(response: Map<*, *>): Pair<List<RecipeDetail>, Boolean> {
+        val details = parseDetails(response)
+        val hasMore = (response["hasMore"] as? Boolean) ?: false
+        return details to hasMore
     }
 
     /** [Pair.second] is Spoonacular's `usedIngredientCount` for that summary — see the "ingredients" mode of `searchRecipes`. */
@@ -705,6 +735,9 @@ class RecipeRepository(
     companion object {
         /** Id prefix for hand-entered recipes (see [saveCustomRecipe]) — lets [getRecipeDetail] route straight to Firestore instead of guessing from a failed Spoonacular lookup. */
         const val CUSTOM_ID_PREFIX = "custom-"
+
+        /** Recipes per page for [browseAllRecipes]/[searchRecipesByName] — also what each "load more" call's `offset` advances by. */
+        const val PAGE_SIZE = 20
 
         // Most common/relevant allergens for everyday recipes, out of the full 14 EU-regulated
         // ones in [Allergen] — the rarer ones (sesame, sulphites, lupin, molluscs, mustard,

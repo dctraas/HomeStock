@@ -426,6 +426,7 @@
     <string name="recipes_empty_subtitle">Probeer een andere zoekterm of pas je allergeenfilters aan.</string>
     <string name="recipes_beta_notice">Beta: recepten komen van een externe database (Spoonacular). Ingrediëntmatching gebeurt bij benadering en kan soms niet kloppen.</string>
     <string name="recipes_search_placeholder">Zoek recepten op naam…</string>
+    <string name="recipes_load_more">Meer laden</string>
     <string name="recipes_match_count_format">%1$d ingrediënten in huis</string>
     <string name="recipes_allergen_filter_label">Allergenen uitsluiten</string>
     <string name="recipes_area_match_cd">Sluit aan bij jouw taal/regio</string>

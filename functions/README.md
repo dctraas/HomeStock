@@ -100,7 +100,7 @@ any direct access; only these functions, via the Admin SDK, ever touch them):
 | Collection | Written by | TTL | What it saves |
 | --- | --- | --- | --- |
 | `recipeDetailCache/{spoonacularId}` | `searchRecipes` (backfill), `getRecipeInformation` | 30 days | A Spoonacular `recipes/{id}/information` call, the second+ time *any* household opens that recipe. |
-| `recipeSearchCache/{browseParams}` | `searchRecipes` ("browse" mode only) | 12 hours | A full `complexSearch` call for the filterless "browse popular recipes" list every Recepten screen opens with — by far the most repeated query. |
+| `recipeSearchCache/{browseParams}` | `searchRecipes` ("browse" mode only) | 12 hours | A full `complexSearch` call for the filterless "browse popular recipes" list every Recepten screen opens with — by far the most repeated query. Keyed per page (`offset` is part of the cache key), so "load more" pages get the same cross-household reuse as page 1. |
 | `recipeTranslations/{spoonacularId}_{locale}` | `translateRecipe` | 90 days | A Claude translation call, the second+ time *any* household opens/lists that recipe in that language. AI-generated and hand-entered recipes are deliberately excluded (private, household-specific content — see `isCacheableRecipeId`). |
 
 All three are best-effort: a cache read/write failure is logged and swallowed, never thrown —

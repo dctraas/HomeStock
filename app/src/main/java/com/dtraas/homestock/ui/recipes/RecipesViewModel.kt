@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.repository.GenerateRecipeResult
+import com.dtraas.homestock.data.repository.RecipePage
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
 import kotlinx.coroutines.Job
@@ -29,16 +30,21 @@ data class RecipesUiState(
     val searchQuery: String = "",
     val isGenerating: Boolean = false,
     val generateError: GenerateRecipeError? = null,
+    /** Whether a further [RecipesViewModel.loadMore] call would return anything — mirrors Spoonacular's own `totalResults` for the current browse/search query (see [RecipeRepository.browseAllRecipes]). Only ever true for [RecipesTab.BROWSE]: Favorites/Custom are short, fully-loaded live lists. */
+    val hasMore: Boolean = false,
+    /** True only while a "load more" page is in flight — distinct from [isLoading], which covers the *first* page of a fresh browse/search so the existing list can stay visible (with a small footer spinner) while more loads. */
+    val isLoadingMore: Boolean = false,
 )
 
 /**
  * [RecipesTab.BROWSE] browses Spoonacular's recipe catalog by default (see
  * [RecipeRepository.browseAllRecipes]) rather than only recipes matching household inventory —
  * [search] switches to a name search instead (see [RecipeRepository.searchRecipesByName]) when
- * [RecipesUiState.searchQuery] is non-blank. The inventory-based [RecipeRepository.suggestRecipes]
- * is still used elsewhere (the maaltijdplanner's "kies een recept" picker), just not here.
- * [generateRecipe] is a separate, AI-authored alternative (see [RecipeRepository.generateRecipe])
- * rather than a search at all.
+ * [RecipesUiState.searchQuery] is non-blank. Either way the result is paginated (see [loadMore]) —
+ * a fresh browse/search always starts at page 1, "load more" fetches the next page and appends it.
+ * The inventory-based [RecipeRepository.suggestRecipes] is still used elsewhere (the
+ * maaltijdplanner's "kies een recept" picker), just not here. [generateRecipe] is a separate,
+ * AI-authored alternative (see [RecipeRepository.generateRecipe]) rather than a search at all.
  *
  * [RecipesTab.FAVORITES]/[RecipesTab.CUSTOM] are simple live Firestore lists (see
  * [RecipeRepository.observeFavoriteRecipes]/[RecipeRepository.observeCustomRecipes]) — no search,
@@ -65,6 +71,14 @@ class RecipesViewModel(
     // call) from before a switch can't race a newer one and overwrite it with older data.
     private var listJob: Job? = null
 
+    // The `offset` a further [loadMore] call should ask for next — always a multiple of
+    // [RecipeRepository.PAGE_SIZE], incremented after each successful page regardless of how
+    // many suggestions that page actually rendered (page 1's cuisine-boost extras don't count,
+    // since [RecipeRepository.browseAllRecipes] only ever requests them for offset 0 — see its
+    // doc). Reset to 0 by every fresh browse/search in [launchBrowseOrSearch]. Only meaningful
+    // for [RecipesTab.BROWSE]; Favorites/Custom don't page at all.
+    private var nextOffset = 0
+
     /** [languageTag] (e.g. "nl") drives the cuisine/region boost in RecipeRepository — see its doc. Refreshes whichever tab is currently selected. */
     fun load(languageTag: String? = null) {
         this.languageTag = languageTag
@@ -73,7 +87,7 @@ class RecipesViewModel(
 
     fun selectTab(tab: RecipesTab) {
         if (_uiState.value.tab == tab) return
-        _uiState.update { it.copy(tab = tab, recipes = emptyList()) }
+        _uiState.update { it.copy(tab = tab, recipes = emptyList(), hasMore = false, isLoadingMore = false) }
         refreshCurrentTab()
     }
 
@@ -93,17 +107,46 @@ class RecipesViewModel(
         }
 
     private fun launchBrowseOrSearch(): Job = viewModelScope.launch {
-        _uiState.update { it.copy(isLoading = true, hasError = false) }
-        val state = _uiState.value
-        val result = if (state.searchQuery.isNotBlank()) {
-            recipeRepository.searchRecipesByName(state.searchQuery.trim(), state.excludedAllergens, languageTag)
-        } else {
-            recipeRepository.browseAllRecipes(languageTag, state.excludedAllergens)
-        }
-        result
-            .onSuccess { recipes -> _uiState.update { it.copy(isLoading = false, recipes = recipes, hasError = false) } }
-            .onFailure { _uiState.update { it.copy(isLoading = false, recipes = emptyList(), hasError = true) } }
+        nextOffset = 0
+        _uiState.update { it.copy(isLoading = true, hasError = false, hasMore = false, isLoadingMore = false) }
+        fetchPage(_uiState.value, offset = 0)
+            .onSuccess { page ->
+                nextOffset = RecipeRepository.PAGE_SIZE
+                _uiState.update { it.copy(isLoading = false, recipes = page.suggestions, hasError = false, hasMore = page.hasMore) }
+            }
+            .onFailure { _uiState.update { it.copy(isLoading = false, recipes = emptyList(), hasError = true, hasMore = false) } }
     }
+
+    /**
+     * Fetches and appends the next page of the current browse/search — a no-op unless
+     * [RecipesTab.BROWSE] is showing, [RecipesUiState.hasMore] is true, and nothing's already
+     * loading (a fresh page-1 load or a page already in flight). Call from the list's "load
+     * more"/near-the-bottom trigger in RecipesScreen.
+     */
+    fun loadMore() {
+        val state = _uiState.value
+        if (state.tab != RecipesTab.BROWSE || !state.hasMore || state.isLoading || state.isLoadingMore) return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingMore = true) }
+            fetchPage(state, offset = nextOffset)
+                .onSuccess { page ->
+                    nextOffset += RecipeRepository.PAGE_SIZE
+                    _uiState.update { current ->
+                        val existingIds = current.recipes.map { it.meal.id }.toSet()
+                        val appended = current.recipes + page.suggestions.filterNot { it.meal.id in existingIds }
+                        current.copy(isLoadingMore = false, recipes = appended, hasMore = page.hasMore)
+                    }
+                }
+                .onFailure { _uiState.update { it.copy(isLoadingMore = false) } }
+        }
+    }
+
+    private suspend fun fetchPage(state: RecipesUiState, offset: Int): Result<RecipePage> =
+        if (state.searchQuery.isNotBlank()) {
+            recipeRepository.searchRecipesByName(state.searchQuery.trim(), state.excludedAllergens, languageTag, offset)
+        } else {
+            recipeRepository.browseAllRecipes(languageTag, state.excludedAllergens, offset)
+        }
 
     fun onSearchQueryChange(query: String) {
         _uiState.update { it.copy(searchQuery = query) }

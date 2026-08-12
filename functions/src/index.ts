@@ -527,6 +527,7 @@ interface SpoonacularInfoResult {
 
 interface SpoonacularComplexSearchResponse {
   results: SpoonacularInfoResult[];
+  totalResults?: number;
 }
 
 interface SpoonacularFindByIngredientsResult {
@@ -579,10 +580,16 @@ const RECIPE_BROWSE_CACHE_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
 
 type RecipeDetailPayload = ReturnType<typeof toRecipeDetail>;
 
-/** Deterministic key for a "browse" mode call's exact param combination — order-independent on intolerances so ["Gluten","Dairy"] and ["Dairy","Gluten"] share a cache entry. */
-function browseCacheKey(cuisine: string | undefined, intolerances: string[] | undefined, number: number): string {
+/** What gets cached for a "browse" page — [totalResults] (Spoonacular's own count for this exact filter combo) is what lets a *cached* page still answer "is there a next page" without an extra live call. */
+interface RecipeSearchCachePayload {
+  details: RecipeDetailPayload[];
+  totalResults: number;
+}
+
+/** Deterministic key for a "browse" mode call's exact param combination — order-independent on intolerances so ["Gluten","Dairy"] and ["Dairy","Gluten"] share a cache entry. Includes [offset] so each page of a paginated browse gets its own cache entry rather than colliding on page 1's. */
+function browseCacheKey(cuisine: string | undefined, intolerances: string[] | undefined, number: number, offset: number): string {
   const intolerancesKey = intolerances && intolerances.length > 0 ? [...intolerances].sort().join(",") : "none";
-  return `browse_${cuisine ?? "none"}_${intolerancesKey}_${number}`;
+  return `browse_${cuisine ?? "none"}_${intolerancesKey}_${number}_${offset}`;
 }
 
 async function spoonacularGet<T>(path: string, params: Record<string, string>, apiKey: string): Promise<T> {
@@ -611,6 +618,8 @@ interface SearchRecipesRequest {
   /** Spoonacular intolerance names, e.g. ["Gluten", "Dairy"] — only used for modes "browse"/"query". */
   intolerances?: string[];
   number?: number;
+  /** How many results to skip, for paginating "browse"/"query" — Spoonacular caps this at 900 regardless of filters, so that's the deepest any single query can page. */
+  offset?: number;
 }
 
 /**
@@ -633,6 +642,11 @@ export const searchRecipes = onCall(
     await requirePremiumHousehold(uid, householdId);
 
     const number = Math.min(Math.max(data?.number ?? 20, 1), 30);
+    // Spoonacular hard-caps offset at 900 regardless of filters — this is the deepest any single
+    // query/filter combination can ever page (see functions/README.md's Caching section and the
+    // conversation that led here: a true "fetch the whole ~365k-recipe catalog" isn't possible
+    // through this API at all, offset-paginating up to this cap is the realistic ceiling).
+    const offset = Math.min(Math.max(data?.offset ?? 0, 0), 900);
     const apiKey = spoonacularApiKey.value();
 
     if (data?.mode === "ingredients") {
@@ -654,18 +668,19 @@ export const searchRecipes = onCall(
     }
 
     // Only "browse" (no query, no household-specific ingredient combo) is cached as a whole
-    // list — "query"/"ingredients" results are shaped by what this particular household typed
+    // page — "query"/"ingredients" results are shaped by what this particular household typed
     // or has in stock, too personalized to expect much reuse from caching the result set itself.
     // Individual recipes surfaced by ANY mode still get backfilled into recipeDetailCache below,
     // since a given recipe's own content is shared regardless of how it was found.
-    const cacheKey = data?.mode === "browse" ? browseCacheKey(data?.cuisine, data?.intolerances, number) : null;
+    const cacheKey = data?.mode === "browse" ? browseCacheKey(data?.cuisine, data?.intolerances, number, offset) : null;
     if (cacheKey) {
-      const cached = await getFreshCache<RecipeDetailPayload[]>("recipeSearchCache", cacheKey, RECIPE_BROWSE_CACHE_TTL_MS);
-      if (cached) return { details: cached };
+      const cached = await getFreshCache<RecipeSearchCachePayload>("recipeSearchCache", cacheKey, RECIPE_BROWSE_CACHE_TTL_MS);
+      if (cached) return { details: cached.details, hasMore: offset + cached.details.length < cached.totalResults };
     }
 
     const params: Record<string, string> = {
       number: String(number),
+      offset: String(offset),
       addRecipeInformation: "true",
       fillIngredients: "true",
       sort: "popularity",
@@ -676,16 +691,18 @@ export const searchRecipes = onCall(
 
     const response = await spoonacularGet<SpoonacularComplexSearchResponse>("/recipes/complexSearch", params, apiKey);
     const details = response.results.map(toRecipeDetail);
+    const totalResults = response.totalResults ?? offset + details.length;
+    const hasMore = offset + details.length < totalResults;
 
     // Awaited (not fire-and-forget) so these are guaranteed to land before the function's
     // container can be frozen post-response, but run in parallel so a cache-miss response isn't
     // slowed down by writing each entry one at a time.
     await Promise.all([
-      ...(cacheKey ? [setCache("recipeSearchCache", cacheKey, details)] : []),
+      ...(cacheKey ? [setCache("recipeSearchCache", cacheKey, { details, totalResults })] : []),
       ...details.map((detail) => setCache("recipeDetailCache", detail.id, detail)),
     ]);
 
-    return { details };
+    return { details, hasMore };
   },
 );
 
