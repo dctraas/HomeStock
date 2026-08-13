@@ -503,6 +503,8 @@
     <string name="meal_plan_title">Planificateur de repas</string>
     <string name="meal_plan_add_recipe">Recette</string>
     <string name="meal_plan_clear_cd">Retirer le repas</string>
+    <string name="meal_plan_delete_cd">Supprimer</string>
+    <string name="meal_plan_removed_format">%1$s supprimé</string>
     <string name="meal_plan_picker_title_format">Ajouter un repas pour %1$s</string>
     <string name="meal_plan_picker_empty">Aucune suggestion trouvée. Ajoute plus de produits à ton stock.</string>
     <string name="meal_plan_manual_entry_label">Saisir votre propre repas</string>

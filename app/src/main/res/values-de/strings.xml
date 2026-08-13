@@ -503,6 +503,8 @@
     <string name="meal_plan_title">Essensplaner</string>
     <string name="meal_plan_add_recipe">Rezept</string>
     <string name="meal_plan_clear_cd">Mahlzeit entfernen</string>
+    <string name="meal_plan_delete_cd">Löschen</string>
+    <string name="meal_plan_removed_format">%1$s entfernt</string>
     <string name="meal_plan_picker_title_format">Mahlzeit hinzufügen für %1$s</string>
     <string name="meal_plan_picker_empty">Keine Vorschläge gefunden. Füge mehr Produkte zu deinem Vorrat hinzu.</string>
     <string name="meal_plan_manual_entry_label">Eigene Mahlzeit eingeben</string>

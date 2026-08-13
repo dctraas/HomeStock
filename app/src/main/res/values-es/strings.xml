@@ -503,6 +503,8 @@
     <string name="meal_plan_title">Planificador de comidas</string>
     <string name="meal_plan_add_recipe">Receta</string>
     <string name="meal_plan_clear_cd">Quitar comida</string>
+    <string name="meal_plan_delete_cd">Eliminar</string>
+    <string name="meal_plan_removed_format">%1$s eliminado</string>
     <string name="meal_plan_picker_title_format">Añadir una comida para %1$s</string>
     <string name="meal_plan_picker_empty">No se encontraron sugerencias. Añade más productos a tu inventario.</string>
     <string name="meal_plan_manual_entry_label">Escribe tu propia comida</string>

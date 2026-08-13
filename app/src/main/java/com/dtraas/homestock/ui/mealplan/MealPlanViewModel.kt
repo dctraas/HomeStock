@@ -133,6 +133,13 @@ class MealPlanViewModel(
         viewModelScope.launch { mealPlanRepository.removeMeal(date, slot, meal) }
     }
 
+    /** Undo for [removeMeal] — re-adds the exact same [meal] (same id, thumbnail, recipe/product
+     *  link) rather than building a fresh one, so undoing genuinely restores what was removed. */
+    fun restoreMeal(slot: MealSlot, meal: PlannedMeal) {
+        val date = _uiState.value.date
+        viewModelScope.launch { mealPlanRepository.addMeal(date, slot, meal) }
+    }
+
     /** Opens the "Product toevoegen" dialog for [slot] — voorraad is fetched fresh every time,
      *  same reasoning as [openPicker]'s recipe suggestions: it may have changed since it was
      *  last opened. */

@@ -503,6 +503,8 @@
     <string name="meal_plan_title">Meal planner</string>
     <string name="meal_plan_add_recipe">Recipe</string>
     <string name="meal_plan_clear_cd">Remove meal</string>
+    <string name="meal_plan_delete_cd">Delete</string>
+    <string name="meal_plan_removed_format">%1$s removed</string>
     <string name="meal_plan_picker_title_format">Add a meal for %1$s</string>
     <string name="meal_plan_picker_empty">No suggestions found. Add more products to your inventory.</string>
     <string name="meal_plan_manual_entry_label">Type your own meal</string>

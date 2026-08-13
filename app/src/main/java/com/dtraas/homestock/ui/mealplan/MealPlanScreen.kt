@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Cookie
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DinnerDining
 import androidx.compose.material.icons.filled.FreeBreakfast
 import androidx.compose.material.icons.filled.Inventory2
@@ -42,14 +43,19 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -76,6 +82,7 @@ import com.dtraas.homestock.ui.theme.SoftImageShape
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 /**
  * Instellingen > Beta > Maaltijdplanner — a real, date-based plan (see
@@ -105,8 +112,11 @@ fun MealPlanScreen(onRecipeClick: (String) -> Unit, onProductClick: (String) -> 
     val uiState by viewModel.uiState.collectAsState()
     val locale: Locale = LocalConfiguration.current.locales[0]
     val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
     val addedFormat = stringResource(R.string.meal_plan_product_added_to_shopping_list_format)
     val alreadyOnListFormat = stringResource(R.string.meal_plan_product_already_on_shopping_list_format)
+    val removedFormat = stringResource(R.string.meal_plan_removed_format)
+    val undoLabel = stringResource(R.string.common_undo)
 
     // Tapping PlannedMealRow's "toevoegen aan boodschappenlijst" button otherwise gives no
     // feedback that anything happened — this confirms it, and says which of the two outcomes
@@ -115,6 +125,24 @@ fun MealPlanScreen(onRecipeClick: (String) -> Unit, onProductClick: (String) -> 
         viewModel.shoppingListAddResult.collect { result ->
             val message = if (result.alreadyOnList) alreadyOnListFormat.format(result.name) else addedFormat.format(result.name)
             snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Short)
+        }
+    }
+
+    // Shared by both the "X" button and the swipe-to-delete gesture on PlannedMealRow — same
+    // remove-then-offer-undo pattern as Boodschappenlijst's rows.
+    fun removeWithUndo(slot: MealSlot, meal: PlannedMeal) {
+        viewModel.removeMeal(slot, meal)
+        coroutineScope.launch {
+            // showSnackbar defaults to SnackbarDuration.Indefinite whenever an actionLabel is
+            // set, so without an explicit duration this would never auto-dismiss.
+            val result = snackbarHostState.showSnackbar(
+                message = removedFormat.format(meal.name),
+                actionLabel = undoLabel,
+                duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                viewModel.restoreMeal(slot, meal)
+            }
         }
     }
 
@@ -165,7 +193,7 @@ fun MealPlanScreen(onRecipeClick: (String) -> Unit, onProductClick: (String) -> 
                     onAddMealClick = { viewModel.openPicker(slot) },
                     onOpenRecipe = onRecipeClick,
                     onOpenProduct = onProductClick,
-                    onRemove = { meal -> viewModel.removeMeal(slot, meal) },
+                    onRemove = { meal -> removeWithUndo(slot, meal) },
                     onAddToShoppingList = { meal -> viewModel.addProductToShoppingList(meal.name) },
                 )
             }
@@ -344,65 +372,98 @@ private fun AddRow(label: String, onClick: () -> Unit, modifier: Modifier = Modi
  * Image and delete-icon sizing here deliberately match ShoppingListRow's (32dp rounded-rect
  * thumbnail, 32dp/18dp icon button) so an added meal reads as the same kind of list row as a
  * boodschappenlijst item, rather than the larger, looser spacing this used to have.
+ *
+ * Swipeable end-to-start (left, in LTR) to remove, same direction/trash-can treatment as
+ * Boodschappenlijst/Voorraad's rows — on top of, not instead of, the explicit "X" button above,
+ * since not everyone reaches for a swipe gesture first. `.clip(SoftImageShape)` sits on the
+ * [SwipeToDismissBox] itself rather than just the row inside it — the same fix Boodschappenlijst/
+ * Voorraad needed for their own swipe rows, since otherwise the errorContainer background can
+ * bleed past the row's rounded corners at rest.
  */
 @Composable
 private fun PlannedMealRow(meal: PlannedMeal, onClick: () -> Unit, onRemove: () -> Unit, onAddToShoppingList: () -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(SoftImageShape)
-            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            .clickable(enabled = meal.recipeId != null || meal.productBarcode != null, onClick = onClick)
-            .padding(start = 8.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        if (meal.thumbnailUrl != null) {
-            AsyncImage(
-                model = meal.thumbnailUrl,
-                contentDescription = null,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)),
-            )
-        } else {
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = MaterialTheme.colorScheme.tertiaryContainer,
-                modifier = Modifier.size(32.dp),
+    val dismissState = rememberSwipeToDismissBoxState(
+        confirmValueChange = { value ->
+            if (value == SwipeToDismissBoxValue.EndToStart) onRemove()
+            true
+        },
+    )
+    SwipeToDismissBox(
+        state = dismissState,
+        modifier = Modifier.fillMaxWidth().clip(SoftImageShape),
+        enableDismissFromStartToEnd = false,
+        backgroundContent = {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .padding(horizontal = 16.dp),
+                contentAlignment = Alignment.CenterEnd,
             ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Icon(
+                    imageVector = Icons.Filled.Delete,
+                    contentDescription = stringResource(R.string.meal_plan_delete_cd),
+                    tint = MaterialTheme.colorScheme.onErrorContainer,
+                )
+            }
+        },
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceContainerHighest)
+                .clickable(enabled = meal.recipeId != null || meal.productBarcode != null, onClick = onClick)
+                .padding(start = 8.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (meal.thumbnailUrl != null) {
+                AsyncImage(
+                    model = meal.thumbnailUrl,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)),
+                )
+            } else {
+                Surface(
+                    shape = RoundedCornerShape(8.dp),
+                    color = MaterialTheme.colorScheme.tertiaryContainer,
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Icon(
+                            imageVector = if (meal.isProduct) Icons.Filled.Inventory2 else Icons.Filled.Restaurant,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
+            }
+            Text(
+                text = meal.name,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f).padding(start = 10.dp),
+            )
+            if (meal.isProduct && meal.productBarcode == null) {
+                IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(32.dp)) {
                     Icon(
-                        imageVector = if (meal.isProduct) Icons.Filled.Inventory2 else Icons.Filled.Restaurant,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                        modifier = Modifier.size(16.dp),
+                        imageVector = Icons.Filled.PlaylistAdd,
+                        contentDescription = stringResource(R.string.product_detail_add_to_shopping_list),
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp),
                     )
                 }
             }
-        }
-        Text(
-            text = meal.name,
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).padding(start = 10.dp),
-        )
-        if (meal.isProduct && meal.productBarcode == null) {
-            IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(32.dp)) {
+            IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
                 Icon(
-                    imageVector = Icons.Filled.PlaylistAdd,
-                    contentDescription = stringResource(R.string.product_detail_add_to_shopping_list),
-                    tint = MaterialTheme.colorScheme.primary,
+                    imageVector = Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.meal_plan_clear_cd),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp),
                 )
             }
-        }
-        IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
-            Icon(
-                imageVector = Icons.Filled.Close,
-                contentDescription = stringResource(R.string.meal_plan_clear_cd),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(18.dp),
-            )
         }
     }
 }

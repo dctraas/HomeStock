@@ -504,6 +504,8 @@
     <string name="meal_plan_title">Maaltijdplanner</string>
     <string name="meal_plan_add_recipe">Recept</string>
     <string name="meal_plan_clear_cd">Maaltijd verwijderen</string>
+    <string name="meal_plan_delete_cd">Verwijderen</string>
+    <string name="meal_plan_removed_format">%1$s verwijderd</string>
     <string name="meal_plan_picker_title_format">Maaltijd toevoegen voor %1$s</string>
     <string name="meal_plan_picker_empty">Geen suggesties gevonden. Voeg meer producten toe aan je voorraad.</string>
     <string name="meal_plan_manual_entry_label">Zelf een maaltijd invoeren</string>
