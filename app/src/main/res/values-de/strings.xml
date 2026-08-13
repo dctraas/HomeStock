@@ -439,7 +439,6 @@
     <string name="recipes_error_quota_subtitle">Unsere Rezeptquelle hatte kurzzeitig zu viele Anfragen. Versuche es in ein paar Minuten erneut.</string>
     <string name="recipes_empty_title">Keine Rezepte gefunden</string>
     <string name="recipes_empty_subtitle">Versuche einen anderen Suchbegriff oder passe deine Allergenfilter an.</string>
-    <string name="recipes_beta_notice">Beta: Rezepte stammen aus einer externen Datenbank (Spoonacular). Der Zutatenabgleich ist ungefähr und kann manchmal ungenau sein.</string>
     <string name="recipes_search_placeholder">Rezepte nach Name suchen…</string>
     <string name="recipes_load_more">Mehr laden</string>
     <string name="recipes_match_count_format">%1$d Zutaten vorhanden</string>
@@ -516,6 +515,14 @@
     <string name="meal_plan_slot_snack">Snack</string>
     <string name="meal_plan_previous_day_cd">Vorheriger Tag</string>
     <string name="meal_plan_next_day_cd">Nächster Tag</string>
+    <string name="meal_plan_add_product">Produkt hinzufügen</string>
+    <string name="meal_plan_product_picker_title_format">Produkt hinzufügen für %1$s</string>
+    <string name="meal_plan_product_entry_label">Selbst einen Produktnamen eingeben</string>
+    <string name="meal_plan_product_entry_placeholder">Z. B. Milch</string>
+    <string name="meal_plan_product_suggestions_label">Oder aus deinem Vorrat wählen</string>
+    <string name="meal_plan_product_picker_empty">Keine passenden Produkte in deinem Vorrat gefunden. Gib einen Namen ein, um es trotzdem hinzuzufügen.</string>
+    <string name="meal_plan_product_not_in_stock_format">%1$s ist nicht in deinem Vorrat</string>
+    <string name="meal_plan_product_add_to_shopping_list_action">Zur Liste hinzufügen</string>
 
     <!-- Kassenbon scannen (Beta) -->
     <string name="receipt_scan_title">Kassenbon scannen</string>

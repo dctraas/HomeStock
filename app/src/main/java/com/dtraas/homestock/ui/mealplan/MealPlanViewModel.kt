@@ -2,36 +2,56 @@ package com.dtraas.homestock.ui.mealplan
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.local.entity.PlannedMeal
 import com.dtraas.homestock.data.model.MealSlot
+import com.dtraas.homestock.data.repository.InventoryRepository
 import com.dtraas.homestock.data.repository.MealPlanRepository
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
 import java.time.LocalDate
 import java.util.UUID
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class MealPlanUiState(
     val date: LocalDate = LocalDate.now(),
     val plan: Map<MealSlot, List<PlannedMeal>> = emptyMap(),
-    /** Non-null while the "add a meal for this slot" dialog is open — offers both a recipe picker and manual entry. */
+    /** Non-null while the "Maaltijd toevoegen" dialog is open — offers both a recipe picker and manual entry. */
     val pickerSlot: MealSlot? = null,
     val manualEntryText: String = "",
     val isPickerLoading: Boolean = false,
     val pickerSuggestions: List<RecipeSuggestion> = emptyList(),
+    /** Non-null while the "Product toevoegen" dialog is open — see [MealPlanViewModel.openProductPicker]. */
+    val productPickerSlot: MealSlot? = null,
+    val productEntryText: String = "",
+    val isProductPickerLoading: Boolean = false,
+    /** The household's current voorraad, fetched fresh each time the dialog opens — both what
+     *  the picker's live-filtered suggestion list narrows down and what [addManualProduct]
+     *  checks a typed name against. */
+    val inventoryItems: List<InventoryItemWithProduct> = emptyList(),
 )
 
 class MealPlanViewModel(
     private val mealPlanRepository: MealPlanRepository,
     private val recipeRepository: RecipeRepository,
+    private val inventoryRepository: InventoryRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(MealPlanUiState())
     val uiState: StateFlow<MealPlanUiState> = _uiState
+
+    /** Emits a product name just added via [addManualProduct] that wasn't found in voorraad —
+     *  the screen shows this as a snackbar with a "Toevoegen aan lijst" action, rather than
+     *  silently deciding on the household's behalf whether it belongs on the boodschappenlijst. */
+    private val _productNotInStock = MutableSharedFlow<String>()
+    val productNotInStock: SharedFlow<String> = _productNotInStock
 
     // Re-launched on every date change (see changeDate) rather than a single collect over a
     // flatMapLatest-on-date flow — the date lives in plain UI state, not its own StateFlow, so
@@ -108,5 +128,75 @@ class MealPlanViewModel(
     fun removeMeal(slot: MealSlot, meal: PlannedMeal) {
         val date = _uiState.value.date
         viewModelScope.launch { mealPlanRepository.removeMeal(date, slot, meal) }
+    }
+
+    /** Opens the "Product toevoegen" dialog for [slot] — voorraad is fetched fresh every time,
+     *  same reasoning as [openPicker]'s recipe suggestions: it may have changed since it was
+     *  last opened. */
+    fun openProductPicker(slot: MealSlot) {
+        _uiState.update {
+            it.copy(productPickerSlot = slot, productEntryText = "", isProductPickerLoading = true, inventoryItems = emptyList())
+        }
+        viewModelScope.launch {
+            val items = inventoryRepository.observeInventoryWithProduct().first()
+            _uiState.update { it.copy(isProductPickerLoading = false, inventoryItems = items) }
+        }
+    }
+
+    fun dismissProductPicker() {
+        _uiState.update {
+            it.copy(productPickerSlot = null, productEntryText = "", isProductPickerLoading = false, inventoryItems = emptyList())
+        }
+    }
+
+    fun onProductEntryTextChange(text: String) {
+        _uiState.update { it.copy(productEntryText = text) }
+    }
+
+    /** Adds [item] — already confirmed to exist in voorraad, since it came from [MealPlanUiState.inventoryItems] — as a planned product. */
+    fun pickProduct(item: InventoryItemWithProduct) {
+        val slot = _uiState.value.productPickerSlot ?: return
+        val date = _uiState.value.date
+        val meal = PlannedMeal(
+            id = UUID.randomUUID().toString(),
+            name = item.name,
+            thumbnailUrl = item.imageUrl,
+            productBarcode = item.barcode,
+        )
+        viewModelScope.launch { mealPlanRepository.addMeal(date, slot, meal) }
+        dismissProductPicker()
+    }
+
+    /**
+     * Adds the currently-typed [MealPlanUiState.productEntryText] as a planned product — a
+     * no-op if it's blank. Checked (case-insensitively) against [MealPlanUiState.inventoryItems]
+     * first: a name match is treated exactly like [pickProduct] (same barcode/thumbnail, so it's
+     * still recognized as "in voorraad" and opens the real product detail screen on tap); no
+     * match still adds it — plans shouldn't block on typos or products the household simply
+     * hasn't scanned in yet — but also emits [productNotInStock] so the screen can offer adding
+     * it to the boodschappenlijst instead of silently deciding that on the household's behalf.
+     */
+    fun addManualProduct() {
+        val slot = _uiState.value.productPickerSlot ?: return
+        val name = _uiState.value.productEntryText.trim()
+        if (name.isEmpty()) return
+        val match = _uiState.value.inventoryItems.firstOrNull { it.name.equals(name, ignoreCase = true) }
+        if (match != null) {
+            pickProduct(match)
+            return
+        }
+        val date = _uiState.value.date
+        val meal = PlannedMeal(id = UUID.randomUUID().toString(), name = name)
+        viewModelScope.launch {
+            mealPlanRepository.addMeal(date, slot, meal)
+            _productNotInStock.emit(name)
+        }
+        dismissProductPicker()
+    }
+
+    /** Explicit follow-up action from the [productNotInStock] snackbar — reuses the same
+     *  dedup-by-open-name logic as a recipe's "voeg ontbrekende toe aan lijst". */
+    fun addProductToShoppingList(name: String) {
+        viewModelScope.launch { recipeRepository.addIngredientsToShoppingList(listOf(name)) }
     }
 }

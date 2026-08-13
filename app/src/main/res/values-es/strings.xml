@@ -439,7 +439,6 @@
     <string name="recipes_error_quota_subtitle">Nuestra fuente de recetas ha recibido demasiadas solicitudes por un momento. Inténtalo de nuevo en unos minutos.</string>
     <string name="recipes_empty_title">No se encontraron recetas</string>
     <string name="recipes_empty_subtitle">Prueba otro término de búsqueda o ajusta tus filtros de alérgenos.</string>
-    <string name="recipes_beta_notice">Beta: las recetas provienen de una base de datos externa (Spoonacular). La coincidencia de ingredientes es aproximada y a veces puede ser inexacta.</string>
     <string name="recipes_search_placeholder">Buscar recetas por nombre…</string>
     <string name="recipes_load_more">Cargar más</string>
     <string name="recipes_match_count_format">%1$d ingredientes que tienes</string>
@@ -516,6 +515,14 @@
     <string name="meal_plan_slot_snack">Tentempié</string>
     <string name="meal_plan_previous_day_cd">Día anterior</string>
     <string name="meal_plan_next_day_cd">Día siguiente</string>
+    <string name="meal_plan_add_product">Añadir producto</string>
+    <string name="meal_plan_product_picker_title_format">Añadir producto para %1$s</string>
+    <string name="meal_plan_product_entry_label">Escribe un nombre de producto</string>
+    <string name="meal_plan_product_entry_placeholder">P. ej. Leche</string>
+    <string name="meal_plan_product_suggestions_label">O elige de tu inventario</string>
+    <string name="meal_plan_product_picker_empty">No se encontraron productos coincidentes en tu inventario. Escribe un nombre para añadirlo de todos modos.</string>
+    <string name="meal_plan_product_not_in_stock_format">%1$s no está en tu inventario</string>
+    <string name="meal_plan_product_add_to_shopping_list_action">Añadir a la lista</string>
 
     <!-- Escanear ticket (Beta) -->
     <string name="receipt_scan_title">Escanear ticket</string>

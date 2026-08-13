@@ -226,14 +226,6 @@ fun RecipesScreen(
                     )
                 }
                 else -> Column(modifier = Modifier.fillMaxSize()) {
-                    if (uiState.tab == RecipesTab.BROWSE) {
-                        Text(
-                            text = stringResource(R.string.recipes_beta_notice),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-                        )
-                    }
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),

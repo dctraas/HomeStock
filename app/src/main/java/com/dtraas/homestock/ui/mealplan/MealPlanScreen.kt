@@ -24,6 +24,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Cookie
 import androidx.compose.material.icons.filled.DinnerDining
 import androidx.compose.material.icons.filled.FreeBreakfast
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LunchDining
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.AlertDialog
@@ -37,10 +38,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -61,6 +66,7 @@ import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
+import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.local.entity.PlannedMeal
 import com.dtraas.homestock.data.model.MealSlot
 import com.dtraas.homestock.data.repository.RecipeSuggestion
@@ -73,24 +79,47 @@ import java.util.Locale
 /**
  * Instellingen > Beta > Maaltijdplanner — a real, date-based plan (see
  * [com.dtraas.homestock.data.repository.MealPlanRepository]): the top bar shows the selected
- * date with prev/next-day arrows, and each of the four [MealSlot]s can hold a recipe. Tapping a
- * planned recipe navigates to the existing recipe detail screen (see [onRecipeClick]), which
- * already shows matched/missing ingredients and an "add missing to shopping list" action — no
- * need to duplicate that here.
+ * date with prev/next-day arrows, and each of the four [MealSlot]s can hold a recipe, a plain
+ * voorraad product, or a hand-typed name. Tapping a planned recipe navigates to the existing
+ * recipe detail screen (see [onRecipeClick]), which already shows matched/missing ingredients
+ * and an "add missing to shopping list" action; tapping a planned product that matched voorraad
+ * navigates to that product's detail screen (see [onProductClick]) the same way — no need to
+ * duplicate either elsewhere.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MealPlanScreen(onRecipeClick: (String) -> Unit) {
+fun MealPlanScreen(onRecipeClick: (String) -> Unit, onProductClick: (String) -> Unit) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: MealPlanViewModel = viewModel(
         factory = viewModelFactory {
             initializer {
-                MealPlanViewModel(application.container.mealPlanRepository, application.container.recipeRepository)
+                MealPlanViewModel(
+                    application.container.mealPlanRepository,
+                    application.container.recipeRepository,
+                    application.container.inventoryRepository,
+                )
             }
         },
     )
     val uiState by viewModel.uiState.collectAsState()
     val locale: Locale = LocalConfiguration.current.locales[0]
+    val snackbarHostState = remember { SnackbarHostState() }
+    val notInStockMessageFormat = stringResource(R.string.meal_plan_product_not_in_stock_format)
+    val addToShoppingListLabel = stringResource(R.string.meal_plan_product_add_to_shopping_list_action)
+
+    // A product typed by hand in the "Product toevoegen" dialog that didn't match anything in
+    // voorraad — it's still added to the plan (see MealPlanViewModel.addManualProduct), this
+    // just offers the follow-up the household actually asked for instead of deciding on its
+    // behalf whether an unrecognized name belongs on the boodschappenlijst too.
+    LaunchedEffect(Unit) {
+        viewModel.productNotInStock.collect { name ->
+            val result = snackbarHostState.showSnackbar(
+                message = notInStockMessageFormat.format(name),
+                actionLabel = addToShoppingListLabel,
+            )
+            if (result == SnackbarResult.ActionPerformed) viewModel.addProductToShoppingList(name)
+        }
+    }
 
     val dateLabel = remember(uiState.date, locale) {
         val dayName = uiState.date.dayOfWeek.getDisplayName(TextStyle.FULL, locale).replaceFirstChar { it.titlecase(locale) }
@@ -120,6 +149,7 @@ fun MealPlanScreen(onRecipeClick: (String) -> Unit) {
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -134,8 +164,10 @@ fun MealPlanScreen(onRecipeClick: (String) -> Unit) {
                     slot = slot,
                     label = stringResource(slot.labelRes),
                     planned = uiState.plan[slot].orEmpty(),
-                    onAddClick = { viewModel.openPicker(slot) },
-                    onOpenClick = onRecipeClick,
+                    onAddProductClick = { viewModel.openProductPicker(slot) },
+                    onAddMealClick = { viewModel.openPicker(slot) },
+                    onOpenRecipe = onRecipeClick,
+                    onOpenProduct = onProductClick,
                     onRemove = { meal -> viewModel.removeMeal(slot, meal) },
                 )
             }
@@ -155,6 +187,20 @@ fun MealPlanScreen(onRecipeClick: (String) -> Unit) {
             onDismiss = viewModel::dismissPicker,
         )
     }
+
+    val productPickerSlot = uiState.productPickerSlot
+    if (productPickerSlot != null) {
+        ProductPickerDialog(
+            titleText = stringResource(R.string.meal_plan_product_picker_title_format, stringResource(productPickerSlot.labelRes)),
+            entryText = uiState.productEntryText,
+            onEntryTextChange = viewModel::onProductEntryTextChange,
+            onEntryAdd = viewModel::addManualProduct,
+            isLoading = uiState.isProductPickerLoading,
+            inventoryItems = uiState.inventoryItems,
+            onSelect = viewModel::pickProduct,
+            onDismiss = viewModel::dismissProductPicker,
+        )
+    }
 }
 
 /** Recognizable icon per meal slot, shown in the card header next to its label. */
@@ -168,21 +214,25 @@ private val MealSlot.icon: ImageVector
 
 /**
  * A slot can now hold zero, one, or several planned meals — a household may want more than
- * one dish lined up for e.g. avondeten — so this renders one row per [PlannedMeal] plus a
- * trailing "add" row that's always present, rather than a single card that's either "empty"
- * or "has one recipe". Only meals with a [PlannedMeal.recipeId] (picked from a suggestion,
- * not typed by hand) are clickable through to the recipe detail screen. Each meal gets its own
- * small background chip (see [PlannedMealRow]) rather than being separated by a thin divider —
- * that reads as one continuous, cramped list once a slot holds several meals; a stack of
- * clearly bounded rows scales much better to "two, three, four snacks" than a flat list does.
+ * one dish lined up for e.g. avondeten — so this renders one row per [PlannedMeal] plus two
+ * trailing "add" rows that are always present, rather than a single card that's either "empty"
+ * or "has one recipe". A planned meal is clickable through to the recipe detail screen if it
+ * has a [PlannedMeal.recipeId], or the product detail screen if it has a
+ * [PlannedMeal.productBarcode] — a hand-typed name with neither has nothing to navigate to.
+ * Each meal gets its own small background chip (see [PlannedMealRow]) rather than being
+ * separated by a thin divider — that reads as one continuous, cramped list once a slot holds
+ * several meals; a stack of clearly bounded rows scales much better to "two, three, four
+ * snacks" than a flat list does.
  */
 @Composable
 private fun SlotCard(
     slot: MealSlot,
     label: String,
     planned: List<PlannedMeal>,
-    onAddClick: () -> Unit,
-    onOpenClick: (String) -> Unit,
+    onAddProductClick: () -> Unit,
+    onAddMealClick: () -> Unit,
+    onOpenRecipe: (String) -> Unit,
+    onOpenProduct: (String) -> Unit,
     onRemove: (PlannedMeal) -> Unit,
 ) {
     Card(
@@ -210,44 +260,67 @@ private fun SlotCard(
                     planned.forEach { meal ->
                         PlannedMealRow(
                             meal = meal,
-                            onClick = { if (meal.recipeId != null) onOpenClick(meal.recipeId) },
+                            onClick = {
+                                when {
+                                    meal.recipeId != null -> onOpenRecipe(meal.recipeId)
+                                    meal.productBarcode != null -> onOpenProduct(meal.productBarcode)
+                                }
+                            },
                             onRemove = { onRemove(meal) },
                         )
                     }
                 }
             }
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(SoftImageShape)
-                    .clickable(onClick = onAddClick)
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.AddCircleOutline,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp),
-                )
-                Text(
-                    text = stringResource(R.string.meal_plan_empty_day),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 12.dp),
-                )
-            }
+            AddRow(
+                icon = Icons.Filled.Inventory2,
+                label = stringResource(R.string.meal_plan_add_product),
+                onClick = onAddProductClick,
+            )
+            AddRow(
+                icon = Icons.Filled.AddCircleOutline,
+                label = stringResource(R.string.meal_plan_empty_day),
+                onClick = onAddMealClick,
+            )
         }
     }
 }
 
+/** One of [SlotCard]'s two always-present "add" rows — see its doc for why there are two. */
+@Composable
+private fun AddRow(icon: ImageVector, label: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(SoftImageShape)
+            .clickable(onClick = onClick)
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(24.dp),
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 12.dp),
+        )
+    }
+}
+
 /**
- * A recipe pick always has [PlannedMeal.thumbnailUrl] (from the recipe database); a manually
- * typed meal never does. Rather than just skipping the image slot for those — which used to leave manual
- * entries looking bare and unfinished next to a recipe's photo, right when the user asked for
- * this to look nicer specifically for hand-typed meals — they get a colored fallback badge
- * with a fork-and-knife icon instead, the same "always a visual, real photo or otherwise"
- * treatment ProductImage gives products with no picture elsewhere in the app.
+ * A recipe pick or a matched voorraad product may have [PlannedMeal.thumbnailUrl] (from the
+ * recipe database or the product's own photo); a manually typed name never does. Rather than
+ * just skipping the image slot for those — which used to leave such entries looking bare and
+ * unfinished next to a recipe's photo, right when the user asked for this to look nicer
+ * specifically for hand-typed meals — they get a colored fallback badge instead, the same
+ * "always a visual, real photo or otherwise" treatment ProductImage gives products with no
+ * picture elsewhere in the app. The fallback icon itself tells the two non-recipe kinds apart:
+ * a shopping-basket icon for a planned product ([PlannedMeal.productBarcode] set), fork-and-knife
+ * for a plain hand-typed name (neither set).
  *
  * Sits on its own subtly-tinted background (rather than plain text on the card, separated only
  * by a divider) so each meal reads as one clearly bounded item — this is what keeps a slot with
@@ -263,7 +336,7 @@ private fun PlannedMealRow(meal: PlannedMeal, onClick: () -> Unit, onRemove: () 
             .fillMaxWidth()
             .clip(SoftImageShape)
             .background(MaterialTheme.colorScheme.surfaceContainerHighest)
-            .clickable(enabled = meal.recipeId != null, onClick = onClick)
+            .clickable(enabled = meal.recipeId != null || meal.productBarcode != null, onClick = onClick)
             .padding(start = 8.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -282,7 +355,7 @@ private fun PlannedMealRow(meal: PlannedMeal, onClick: () -> Unit, onRemove: () 
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
-                        imageVector = Icons.Filled.Restaurant,
+                        imageVector = if (meal.productBarcode != null) Icons.Filled.Inventory2 else Icons.Filled.Restaurant,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onTertiaryContainer,
                         modifier = Modifier.size(16.dp),
@@ -405,6 +478,136 @@ private fun PickerRow(suggestion: RecipeSuggestion, onClick: () -> Unit) {
         }
         Text(
             text = suggestion.meal.name,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f).padding(start = 12.dp),
+        )
+    }
+}
+
+/**
+ * Offers both ways to add a product to a slot: typing a name (checked against voorraad on
+ * submit — see [MealPlanViewModel.addManualProduct]), or picking one straight from the list
+ * below, which is [inventoryItems] filtered live by whatever's typed so far — typing "melk"
+ * narrows to matching voorraad items as a live preview of whether that exact product exists,
+ * before even tapping "Toevoegen".
+ */
+@Composable
+private fun ProductPickerDialog(
+    titleText: String,
+    entryText: String,
+    onEntryTextChange: (String) -> Unit,
+    onEntryAdd: () -> Unit,
+    isLoading: Boolean,
+    inventoryItems: List<InventoryItemWithProduct>,
+    onSelect: (InventoryItemWithProduct) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val matches = remember(entryText, inventoryItems) {
+        val query = entryText.trim()
+        if (query.isEmpty()) inventoryItems else inventoryItems.filter { it.name.contains(query, ignoreCase = true) }
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(titleText) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.meal_plan_product_entry_label),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OutlinedTextField(
+                        value = entryText,
+                        onValueChange = onEntryTextChange,
+                        placeholder = { Text(stringResource(R.string.meal_plan_product_entry_placeholder)) },
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    TextButton(
+                        onClick = onEntryAdd,
+                        enabled = entryText.isNotBlank(),
+                        modifier = Modifier.padding(start = 8.dp),
+                    ) {
+                        Text(stringResource(R.string.meal_plan_manual_entry_add))
+                    }
+                }
+
+                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+                Text(
+                    text = stringResource(R.string.meal_plan_product_suggestions_label),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
+                when {
+                    isLoading -> Box(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        CircularProgressIndicator()
+                    }
+                    matches.isEmpty() -> Text(
+                        text = stringResource(R.string.meal_plan_product_picker_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    else -> LazyColumn(
+                        modifier = Modifier.heightIn(max = 300.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        items(matches, key = { it.barcode }) { item ->
+                            ProductPickerRow(item = item, onClick = { onSelect(item) })
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+        },
+    )
+}
+
+@Composable
+private fun ProductPickerRow(item: InventoryItemWithProduct, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        if (item.imageUrl != null) {
+            AsyncImage(
+                model = item.imageUrl,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.size(40.dp).clip(SoftImageShape),
+            )
+        } else {
+            Surface(
+                shape = RoundedCornerShape(8.dp),
+                color = MaterialTheme.colorScheme.tertiaryContainer,
+                modifier = Modifier.size(40.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = Icons.Filled.Inventory2,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
+        }
+        Text(
+            text = item.name,
             style = MaterialTheme.typography.bodyMedium,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,

@@ -439,7 +439,6 @@
     <string name="recipes_error_quota_subtitle">Our recipe source has had too many requests for a bit. Try again in a few minutes.</string>
     <string name="recipes_empty_title">No recipes found</string>
     <string name="recipes_empty_subtitle">Try a different search term or adjust your allergen filters.</string>
-    <string name="recipes_beta_notice">Beta: recipes come from an external database (Spoonacular). Ingredient matching is approximate and may sometimes be inaccurate.</string>
     <string name="recipes_search_placeholder">Search recipes by name…</string>
     <string name="recipes_load_more">Load more</string>
     <string name="recipes_match_count_format">%1$d ingredients you have</string>
@@ -516,6 +515,14 @@
     <string name="meal_plan_slot_snack">Snack</string>
     <string name="meal_plan_previous_day_cd">Previous day</string>
     <string name="meal_plan_next_day_cd">Next day</string>
+    <string name="meal_plan_add_product">Add product</string>
+    <string name="meal_plan_product_picker_title_format">Add product for %1$s</string>
+    <string name="meal_plan_product_entry_label">Type a product name</string>
+    <string name="meal_plan_product_entry_placeholder">E.g. Milk</string>
+    <string name="meal_plan_product_suggestions_label">Or choose from your inventory</string>
+    <string name="meal_plan_product_picker_empty">No matching products in your inventory. Type a name to add it anyway.</string>
+    <string name="meal_plan_product_not_in_stock_format">%1$s isn\'t in your inventory</string>
+    <string name="meal_plan_product_add_to_shopping_list_action">Add to list</string>
 
     <!-- Scan receipt (Beta) -->
     <string name="receipt_scan_title">Scan receipt</string>
