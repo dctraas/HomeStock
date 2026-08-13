@@ -284,6 +284,7 @@ private fun AddRow(label: String, onClick: () -> Unit, modifier: Modifier = Modi
             .clip(SoftImageShape)
             .clickable(onClick = onClick)
             .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
