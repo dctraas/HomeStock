@@ -521,6 +521,8 @@
     <string name="meal_plan_product_entry_placeholder">E.g. Milk</string>
     <string name="meal_plan_product_suggestions_label">Or choose from your inventory</string>
     <string name="meal_plan_product_picker_empty">No matching products in your inventory. Type a name to add it anyway.</string>
+    <string name="meal_plan_product_added_to_shopping_list_format">%1$s has been added to your shopping list</string>
+    <string name="meal_plan_product_already_on_shopping_list_format">%1$s is already on your shopping list</string>
 
     <!-- Scan receipt (Beta) -->
     <string name="receipt_scan_title">Scan receipt</string>

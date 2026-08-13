@@ -39,10 +39,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -100,6 +104,19 @@ fun MealPlanScreen(onRecipeClick: (String) -> Unit, onProductClick: (String) -> 
     )
     val uiState by viewModel.uiState.collectAsState()
     val locale: Locale = LocalConfiguration.current.locales[0]
+    val snackbarHostState = remember { SnackbarHostState() }
+    val addedFormat = stringResource(R.string.meal_plan_product_added_to_shopping_list_format)
+    val alreadyOnListFormat = stringResource(R.string.meal_plan_product_already_on_shopping_list_format)
+
+    // Tapping PlannedMealRow's "toevoegen aan boodschappenlijst" button otherwise gives no
+    // feedback that anything happened — this confirms it, and says which of the two outcomes
+    // (freshly added, or already there from an earlier tap/another source) it actually was.
+    LaunchedEffect(Unit) {
+        viewModel.shoppingListAddResult.collect { result ->
+            val message = if (result.alreadyOnList) alreadyOnListFormat.format(result.name) else addedFormat.format(result.name)
+            snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Short)
+        }
+    }
 
     val dateLabel = remember(uiState.date, locale) {
         val dayName = uiState.date.dayOfWeek.getDisplayName(TextStyle.FULL, locale).replaceFirstChar { it.titlecase(locale) }
@@ -129,6 +146,7 @@ fun MealPlanScreen(onRecipeClick: (String) -> Unit, onProductClick: (String) -> 
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(
             modifier = Modifier

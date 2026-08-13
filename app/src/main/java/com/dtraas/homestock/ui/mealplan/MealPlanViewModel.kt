@@ -12,11 +12,16 @@ import com.dtraas.homestock.data.repository.RecipeSuggestion
 import java.time.LocalDate
 import java.util.UUID
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+/** Result of [MealPlanViewModel.addProductToShoppingList], for the screen's confirmation popup — [alreadyOnList] is true when [RecipeRepository.addIngredientsToShoppingList] skipped it as a dedup (an already-open line by that name), not a failure. */
+data class ShoppingListAddResult(val name: String, val alreadyOnList: Boolean)
 
 data class MealPlanUiState(
     val date: LocalDate = LocalDate.now(),
@@ -44,6 +49,12 @@ class MealPlanViewModel(
 
     private val _uiState = MutableStateFlow(MealPlanUiState())
     val uiState: StateFlow<MealPlanUiState> = _uiState
+
+    /** Emitted by [addProductToShoppingList] once the add actually completes — the screen shows
+     *  this as a confirmation popup, since tapping that button gives no other feedback that it
+     *  worked. */
+    private val _shoppingListAddResult = MutableSharedFlow<ShoppingListAddResult>()
+    val shoppingListAddResult: SharedFlow<ShoppingListAddResult> = _shoppingListAddResult
 
     // Re-launched on every date change (see changeDate) rather than a single collect over a
     // flatMapLatest-on-date flow — the date lives in plain UI state, not its own StateFlow, so
@@ -189,8 +200,13 @@ class MealPlanViewModel(
      *  shown for a planned product not matched to voorraad, but available at any point after
      *  it's added (not just right away), so this can't rely on picker state the way the rest of
      *  this ViewModel's actions do; [name] comes straight from the row's own [PlannedMeal].
-     *  Reuses the same dedup-by-open-name logic as a recipe's "voeg ontbrekende toe aan lijst". */
+     *  Reuses the same dedup-by-open-name logic as a recipe's "voeg ontbrekende toe aan lijst",
+     *  and reports which of the two happened via [shoppingListAddResult] — tapping the button
+     *  otherwise gives no feedback that anything happened. */
     fun addProductToShoppingList(name: String) {
-        viewModelScope.launch { recipeRepository.addIngredientsToShoppingList(listOf(name)) }
+        viewModelScope.launch {
+            val addedCount = recipeRepository.addIngredientsToShoppingList(listOf(name))
+            _shoppingListAddResult.emit(ShoppingListAddResult(name, alreadyOnList = addedCount == 0))
+        }
     }
 }

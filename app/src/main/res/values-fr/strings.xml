@@ -521,6 +521,8 @@
     <string name="meal_plan_product_entry_placeholder">Ex. Lait</string>
     <string name="meal_plan_product_suggestions_label">Ou choisir dans votre stock</string>
     <string name="meal_plan_product_picker_empty">Aucun produit correspondant dans votre stock. Saisissez un nom pour l\'ajouter quand même.</string>
+    <string name="meal_plan_product_added_to_shopping_list_format">%1$s a été ajouté à votre liste de courses</string>
+    <string name="meal_plan_product_already_on_shopping_list_format">%1$s est déjà dans votre liste de courses</string>
 
     <!-- Scanner un ticket (Bêta) -->
     <string name="receipt_scan_title">Scanner un ticket</string>

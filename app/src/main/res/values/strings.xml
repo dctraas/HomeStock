@@ -522,6 +522,8 @@
     <string name="meal_plan_product_entry_placeholder">Bijv. Melk</string>
     <string name="meal_plan_product_suggestions_label">Of kies uit je voorraad</string>
     <string name="meal_plan_product_picker_empty">Geen producten gevonden in je voorraad. Typ een naam om het toch toe te voegen.</string>
+    <string name="meal_plan_product_added_to_shopping_list_format">%1$s is toegevoegd aan je boodschappenlijst</string>
+    <string name="meal_plan_product_already_on_shopping_list_format">%1$s staat al op je boodschappenlijst</string>
 
     <!-- Bonnetje scannen (Beta) -->
     <string name="receipt_scan_title">Bonnetje scannen</string>

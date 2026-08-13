@@ -521,6 +521,8 @@
     <string name="meal_plan_product_entry_placeholder">P. ej. Leche</string>
     <string name="meal_plan_product_suggestions_label">O elige de tu inventario</string>
     <string name="meal_plan_product_picker_empty">No se encontraron productos coincidentes en tu inventario. Escribe un nombre para añadirlo de todos modos.</string>
+    <string name="meal_plan_product_added_to_shopping_list_format">%1$s se ha añadido a tu lista de la compra</string>
+    <string name="meal_plan_product_already_on_shopping_list_format">%1$s ya está en tu lista de la compra</string>
 
     <!-- Escanear ticket (Beta) -->
     <string name="receipt_scan_title">Escanear ticket</string>

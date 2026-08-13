@@ -521,6 +521,8 @@
     <string name="meal_plan_product_entry_placeholder">Z. B. Milch</string>
     <string name="meal_plan_product_suggestions_label">Oder aus deinem Vorrat wählen</string>
     <string name="meal_plan_product_picker_empty">Keine passenden Produkte in deinem Vorrat gefunden. Gib einen Namen ein, um es trotzdem hinzuzufügen.</string>
+    <string name="meal_plan_product_added_to_shopping_list_format">%1$s wurde zur Einkaufsliste hinzugefügt</string>
+    <string name="meal_plan_product_already_on_shopping_list_format">%1$s steht bereits auf deiner Einkaufsliste</string>
 
     <!-- Kassenbon scannen (Beta) -->
     <string name="receipt_scan_title">Kassenbon scannen</string>
