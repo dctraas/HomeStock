@@ -222,7 +222,10 @@ private fun SlotCard(
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            // Extra bottom padding on top of the Column's own 8dp spacedBy gap — just this one
+            // gap, between the slot title (Ontbijt/Lunch/...) and whatever follows it, reads
+            // tighter than the rest of the card's spacing otherwise.
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp)) {
                 Icon(
                     imageVector = slot.icon,
                     contentDescription = null,
@@ -255,13 +258,11 @@ private fun SlotCard(
             }
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 AddRow(
-                    icon = Icons.Filled.Inventory2,
                     label = stringResource(R.string.meal_plan_add_product),
                     onClick = onAddProductClick,
                     modifier = Modifier.weight(1f),
                 )
                 AddRow(
-                    icon = Icons.Filled.AddCircleOutline,
                     label = stringResource(R.string.meal_plan_add_recipe),
                     onClick = onAddMealClick,
                     modifier = Modifier.weight(1f),
@@ -271,9 +272,13 @@ private fun SlotCard(
     }
 }
 
-/** One of [SlotCard]'s two always-present "add" buttons, side by side — see its doc for why there are two. */
+/**
+ * One of [SlotCard]'s two always-present "add" buttons, side by side — see its doc for why
+ * there are two. Both share the same plain "+" icon — the label text ("Product" vs. "Recept")
+ * is what tells them apart, not the icon.
+ */
 @Composable
-private fun AddRow(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun AddRow(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .clip(SoftImageShape)
@@ -282,7 +287,7 @@ private fun AddRow(icon: ImageVector, label: String, onClick: () -> Unit, modifi
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
-            imageVector = icon,
+            imageVector = Icons.Filled.AddCircleOutline,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.primary,
             modifier = Modifier.size(24.dp),

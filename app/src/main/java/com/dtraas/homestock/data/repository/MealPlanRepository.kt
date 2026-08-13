@@ -53,10 +53,23 @@ class MealPlanRepository(
         dayDoc(householdId, date).set(mapOf(slot.storageKey to FieldValue.arrayUnion(meal.toMap())), SetOptions.merge()).await()
     }
 
-    /** Removes exactly [meal] from [slot]'s list — arrayRemove matches by exact map equality, so the caller must pass back the same entry it read. */
+    /**
+     * Removes [meal] from [slot]'s list, matched by [PlannedMeal.id] rather than
+     * `FieldValue.arrayRemove` — arrayRemove only matches by exact map equality, which broke for
+     * any entry stored before a field was later added to [PlannedMeal] (its round-tripped
+     * `toMap()` then carries a key the original stored map never had, so they'd never compare
+     * equal and the removal silently did nothing). Reading, filtering, and writing back inside a
+     * transaction keeps this atomic against a concurrent [addMeal] on the same day/slot, the way
+     * arrayRemove was.
+     */
     suspend fun removeMeal(date: LocalDate, slot: MealSlot, meal: PlannedMeal) {
         val householdId = householdSession.householdId.value ?: return
-        dayDoc(householdId, date).set(mapOf(slot.storageKey to FieldValue.arrayRemove(meal.toMap())), SetOptions.merge()).await()
+        val doc = dayDoc(householdId, date)
+        firestore.runTransaction { transaction ->
+            val current = (transaction.get(doc).get(slot.storageKey) as? List<*>).orEmpty()
+            val updated = current.filterNot { (it as? Map<*, *>)?.get("id") == meal.id }
+            transaction.set(doc, mapOf(slot.storageKey to updated), SetOptions.merge())
+        }.await()
     }
 
     private companion object {
