@@ -502,7 +502,7 @@
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Maaltijdplanner</string>
-    <string name="meal_plan_empty_day">Maaltijd toevoegen</string>
+    <string name="meal_plan_add_recipe">Recept</string>
     <string name="meal_plan_clear_cd">Maaltijd verwijderen</string>
     <string name="meal_plan_picker_title_format">Maaltijd toevoegen voor %1$s</string>
     <string name="meal_plan_picker_empty">Geen suggesties gevonden. Voeg meer producten toe aan je voorraad.</string>
@@ -516,14 +516,12 @@
     <string name="meal_plan_slot_snack">Tussendoor</string>
     <string name="meal_plan_previous_day_cd">Vorige dag</string>
     <string name="meal_plan_next_day_cd">Volgende dag</string>
-    <string name="meal_plan_add_product">Product toevoegen</string>
+    <string name="meal_plan_add_product">Product</string>
     <string name="meal_plan_product_picker_title_format">Product toevoegen voor %1$s</string>
     <string name="meal_plan_product_entry_label">Zelf een product invoeren</string>
     <string name="meal_plan_product_entry_placeholder">Bijv. Melk</string>
     <string name="meal_plan_product_suggestions_label">Of kies uit je voorraad</string>
     <string name="meal_plan_product_picker_empty">Geen producten gevonden in je voorraad. Typ een naam om het toch toe te voegen.</string>
-    <string name="meal_plan_product_not_in_stock_format">%1$s staat niet in je voorraad</string>
-    <string name="meal_plan_product_add_to_shopping_list_action">Toevoegen aan lijst</string>
 
     <!-- Bonnetje scannen (Beta) -->
     <string name="receipt_scan_title">Bonnetje scannen</string>

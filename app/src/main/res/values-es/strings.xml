@@ -501,7 +501,7 @@
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Planificador de comidas</string>
-    <string name="meal_plan_empty_day">Añadir una comida</string>
+    <string name="meal_plan_add_recipe">Receta</string>
     <string name="meal_plan_clear_cd">Quitar comida</string>
     <string name="meal_plan_picker_title_format">Añadir una comida para %1$s</string>
     <string name="meal_plan_picker_empty">No se encontraron sugerencias. Añade más productos a tu inventario.</string>
@@ -515,14 +515,12 @@
     <string name="meal_plan_slot_snack">Tentempié</string>
     <string name="meal_plan_previous_day_cd">Día anterior</string>
     <string name="meal_plan_next_day_cd">Día siguiente</string>
-    <string name="meal_plan_add_product">Añadir producto</string>
+    <string name="meal_plan_add_product">Producto</string>
     <string name="meal_plan_product_picker_title_format">Añadir producto para %1$s</string>
     <string name="meal_plan_product_entry_label">Escribe un nombre de producto</string>
     <string name="meal_plan_product_entry_placeholder">P. ej. Leche</string>
     <string name="meal_plan_product_suggestions_label">O elige de tu inventario</string>
     <string name="meal_plan_product_picker_empty">No se encontraron productos coincidentes en tu inventario. Escribe un nombre para añadirlo de todos modos.</string>
-    <string name="meal_plan_product_not_in_stock_format">%1$s no está en tu inventario</string>
-    <string name="meal_plan_product_add_to_shopping_list_action">Añadir a la lista</string>
 
     <!-- Escanear ticket (Beta) -->
     <string name="receipt_scan_title">Escanear ticket</string>

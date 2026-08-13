@@ -12,9 +12,7 @@ import com.dtraas.homestock.data.repository.RecipeSuggestion
 import java.time.LocalDate
 import java.util.UUID
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
@@ -46,12 +44,6 @@ class MealPlanViewModel(
 
     private val _uiState = MutableStateFlow(MealPlanUiState())
     val uiState: StateFlow<MealPlanUiState> = _uiState
-
-    /** Emits a product name just added via [addManualProduct] that wasn't found in voorraad —
-     *  the screen shows this as a snackbar with a "Toevoegen aan lijst" action, rather than
-     *  silently deciding on the household's behalf whether it belongs on the boodschappenlijst. */
-    private val _productNotInStock = MutableSharedFlow<String>()
-    val productNotInStock: SharedFlow<String> = _productNotInStock
 
     // Re-launched on every date change (see changeDate) rather than a single collect over a
     // flatMapLatest-on-date flow — the date lives in plain UI state, not its own StateFlow, so
@@ -162,6 +154,7 @@ class MealPlanViewModel(
             name = item.name,
             thumbnailUrl = item.imageUrl,
             productBarcode = item.barcode,
+            isProduct = true,
         )
         viewModelScope.launch { mealPlanRepository.addMeal(date, slot, meal) }
         dismissProductPicker()
@@ -173,8 +166,9 @@ class MealPlanViewModel(
      * first: a name match is treated exactly like [pickProduct] (same barcode/thumbnail, so it's
      * still recognized as "in voorraad" and opens the real product detail screen on tap); no
      * match still adds it — plans shouldn't block on typos or products the household simply
-     * hasn't scanned in yet — but also emits [productNotInStock] so the screen can offer adding
-     * it to the boodschappenlijst instead of silently deciding that on the household's behalf.
+     * hasn't scanned in yet — but without [PlannedMeal.productBarcode], so the row shows a
+     * "toevoegen aan boodschappenlijst" button instead (see [addProductToShoppingList]) rather
+     * than silently deciding on the household's behalf whether it belongs there.
      */
     fun addManualProduct() {
         val slot = _uiState.value.productPickerSlot ?: return
@@ -186,16 +180,16 @@ class MealPlanViewModel(
             return
         }
         val date = _uiState.value.date
-        val meal = PlannedMeal(id = UUID.randomUUID().toString(), name = name)
-        viewModelScope.launch {
-            mealPlanRepository.addMeal(date, slot, meal)
-            _productNotInStock.emit(name)
-        }
+        val meal = PlannedMeal(id = UUID.randomUUID().toString(), name = name, isProduct = true)
+        viewModelScope.launch { mealPlanRepository.addMeal(date, slot, meal) }
         dismissProductPicker()
     }
 
-    /** Explicit follow-up action from the [productNotInStock] snackbar — reuses the same
-     *  dedup-by-open-name logic as a recipe's "voeg ontbrekende toe aan lijst". */
+    /** Called from [PlannedMealRow]'s persistent "toevoegen aan boodschappenlijst" button — only
+     *  shown for a planned product not matched to voorraad, but available at any point after
+     *  it's added (not just right away), so this can't rely on picker state the way the rest of
+     *  this ViewModel's actions do; [name] comes straight from the row's own [PlannedMeal].
+     *  Reuses the same dedup-by-open-name logic as a recipe's "voeg ontbrekende toe aan lijst". */
     fun addProductToShoppingList(name: String) {
         viewModelScope.launch { recipeRepository.addIngredientsToShoppingList(listOf(name)) }
     }

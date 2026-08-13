@@ -501,7 +501,7 @@
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Essensplaner</string>
-    <string name="meal_plan_empty_day">Mahlzeit hinzufügen</string>
+    <string name="meal_plan_add_recipe">Rezept</string>
     <string name="meal_plan_clear_cd">Mahlzeit entfernen</string>
     <string name="meal_plan_picker_title_format">Mahlzeit hinzufügen für %1$s</string>
     <string name="meal_plan_picker_empty">Keine Vorschläge gefunden. Füge mehr Produkte zu deinem Vorrat hinzu.</string>
@@ -515,14 +515,12 @@
     <string name="meal_plan_slot_snack">Snack</string>
     <string name="meal_plan_previous_day_cd">Vorheriger Tag</string>
     <string name="meal_plan_next_day_cd">Nächster Tag</string>
-    <string name="meal_plan_add_product">Produkt hinzufügen</string>
+    <string name="meal_plan_add_product">Produkt</string>
     <string name="meal_plan_product_picker_title_format">Produkt hinzufügen für %1$s</string>
     <string name="meal_plan_product_entry_label">Selbst einen Produktnamen eingeben</string>
     <string name="meal_plan_product_entry_placeholder">Z. B. Milch</string>
     <string name="meal_plan_product_suggestions_label">Oder aus deinem Vorrat wählen</string>
     <string name="meal_plan_product_picker_empty">Keine passenden Produkte in deinem Vorrat gefunden. Gib einen Namen ein, um es trotzdem hinzuzufügen.</string>
-    <string name="meal_plan_product_not_in_stock_format">%1$s ist nicht in deinem Vorrat</string>
-    <string name="meal_plan_product_add_to_shopping_list_action">Zur Liste hinzufügen</string>
 
     <!-- Kassenbon scannen (Beta) -->
     <string name="receipt_scan_title">Kassenbon scannen</string>

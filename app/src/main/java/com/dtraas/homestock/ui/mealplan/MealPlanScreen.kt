@@ -26,6 +26,7 @@ import androidx.compose.material.icons.filled.DinnerDining
 import androidx.compose.material.icons.filled.FreeBreakfast
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LunchDining
+import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -38,14 +39,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -103,23 +100,6 @@ fun MealPlanScreen(onRecipeClick: (String) -> Unit, onProductClick: (String) -> 
     )
     val uiState by viewModel.uiState.collectAsState()
     val locale: Locale = LocalConfiguration.current.locales[0]
-    val snackbarHostState = remember { SnackbarHostState() }
-    val notInStockMessageFormat = stringResource(R.string.meal_plan_product_not_in_stock_format)
-    val addToShoppingListLabel = stringResource(R.string.meal_plan_product_add_to_shopping_list_action)
-
-    // A product typed by hand in the "Product toevoegen" dialog that didn't match anything in
-    // voorraad — it's still added to the plan (see MealPlanViewModel.addManualProduct), this
-    // just offers the follow-up the household actually asked for instead of deciding on its
-    // behalf whether an unrecognized name belongs on the boodschappenlijst too.
-    LaunchedEffect(Unit) {
-        viewModel.productNotInStock.collect { name ->
-            val result = snackbarHostState.showSnackbar(
-                message = notInStockMessageFormat.format(name),
-                actionLabel = addToShoppingListLabel,
-            )
-            if (result == SnackbarResult.ActionPerformed) viewModel.addProductToShoppingList(name)
-        }
-    }
 
     val dateLabel = remember(uiState.date, locale) {
         val dayName = uiState.date.dayOfWeek.getDisplayName(TextStyle.FULL, locale).replaceFirstChar { it.titlecase(locale) }
@@ -149,7 +129,6 @@ fun MealPlanScreen(onRecipeClick: (String) -> Unit, onProductClick: (String) -> 
                 },
             )
         },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(
             modifier = Modifier
@@ -169,6 +148,7 @@ fun MealPlanScreen(onRecipeClick: (String) -> Unit, onProductClick: (String) -> 
                     onOpenRecipe = onRecipeClick,
                     onOpenProduct = onProductClick,
                     onRemove = { meal -> viewModel.removeMeal(slot, meal) },
+                    onAddToShoppingList = { meal -> viewModel.addProductToShoppingList(meal.name) },
                 )
             }
         }
@@ -215,9 +195,9 @@ private val MealSlot.icon: ImageVector
 /**
  * A slot can now hold zero, one, or several planned meals — a household may want more than
  * one dish lined up for e.g. avondeten — so this renders one row per [PlannedMeal] plus two
- * trailing "add" rows that are always present, rather than a single card that's either "empty"
- * or "has one recipe". A planned meal is clickable through to the recipe detail screen if it
- * has a [PlannedMeal.recipeId], or the product detail screen if it has a
+ * "add" buttons side by side that are always present, rather than a single card that's either
+ * "empty" or "has one recipe". A planned meal is clickable through to the recipe detail screen
+ * if it has a [PlannedMeal.recipeId], or the product detail screen if it has a
  * [PlannedMeal.productBarcode] — a hand-typed name with neither has nothing to navigate to.
  * Each meal gets its own small background chip (see [PlannedMealRow]) rather than being
  * separated by a thin divider — that reads as one continuous, cramped list once a slot holds
@@ -234,6 +214,7 @@ private fun SlotCard(
     onOpenRecipe: (String) -> Unit,
     onOpenProduct: (String) -> Unit,
     onRemove: (PlannedMeal) -> Unit,
+    onAddToShoppingList: (PlannedMeal) -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -267,30 +248,34 @@ private fun SlotCard(
                                 }
                             },
                             onRemove = { onRemove(meal) },
+                            onAddToShoppingList = { onAddToShoppingList(meal) },
                         )
                     }
                 }
             }
-            AddRow(
-                icon = Icons.Filled.Inventory2,
-                label = stringResource(R.string.meal_plan_add_product),
-                onClick = onAddProductClick,
-            )
-            AddRow(
-                icon = Icons.Filled.AddCircleOutline,
-                label = stringResource(R.string.meal_plan_empty_day),
-                onClick = onAddMealClick,
-            )
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                AddRow(
+                    icon = Icons.Filled.Inventory2,
+                    label = stringResource(R.string.meal_plan_add_product),
+                    onClick = onAddProductClick,
+                    modifier = Modifier.weight(1f),
+                )
+                AddRow(
+                    icon = Icons.Filled.AddCircleOutline,
+                    label = stringResource(R.string.meal_plan_add_recipe),
+                    onClick = onAddMealClick,
+                    modifier = Modifier.weight(1f),
+                )
+            }
         }
     }
 }
 
-/** One of [SlotCard]'s two always-present "add" rows — see its doc for why there are two. */
+/** One of [SlotCard]'s two always-present "add" buttons, side by side — see its doc for why there are two. */
 @Composable
-private fun AddRow(icon: ImageVector, label: String, onClick: () -> Unit) {
+private fun AddRow(icon: ImageVector, label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = modifier
             .clip(SoftImageShape)
             .clickable(onClick = onClick)
             .padding(vertical = 4.dp),
@@ -319,8 +304,15 @@ private fun AddRow(icon: ImageVector, label: String, onClick: () -> Unit) {
  * specifically for hand-typed meals — they get a colored fallback badge instead, the same
  * "always a visual, real photo or otherwise" treatment ProductImage gives products with no
  * picture elsewhere in the app. The fallback icon itself tells the two non-recipe kinds apart:
- * a shopping-basket icon for a planned product ([PlannedMeal.productBarcode] set), fork-and-knife
- * for a plain hand-typed name (neither set).
+ * a shopping-basket icon for any planned product ([PlannedMeal.isProduct] true, whether or not
+ * it matched voorraad), fork-and-knife for a plain hand-typed "Recept" name.
+ *
+ * A product that didn't match voorraad ([PlannedMeal.isProduct] true, [PlannedMeal.productBarcode]
+ * null) gets a persistent "toevoegen aan boodschappenlijst" button next to the remove button —
+ * available any time, not just right after adding, since the household might only decide it's
+ * needed later. Every other kind of entry has nothing to buy, so the button is left out rather
+ * than disabled — a recipe/product already in voorraad, or a plain dish name, was never a
+ * "missing" thing to shop for in the first place.
  *
  * Sits on its own subtly-tinted background (rather than plain text on the card, separated only
  * by a divider) so each meal reads as one clearly bounded item — this is what keeps a slot with
@@ -330,7 +322,7 @@ private fun AddRow(icon: ImageVector, label: String, onClick: () -> Unit) {
  * boodschappenlijst item, rather than the larger, looser spacing this used to have.
  */
 @Composable
-private fun PlannedMealRow(meal: PlannedMeal, onClick: () -> Unit, onRemove: () -> Unit) {
+private fun PlannedMealRow(meal: PlannedMeal, onClick: () -> Unit, onRemove: () -> Unit, onAddToShoppingList: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -355,7 +347,7 @@ private fun PlannedMealRow(meal: PlannedMeal, onClick: () -> Unit, onRemove: () 
             ) {
                 Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                     Icon(
-                        imageVector = if (meal.productBarcode != null) Icons.Filled.Inventory2 else Icons.Filled.Restaurant,
+                        imageVector = if (meal.isProduct) Icons.Filled.Inventory2 else Icons.Filled.Restaurant,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onTertiaryContainer,
                         modifier = Modifier.size(16.dp),
@@ -370,6 +362,16 @@ private fun PlannedMealRow(meal: PlannedMeal, onClick: () -> Unit, onRemove: () 
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f).padding(start = 10.dp),
         )
+        if (meal.isProduct && meal.productBarcode == null) {
+            IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    imageVector = Icons.Filled.PlaylistAdd,
+                    contentDescription = stringResource(R.string.product_detail_add_to_shopping_list),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
+        }
         IconButton(onClick = onRemove, modifier = Modifier.size(32.dp)) {
             Icon(
                 imageVector = Icons.Filled.Close,
