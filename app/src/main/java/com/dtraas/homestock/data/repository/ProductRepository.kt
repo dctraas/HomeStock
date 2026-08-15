@@ -1,5 +1,6 @@
 package com.dtraas.homestock.data.repository
 
+import android.net.Uri
 import com.dtraas.homestock.data.local.entity.NutritionInfo
 import com.dtraas.homestock.data.local.entity.ProductEntity
 import com.dtraas.homestock.data.model.Allergen
@@ -10,6 +11,7 @@ import com.dtraas.homestock.data.remote.OpenFoodFactsApi
 import com.dtraas.homestock.data.remote.dto.OffProduct
 import com.dtraas.homestock.data.remote.observeSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.storage.FirebaseStorage
 import java.io.IOException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -23,11 +25,15 @@ import retrofit2.HttpException
 @OptIn(ExperimentalCoroutinesApi::class)
 class ProductRepository(
     private val firestore: FirebaseFirestore,
+    private val storage: FirebaseStorage,
     private val householdSession: HouseholdSession,
     private val api: OpenFoodFactsApi,
 ) {
     private fun productsCollection(householdId: String) =
         firestore.collection("households").document(householdId).collection("products")
+
+    private fun customPhotoRef(householdId: String, barcode: String) =
+        storage.reference.child("households/$householdId/products/$barcode/photo.jpg")
 
     // Open Food Facts' own data for a barcode is identical no matter which household scans it,
     // so it's cached once here (top-level, shared across every household — see firestore.rules)
@@ -230,6 +236,27 @@ class ProductRepository(
     suspend fun updateUnit(barcode: String, unit: String?) {
         val householdId = householdSession.householdId.value ?: return
         productsCollection(householdId).document(barcode).update("unit", unit).await()
+    }
+
+    /**
+     * Uploads a household-picked photo for [barcode] to Firebase Storage and points the
+     * product's `imageUrl` at it, overwriting whatever image was there before (an Open Food
+     * Facts photo, an earlier custom upload, or nothing). A Premium feature — gated in the UI
+     * (see ProductDetailScreen), not here, same pattern as every other premium gate in the app.
+     */
+    suspend fun uploadCustomPhoto(barcode: String, uri: Uri) {
+        val householdId = householdSession.householdId.value ?: return
+        val downloadUrl = customPhotoRef(householdId, barcode).putFile(uri).await().storage.downloadUrl.await().toString()
+        productsCollection(householdId).document(barcode).update("imageUrl", downloadUrl).await()
+    }
+
+    /** Removes a custom photo uploaded via [uploadCustomPhoto], clearing `imageUrl` back to
+     *  empty — there's no original Open Food Facts photo to fall back to since the upload
+     *  overwrote it; [retryLookup] re-fetches one from OFF if the product still has a match. */
+    suspend fun removeCustomPhoto(barcode: String) {
+        val householdId = householdSession.householdId.value ?: return
+        runCatching { customPhotoRef(householdId, barcode).delete().await() }
+        productsCollection(householdId).document(barcode).update("imageUrl", null).await()
     }
 
     /**

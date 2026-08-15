@@ -324,11 +324,9 @@ fun MoreScreen(
             )
             PremiumPromoCard(isPremium = isPremium, onClick = onNavigateToPremium)
 
-            // Huishouden, Winkels, Statistieken and Data overzetten all concern the shared
-            // household rather than this device's own account or app preferences, so they get
-            // their own section between Account and App-instellingen. Gegevens used to be a
-            // section of its own for just the one Data overzetten row — folding it in here
-            // means it no longer needs a header at all.
+            // Huishouden, Winkels and Statistieken all concern the shared household rather
+            // than this device's own account or app preferences, so they get their own section
+            // between Account and App-instellingen.
             SectionHeader(stringResource(R.string.more_section_household))
             SettingsRow(
                 icon = Icons.Filled.Home,
@@ -355,12 +353,6 @@ fun MoreScreen(
                 trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                 onClick = { if (isPremium) onNavigateToStatistics() else onNavigateToPremium() },
             )
-            SettingsRow(
-                icon = Icons.Filled.ImportExport,
-                title = stringResource(R.string.more_data_csv_title),
-                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
-                onClick = { if (isPremium) showImportExportDialog = true else onNavigateToPremium() },
-            )
 
             SectionHeader(stringResource(R.string.more_section_preferences))
             SettingsRow(
@@ -380,6 +372,12 @@ fun MoreScreen(
                 title = stringResource(R.string.more_theme_title),
                 subtitle = stringResource(themeMode.labelRes()),
                 onClick = { showThemeDialog = true },
+            )
+            SettingsRow(
+                icon = Icons.Filled.ImportExport,
+                title = stringResource(R.string.more_data_csv_title),
+                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                onClick = { if (isPremium) showImportExportDialog = true else onNavigateToPremium() },
             )
 
             SectionHeader(stringResource(R.string.more_section_about))

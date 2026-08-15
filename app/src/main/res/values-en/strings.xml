@@ -294,6 +294,10 @@
     <string name="product_detail_retry_lookup_failure">Lookup failed. Please try again later.</string>
     <string name="product_detail_delete_dialog_title">Delete product?</string>
     <string name="product_detail_delete_dialog_text">Are you sure you want to remove this product from your inventory?</string>
+    <string name="product_detail_edit_photo_cd">Set custom photo</string>
+    <string name="product_detail_edit_photo_title">Custom photo</string>
+    <string name="product_detail_choose_photo_action">Choose photo</string>
+    <string name="product_detail_remove_photo_action">Remove photo</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_nutriscore_unavailable">Nutri-Score not available</string>
     <string name="product_detail_ingredients_title">Ingredients</string>
@@ -576,7 +580,10 @@
     <string name="premium_active_subtitle">Thank you! All Premium features are open for your whole household.</string>
     <string name="premium_benefit_recipes">Recipe suggestions based on your inventory</string>
     <string name="premium_benefit_receipt_scan">Scan receipts and add products automatically</string>
+    <string name="premium_benefit_ai_recognition">AI product recognition (photo instead of barcode)</string>
     <string name="premium_benefit_statistics">Extended statistics</string>
+    <string name="premium_benefit_csv">Import and export your inventory as CSV</string>
+    <string name="premium_benefit_custom_photo">Add your own photos to products</string>
     <string name="premium_benefit_household">More than 2 members in one household</string>
     <string name="premium_price_loading">Loading price…</string>
     <string name="premium_price_per_year_format">%1$s per year</string>

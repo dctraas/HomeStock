@@ -294,6 +294,10 @@
     <string name="product_detail_retry_lookup_failure">Error al buscar. Inténtalo de nuevo más tarde.</string>
     <string name="product_detail_delete_dialog_title">¿Eliminar producto?</string>
     <string name="product_detail_delete_dialog_text">¿Seguro que quieres eliminar este producto de tu inventario?</string>
+    <string name="product_detail_edit_photo_cd">Establecer foto personalizada</string>
+    <string name="product_detail_edit_photo_title">Foto personalizada</string>
+    <string name="product_detail_choose_photo_action">Elegir foto</string>
+    <string name="product_detail_remove_photo_action">Quitar foto</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_nutriscore_unavailable">Nutri-Score no disponible</string>
     <string name="product_detail_ingredients_title">Ingredientes</string>
@@ -576,7 +580,10 @@
     <string name="premium_active_subtitle">¡Gracias! Todas las funciones Premium están disponibles para todo tu hogar.</string>
     <string name="premium_benefit_recipes">Sugerencias de recetas según tu inventario</string>
     <string name="premium_benefit_receipt_scan">Escanea tickets y añade productos automáticamente</string>
+    <string name="premium_benefit_ai_recognition">Reconocimiento de productos con IA (foto en vez de código de barras)</string>
     <string name="premium_benefit_statistics">Estadísticas ampliadas</string>
+    <string name="premium_benefit_csv">Importa y exporta tu inventario como CSV</string>
+    <string name="premium_benefit_custom_photo">Añade tus propias fotos a los productos</string>
     <string name="premium_benefit_household">Más de 2 miembros en un mismo hogar</string>
     <string name="premium_price_loading">Cargando precio…</string>
     <string name="premium_price_per_year_format">%1$s al año</string>

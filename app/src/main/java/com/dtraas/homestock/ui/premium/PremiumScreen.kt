@@ -124,7 +124,10 @@ fun PremiumScreen(onBack: () -> Unit) {
                 Column(modifier = Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     PremiumBenefitRow(stringResource(R.string.premium_benefit_recipes))
                     PremiumBenefitRow(stringResource(R.string.premium_benefit_receipt_scan))
+                    PremiumBenefitRow(stringResource(R.string.premium_benefit_ai_recognition))
                     PremiumBenefitRow(stringResource(R.string.premium_benefit_statistics))
+                    PremiumBenefitRow(stringResource(R.string.premium_benefit_csv))
+                    PremiumBenefitRow(stringResource(R.string.premium_benefit_custom_photo))
                     PremiumBenefitRow(stringResource(R.string.premium_benefit_household))
                 }
             }

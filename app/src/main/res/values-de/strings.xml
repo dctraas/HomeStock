@@ -294,6 +294,10 @@
     <string name="product_detail_retry_lookup_failure">Suche fehlgeschlagen. Versuche es später erneut.</string>
     <string name="product_detail_delete_dialog_title">Produkt löschen?</string>
     <string name="product_detail_delete_dialog_text">Möchtest du dieses Produkt wirklich aus deinem Vorrat entfernen?</string>
+    <string name="product_detail_edit_photo_cd">Eigenes Foto festlegen</string>
+    <string name="product_detail_edit_photo_title">Eigenes Foto</string>
+    <string name="product_detail_choose_photo_action">Foto auswählen</string>
+    <string name="product_detail_remove_photo_action">Foto entfernen</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_nutriscore_unavailable">Nutri-Score nicht verfügbar</string>
     <string name="product_detail_ingredients_title">Zutaten</string>
@@ -576,7 +580,10 @@
     <string name="premium_active_subtitle">Danke! Alle Premium-Funktionen sind für deinen ganzen Haushalt freigeschaltet.</string>
     <string name="premium_benefit_recipes">Rezeptvorschläge auf Basis deines Vorrats</string>
     <string name="premium_benefit_receipt_scan">Kassenbons scannen und Produkte automatisch hinzufügen</string>
+    <string name="premium_benefit_ai_recognition">Produkterkennung mit KI (Foto statt Barcode)</string>
     <string name="premium_benefit_statistics">Erweiterte Statistiken</string>
+    <string name="premium_benefit_csv">Vorrat als CSV importieren und exportieren</string>
+    <string name="premium_benefit_custom_photo">Eigene Fotos zu Produkten hinzufügen</string>
     <string name="premium_benefit_household">Mehr als 2 Mitglieder in einem Haushalt</string>
     <string name="premium_price_loading">Preis wird geladen…</string>
     <string name="premium_price_per_year_format">%1$s pro Jahr</string>

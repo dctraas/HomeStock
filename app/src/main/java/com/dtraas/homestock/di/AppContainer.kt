@@ -146,7 +146,7 @@ class AppContainer(context: Context) {
         .create(OpenFoodFactsApi::class.java)
 
     val productRepository: ProductRepository by lazy {
-        ProductRepository(firestore, householdSession, api)
+        ProductRepository(firestore, storage, householdSession, api)
     }
 
     val activityLogRepository: ActivityLogRepository by lazy {

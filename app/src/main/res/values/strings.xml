@@ -295,6 +295,10 @@
     <string name="product_detail_retry_lookup_failure">Opzoeken mislukt. Probeer het later opnieuw.</string>
     <string name="product_detail_delete_dialog_title">Product verwijderen?</string>
     <string name="product_detail_delete_dialog_text">Weet je zeker dat je dit product uit je voorraad wilt verwijderen?</string>
+    <string name="product_detail_edit_photo_cd">Eigen foto instellen</string>
+    <string name="product_detail_edit_photo_title">Eigen foto</string>
+    <string name="product_detail_choose_photo_action">Foto kiezen</string>
+    <string name="product_detail_remove_photo_action">Foto verwijderen</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_nutriscore_unavailable">Nutri-Score niet beschikbaar</string>
     <string name="product_detail_ingredients_title">Ingrediënten</string>
@@ -577,7 +581,10 @@
     <string name="premium_active_subtitle">Bedankt! Alle Premium-functies staan open voor je hele huishouden.</string>
     <string name="premium_benefit_recipes">Receptsuggesties op basis van je voorraad</string>
     <string name="premium_benefit_receipt_scan">Bonnetje scannen en automatisch producten toevoegen</string>
+    <string name="premium_benefit_ai_recognition">Productherkenning met AI (foto i.p.v. barcode)</string>
     <string name="premium_benefit_statistics">Uitgebreide statistieken</string>
+    <string name="premium_benefit_csv">Voorraad importeren en exporteren als CSV</string>
+    <string name="premium_benefit_custom_photo">Eigen foto\'s toevoegen aan producten</string>
     <string name="premium_benefit_household">Meer dan 2 huisgenoten in één huishouden</string>
     <string name="premium_price_loading">Prijs laden…</string>
     <string name="premium_price_per_year_format">%1$s per jaar</string>

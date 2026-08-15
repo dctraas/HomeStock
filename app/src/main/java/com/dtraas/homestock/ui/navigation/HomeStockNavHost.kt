@@ -198,6 +198,7 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                 ProductDetailScreen(
                     barcode = barcode,
                     onBack = { navController.popBackStack() },
+                    onNavigateToPremium = { navController.navigate(Destination.Premium.route) },
                 )
             }
             composable(Destination.SearchProduct.route) {

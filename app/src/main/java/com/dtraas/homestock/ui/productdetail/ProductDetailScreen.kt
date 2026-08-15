@@ -1,5 +1,9 @@
 package com.dtraas.homestock.ui.productdetail
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -26,10 +30,12 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -105,6 +111,7 @@ import kotlin.math.roundToInt
 fun ProductDetailScreen(
     barcode: String,
     onBack: () -> Unit,
+    onNavigateToPremium: () -> Unit = {},
 ) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: ProductDetailViewModel = viewModel(
@@ -122,12 +129,22 @@ fun ProductDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     val isRetryingLookup by viewModel.isRetryingLookup.collectAsState()
     val stillInInventory = uiState.quantityInInventory != null
+    // Custom product photos (see below) are a Premium feature, same gating pattern as
+    // Statistieken/Recepten/etc — checked here rather than in the repository, since a photo
+    // upload is a plain Firestore/Storage write with no server-side enforcement point.
+    val isPremium by application.container.householdMembersRepository
+        .observeHouseholdIsPremium()
+        .collectAsState(initial = false)
 
     val snackbarHostState = remember { SnackbarHostState() }
     val restockedFormat = stringResource(R.string.inventory_restocked_snackbar_format)
     val retryLookupSuccessMessage = stringResource(R.string.product_detail_retry_lookup_success)
     val retryLookupFailureMessage = stringResource(R.string.product_detail_retry_lookup_failure)
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    var showPhotoDialog by remember { mutableStateOf(false) }
+    val pickPhoto = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia(),
+    ) { uri: Uri? -> uri?.let(viewModel::uploadCustomPhoto) }
 
     // Collapsed by default — the plus icon on each header expands it. Product details also
     // starts collapsed; the edit button in the top app bar (see below) expands it and scrolls
@@ -227,6 +244,8 @@ fun ProductDetailScreen(
                 showFavorite = stillInInventory,
                 isFavorite = uiState.isFavorite,
                 onToggleFavorite = viewModel::toggleFavorite,
+                showEditPhoto = product != null,
+                onEditPhotoClick = { if (isPremium) showPhotoDialog = true else onNavigateToPremium() },
             )
             Text(
                 text = product?.name ?: stringResource(R.string.product_detail_default_title),
@@ -463,7 +482,71 @@ fun ProductDetailScreen(
                 },
             )
         }
+
+        if (showPhotoDialog) {
+            PhotoDialog(
+                hasCustomPhoto = product?.imageUrl != null,
+                onPickPhoto = {
+                    showPhotoDialog = false
+                    pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+                },
+                onRemovePhoto = {
+                    showPhotoDialog = false
+                    viewModel.removeCustomPhoto()
+                },
+                onDismiss = { showPhotoDialog = false },
+            )
+        }
     }
+}
+
+/** Choice dialog opened by [ProductHero]'s camera badge — mirrors MoreScreen's
+ *  Importeren/Exporteren dialog shape (two labeled, icon-led rows) for a consistent
+ *  "tap an icon, get a small menu of actions" pattern across the app. */
+@Composable
+private fun PhotoDialog(
+    hasCustomPhoto: Boolean,
+    onPickPhoto: () -> Unit,
+    onRemovePhoto: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.product_detail_edit_photo_title)) },
+        text = {
+            Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onPickPhoto)
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Filled.Upload, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    Text(stringResource(R.string.product_detail_choose_photo_action), modifier = Modifier.padding(start = 12.dp))
+                }
+                if (hasCustomPhoto) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = onRemovePhoto)
+                            .padding(vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Filled.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                        Text(
+                            text = stringResource(R.string.product_detail_remove_photo_action),
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(start = 12.dp),
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+        },
+    )
 }
 
 /**
@@ -531,6 +614,8 @@ private fun ProductHero(
     showFavorite: Boolean,
     isFavorite: Boolean,
     onToggleFavorite: () -> Unit,
+    showEditPhoto: Boolean,
+    onEditPhotoClick: () -> Unit,
 ) {
     val imageUrl = product?.imageUrl
     Box(modifier = Modifier.size(160.dp)) {
@@ -576,6 +661,27 @@ private fun ProductHero(
                             if (isFavorite) R.string.inventory_unmark_favorite_cd else R.string.inventory_mark_favorite_cd,
                         ),
                         tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+        }
+        // Custom photo upload (Premium) — bottom-end, opposite the favorite badge, so both
+        // read as distinct "overlay actions" on the hero image rather than crowding one corner.
+        if (showEditPhoto) {
+            Surface(
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(6.dp)
+                    .size(32.dp),
+            ) {
+                IconButton(onClick = onEditPhotoClick, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = Icons.Filled.PhotoCamera,
+                        contentDescription = stringResource(R.string.product_detail_edit_photo_cd),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.size(18.dp),
                     )
                 }
@@ -933,11 +1039,10 @@ private fun ExpirationStatusRow(expirationDate: Long?) {
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(stringResource(R.string.product_detail_status_label), style = MaterialTheme.typography.bodyLarge)
-        // Same min-width, left-aligned box as ExpirationRow's value below it — "Niet ingesteld"
-        // and "Instellen" are both short strings, so without this a right-flush Text would
-        // start at a different x per row (the shorter word starting further right), reading as
-        // misaligned even though both ends are flush with the card's edge.
-        Box(modifier = Modifier.widthIn(min = statusValueMinWidth), contentAlignment = Alignment.CenterStart) {
+        // Right-aligned, flush with the card's edge — same as every other row's value in this
+        // section. The shared min-width with ExpirationRow's value box below just keeps this
+        // column from visibly jumping width as its content changes (e.g. clearing a date).
+        Box(modifier = Modifier.widthIn(min = statusValueMinWidth), contentAlignment = Alignment.CenterEnd) {
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
@@ -947,9 +1052,9 @@ private fun ExpirationStatusRow(expirationDate: Long?) {
     }
 }
 
-/** Shared min-width for [ExpirationStatusRow]'s and [ExpirationRow]'s value slot, so "Niet
- *  ingesteld" and "Instellen" — the two rows' respective "nothing set yet" values — start at
- *  the same x instead of each hugging flush right at their own length. */
+/** Shared min-width for [ExpirationStatusRow]'s and [ExpirationRow]'s value slot, so the
+ *  column doesn't visibly resize when its content changes between "Niet ingesteld"/"Instellen"
+ *  and an actual formatted date. Both are right-aligned within it, flush with the card's edge. */
 private val statusValueMinWidth = 130.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -964,7 +1069,7 @@ private fun ExpirationRow(expirationDate: Long?, onDateChange: (Long?) -> Unit) 
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
         Text(stringResource(R.string.product_detail_expiration_label), style = MaterialTheme.typography.bodyLarge)
-        Box(modifier = Modifier.widthIn(min = statusValueMinWidth), contentAlignment = Alignment.CenterStart) {
+        Box(modifier = Modifier.widthIn(min = statusValueMinWidth), contentAlignment = Alignment.CenterEnd) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     text = expirationDate?.let { formatExpirationDate(it) }

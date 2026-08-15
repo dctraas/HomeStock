@@ -1,5 +1,6 @@
 package com.dtraas.homestock.ui.productdetail
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.homestock.data.local.entity.ProductEntity
@@ -106,6 +107,16 @@ class ProductDetailViewModel(
 
     fun updateUnit(unit: String?) {
         viewModelScope.launch { productRepository.updateUnit(barcode, unit) }
+    }
+
+    /** Premium feature — the caller (ProductDetailScreen) checks isPremium before ever letting
+     *  the picker that produces [uri] be launched, so this itself doesn't re-check. */
+    fun uploadCustomPhoto(uri: Uri) {
+        viewModelScope.launch { productRepository.uploadCustomPhoto(barcode, uri) }
+    }
+
+    fun removeCustomPhoto() {
+        viewModelScope.launch { productRepository.removeCustomPhoto(barcode) }
     }
 
     fun toggleFavorite() {
