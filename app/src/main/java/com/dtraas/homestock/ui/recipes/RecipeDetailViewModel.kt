@@ -17,6 +17,11 @@ data class RecipeDetailUiState(
     val hasError: Boolean = false,
     val addedToShoppingList: Boolean = false,
     val isFavorite: Boolean = false,
+    // Portion scaling — how many people the shown ingredient amounts should feed right now.
+    // Starts at the recipe's own [RecipeDetail.servings] once loaded; null (rather than some
+    // default like 4) whenever the recipe has no serving count at all, so RecipeDetailScreen
+    // knows to hide the stepper entirely instead of scaling against a made-up baseline.
+    val targetServings: Int? = null,
 )
 
 class RecipeDetailViewModel(
@@ -46,12 +51,27 @@ class RecipeDetailViewModel(
             recipeRepository.getRecipeDetail(mealId, languageTag)
                 .onSuccess { detail ->
                     val matched = recipeRepository.matchedIngredients(detail)
-                    _uiState.update { it.copy(isLoading = false, detail = detail, matchedIngredients = matched, hasError = false) }
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            detail = detail,
+                            matchedIngredients = matched,
+                            hasError = false,
+                            targetServings = detail.servings,
+                        )
+                    }
                 }
                 .onFailure {
                     _uiState.update { it.copy(isLoading = false, hasError = true) }
                 }
         }
+    }
+
+    /** Adjusts the ingredient list's scaling target — never below 1 (a 0- or negative-serving
+     *  recipe makes no sense) and only meaningful while [RecipeDetailUiState.detail] actually
+     *  has a serving count, which is what gates the stepper being shown at all. */
+    fun setTargetServings(servings: Int) {
+        _uiState.update { it.copy(targetServings = servings.coerceAtLeast(1)) }
     }
 
     fun addMissingIngredientsToShoppingList() {

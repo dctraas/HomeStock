@@ -177,14 +177,26 @@ private fun CustomRecipeForm(padding: PaddingValues, uiState: CustomRecipeEditUi
                 modifier = Modifier.weight(1f),
             )
         }
-        OutlinedTextField(
-            value = uiState.readyInMinutes,
-            onValueChange = viewModel::onReadyInMinutesChange,
-            label = { Text(stringResource(R.string.custom_recipe_ready_minutes_label)) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-        )
+        Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp)) {
+            OutlinedTextField(
+                value = uiState.readyInMinutes,
+                onValueChange = viewModel::onReadyInMinutesChange,
+                label = { Text(stringResource(R.string.custom_recipe_ready_minutes_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                modifier = Modifier.weight(1f).padding(end = 8.dp),
+            )
+            OutlinedTextField(
+                value = uiState.servings,
+                onValueChange = viewModel::onServingsChange,
+                label = { Text(stringResource(R.string.custom_recipe_servings_label)) },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                // Optional, unlike name/ingredients — a recipe without a serving count is still
+                // fully usable, it just won't offer RecipeDetailScreen's portion-scaling stepper.
+                modifier = Modifier.weight(1f),
+            )
+        }
 
         Text(
             text = stringResource(R.string.custom_recipe_ingredients_title),

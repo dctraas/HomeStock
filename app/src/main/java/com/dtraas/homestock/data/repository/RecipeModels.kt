@@ -34,6 +34,11 @@ data class RecipeDetail(
     val area: String?,
     val instructions: String?,
     val ingredients: List<Pair<String, String>>,
+    // How many people [ingredients]' quantities as written feed — lets RecipeDetailScreen offer
+    // portion scaling (see scaleMeasure there). Null for older cached entries from before this
+    // field existed, and for any source that doesn't have a reliable serving count; the scaling
+    // UI simply doesn't show in that case rather than guessing.
+    val servings: Int? = null,
     val readyInMinutes: Int? = null,
     // Per serving (Spoonacular's own recipe-level nutrition, divided by its serving count) —
     // not per 100g like a product's NutritionInfo, since a whole recipe has no fixed weight.

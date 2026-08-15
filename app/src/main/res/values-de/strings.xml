@@ -410,6 +410,10 @@
     <string name="notification_channel_description">Benachrichtigungen, wenn Produkte in deinem Vorrat bald ablaufen</string>
     <string name="notification_expiry_title">Läuft bald ab</string>
     <string name="notification_expiry_body_multiple_format">%1$d Produkte laufen bald ab</string>
+    <string name="notification_expiry_group_expired">Abgelaufen</string>
+    <string name="notification_expiry_group_today">Heute</string>
+    <string name="notification_expiry_group_tomorrow">Morgen</string>
+    <string name="notification_expiry_group_days_format">In %1$d Tagen</string>
 
     <!-- Statistiken -->
     <string name="statistics_title">Statistiken</string>
@@ -463,6 +467,7 @@
     <string name="recipes_area_match_cd">Passt zu deiner Sprache/Region</string>
     <string name="recipes_detail_error">Dieses Rezept konnte nicht geladen werden. Bitte versuche es erneut.</string>
     <string name="recipes_ingredients_title">Zutaten</string>
+    <string name="recipes_servings_label">Portionen</string>
     <string name="recipes_nutrition_per_serving">pro Portion</string>
     <string name="recipes_ingredient_in_inventory_cd">Bereits vorrätig</string>
     <string name="recipes_added_to_shopping_list">Fehlende Zutaten zu deiner Einkaufsliste hinzugefügt</string>
@@ -501,6 +506,7 @@
     <string name="custom_recipe_area_label">Küche</string>
     <string name="custom_recipe_area_placeholder">Z. B. Italienisch</string>
     <string name="custom_recipe_ready_minutes_label">Zubereitungszeit in Minuten</string>
+    <string name="custom_recipe_servings_label">Anzahl Portionen</string>
     <string name="custom_recipe_ingredients_title">Zutaten</string>
     <string name="custom_recipe_ingredient_name_placeholder">Zutat</string>
     <string name="custom_recipe_ingredient_measure_placeholder">Menge</string>

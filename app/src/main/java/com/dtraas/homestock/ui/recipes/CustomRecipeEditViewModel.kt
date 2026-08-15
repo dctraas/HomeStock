@@ -21,6 +21,7 @@ data class CustomRecipeEditUiState(
     val category: String = "",
     val area: String = "",
     val readyInMinutes: String = "",
+    val servings: String = "",
     val instructions: String = "",
     val ingredients: List<CustomIngredientInput> = listOf(CustomIngredientInput()),
     val showValidationError: Boolean = false,
@@ -64,6 +65,7 @@ class CustomRecipeEditViewModel(
                             category = detail.category.orEmpty(),
                             area = detail.area.orEmpty(),
                             readyInMinutes = detail.readyInMinutes?.toString().orEmpty(),
+                            servings = detail.servings?.toString().orEmpty(),
                             instructions = detail.instructions.orEmpty(),
                             ingredients = detail.ingredients
                                 .map { (name, measure) -> CustomIngredientInput(name = name, measure = measure) }
@@ -82,6 +84,9 @@ class CustomRecipeEditViewModel(
         // Digits only — this feeds a plain text field (no numeric keyboard guarantee), so it's
         // the simplest way to keep it always parseable as an Int on save.
         if (value.all { it.isDigit() }) _uiState.update { it.copy(readyInMinutes = value) }
+    }
+    fun onServingsChange(value: String) {
+        if (value.all { it.isDigit() }) _uiState.update { it.copy(servings = value) }
     }
     fun onInstructionsChange(value: String) = _uiState.update { it.copy(instructions = value) }
 
@@ -120,6 +125,7 @@ class CustomRecipeEditViewModel(
                 category = state.category.takeIf { it.isNotBlank() },
                 area = state.area.takeIf { it.isNotBlank() },
                 readyInMinutes = state.readyInMinutes.toIntOrNull(),
+                servings = state.servings.toIntOrNull(),
                 instructions = state.instructions.takeIf { it.isNotBlank() },
                 ingredients = ingredients,
             )

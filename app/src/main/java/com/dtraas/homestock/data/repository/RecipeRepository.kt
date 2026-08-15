@@ -291,6 +291,7 @@ class RecipeRepository(
         category: String?,
         area: String?,
         readyInMinutes: Int?,
+        servings: Int?,
         instructions: String?,
         ingredients: List<Pair<String, String>>,
     ): Result<RecipeDetail> {
@@ -307,6 +308,7 @@ class RecipeRepository(
             instructions = instructions?.trim()?.takeIf { it.isNotEmpty() },
             ingredients = ingredients,
             readyInMinutes = readyInMinutes,
+            servings = servings,
             isCustom = true,
         )
         return try {
@@ -629,6 +631,7 @@ class RecipeRepository(
             area = map["area"] as? String,
             instructions = map["instructions"] as? String,
             ingredients = ingredients,
+            servings = (map["servings"] as? Number)?.toInt(),
             readyInMinutes = (map["readyInMinutes"] as? Number)?.toInt(),
             calories = (map["calories"] as? Number)?.toDouble(),
             protein = (map["protein"] as? Number)?.toDouble(),
@@ -664,6 +667,7 @@ class RecipeRepository(
             area = data["area"] as? String,
             instructions = data["instructions"] as? String,
             ingredients = ingredients,
+            servings = (data["servings"] as? Number)?.toInt(),
             readyInMinutes = (data["readyInMinutes"] as? Number)?.toInt(),
             calories = (data["calories"] as? Number)?.toDouble(),
             protein = (data["protein"] as? Number)?.toDouble(),
@@ -682,6 +686,7 @@ class RecipeRepository(
         "area" to detail.area,
         "instructions" to detail.instructions,
         "ingredients" to detail.ingredients.map { (name, measure) -> mapOf("name" to name, "measure" to measure) },
+        "servings" to detail.servings,
         "readyInMinutes" to detail.readyInMinutes,
         "calories" to detail.calories,
         "protein" to detail.protein,
@@ -712,6 +717,7 @@ class RecipeRepository(
             area = (map["cuisine"] as? String)?.trim()?.takeIf { it.isNotEmpty() },
             instructions = instructions,
             ingredients = ingredients,
+            servings = (map["servings"] as? Number)?.toInt(),
             readyInMinutes = (map["estimatedMinutes"] as? Number)?.toInt(),
             isAiGenerated = true,
         )

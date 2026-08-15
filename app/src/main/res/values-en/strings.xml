@@ -410,6 +410,10 @@
     <string name="notification_channel_description">Notifications when products in your inventory are about to expire</string>
     <string name="notification_expiry_title">About to expire</string>
     <string name="notification_expiry_body_multiple_format">%1$d products are about to expire</string>
+    <string name="notification_expiry_group_expired">Expired</string>
+    <string name="notification_expiry_group_today">Today</string>
+    <string name="notification_expiry_group_tomorrow">Tomorrow</string>
+    <string name="notification_expiry_group_days_format">In %1$d days</string>
 
     <!-- Statistics -->
     <string name="statistics_title">Statistics</string>
@@ -463,6 +467,7 @@
     <string name="recipes_area_match_cd">Matches your language/region</string>
     <string name="recipes_detail_error">Couldn\'t load this recipe. Please try again.</string>
     <string name="recipes_ingredients_title">Ingredients</string>
+    <string name="recipes_servings_label">Servings</string>
     <string name="recipes_nutrition_per_serving">per serving</string>
     <string name="recipes_ingredient_in_inventory_cd">Already in stock</string>
     <string name="recipes_added_to_shopping_list">Missing ingredients added to your shopping list</string>
@@ -501,6 +506,7 @@
     <string name="custom_recipe_area_label">Cuisine</string>
     <string name="custom_recipe_area_placeholder">E.g. Italian</string>
     <string name="custom_recipe_ready_minutes_label">Prep time in minutes</string>
+    <string name="custom_recipe_servings_label">Number of servings</string>
     <string name="custom_recipe_ingredients_title">Ingredients</string>
     <string name="custom_recipe_ingredient_name_placeholder">Ingredient</string>
     <string name="custom_recipe_ingredient_measure_placeholder">Amount</string>

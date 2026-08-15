@@ -52,8 +52,10 @@ import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
+import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import java.util.Locale
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -166,12 +168,46 @@ fun RecipeDetailScreen(
                     RecipeBadge(icon = Icons.Filled.Translate, label = stringResource(R.string.recipes_translated_badge))
                 }
 
-                Text(
-                    text = stringResource(R.string.recipes_ingredients_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(top = 20.dp),
-                )
+                // Portion scaling — only offered when the recipe actually has a serving count
+                // (see RecipeDetail.servings' doc); [scaleFactor] stays 1.0 (a no-op through
+                // scaleMeasure) whenever it doesn't, so the ingredient list below always renders
+                // correctly whether or not scaling is available.
+                val originalServings = detail.servings
+                val targetServings = uiState.targetServings
+                val scaleFactor = if (originalServings != null && originalServings > 0 && targetServings != null) {
+                    targetServings.toDouble() / originalServings.toDouble()
+                } else {
+                    1.0
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = stringResource(R.string.recipes_ingredients_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    if (originalServings != null && originalServings > 0 && targetServings != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text(
+                                text = stringResource(R.string.recipes_servings_label),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(end = 8.dp),
+                            )
+                            QuantityStepper(
+                                quantity = targetServings,
+                                onDecrease = { viewModel.setTargetServings(targetServings - 1) },
+                                onIncrease = { viewModel.setTargetServings(targetServings + 1) },
+                                minQuantity = 1,
+                                dense = true,
+                            )
+                        }
+                    }
+                }
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
@@ -184,6 +220,7 @@ fun RecipeDetailScreen(
                         // name/measure should still prefer the translation.
                         detail.ingredients.zip(detail.displayIngredients).forEach { (original, display) ->
                             val haveIt = uiState.matchedIngredients.contains(original.first)
+                            val measure = scaleMeasure(display.second, scaleFactor)
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
@@ -199,7 +236,7 @@ fun RecipeDetailScreen(
                                     Box(modifier = Modifier.size(18.dp))
                                 }
                                 Text(
-                                    text = listOfNotNull(display.second.takeIf { it.isNotBlank() }, display.first).joinToString(" "),
+                                    text = listOfNotNull(measure.takeIf { it.isNotBlank() }, display.first).joinToString(" "),
                                     style = MaterialTheme.typography.bodyMedium,
                                     modifier = Modifier.padding(start = 10.dp),
                                 )
@@ -311,6 +348,44 @@ private fun NutritionValueRow(label: String, value: String) {
 
 private fun formatRecipeKcal(value: Double): String = String.format(Locale.getDefault(), "%.0f kcal", value)
 private fun formatRecipeGrams(value: Double): String = String.format(Locale.getDefault(), "%.1f g", value)
+
+/** Matches a measure string's leading quantity: a plain number ("300", "2.5", "1,5") optionally
+ *  followed by a simple "/denominator" fraction ("1/2"), then whatever's left (unit, free text
+ *  like "snufje naar smaak"). Anchored to the very start via [matchEntire] in [scaleMeasure].*/
+private val leadingQuantityRegex = Regex("""^(\d+(?:[.,]\d+)?)(?:\s*/\s*(\d+))?\s*(.*)$""")
+
+/**
+ * Scales a recipe ingredient's measure string by [factor] (target servings ÷ the recipe's own
+ * servings), leaving everything after the leading number untouched — "300 g" at 1.5x becomes
+ * "450 g", "bloem" (no leading number at all, nothing safe to multiply) is returned as-is. Also
+ * understands a simple "1/2 tsp" fraction, which AI-generated recipes occasionally produce as
+ * free text (Spoonacular's own amounts are always plain decimals by the time they get here).
+ */
+internal fun scaleMeasure(measure: String, factor: Double): String {
+    if (measure.isBlank() || factor == 1.0) return measure
+    val match = leadingQuantityRegex.matchEntire(measure.trim()) ?: return measure
+    val (wholeText, fractionText, rest) = match.destructured
+    val whole = wholeText.replace(',', '.').toDoubleOrNull() ?: return measure
+    val amount = if (fractionText.isNotEmpty()) {
+        val denominator = fractionText.toDoubleOrNull()
+        if (denominator == null || denominator == 0.0) whole else whole / denominator
+    } else {
+        whole
+    }
+    val scaledText = formatScaledQuantity(amount * factor)
+    return if (rest.isBlank()) scaledText else "$scaledText $rest"
+}
+
+/** Renders a scaled amount as a whole number when it rounds cleanly to one ("4", not "4.0"),
+ *  otherwise with up to 2 decimals and no trailing zeros ("1.5", not "1.50"). */
+private fun formatScaledQuantity(value: Double): String {
+    val rounded = (value * 100).roundToInt() / 100.0
+    return if (rounded == rounded.toLong().toDouble()) {
+        rounded.toLong().toString()
+    } else {
+        rounded.toString().trimEnd('0').trimEnd('.')
+    }
+}
 
 /** Small pill badge (AI-generated / AI-translated) shown under RecipeDetailScreen's subtitle. */
 @Composable

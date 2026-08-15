@@ -30,7 +30,9 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Daily background check for inventory items whose [expirationDate][com.dtraas.homestock.data.local.entity.InventoryItemEntity.expirationDate]
- * is within [EXPIRY_THRESHOLD_DAYS], posting a single local notification if any are found.
+ * is within [EXPIRY_THRESHOLD_DAYS], posting a single local notification if any are found — its
+ * expanded body groups them by day (see [groupedByDayText]) rather than one flat list, so
+ * "Vandaag" vs. "Over 2 dagen" stays legible once there's more than a couple of items.
  * A no-op whenever the user hasn't opted in (see [com.dtraas.homestock.data.repository.NotificationPreferences])
  * or hasn't joined a household yet.
  */
@@ -83,7 +85,7 @@ class ExpiryCheckWorker(
             .setSmallIcon(android.R.drawable.ic_popup_reminder)
             .setContentTitle(context.getString(R.string.notification_expiry_title))
             .setContentText(contentText)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(productNames.joinToString(", ")))
+            .setStyle(NotificationCompat.BigTextStyle().bigText(groupedByDayText(items)))
             .setContentIntent(contentIntent)
             .setAutoCancel(true)
 
@@ -111,6 +113,34 @@ class ExpiryCheckWorker(
             Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
         ) {
             NotificationManagerCompat.from(context).notify(NOTIFICATION_ID, builder.build())
+        }
+    }
+
+    /**
+     * The expanded (BigTextStyle) notification body, grouped by day rather than one flat
+     * comma-separated list of every near-expiry product — "Vandaag: Melk, Kaas / Morgen:
+     * Yoghurt" reads at a glance, where a long undifferentiated list doesn't once there are
+     * more than a couple of items. Groups are ordered soonest-first (Verlopen, then Vandaag,
+     * Morgen, Over N dagen), same urgency ordering as the collapsed count implies.
+     */
+    private fun groupedByDayText(items: List<InventoryItemWithProduct>): String {
+        val context = applicationContext
+        val today = LocalDate.now(ZoneOffset.UTC)
+        val groupedByDaysUntil = items
+            .groupBy { item ->
+                val date = Instant.ofEpochMilli(item.expirationDate!!).atZone(ZoneOffset.UTC).toLocalDate()
+                ChronoUnit.DAYS.between(today, date)
+            }
+            .toSortedMap()
+
+        return groupedByDaysUntil.entries.joinToString("\n") { (daysUntil, groupItems) ->
+            val label = when {
+                daysUntil < 0 -> context.getString(R.string.notification_expiry_group_expired)
+                daysUntil == 0L -> context.getString(R.string.notification_expiry_group_today)
+                daysUntil == 1L -> context.getString(R.string.notification_expiry_group_tomorrow)
+                else -> context.getString(R.string.notification_expiry_group_days_format, daysUntil)
+            }
+            "$label: ${groupItems.joinToString(", ") { it.name }}"
         }
     }
 

@@ -411,6 +411,10 @@
     <string name="notification_channel_description">Meldingen wanneer producten in je voorraad bijna over de datum zijn</string>
     <string name="notification_expiry_title">Bijna over de datum</string>
     <string name="notification_expiry_body_multiple_format">%1$d producten zijn bijna over de datum</string>
+    <string name="notification_expiry_group_expired">Verlopen</string>
+    <string name="notification_expiry_group_today">Vandaag</string>
+    <string name="notification_expiry_group_tomorrow">Morgen</string>
+    <string name="notification_expiry_group_days_format">Over %1$d dagen</string>
 
     <!-- Statistieken -->
     <string name="statistics_title">Statistieken</string>
@@ -464,6 +468,7 @@
     <string name="recipes_area_match_cd">Sluit aan bij jouw taal/regio</string>
     <string name="recipes_detail_error">Kon dit recept niet laden. Probeer het opnieuw.</string>
     <string name="recipes_ingredients_title">Ingrediënten</string>
+    <string name="recipes_servings_label">Porties</string>
     <string name="recipes_nutrition_per_serving">per portie</string>
     <string name="recipes_ingredient_in_inventory_cd">Al in voorraad</string>
     <string name="recipes_added_to_shopping_list">Ontbrekende ingrediënten toegevoegd aan je boodschappenlijst</string>
@@ -502,6 +507,7 @@
     <string name="custom_recipe_area_label">Keuken</string>
     <string name="custom_recipe_area_placeholder">Bijv. Italiaans</string>
     <string name="custom_recipe_ready_minutes_label">Bereidingstijd in minuten</string>
+    <string name="custom_recipe_servings_label">Aantal porties</string>
     <string name="custom_recipe_ingredients_title">Ingrediënten</string>
     <string name="custom_recipe_ingredient_name_placeholder">Ingrediënt</string>
     <string name="custom_recipe_ingredient_measure_placeholder">Hoeveelheid</string>

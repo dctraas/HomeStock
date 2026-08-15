@@ -226,6 +226,7 @@ const RECIPE_RESPONSE_SCHEMA = {
     title: { type: "string" },
     cuisine: { type: "string" },
     estimatedMinutes: { type: "integer" },
+    servings: { type: "integer" },
     ingredients: {
       type: "array",
       items: {
@@ -243,7 +244,7 @@ const RECIPE_RESPONSE_SCHEMA = {
       items: { type: "string" },
     },
   },
-  required: ["title", "cuisine", "estimatedMinutes", "ingredients", "instructions"],
+  required: ["title", "cuisine", "estimatedMinutes", "servings", "ingredients", "instructions"],
   additionalProperties: false,
 } as const;
 
@@ -260,6 +261,7 @@ interface GeneratedRecipe {
   title: string;
   cuisine: string;
   estimatedMinutes: number;
+  servings: number;
   ingredients: Array<{ name: string; amount: string }>;
   instructions: string[];
 }
@@ -281,6 +283,9 @@ function buildRecipeGenerationPrompt(availableIngredients: string[], wish: strin
     "- title: a short, appetizing dish name.\n" +
     "- cuisine: a short cuisine/style label, e.g. \"Italiaans\", \"Aziatisch\", \"Nederlands\".\n" +
     "- estimatedMinutes: realistic total time including prep.\n" +
+    "- servings: realistic number of people this feeds (typically 2-6) — ingredient amounts " +
+    "must be consistent with this count, since the app lets users scale the recipe up or down " +
+    "from it.\n" +
     "- ingredients: name + amount (e.g. \"300 g\", \"2 stuks\", \"snufje\") per line.\n" +
     "- instructions: one string per step, in order, no numbering prefix (the app adds that)."
   );
@@ -533,6 +538,7 @@ interface SpoonacularInfoResult {
   instructions?: string;
   extendedIngredients?: SpoonacularIngredient[];
   readyInMinutes?: number;
+  servings?: number;
   nutrition?: SpoonacularNutrition;
 }
 
@@ -583,6 +589,9 @@ function toRecipeDetail(result: SpoonacularInfoResult) {
       measure: [ingredient.amount, ingredient.unit].filter((part) => part !== undefined && part !== "").join(" "),
     })),
     readyInMinutes: result.readyInMinutes ?? null,
+    // How many people extendedIngredients' amounts feed — lets the client offer portion
+    // scaling (see RecipeDetailScreen.scaleMeasure on the Kotlin side).
+    servings: result.servings ?? null,
     // Per serving, not per 100g (unlike a product's NutritionInfo) — Spoonacular reports a
     // whole recipe's nutrition divided by its own serving count, there's no per-100g figure.
     calories: findNutrientAmount(nutrients, "Calories"),
