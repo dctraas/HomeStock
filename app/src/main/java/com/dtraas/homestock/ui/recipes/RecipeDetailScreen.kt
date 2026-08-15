@@ -1,6 +1,5 @@
 package com.dtraas.homestock.ui.recipes
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -232,26 +230,15 @@ fun RecipeDetailScreen(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                // A checkmark for "already in Voorraad", a plain bullet dot
-                                // otherwise — every row gets a marker either way, which is what
-                                // makes this read as a proper list instead of a wall of running
-                                // text, rather than just the matched rows standing out.
-                                Box(modifier = Modifier.size(18.dp), contentAlignment = Alignment.Center) {
-                                    if (haveIt) {
-                                        Icon(
-                                            imageVector = Icons.Filled.Check,
-                                            contentDescription = stringResource(R.string.recipes_ingredient_in_inventory_cd),
-                                            tint = MaterialTheme.colorScheme.primary,
-                                            modifier = Modifier.size(18.dp),
-                                        )
-                                    } else {
-                                        Box(
-                                            modifier = Modifier
-                                                .size(6.dp)
-                                                .clip(CircleShape)
-                                                .background(MaterialTheme.colorScheme.onSurfaceVariant),
-                                        )
-                                    }
+                                if (haveIt) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Check,
+                                        contentDescription = stringResource(R.string.recipes_ingredient_in_inventory_cd),
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp),
+                                    )
+                                } else {
+                                    Box(modifier = Modifier.size(18.dp))
                                 }
                                 if (measure.isNotBlank()) {
                                     Text(
