@@ -1,5 +1,6 @@
 package com.dtraas.homestock.ui.recipes
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,7 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -27,6 +30,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -44,6 +48,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -213,33 +218,61 @@ fun RecipeDetailScreen(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                     shape = SoftCardShape,
                 ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
                         // Zipped rather than iterating displayIngredients alone: matching against
                         // inventory (uiState.matchedIngredients) only works on the original
                         // English ingredient names — see [RecipeDetail]'s doc — while the shown
                         // name/measure should still prefer the translation.
-                        detail.ingredients.zip(detail.displayIngredients).forEach { (original, display) ->
+                        val zipped = detail.ingredients.zip(detail.displayIngredients)
+                        zipped.forEachIndexed { index, (original, display) ->
                             val haveIt = uiState.matchedIngredients.contains(original.first)
                             val measure = scaleMeasure(display.second, scaleFactor)
+                            if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
                             Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                if (haveIt) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Check,
-                                        contentDescription = stringResource(R.string.recipes_ingredient_in_inventory_cd),
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp),
+                                // A checkmark for "already in Voorraad", a plain bullet dot
+                                // otherwise — every row gets a marker either way, which is what
+                                // makes this read as a proper list instead of a wall of running
+                                // text, rather than just the matched rows standing out.
+                                Box(modifier = Modifier.size(18.dp), contentAlignment = Alignment.Center) {
+                                    if (haveIt) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Check,
+                                            contentDescription = stringResource(R.string.recipes_ingredient_in_inventory_cd),
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(18.dp),
+                                        )
+                                    } else {
+                                        Box(
+                                            modifier = Modifier
+                                                .size(6.dp)
+                                                .clip(CircleShape)
+                                                .background(MaterialTheme.colorScheme.onSurfaceVariant),
+                                        )
+                                    }
+                                }
+                                if (measure.isNotBlank()) {
+                                    Text(
+                                        text = measure,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(start = 10.dp).widthIn(min = 64.dp),
+                                    )
+                                    Text(
+                                        text = display.first,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.padding(start = 4.dp),
                                     )
                                 } else {
-                                    Box(modifier = Modifier.size(18.dp))
+                                    Text(
+                                        text = display.first,
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        modifier = Modifier.padding(start = 10.dp),
+                                    )
                                 }
-                                Text(
-                                    text = listOfNotNull(measure.takeIf { it.isNotBlank() }, display.first).joinToString(" "),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    modifier = Modifier.padding(start = 10.dp),
-                                )
                             }
                         }
                     }
