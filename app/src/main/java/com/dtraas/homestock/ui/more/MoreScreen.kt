@@ -913,6 +913,15 @@ private fun ImportExportDialog(onImport: () -> Unit, onExport: () -> Unit, onDis
         title = { Text(stringResource(R.string.more_data_csv_title)) },
         text = {
             Column {
+                // Only Voorraad has import/export today, but this dialog is meant to grow
+                // (Boodschappenlijst, etc.) — the heading labels which data these two actions
+                // apply to now, rather than implying "Data overzetten" only ever means Voorraad.
+                Text(
+                    text = stringResource(R.string.inventory_title),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(bottom = 4.dp),
+                )
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
