@@ -202,9 +202,9 @@
     <string name="more_stores_remove_format">Eliminar %1$s</string>
     <string name="more_statistics_title">Estadísticas</string>
     <string name="more_section_data">DATOS</string>
-    <string name="more_data_csv_title">Importar/exportar inventario (CSV)</string>
-    <string name="more_csv_import_action">Importar</string>
-    <string name="more_csv_export_action">Exportar</string>
+    <string name="more_data_csv_title">Transferir datos</string>
+    <string name="more_csv_import_action">Importar (CSV)</string>
+    <string name="more_csv_export_action">Exportar (CSV)</string>
     <string name="more_export_header_favorite">Favorito</string>
     <string name="more_export_success">Archivo guardado</string>
     <string name="more_export_error">Error al exportar</string>
