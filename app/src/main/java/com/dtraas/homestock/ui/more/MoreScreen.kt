@@ -31,12 +31,14 @@ import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.ImportExport
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarRate
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.outlined.StarBorder
@@ -83,8 +85,8 @@ import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.BuildConfig
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.export.CsvExporter
+import com.dtraas.homestock.data.export.CsvImporter
 import com.dtraas.homestock.data.export.InventoryCsvHeaders
-import com.dtraas.homestock.data.export.ShoppingListCsvHeaders
 import com.dtraas.homestock.data.local.entity.StoreEntity
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.MeasurementUnit
@@ -95,6 +97,7 @@ import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.work.ExpiryCheckWorker
 import java.io.File
+import java.util.UUID
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
@@ -150,6 +153,7 @@ fun MoreScreen(
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showStoresDialog by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
+    var showImportExportDialog by remember { mutableStateOf(false) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -167,10 +171,11 @@ fun MoreScreen(
         }
     }
 
-    // CSV export (Voorraad/Boodschappenlijst) — the CSV content has to be built *before* the
-    // system's "save to..." picker is launched (it needs a filename up front, but only hands
-    // back a Uri once the user has actually picked a location, well after this composable has
-    // moved on), so it's held here and written once that callback fires.
+    // CSV export (Voorraad) — the CSV content has to be built *before* the system's "save to..."
+    // picker is launched (it needs a filename up front, but only hands back a Uri once the user
+    // has actually picked a location, well after this composable has moved on), so it's held
+    // here and written once that callback fires. Premium-gated (see the GEGEVENS row below), and
+    // Voorraad-only — Boodschappenlijst export was dropped, it never grew import support either.
     var pendingExportCsv by remember { mutableStateOf<String?>(null) }
     val exportErrorMessage = stringResource(R.string.more_export_error)
     val exportSuccessMessage = stringResource(R.string.more_export_success)
@@ -191,10 +196,14 @@ fun MoreScreen(
         }
     }
     // Built once via stringResource (a composable-only call) rather than inside the plain
-    // lambdas below, which run outside composition — CsvExporter itself is Compose-independent
-    // so it takes these as plain parameters instead of resolving them itself.
+    // lambdas below, which run outside composition — CsvExporter/CsvImporter are both
+    // Compose-independent so they take these as plain parameters instead of resolving them
+    // themselves. categoryKeyByLabel/unitKeyByLabel are the reverse lookups CsvImporter needs to
+    // turn an imported file's localized column text back into a storage key.
     val categoryLabels = Category.entries.associate { it.storageKey to stringResource(it.displayNameRes) }
     val unitLabels = MeasurementUnit.entries.associate { it.storageKey to stringResource(it.shortLabelRes) }
+    val categoryKeyByLabel = categoryLabels.entries.associate { (key, label) -> label to key }
+    val unitKeyByLabel = unitLabels.entries.associate { (key, label) -> label to key }
     val csvYes = stringResource(R.string.common_yes)
     val csvNo = stringResource(R.string.common_no)
     val inventoryCsvHeaders = InventoryCsvHeaders(
@@ -206,15 +215,6 @@ fun MoreScreen(
         expiration = stringResource(R.string.product_detail_expiration_label),
         minQuantity = stringResource(R.string.product_detail_min_quantity_label),
         favorite = stringResource(R.string.more_export_header_favorite),
-        note = stringResource(R.string.shopping_list_note_label),
-    )
-    val shoppingListCsvHeaders = ShoppingListCsvHeaders(
-        name = stringResource(R.string.common_name),
-        category = stringResource(R.string.category_dropdown_label),
-        store = stringResource(R.string.store_dropdown_label),
-        quantity = stringResource(R.string.common_quantity),
-        unit = stringResource(R.string.product_detail_field_unit),
-        checked = stringResource(R.string.more_export_header_checked),
         note = stringResource(R.string.shopping_list_note_label),
     )
 
@@ -233,19 +233,65 @@ fun MoreScreen(
         }
     }
 
-    fun exportShoppingList() {
+    // CSV import (Voorraad) — every imported row becomes a brand-new product (synthetic
+    // "csv-..." barcode, same convention AI-productherkenning uses for products with no real
+    // barcode) rather than trying to match it against an existing one, since a CSV has no
+    // barcode column to match on. restoreItem (not recordScan) writes the inventory row
+    // directly without logging it to Geschiedenis — a bulk import shouldn't flood the activity
+    // log with one entry per row.
+    val importErrorMessage = stringResource(R.string.more_import_error)
+    val importEmptyMessage = stringResource(R.string.more_import_empty)
+    val importSuccessFormat = stringResource(R.string.more_import_success_format)
+    val importSkippedFormat = stringResource(R.string.more_import_skipped_format)
+    val importLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.OpenDocument(),
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
         coroutineScope.launch {
-            val items = application.container.shoppingListRepository.observeShoppingList().first()
-            pendingExportCsv = CsvExporter.shoppingListToCsv(
-                items,
-                shoppingListCsvHeaders,
-                categoryLabel = { key -> categoryLabels[key] ?: key },
-                unitLabel = { key -> unitLabels[key] ?: (key ?: "") },
-                yesLabel = csvYes,
-                noLabel = csvNo,
-            )
-            exportLauncher.launch("boodschappenlijst.csv")
+            val message = try {
+                val csv = context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
+                if (csv == null) {
+                    importErrorMessage
+                } else {
+                    val result = CsvImporter.parseInventoryCsv(csv, categoryKeyByLabel, unitKeyByLabel, csvYes)
+                    if (result.rows.isEmpty()) {
+                        importEmptyMessage
+                    } else {
+                        result.rows.forEach { row ->
+                            val barcode = "csv-${UUID.randomUUID()}"
+                            application.container.productRepository.saveManualProduct(
+                                barcode = barcode,
+                                name = row.name,
+                                category = Category.fromStorageKey(row.categoryKey),
+                                brand = row.brand,
+                                unit = row.unitKey,
+                            )
+                            application.container.inventoryRepository.restoreItem(
+                                barcode = barcode,
+                                quantity = row.quantity,
+                                expirationDate = row.expirationDate,
+                                minQuantity = row.minQuantity,
+                                note = row.note,
+                                isFavorite = row.isFavorite,
+                            )
+                        }
+                        val summary = String.format(importSuccessFormat, result.rows.size)
+                        if (result.skippedCount > 0) {
+                            summary + " " + String.format(importSkippedFormat, result.skippedCount)
+                        } else {
+                            summary
+                        }
+                    }
+                }
+            } catch (e: Exception) {
+                importErrorMessage
+            }
+            snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Short)
         }
+    }
+
+    fun importInventory() {
+        importLauncher.launch(arrayOf("text/csv", "text/comma-separated-values", "text/plain", "application/csv", "*/*"))
     }
 
     Scaffold(
@@ -334,14 +380,10 @@ fun MoreScreen(
 
             SectionHeader(stringResource(R.string.more_section_data))
             SettingsRow(
-                icon = Icons.Filled.Download,
-                title = stringResource(R.string.more_export_inventory_title),
-                onClick = ::exportInventory,
-            )
-            SettingsRow(
-                icon = Icons.Filled.Download,
-                title = stringResource(R.string.more_export_shopping_list_title),
-                onClick = ::exportShoppingList,
+                icon = Icons.Filled.ImportExport,
+                title = stringResource(R.string.more_data_csv_title),
+                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                onClick = { if (isPremium) showImportExportDialog = true else onNavigateToPremium() },
             )
 
             SectionHeader(stringResource(R.string.more_section_about))
@@ -475,6 +517,14 @@ fun MoreScreen(
             onAdd = { name -> coroutineScope.launch { storeRepository.addStore(name) } },
             onRemove = { id -> coroutineScope.launch { storeRepository.removeStore(id) } },
             onDismiss = { showStoresDialog = false },
+        )
+    }
+
+    if (showImportExportDialog) {
+        ImportExportDialog(
+            onImport = ::importInventory,
+            onExport = ::exportInventory,
+            onDismiss = { showImportExportDialog = false },
         )
     }
 
@@ -846,6 +896,61 @@ private fun StoresDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) }
+        },
+    )
+}
+
+/**
+ * Single entry point for Voorraad CSV import/export — replaces what used to be two separate
+ * export-only rows (Voorraad, Boodschappenlijst) with one row that opens this choice, per the
+ * "Hernoem de optie naar Voorraad importeren/exporteren (CSV)" request. [onImport]/[onExport]
+ * only kick off the picker flow — the actual file I/O runs in the caller's launchers.
+ */
+@Composable
+private fun ImportExportDialog(onImport: () -> Unit, onExport: () -> Unit, onDismiss: () -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.more_data_csv_title)) },
+        text = {
+            Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onImport()
+                            onDismiss()
+                        }
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Upload,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(stringResource(R.string.more_csv_import_action), modifier = Modifier.padding(start = 12.dp))
+                }
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable {
+                            onExport()
+                            onDismiss()
+                        }
+                        .padding(vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Download,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(stringResource(R.string.more_csv_export_action), modifier = Modifier.padding(start = 12.dp))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
         },
     )
 }

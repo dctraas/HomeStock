@@ -190,15 +190,21 @@ class ProductRepository(
         )
     }
 
-    suspend fun saveManualProduct(barcode: String, name: String, category: Category): ProductEntity {
+    suspend fun saveManualProduct(
+        barcode: String,
+        name: String,
+        category: Category,
+        brand: String? = null,
+        unit: String? = null,
+    ): ProductEntity {
         val householdId = householdSession.householdId.value ?: error("Geen huishouden gekoppeld")
         val entity = ProductEntity(
             barcode = barcode,
             name = name.trim(),
-            brand = null,
+            brand = brand,
             category = category.storageKey,
             imageUrl = null,
-            unit = null,
+            unit = unit,
             lastFetchedAt = System.currentTimeMillis(),
         )
         productsCollection(householdId).document(barcode).set(entity.toMap()).await()
