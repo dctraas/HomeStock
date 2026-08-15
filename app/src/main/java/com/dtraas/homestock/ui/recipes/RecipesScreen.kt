@@ -150,6 +150,7 @@ fun RecipesScreen(
                         },
                         placeholder = stringResource(R.string.recipes_search_placeholder),
                         modifier = Modifier.weight(1f),
+                        dense = true,
                     )
                     // Icon-only rather than a labeled Button — this row already reads as
                     // "search" from the field's own placeholder/icon, so a second "Zoeken"

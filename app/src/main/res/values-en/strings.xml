@@ -457,7 +457,7 @@
     <string name="recipes_translated_badge">Translated with AI</string>
     <string name="recipes_generate_ai_button">Generate recipe with AI</string>
     <string name="recipes_generate_ai_title">Generate a recipe with AI</string>
-    <string name="recipes_generate_ai_hint">Claude will invent a recipe based on your current inventory. Any specific wish?</string>
+    <string name="recipes_generate_ai_hint">We invent a recipe based on your current inventory. Any specific wish?</string>
     <string name="recipes_generate_ai_placeholder">E.g. \'something with chicken and rice\' (optional)</string>
     <string name="recipes_generate_ai_action">Generate</string>
     <string name="recipes_generate_ai_loading">Inventing a recipe…</string>

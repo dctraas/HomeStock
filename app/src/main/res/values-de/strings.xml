@@ -457,7 +457,7 @@
     <string name="recipes_translated_badge">Mit KI übersetzt</string>
     <string name="recipes_generate_ai_button">Rezept mit KI generieren</string>
     <string name="recipes_generate_ai_title">Rezept mit KI generieren</string>
-    <string name="recipes_generate_ai_hint">Claude erstellt ein Rezept basierend auf deinem aktuellen Vorrat. Ein bestimmter Wunsch?</string>
+    <string name="recipes_generate_ai_hint">Wir erstellen ein Rezept basierend auf deinem aktuellen Vorrat. Ein bestimmter Wunsch?</string>
     <string name="recipes_generate_ai_placeholder">z. B. \'etwas mit Hähnchen und Reis\' (optional)</string>
     <string name="recipes_generate_ai_action">Generieren</string>
     <string name="recipes_generate_ai_loading">Rezept wird erstellt…</string>

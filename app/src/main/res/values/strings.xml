@@ -458,7 +458,7 @@
     <string name="recipes_translated_badge">Vertaald met AI</string>
     <string name="recipes_generate_ai_button">Genereer recept met AI</string>
     <string name="recipes_generate_ai_title">Recept genereren met AI</string>
-    <string name="recipes_generate_ai_hint">Claude bedenkt een recept op basis van je huidige voorraad. Heb je nog een specifieke wens?</string>
+    <string name="recipes_generate_ai_hint">Wij bedenken een recept op basis van je huidige voorraad. Heb je nog een specifieke wens?</string>
     <string name="recipes_generate_ai_placeholder">Bijv. \'iets met kip en rijst\' (optioneel)</string>
     <string name="recipes_generate_ai_action">Genereer</string>
     <string name="recipes_generate_ai_loading">Recept bedenken…</string>
