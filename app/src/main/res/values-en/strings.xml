@@ -65,20 +65,28 @@
     <string name="activity_actor_detail_format">%1$s · %2$s</string>
 
     <!-- Developer notices (News -> Notices tab, newest first) -->
+    <string name="notice_csv_import_export_title">Import/export inventory (CSV)</string>
+    <string name="notice_csv_import_export_message">Import or export your whole inventory as a CSV file, via More. A Premium feature.</string>
+    <string name="notice_premium_title">HomeStock Premium</string>
+    <string name="notice_premium_message">Unlock Recipes, Receipt scanning, Statistics and more with HomeStock Premium, found at the bottom of More.</string>
+    <string name="notice_ai_recognition_title">Product recognition with AI</string>
+    <string name="notice_ai_recognition_message">No barcode on the package? Take a photo and let AI recognize the product and add it to your inventory.</string>
+    <string name="notice_receipt_scan_ai_title">Receipt scanning with AI</string>
+    <string name="notice_receipt_scan_ai_message">Scan a receipt and AI automatically recognizes which products you bought.</string>
+    <string name="notice_recipes_ai_title">Discover and generate recipes</string>
+    <string name="notice_recipes_ai_message">Browse an extensive recipe database, or let AI come up with a recipe based on your own inventory.</string>
+    <string name="notice_meal_planner_title">Meal planner</string>
+    <string name="notice_meal_planner_message">Plan your meals per day across four moments: breakfast, lunch, dinner and snacks.</string>
+    <string name="notice_favorites_title">Favorites</string>
+    <string name="notice_favorites_message">Mark products as favorites and quickly filter your inventory by favorites.</string>
     <string name="notice_household_sharing_title">Sharing with housemates</string>
     <string name="notice_household_sharing_message">Create a household or join one with a code (via More) to share your inventory and shopping list with housemates.</string>
     <string name="notice_notifications_title">Notifications</string>
     <string name="notice_notifications_message">All app and developer notices now live together here.</string>
-    <string name="notice_color_palette_title">New color palette</string>
-    <string name="notice_color_palette_message">The app has a fresher color palette: green, terracotta and blueberry blue.</string>
-    <string name="notice_sort_options_title">Sort options in Inventory</string>
-    <string name="notice_sort_options_message">Sort your inventory by name, quantity or recently added.</string>
     <string name="notice_faster_scanning_title">Faster scanning</string>
     <string name="notice_faster_scanning_message">Known products are now added instantly while scanning, without an extra step.</string>
     <string name="notice_undo_title">Undo</string>
     <string name="notice_undo_message">Accidentally removed something? Restore it right away via the notice at the bottom of the screen.</string>
-    <string name="notice_inventory_cards_title">Inventory as cards</string>
-    <string name="notice_inventory_cards_message">Switch between list and card view (2 per row) in Inventory.</string>
     <string name="notice_shopping_list_stores_title">Shopping list by store</string>
     <string name="notice_shopping_list_stores_message">Your shopping list is grouped by store, with editing and product photos.</string>
     <string name="notice_statistics_title">Statistics added</string>

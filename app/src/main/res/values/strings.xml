@@ -66,20 +66,28 @@
     <string name="activity_actor_detail_format">%1$s · %2$s</string>
 
     <!-- Developer notices (Nieuws -> Meldingen tab, newest first) -->
+    <string name="notice_csv_import_export_title">Voorraad importeren/exporteren (CSV)</string>
+    <string name="notice_csv_import_export_message">Importeer of exporteer je hele voorraad als CSV-bestand via Meer. Een Premium-functie.</string>
+    <string name="notice_premium_title">HomeStock Premium</string>
+    <string name="notice_premium_message">Ontgrendel Recepten, Bonnetje scannen, Statistieken en meer met HomeStock Premium, te vinden onderin Meer.</string>
+    <string name="notice_ai_recognition_title">Productherkenning met AI</string>
+    <string name="notice_ai_recognition_message">Geen barcode op de verpakking? Maak een foto en laat AI het product herkennen en toevoegen aan je voorraad.</string>
+    <string name="notice_receipt_scan_ai_title">Bonnetje scannen met AI</string>
+    <string name="notice_receipt_scan_ai_message">Scan een kassabon en AI herkent automatisch welke producten je hebt gekocht.</string>
+    <string name="notice_recipes_ai_title">Recepten ontdekken en genereren</string>
+    <string name="notice_recipes_ai_message">Blader door een uitgebreide receptendatabase of laat AI een recept bedenken op basis van je eigen voorraad.</string>
+    <string name="notice_meal_planner_title">Maaltijdplanner</string>
+    <string name="notice_meal_planner_message">Plan je maaltijden per dag in vier momenten: ontbijt, lunch, avondeten en tussendoor.</string>
+    <string name="notice_favorites_title">Favorieten</string>
+    <string name="notice_favorites_message">Markeer producten als favoriet en filter je voorraad snel op favorieten.</string>
     <string name="notice_household_sharing_title">Delen met huisgenoten</string>
     <string name="notice_household_sharing_message">Maak een huishouden aan of sluit aan met een code (via Meer) om je voorraad en boodschappenlijst met huisgenoten te delen.</string>
     <string name="notice_notifications_title">Meldingen</string>
     <string name="notice_notifications_message">Alle app- en ontwikkelaarsmeldingen staan voortaan hier bij elkaar.</string>
-    <string name="notice_color_palette_title">Nieuw kleurenpalet</string>
-    <string name="notice_color_palette_message">De app heeft een frisser kleurenpalet gekregen: groen, terracotta en bosbessenblauw.</string>
-    <string name="notice_sort_options_title">Sorteeropties in Voorraad</string>
-    <string name="notice_sort_options_message">Sorteer je voorraad op naam, aantal of laatst toegevoegd.</string>
     <string name="notice_faster_scanning_title">Sneller scannen</string>
     <string name="notice_faster_scanning_message">Bekende producten worden nu direct toegevoegd tijdens het scannen, zonder tussenstap.</string>
     <string name="notice_undo_title">Ongedaan maken</string>
     <string name="notice_undo_message">Per ongeluk iets verwijderd? Zet het direct terug via de melding onderin het scherm.</string>
-    <string name="notice_inventory_cards_title">Voorraad als kaarten</string>
-    <string name="notice_inventory_cards_message">Schakel in Voorraad tussen lijst- en kaartweergave (2 per rij).</string>
     <string name="notice_shopping_list_stores_title">Boodschappenlijst per winkel</string>
     <string name="notice_shopping_list_stores_message">Je boodschappenlijst is ingedeeld per winkel, met bewerken en productfoto\'s.</string>
     <string name="notice_statistics_title">Statistieken toegevoegd</string>

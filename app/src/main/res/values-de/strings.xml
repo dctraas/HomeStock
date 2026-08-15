@@ -65,20 +65,28 @@
     <string name="activity_actor_detail_format">%1$s · %2$s</string>
 
     <!-- Developer notices (Neuigkeiten -> Meldungen tab, newest first) -->
+    <string name="notice_csv_import_export_title">Vorrat importieren/exportieren (CSV)</string>
+    <string name="notice_csv_import_export_message">Importiere oder exportiere deinen gesamten Vorrat als CSV-Datei über Mehr. Eine Premium-Funktion.</string>
+    <string name="notice_premium_title">HomeStock Premium</string>
+    <string name="notice_premium_message">Schalte Rezepte, Kassenbon scannen, Statistiken und mehr frei mit HomeStock Premium, ganz unten unter Mehr.</string>
+    <string name="notice_ai_recognition_title">Produkterkennung mit KI</string>
+    <string name="notice_ai_recognition_message">Kein Barcode auf der Verpackung? Mach ein Foto und lass KI das Produkt erkennen und zu deinem Vorrat hinzufügen.</string>
+    <string name="notice_receipt_scan_ai_title">Kassenbon scannen mit KI</string>
+    <string name="notice_receipt_scan_ai_message">Scanne einen Kassenbon und KI erkennt automatisch, welche Produkte du gekauft hast.</string>
+    <string name="notice_recipes_ai_title">Rezepte entdecken und erstellen</string>
+    <string name="notice_recipes_ai_message">Durchstöbere eine umfangreiche Rezeptdatenbank oder lass KI ein Rezept auf Basis deines eigenen Vorrats erstellen.</string>
+    <string name="notice_meal_planner_title">Mahlzeitenplaner</string>
+    <string name="notice_meal_planner_message">Plane deine Mahlzeiten pro Tag in vier Momenten: Frühstück, Mittagessen, Abendessen und Snack.</string>
+    <string name="notice_favorites_title">Favoriten</string>
+    <string name="notice_favorites_message">Markiere Produkte als Favorit und filtere deinen Vorrat schnell nach Favoriten.</string>
     <string name="notice_household_sharing_title">Teilen mit Mitbewohnern</string>
     <string name="notice_household_sharing_message">Erstelle einen Haushalt oder tritt mit einem Code bei (über Mehr), um deinen Vorrat und deine Einkaufsliste mit Mitbewohnern zu teilen.</string>
     <string name="notice_notifications_title">Benachrichtigungen</string>
     <string name="notice_notifications_message">Alle App- und Entwicklermeldungen findest du jetzt hier an einem Ort.</string>
-    <string name="notice_color_palette_title">Neue Farbpalette</string>
-    <string name="notice_color_palette_message">Die App hat eine frischere Farbpalette erhalten: Grün, Terrakotta und Heidelbeerblau.</string>
-    <string name="notice_sort_options_title">Sortieroptionen im Vorrat</string>
-    <string name="notice_sort_options_message">Sortiere deinen Vorrat nach Name, Menge oder zuletzt hinzugefügt.</string>
     <string name="notice_faster_scanning_title">Schneller scannen</string>
     <string name="notice_faster_scanning_message">Bekannte Produkte werden beim Scannen jetzt sofort hinzugefügt, ohne Zwischenschritt.</string>
     <string name="notice_undo_title">Rückgängig machen</string>
     <string name="notice_undo_message">Versehentlich etwas entfernt? Stelle es direkt über die Meldung am unteren Bildschirmrand wieder her.</string>
-    <string name="notice_inventory_cards_title">Vorrat als Karten</string>
-    <string name="notice_inventory_cards_message">Wechsle im Vorrat zwischen Listen- und Kartenansicht (2 pro Reihe).</string>
     <string name="notice_shopping_list_stores_title">Einkaufsliste nach Geschäft</string>
     <string name="notice_shopping_list_stores_message">Deine Einkaufsliste ist nach Geschäft sortiert, mit Bearbeitung und Produktfotos.</string>
     <string name="notice_statistics_title">Statistiken hinzugefügt</string>

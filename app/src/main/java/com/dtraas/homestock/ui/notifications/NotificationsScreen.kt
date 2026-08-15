@@ -33,6 +33,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -82,6 +83,13 @@ fun NotificationsScreen(onBack: () -> Unit) {
         stringResource(R.string.notifications_tab_notices),
         stringResource(R.string.notifications_tab_history),
     )
+
+    // The Meldingen tab (index 0, also the default) is what the unread badge on Voorraad's
+    // Meldingen icon counts — opening it clears that badge, same as any "what's new" inbox.
+    // Geschiedenis (index 1) never affects it, so this deliberately only fires for tab 0.
+    LaunchedEffect(selectedTab) {
+        if (selectedTab == 0) viewModel.markNoticesSeen()
+    }
 
     Scaffold(
         // No longer a permanent bottom-nav tab — reached via the meldingen icon on Voorraad

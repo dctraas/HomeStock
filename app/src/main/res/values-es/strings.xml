@@ -65,20 +65,28 @@
     <string name="activity_actor_detail_format">%1$s · %2$s</string>
 
     <!-- Developer notices (Novedades -> Avisos tab, newest first) -->
+    <string name="notice_csv_import_export_title">Importar/exportar inventario (CSV)</string>
+    <string name="notice_csv_import_export_message">Importa o exporta todo tu inventario como archivo CSV desde Más. Una función Premium.</string>
+    <string name="notice_premium_title">HomeStock Premium</string>
+    <string name="notice_premium_message">Desbloquea Recetas, Escanear ticket, Estadísticas y más con HomeStock Premium, al final de Más.</string>
+    <string name="notice_ai_recognition_title">Reconocimiento de productos con IA</string>
+    <string name="notice_ai_recognition_message">¿Sin código de barras en el envase? Haz una foto y deja que la IA reconozca el producto y lo añada a tu inventario.</string>
+    <string name="notice_receipt_scan_ai_title">Escanear ticket con IA</string>
+    <string name="notice_receipt_scan_ai_message">Escanea un ticket de compra y la IA reconoce automáticamente qué productos compraste.</string>
+    <string name="notice_recipes_ai_title">Descubre y genera recetas</string>
+    <string name="notice_recipes_ai_message">Explora una amplia base de datos de recetas o deja que la IA cree una receta a partir de tu propio inventario.</string>
+    <string name="notice_meal_planner_title">Planificador de comidas</string>
+    <string name="notice_meal_planner_message">Planifica tus comidas por día en cuatro momentos: desayuno, comida, cena y tentempié.</string>
+    <string name="notice_favorites_title">Favoritos</string>
+    <string name="notice_favorites_message">Marca productos como favoritos y filtra tu inventario rápidamente por favoritos.</string>
     <string name="notice_household_sharing_title">Compartir con convivientes</string>
     <string name="notice_household_sharing_message">Crea un hogar o únete con un código (desde Más) para compartir tu inventario y lista de la compra con tus convivientes.</string>
     <string name="notice_notifications_title">Notificaciones</string>
     <string name="notice_notifications_message">Todos los avisos de la app y del desarrollador ahora se encuentran aquí juntos.</string>
-    <string name="notice_color_palette_title">Nueva paleta de colores</string>
-    <string name="notice_color_palette_message">La app tiene una paleta de colores más fresca: verde, terracota y azul arándano.</string>
-    <string name="notice_sort_options_title">Opciones de orden en Inventario</string>
-    <string name="notice_sort_options_message">Ordena tu inventario por nombre, cantidad o añadido recientemente.</string>
     <string name="notice_faster_scanning_title">Escaneo más rápido</string>
     <string name="notice_faster_scanning_message">Los productos conocidos ahora se añaden al instante al escanear, sin ningún paso intermedio.</string>
     <string name="notice_undo_title">Deshacer</string>
     <string name="notice_undo_message">¿Eliminaste algo por accidente? Recupéralo al instante desde el aviso en la parte inferior de la pantalla.</string>
-    <string name="notice_inventory_cards_title">Inventario en tarjetas</string>
-    <string name="notice_inventory_cards_message">Cambia entre vista de lista y de tarjetas (2 por fila) en Inventario.</string>
     <string name="notice_shopping_list_stores_title">Lista de la compra por tienda</string>
     <string name="notice_shopping_list_stores_message">Tu lista de la compra está organizada por tienda, con edición y fotos de productos.</string>
     <string name="notice_statistics_title">Estadísticas añadidas</string>

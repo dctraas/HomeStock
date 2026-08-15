@@ -65,20 +65,28 @@
     <string name="activity_actor_detail_format">%1$s · %2$s</string>
 
     <!-- Developer notices (Actualités -> onglet Notifications, newest first) -->
+    <string name="notice_csv_import_export_title">Importer/exporter le stock (CSV)</string>
+    <string name="notice_csv_import_export_message">Importez ou exportez tout votre stock sous forme de fichier CSV, via Plus. Une fonctionnalité Premium.</string>
+    <string name="notice_premium_title">HomeStock Premium</string>
+    <string name="notice_premium_message">Débloquez Recettes, Scanner un ticket, Statistiques et plus encore avec HomeStock Premium, tout en bas de Plus.</string>
+    <string name="notice_ai_recognition_title">Reconnaissance de produits par IA</string>
+    <string name="notice_ai_recognition_message">Pas de code-barres sur l\'emballage ? Prenez une photo et laissez l\'IA reconnaître le produit et l\'ajouter à votre stock.</string>
+    <string name="notice_receipt_scan_ai_title">Scanner un ticket avec l\'IA</string>
+    <string name="notice_receipt_scan_ai_message">Scannez un ticket de caisse et l\'IA reconnaît automatiquement les produits que vous avez achetés.</string>
+    <string name="notice_recipes_ai_title">Découvrir et générer des recettes</string>
+    <string name="notice_recipes_ai_message">Parcourez une vaste base de données de recettes, ou laissez l\'IA imaginer une recette à partir de votre propre stock.</string>
+    <string name="notice_meal_planner_title">Planificateur de repas</string>
+    <string name="notice_meal_planner_message">Planifiez vos repas par jour en quatre moments : petit-déjeuner, déjeuner, dîner et en-cas.</string>
+    <string name="notice_favorites_title">Favoris</string>
+    <string name="notice_favorites_message">Marquez des produits comme favoris et filtrez rapidement votre stock par favoris.</string>
     <string name="notice_household_sharing_title">Partage avec les colocataires</string>
     <string name="notice_household_sharing_message">Créez un foyer ou rejoignez-en un avec un code (via Plus) pour partager votre stock et votre liste de courses avec vos colocataires.</string>
     <string name="notice_notifications_title">Notifications</string>
     <string name="notice_notifications_message">Toutes les notifications de l\'app et des développeurs se trouvent désormais ici, au même endroit.</string>
-    <string name="notice_color_palette_title">Nouvelle palette de couleurs</string>
-    <string name="notice_color_palette_message">L\'app a une palette de couleurs plus fraîche : vert, terracotta et bleu myrtille.</string>
-    <string name="notice_sort_options_title">Options de tri dans Stock</string>
-    <string name="notice_sort_options_message">Triez votre stock par nom, quantité ou ajout récent.</string>
     <string name="notice_faster_scanning_title">Scan plus rapide</string>
     <string name="notice_faster_scanning_message">Les produits connus sont désormais ajoutés instantanément lors du scan, sans étape intermédiaire.</string>
     <string name="notice_undo_title">Annuler</string>
     <string name="notice_undo_message">Vous avez supprimé quelque chose par erreur ? Restaurez-le immédiatement via la notification en bas de l\'écran.</string>
-    <string name="notice_inventory_cards_title">Stock sous forme de cartes</string>
-    <string name="notice_inventory_cards_message">Basculez entre l\'affichage en liste et en cartes (2 par ligne) dans Stock.</string>
     <string name="notice_shopping_list_stores_title">Liste de courses par magasin</string>
     <string name="notice_shopping_list_stores_message">Votre liste de courses est organisée par magasin, avec modification et photos des produits.</string>
     <string name="notice_statistics_title">Statistiques ajoutées</string>

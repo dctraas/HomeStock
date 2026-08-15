@@ -158,6 +158,7 @@ fun InventoryScreen(
     val deviceProfile = application.container.deviceProfile
     val displayName by deviceProfile.displayName.collectAsState()
     val photoPath by deviceProfile.photoPath.collectAsState()
+    val unreadNoticeCount by application.container.dismissedNoticesStore.unreadCount.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val removedFormat = stringResource(R.string.inventory_removed_snackbar_format)
@@ -256,9 +257,17 @@ fun InventoryScreen(
                         // Meldingen is no longer its own bottom-nav tab (see topLevelDestinations)
                         // — this is now the way to reach it, at the far-left glance position. An
                         // envelope icon rather than a bell — the bell reads as "push
-                        // notification", which this isn't; it's a list of past activity.
+                        // notification", which this isn't; it's a list of past activity. The red
+                        // counter badge tracks unread developer notices specifically (not
+                        // Geschiedenis activity) — see DismissedNoticesStore.unreadCount.
                         IconButton(onClick = onNavigateToNotifications) {
-                            Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news))
+                            if (unreadNoticeCount > 0) {
+                                BadgedBox(badge = { Badge { Text(unreadNoticeCount.toString()) } }) {
+                                    Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news))
+                                }
+                            } else {
+                                Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news))
+                            }
                         }
                     },
                     actions = {

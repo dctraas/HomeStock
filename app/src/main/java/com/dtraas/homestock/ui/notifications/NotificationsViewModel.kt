@@ -33,4 +33,8 @@ class NotificationsViewModel(
     fun dismissNotice(id: String) {
         dismissedNoticesStore.dismiss(id)
     }
+
+    fun markNoticesSeen() {
+        dismissedNoticesStore.markAllSeen()
+    }
 }
