@@ -201,7 +201,7 @@
     <string name="more_stores_empty">Aún no se han añadido tiendas.</string>
     <string name="more_stores_remove_format">Eliminar %1$s</string>
     <string name="more_statistics_title">Estadísticas</string>
-    <string name="more_section_data">DATOS</string>
+    <string name="more_section_household">Hogar</string>
     <string name="more_data_csv_title">Transferir datos</string>
     <string name="more_csv_import_action">Importar (CSV)</string>
     <string name="more_csv_export_action">Exportar (CSV)</string>

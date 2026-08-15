@@ -202,7 +202,7 @@
     <string name="more_stores_empty">Nog geen winkels toegevoegd.</string>
     <string name="more_stores_remove_format">%1$s verwijderen</string>
     <string name="more_statistics_title">Statistieken</string>
-    <string name="more_section_data">GEGEVENS</string>
+    <string name="more_section_household">Huishouden</string>
     <string name="more_data_csv_title">Data overzetten</string>
     <string name="more_csv_import_action">Importeren (CSV)</string>
     <string name="more_csv_export_action">Exporteren (CSV)</string>

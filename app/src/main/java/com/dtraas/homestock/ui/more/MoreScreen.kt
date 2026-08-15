@@ -322,6 +322,14 @@ fun MoreScreen(
                 },
                 onClick = onNavigateToAccountLink,
             )
+            PremiumPromoCard(isPremium = isPremium, onClick = onNavigateToPremium)
+
+            // Huishouden, Winkels, Statistieken and Data overzetten all concern the shared
+            // household rather than this device's own account or app preferences, so they get
+            // their own section between Account and App-instellingen. Gegevens used to be a
+            // section of its own for just the one Data overzetten row — folding it in here
+            // means it no longer needs a header at all.
+            SectionHeader(stringResource(R.string.more_section_household))
             SettingsRow(
                 icon = Icons.Filled.Home,
                 title = stringResource(R.string.more_household_title),
@@ -335,22 +343,24 @@ fun MoreScreen(
                 ),
                 onClick = onNavigateToHousehold,
             )
-            // Premium and Statistieken folded into Account rather than their own "Slimme
-            // Tools" section — both are account-level concerns (subscription status, usage),
-            // not "tools" alongside things like the barcode scanner, and having them share
-            // Account's header keeps the screen from splitting into an extra section for just
-            // two rows. Recepten, Bonnetje scannen, AI-productherkenning en Maaltijdplanner
-            // used to have rows here too, but all four already have a real entry point
-            // elsewhere (Recepten/Maaltijdplanner are bottom-nav tabs, Bonnetje scannen/
-            // AI-productherkenning live in Voorraad's "+" menu — see AddMenuDialog in
-            // InventoryScreen.kt) — duplicating them here just added clutter, not reach.
+            SettingsRow(
+                icon = Icons.Filled.Storefront,
+                title = stringResource(R.string.more_stores_title),
+                subtitle = stringResource(R.string.more_stores_count_format, stores.size),
+                onClick = { showStoresDialog = true },
+            )
             SettingsRow(
                 icon = Icons.Filled.BarChart,
                 title = stringResource(R.string.more_statistics_title),
                 trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                 onClick = { if (isPremium) onNavigateToStatistics() else onNavigateToPremium() },
             )
-            PremiumPromoCard(isPremium = isPremium, onClick = onNavigateToPremium)
+            SettingsRow(
+                icon = Icons.Filled.ImportExport,
+                title = stringResource(R.string.more_data_csv_title),
+                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                onClick = { if (isPremium) showImportExportDialog = true else onNavigateToPremium() },
+            )
 
             SectionHeader(stringResource(R.string.more_section_preferences))
             SettingsRow(
@@ -370,20 +380,6 @@ fun MoreScreen(
                 title = stringResource(R.string.more_language_title),
                 subtitle = stringResource(currentLanguage.labelRes),
                 onClick = { showLanguageDialog = true },
-            )
-            SettingsRow(
-                icon = Icons.Filled.Storefront,
-                title = stringResource(R.string.more_stores_title),
-                subtitle = stringResource(R.string.more_stores_count_format, stores.size),
-                onClick = { showStoresDialog = true },
-            )
-
-            SectionHeader(stringResource(R.string.more_section_data))
-            SettingsRow(
-                icon = Icons.Filled.ImportExport,
-                title = stringResource(R.string.more_data_csv_title),
-                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
-                onClick = { if (isPremium) showImportExportDialog = true else onNavigateToPremium() },
             )
 
             SectionHeader(stringResource(R.string.more_section_about))
