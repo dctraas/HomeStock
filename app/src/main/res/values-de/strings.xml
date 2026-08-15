@@ -184,7 +184,7 @@
     <string name="account_link_unlink_dialog_title">Konto trennen?</string>
     <string name="account_link_unlink_dialog_text">Dein Haushaltszugriff ist dann nicht mehr geschützt — wenn du die App deinstallierst oder das Gerät wechselst, kannst du den Zugriff auf diesen Haushalt erneut verlieren.</string>
     <string name="account_link_unlink_error">Trennen ist fehlgeschlagen. Bitte versuche es erneut.</string>
-    <string name="more_section_preferences">APP-EINSTELLUNGEN</string>
+    <string name="more_section_preferences">App-Einstellungen</string>
     <string name="more_theme_title">Design</string>
     <string name="more_theme_option_system">Systemstandard</string>
     <string name="more_theme_option_light">Hell</string>
@@ -212,7 +212,7 @@
     <string name="more_import_skipped_format">%1$d Zeilen übersprungen.</string>
     <string name="more_import_empty">Keine gültigen Zeilen in der Datei gefunden.</string>
     <string name="more_import_error">Import fehlgeschlagen</string>
-    <string name="more_section_about">SUPPORT</string>
+    <string name="more_section_about">Support</string>
     <string name="more_about_version_format">App-Version %1$s</string>
     <string name="more_about_feedback">Feedback geben</string>
     <string name="more_about_rate_app">App bewerten</string>

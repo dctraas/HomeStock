@@ -185,7 +185,7 @@
     <string name="account_link_unlink_dialog_title">Account ontkoppelen?</string>
     <string name="account_link_unlink_dialog_text">Je huishouden-toegang is dan niet meer beschermd — als je de app verwijdert of van toestel wisselt, kun je opnieuw de toegang tot dit huishouden verliezen.</string>
     <string name="account_link_unlink_error">Ontkoppelen is niet gelukt. Probeer het opnieuw.</string>
-    <string name="more_section_preferences">APP-INSTELLINGEN</string>
+    <string name="more_section_preferences">App-Instellingen</string>
     <string name="more_theme_title">Thema</string>
     <string name="more_theme_option_system">Systeem standaard</string>
     <string name="more_theme_option_light">Licht</string>
@@ -213,7 +213,7 @@
     <string name="more_import_skipped_format">%1$d regels overgeslagen.</string>
     <string name="more_import_empty">Geen geldige regels gevonden in het bestand.</string>
     <string name="more_import_error">Importeren mislukt</string>
-    <string name="more_section_about">ONDERSTEUNING</string>
+    <string name="more_section_about">Ondersteuning</string>
     <string name="more_about_version_format">App versie %1$s</string>
     <string name="more_about_feedback">Feedback geven</string>
     <string name="more_about_rate_app">Beoordeel de app</string>

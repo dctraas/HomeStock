@@ -364,12 +364,6 @@ fun MoreScreen(
 
             SectionHeader(stringResource(R.string.more_section_preferences))
             SettingsRow(
-                icon = Icons.Filled.DarkMode,
-                title = stringResource(R.string.more_theme_title),
-                subtitle = stringResource(themeMode.labelRes()),
-                onClick = { showThemeDialog = true },
-            )
-            SettingsRow(
                 icon = Icons.Filled.Notifications,
                 title = stringResource(R.string.more_notifications_row_title),
                 subtitle = stringResource(if (notificationsEnabled) R.string.common_on else R.string.common_off),
@@ -380,6 +374,12 @@ fun MoreScreen(
                 title = stringResource(R.string.more_language_title),
                 subtitle = stringResource(currentLanguage.labelRes),
                 onClick = { showLanguageDialog = true },
+            )
+            SettingsRow(
+                icon = Icons.Filled.DarkMode,
+                title = stringResource(R.string.more_theme_title),
+                subtitle = stringResource(themeMode.labelRes()),
+                onClick = { showThemeDialog = true },
             )
 
             SectionHeader(stringResource(R.string.more_section_about))

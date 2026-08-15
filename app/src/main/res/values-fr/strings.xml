@@ -184,7 +184,7 @@
     <string name="account_link_unlink_dialog_title">Dissocier le compte ?</string>
     <string name="account_link_unlink_dialog_text">Votre accès au foyer ne sera plus protégé — si vous désinstallez l\'application ou changez d\'appareil, vous pourriez de nouveau perdre l\'accès à ce foyer.</string>
     <string name="account_link_unlink_error">Impossible de dissocier le compte. Réessayez.</string>
-    <string name="more_section_preferences">PARAMÈTRES DE L\'APPLICATION</string>
+    <string name="more_section_preferences">Paramètres de l\'Application</string>
     <string name="more_theme_title">Thème</string>
     <string name="more_theme_option_system">Système par défaut</string>
     <string name="more_theme_option_light">Clair</string>
@@ -212,7 +212,7 @@
     <string name="more_import_skipped_format">%1$d lignes ignorées.</string>
     <string name="more_import_empty">Aucune ligne valide trouvée dans le fichier.</string>
     <string name="more_import_error">Échec de l\'importation</string>
-    <string name="more_section_about">ASSISTANCE</string>
+    <string name="more_section_about">Assistance</string>
     <string name="more_about_version_format">Version de l\'app %1$s</string>
     <string name="more_about_feedback">Donner mon avis</string>
     <string name="more_about_rate_app">Évaluer l\'application</string>
