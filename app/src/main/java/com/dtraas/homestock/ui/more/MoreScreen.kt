@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Accessibility
-import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
@@ -49,6 +48,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -386,13 +386,6 @@ fun MoreScreen(
                 subtitle = accessibilitySubtitle(largeText, highContrast),
                 onClick = { showAccessibilityDialog = true },
             )
-            SettingsSwitchRow(
-                icon = Icons.Filled.AddShoppingCart,
-                title = stringResource(R.string.more_auto_restock_title),
-                subtitle = stringResource(R.string.more_auto_restock_subtitle),
-                checked = autoRestockEnabled,
-                onCheckedChange = inventoryPreferences::setAutoRestockEnabled,
-            )
             SettingsRow(
                 icon = Icons.Filled.ImportExport,
                 title = stringResource(R.string.more_data_csv_title),
@@ -521,6 +514,8 @@ fun MoreScreen(
         NotificationsDialog(
             expiryEnabled = notificationsEnabled,
             onExpiryEnabledChange = ::setNotificationsEnabled,
+            autoRestockEnabled = autoRestockEnabled,
+            onAutoRestockEnabledChange = inventoryPreferences::setAutoRestockEnabled,
             onDismiss = { showNotificationsDialog = false },
         )
     }
@@ -703,56 +698,6 @@ private fun SettingsRow(
     }
 }
 
-/** Same look as [SettingsRow], but a self-contained on/off toggle (see the debug Premium-
- *  override row for the pattern this was extracted from) rather than something that opens a
- *  dialog on tap — for a setting that's just one boolean, with nothing else to configure. */
-@Composable
-private fun SettingsSwitchRow(
-    icon: ImageVector,
-    title: String,
-    subtitle: String,
-    checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit,
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = SoftCardShape,
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp).fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Surface(
-                shape = SoftBadgeShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(44.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                }
-            }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 12.dp),
-            ) {
-                Text(title, style = MaterialTheme.typography.titleSmall)
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Switch(checked = checked, onCheckedChange = onCheckedChange)
-        }
-    }
-}
-
 /**
  * Promo card for upgrading, sitting at the bottom of Slimme Tools rather than a plain row in
  * Account — the tools right above it are exactly what it's selling, so this reads as "here's
@@ -907,24 +852,47 @@ private fun AccessibilityDialog(
 }
 
 @Composable
-private fun NotificationsDialog(expiryEnabled: Boolean, onExpiryEnabledChange: (Boolean) -> Unit, onDismiss: () -> Unit) {
+private fun NotificationsDialog(
+    expiryEnabled: Boolean,
+    onExpiryEnabledChange: (Boolean) -> Unit,
+    autoRestockEnabled: Boolean,
+    onAutoRestockEnabledChange: (Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.more_notifications_row_title)) },
         text = {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.more_expiry_notifications_title), style = MaterialTheme.typography.titleSmall)
-                    Text(
-                        text = stringResource(R.string.more_expiry_notifications_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.more_expiry_notifications_title), style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            text = stringResource(R.string.more_expiry_notifications_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = expiryEnabled, onCheckedChange = onExpiryEnabledChange)
                 }
-                Switch(checked = expiryEnabled, onCheckedChange = onExpiryEnabledChange)
+                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.more_auto_restock_title), style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            text = stringResource(R.string.more_auto_restock_subtitle),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = autoRestockEnabled, onCheckedChange = onAutoRestockEnabledChange)
+                }
             }
         },
         confirmButton = {
