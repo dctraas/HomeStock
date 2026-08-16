@@ -1,6 +1,7 @@
 package com.dtraas.homestock.data.repository
 
 import android.net.Uri
+import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.remote.observeSnapshots
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
@@ -27,6 +28,10 @@ data class HouseholdMember(
     val photoUrl: String?,
     val isPremium: Boolean,
     val isCurrentDevice: Boolean,
+    // Allergens/dietary exclusions this member set for themselves (see updateExcludedAllergens)
+    // — only ever writable by that member's own device, readable by the whole household so
+    // recipe suggestions can steer clear of everyone's restrictions at once.
+    val excludedAllergens: Set<Allergen> = emptySet(),
 )
 
 /**
@@ -105,12 +110,17 @@ class HouseholdMembersRepository(
                     snapshot.documents
                         .sortedBy { it.getLong("joinedAt") ?: Long.MAX_VALUE }
                         .map { doc ->
+                            @Suppress("UNCHECKED_CAST")
+                            val allergenKeys = doc.get("excludedAllergens") as? List<String> ?: emptyList()
                             HouseholdMember(
                                 uid = doc.id,
                                 displayName = doc.getString("displayName"),
                                 photoUrl = doc.getString("photoUrl"),
                                 isPremium = doc.getBoolean("isPremium") == true,
                                 isCurrentDevice = doc.id == currentUid,
+                                excludedAllergens = allergenKeys.mapNotNullTo(mutableSetOf()) { key ->
+                                    runCatching { Allergen.valueOf(key) }.getOrNull()
+                                },
                             )
                         }
                 }
@@ -189,6 +199,22 @@ class HouseholdMembersRepository(
             }
         }
     }
+
+    /** This device's own allergens/dietary exclusions, saved so the rest of the household can
+     *  see them (see [HouseholdMember.excludedAllergens]) — never writes another member's doc. */
+    suspend fun updateExcludedAllergens(allergens: Set<Allergen>) {
+        val householdId = householdSession.householdId.value ?: return
+        val uid = auth.currentUser?.uid ?: return
+        membersCollection(householdId).document(uid)
+            .set(mapOf("excludedAllergens" to allergens.map { it.name }), SetOptions.merge())
+            .await()
+    }
+
+    /** Union of every member's own [HouseholdMember.excludedAllergens] — the household-wide
+     *  default recipe suggestions should steer clear of, so nobody has to remember to exclude
+     *  a housemate's allergen by hand every time they browse recipes. */
+    fun observeHouseholdExcludedAllergens(): Flow<Set<Allergen>> =
+        observeMembers().map { members -> members.flatMapTo(mutableSetOf()) { it.excludedAllergens } }
 
     private suspend fun syncPremiumStatus(householdId: String, isPremium: Boolean) {
         val uid = auth.currentUser?.uid ?: return

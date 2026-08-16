@@ -145,6 +145,8 @@
     <string name="more_household_members_title">Leden</string>
     <string name="more_household_member_unnamed">Naamloos lid</string>
     <string name="more_household_member_you">Jij</string>
+    <string name="household_allergens_menu_cd">Mijn allergenen en dieetwensen</string>
+    <string name="household_member_allergens_format">Vermijdt: %1$s</string>
     <string name="more_rename_household_error">Kon de naam niet wijzigen. Probeer het opnieuw.</string>
     <string name="more_premium_title">HomeStock Premium</string>
     <string name="more_premium_active">Actief</string>

@@ -90,7 +90,7 @@ fun RecipesScreen(
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: RecipesViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { RecipesViewModel(application.container.recipeRepository) }
+            initializer { RecipesViewModel(application.container.recipeRepository, application.container.householdMembersRepository) }
         },
     )
     val uiState by viewModel.uiState.collectAsState()

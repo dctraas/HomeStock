@@ -20,14 +20,20 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,11 +65,14 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
+import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.data.repository.HouseholdInviteLink
 import com.dtraas.homestock.data.repository.HouseholdMember
+import com.dtraas.homestock.data.repository.HouseholdMembersRepository
 import com.dtraas.homestock.data.repository.HouseholdRepository
 import com.dtraas.homestock.data.repository.RecentHousehold
+import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import kotlinx.coroutines.launch
 
@@ -216,6 +225,12 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                     isDeleting = isDeleting,
                     onLeaveClick = { showLeaveConfirm = true },
                     onDeleteClick = { showDeleteConfirm = true },
+                    myExcludedAllergens = members.firstOrNull { it.isCurrentDevice }?.excludedAllergens ?: emptySet(),
+                    onToggleMyAllergen = { allergen ->
+                        val current = members.firstOrNull { it.isCurrentDevice }?.excludedAllergens ?: emptySet()
+                        val updated = if (allergen in current) current - allergen else current + allergen
+                        coroutineScope.launch { householdMembersRepository.updateExcludedAllergens(updated) }
+                    },
                 )
 
                 if (otherHouseholds.isNotEmpty()) {
@@ -377,6 +392,8 @@ private fun HouseholdSection(
     isDeleting: Boolean,
     onLeaveClick: () -> Unit,
     onDeleteClick: () -> Unit,
+    myExcludedAllergens: Set<Allergen>,
+    onToggleMyAllergen: (Allergen) -> Unit,
 ) {
     SectionCard {
         Text(stringResource(R.string.household_name_label), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
@@ -387,12 +404,18 @@ private fun HouseholdSection(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Text(
-            text = stringResource(R.string.more_household_members_title),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(top = 4.dp),
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.more_household_members_title),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(1f),
+            )
+            MyAllergensMenuButton(excludedAllergens = myExcludedAllergens, onToggle = onToggleMyAllergen)
+        }
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             members.forEach { member -> HouseholdMemberRow(member) }
         }
@@ -536,17 +559,66 @@ private fun HouseholdMemberRow(member: HouseholdMember) {
                 }
             }
         }
-        Text(
-            text = member.displayName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.more_household_member_unnamed),
-            style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.weight(1f).padding(start = 12.dp),
-        )
+        Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+            Text(
+                text = member.displayName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.more_household_member_unnamed),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+            // Visible to the whole household, editable only by that member's own device (see
+            // MyAllergensMenuButton) — the point is everyone can see at a glance what to avoid
+            // when picking recipes together, not just the person who set it.
+            if (member.excludedAllergens.isNotEmpty()) {
+                // .map { stringResource(...) } (an inline stdlib call) rather than
+                // .joinToString(...) { stringResource(...) } — joinToString's transform lambda
+                // isn't inline, so a @Composable call inside it wouldn't compile.
+                val labels = member.excludedAllergens.sortedBy { it.ordinal }.map { stringResource(it.labelRes) }
+                Text(
+                    text = stringResource(R.string.household_member_allergens_format, labels.joinToString(", ")),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
         if (member.isCurrentDevice) {
             Text(
                 text = stringResource(R.string.more_household_member_you),
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+/**
+ * Same dropdown-of-checkable-items shape as RecipesScreen's AllergenFilterMenuButton, reused
+ * here for a different purpose: this one *writes* a persistent per-member preference (see
+ * [HouseholdMembersRepository.updateExcludedAllergens]) rather than an ephemeral session filter.
+ * Only ever edits the current device's own entry.
+ */
+@Composable
+private fun MyAllergensMenuButton(excludedAllergens: Set<Allergen>, onToggle: (Allergen) -> Unit) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { menuExpanded = true }) {
+            if (excludedAllergens.isEmpty()) {
+                Icon(Icons.Filled.FilterAlt, contentDescription = stringResource(R.string.household_allergens_menu_cd))
+            } else {
+                BadgedBox(badge = { Badge() }) {
+                    Icon(Icons.Filled.FilterAlt, contentDescription = stringResource(R.string.household_allergens_menu_cd))
+                }
+            }
+        }
+        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+            RecipeRepository.filterableAllergens.forEach { allergen ->
+                val selected = allergen in excludedAllergens
+                DropdownMenuItem(
+                    text = { Text(stringResource(allergen.labelRes)) },
+                    trailingIcon = {
+                        if (selected) Icon(Icons.Filled.Check, contentDescription = null)
+                    },
+                    onClick = { onToggle(allergen) },
+                )
+            }
         }
     }
 }

@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.repository.GenerateRecipeResult
+import com.dtraas.homestock.data.repository.HouseholdMembersRepository
 import com.dtraas.homestock.data.repository.RecipePage
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -60,10 +62,19 @@ data class RecipesUiState(
  */
 class RecipesViewModel(
     private val recipeRepository: RecipeRepository,
+    private val householdMembersRepository: HouseholdMembersRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RecipesUiState())
     val uiState: StateFlow<RecipesUiState> = _uiState
+
+    // Seeded once, the first time load() runs — not kept live — from every household member's
+    // own saved allergen preferences (see HouseholdSettingsScreen's "Mijn allergenen"), so
+    // recipe suggestions steer clear of a housemate's allergy by default without anyone having
+    // to remember to toggle it by hand every time. Once seeded, the per-session toggleAllergen
+    // filter is free to add/remove on top without a housemate's later preference change (which
+    // would arrive as a new emission from the same flow) silently overwriting it mid-session.
+    private var hasSeededHouseholdAllergens = false
 
     /** Emits the newly generated recipe's id once [generateRecipe] succeeds — the screen navigates to RecipeDetailScreen with it. */
     private val _generatedRecipeId = MutableSharedFlow<String>()
@@ -89,7 +100,16 @@ class RecipesViewModel(
     /** [languageTag] (e.g. "nl") drives the cuisine/region boost in RecipeRepository — see its doc. Refreshes whichever tab is currently selected. */
     fun load(languageTag: String? = null) {
         this.languageTag = languageTag
-        refreshCurrentTab()
+        if (hasSeededHouseholdAllergens) {
+            refreshCurrentTab()
+        } else {
+            hasSeededHouseholdAllergens = true
+            viewModelScope.launch {
+                val householdDefaults = householdMembersRepository.observeHouseholdExcludedAllergens().first()
+                if (householdDefaults.isNotEmpty()) _uiState.update { it.copy(excludedAllergens = householdDefaults) }
+                refreshCurrentTab()
+            }
+        }
     }
 
     fun selectTab(tab: RecipesTab) {
