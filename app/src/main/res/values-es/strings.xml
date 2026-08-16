@@ -531,6 +531,9 @@
     <string name="recipes_favorite_remove_cd">Quitar de favoritos</string>
     <string name="recipes_edit_custom_cd">Editar receta</string>
     <string name="recipes_custom_badge">Receta propia</string>
+    <string name="recipe_tag_quick">Rápido</string>
+    <string name="recipe_tag_kid_friendly">Apto para niños</string>
+    <string name="recipe_tag_leftovers">Sobras</string>
     <string name="recipes_tab_browse">Descubrir</string>
     <string name="recipes_tab_favorites">Favoritos</string>
     <string name="recipes_tab_custom">Mis recetas</string>
@@ -549,6 +552,7 @@
     <string name="custom_recipe_area_placeholder">P. ej. Italiana</string>
     <string name="custom_recipe_ready_minutes_label">Tiempo de preparación en minutos</string>
     <string name="custom_recipe_servings_label">Número de raciones</string>
+    <string name="custom_recipe_tags_title">Etiquetas</string>
     <string name="custom_recipe_ingredients_title">Ingredientes</string>
     <string name="custom_recipe_ingredient_name_placeholder">Ingrediente</string>
     <string name="custom_recipe_ingredient_measure_placeholder">Cantidad</string>

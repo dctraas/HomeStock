@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
@@ -29,6 +30,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -56,6 +58,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
+import com.dtraas.homestock.data.model.RecipeTag
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.theme.SoftCardShape
@@ -179,6 +182,16 @@ fun RecipeDetailScreen(
                     RecipeBadge(icon = Icons.Filled.Edit, label = stringResource(R.string.recipes_custom_badge))
                 } else if (detail.translatedForLocale != null) {
                     RecipeBadge(icon = Icons.Filled.Translate, label = stringResource(R.string.recipes_translated_badge))
+                }
+
+                // Editable only for recipes the household actually kept a durable copy of — see
+                // RecipeRepository.setRecipeTags' doc for why a plain unfavorited Spoonacular
+                // browse result has no tag editor at all rather than a dead-end one.
+                if (detail.isCustom || uiState.isFavorite) {
+                    RecipeTagEditor(
+                        tags = detail.tags.mapNotNull(RecipeTag::fromStorageKey).toSet(),
+                        onToggle = viewModel::toggleTag,
+                    )
                 }
 
                 // Portion scaling — only offered when the recipe actually has a serving count
@@ -427,6 +440,26 @@ private fun formatScaledQuantity(value: Double): String {
         rounded.toLong().toString()
     } else {
         rounded.toString().trimEnd('0').trimEnd('.')
+    }
+}
+
+/** Toggleable chip row for [RecipeTag] — shown under RecipeDetailScreen's badges for a recipe the household has saved (custom or favorited), where tags actually have somewhere to persist. */
+@Composable
+private fun RecipeTagEditor(tags: Set<RecipeTag>, onToggle: (RecipeTag) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(top = 12.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        RecipeTag.entries.forEach { tag ->
+            FilterChip(
+                selected = tag in tags,
+                onClick = { onToggle(tag) },
+                label = { Text(stringResource(tag.labelRes)) },
+            )
+        }
     }
 }
 

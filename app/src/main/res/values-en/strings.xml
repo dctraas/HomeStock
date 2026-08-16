@@ -531,6 +531,9 @@
     <string name="recipes_favorite_remove_cd">Remove from favorites</string>
     <string name="recipes_edit_custom_cd">Edit recipe</string>
     <string name="recipes_custom_badge">Your own recipe</string>
+    <string name="recipe_tag_quick">Quick</string>
+    <string name="recipe_tag_kid_friendly">Kid-friendly</string>
+    <string name="recipe_tag_leftovers">Leftovers</string>
     <string name="recipes_tab_browse">Discover</string>
     <string name="recipes_tab_favorites">Favorites</string>
     <string name="recipes_tab_custom">My recipes</string>
@@ -549,6 +552,7 @@
     <string name="custom_recipe_area_placeholder">E.g. Italian</string>
     <string name="custom_recipe_ready_minutes_label">Prep time in minutes</string>
     <string name="custom_recipe_servings_label">Number of servings</string>
+    <string name="custom_recipe_tags_title">Tags</string>
     <string name="custom_recipe_ingredients_title">Ingredients</string>
     <string name="custom_recipe_ingredient_name_placeholder">Ingredient</string>
     <string name="custom_recipe_ingredient_measure_placeholder">Amount</string>

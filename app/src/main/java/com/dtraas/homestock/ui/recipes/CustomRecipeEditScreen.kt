@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -24,6 +25,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -46,6 +48,7 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
+import com.dtraas.homestock.data.model.RecipeTag
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 
 /**
@@ -196,6 +199,28 @@ private fun CustomRecipeForm(padding: PaddingValues, uiState: CustomRecipeEditUi
                 // fully usable, it just won't offer RecipeDetailScreen's portion-scaling stepper.
                 modifier = Modifier.weight(1f),
             )
+        }
+
+        Text(
+            text = stringResource(R.string.custom_recipe_tags_title),
+            style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(top = 20.dp),
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .horizontalScroll(rememberScrollState())
+                .padding(top = 8.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            RecipeTag.entries.forEach { tag ->
+                FilterChip(
+                    selected = tag in uiState.tags,
+                    onClick = { viewModel.onToggleTag(tag) },
+                    label = { Text(stringResource(tag.labelRes)) },
+                )
+            }
         }
 
         Text(

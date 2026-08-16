@@ -50,6 +50,11 @@ data class RecipeDetail(
     val carbohydrates: Double? = null,
     val isAiGenerated: Boolean = false,
     val isCustom: Boolean = false,
+    // RecipeTag storage keys (see that enum's doc for why only favorites/custom recipes ever
+    // have any) — a plain List<String> rather than List<RecipeTag> so an unrecognized/future key
+    // read back from Firestore doesn't need filtering out here; RecipeTag.fromStorageKey does
+    // that at the UI edge instead.
+    val tags: List<String> = emptyList(),
     val translatedForLocale: String? = null,
     val translatedName: String? = null,
     val translatedCategory: String? = null,

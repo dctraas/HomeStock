@@ -2,6 +2,7 @@ package com.dtraas.homestock.ui.recipes
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dtraas.homestock.data.model.RecipeTag
 import com.dtraas.homestock.data.repository.HouseholdMembersRepository
 import com.dtraas.homestock.data.repository.RecipeDetail
 import com.dtraas.homestock.data.repository.RecipeRepository
@@ -103,6 +104,25 @@ class RecipeDetailViewModel(
         val currentlyFavorite = _uiState.value.isFavorite
         viewModelScope.launch {
             if (currentlyFavorite) recipeRepository.removeFavorite(detail.id) else recipeRepository.addFavorite(detail)
+        }
+    }
+
+    /**
+     * Toggles [tag] on the currently loaded recipe — a no-op if it isn't a custom recipe and
+     * isn't (yet) a favorite either, since [RecipeRepository.setRecipeTags] has nowhere durable
+     * to write it in that case (see that function's doc). RecipeDetailScreen only shows the tag
+     * editor at all when one of those is true, so this guard is a safety net, not the primary gate.
+     */
+    fun toggleTag(tag: RecipeTag) {
+        val detail = _uiState.value.detail ?: return
+        val isFavorite = _uiState.value.isFavorite
+        if (!detail.isCustom && !isFavorite) return
+        val currentTags = detail.tags.mapNotNull(RecipeTag::fromStorageKey).toMutableSet()
+        if (!currentTags.add(tag)) currentTags.remove(tag)
+        val updatedKeys = currentTags.map { it.storageKey }
+        viewModelScope.launch {
+            recipeRepository.setRecipeTags(detail, updatedKeys, isFavorite)
+                .onSuccess { updated -> _uiState.update { it.copy(detail = updated) } }
         }
     }
 }

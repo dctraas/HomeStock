@@ -68,6 +68,7 @@ import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.model.Allergen
+import com.dtraas.homestock.data.model.RecipeTag
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
@@ -178,6 +179,13 @@ fun RecipesScreen(
                     Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                     Text(stringResource(R.string.recipes_add_custom_button), modifier = Modifier.padding(start = 8.dp))
                 }
+            }
+
+            // Tags (see RecipeTag) only ever exist on the household's own saved recipes — never
+            // on a BROWSE/search result (see RecipeSuggestion's doc) — so the filter row only
+            // shows on Favorieten/Eigen recepten.
+            if (uiState.tab == RecipesTab.FAVORITES || uiState.tab == RecipesTab.CUSTOM) {
+                RecipeTagFilterRow(selectedTags = uiState.selectedTags, onToggle = viewModel::toggleTagFilter)
             }
 
             when {
@@ -404,6 +412,28 @@ private fun AllergenFilterMenuButton(excludedAllergens: Set<Allergen>, onToggle:
                     onClick = { onToggle(allergen) },
                 )
             }
+        }
+    }
+}
+
+/** Chip row for filtering Favorieten/Eigen recepten by [RecipeTag] — an AND match against every
+ *  selected tag (see [RecipesViewModel.toggleTagFilter]). Only 3 tags exist, so a plain always-
+ *  visible row reads faster than a dropdown here, unlike [AllergenFilterMenuButton]'s much longer list. */
+@Composable
+private fun RecipeTagFilterRow(selectedTags: Set<RecipeTag>, onToggle: (RecipeTag) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .horizontalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        RecipeTag.entries.forEach { tag ->
+            FilterChip(
+                selected = tag in selectedTags,
+                onClick = { onToggle(tag) },
+                label = { Text(stringResource(tag.labelRes)) },
+            )
         }
     }
 }

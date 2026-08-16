@@ -2,6 +2,7 @@ package com.dtraas.homestock.ui.recipes
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dtraas.homestock.data.model.RecipeTag
 import com.dtraas.homestock.data.repository.RecipeRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -24,6 +25,7 @@ data class CustomRecipeEditUiState(
     val servings: String = "",
     val instructions: String = "",
     val ingredients: List<CustomIngredientInput> = listOf(CustomIngredientInput()),
+    val tags: Set<RecipeTag> = emptySet(),
     val showValidationError: Boolean = false,
     val showSaveError: Boolean = false,
     /** Set once [save] succeeds — the screen navigates to RecipeDetailScreen with this id. */
@@ -70,6 +72,7 @@ class CustomRecipeEditViewModel(
                             ingredients = detail.ingredients
                                 .map { (name, measure) -> CustomIngredientInput(name = name, measure = measure) }
                                 .ifEmpty { listOf(CustomIngredientInput()) },
+                            tags = detail.tags.mapNotNull(RecipeTag::fromStorageKey).toSet(),
                         )
                     }
                 }
@@ -89,6 +92,11 @@ class CustomRecipeEditViewModel(
         if (value.all { it.isDigit() }) _uiState.update { it.copy(servings = value) }
     }
     fun onInstructionsChange(value: String) = _uiState.update { it.copy(instructions = value) }
+
+    fun onToggleTag(tag: RecipeTag) = _uiState.update { state ->
+        val updated = if (tag in state.tags) state.tags - tag else state.tags + tag
+        state.copy(tags = updated)
+    }
 
     fun addIngredientRow() = _uiState.update { it.copy(ingredients = it.ingredients + CustomIngredientInput()) }
 
@@ -128,6 +136,7 @@ class CustomRecipeEditViewModel(
                 servings = state.servings.toIntOrNull(),
                 instructions = state.instructions.takeIf { it.isNotBlank() },
                 ingredients = ingredients,
+                tags = state.tags.map { it.storageKey },
             )
                 .onSuccess { detail -> _uiState.update { it.copy(isSaving = false, savedRecipeId = detail.id) } }
                 .onFailure { _uiState.update { it.copy(isSaving = false, showSaveError = true) } }

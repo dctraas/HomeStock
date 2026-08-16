@@ -532,6 +532,9 @@
     <string name="recipes_favorite_remove_cd">Verwijderen uit favorieten</string>
     <string name="recipes_edit_custom_cd">Recept bewerken</string>
     <string name="recipes_custom_badge">Eigen recept</string>
+    <string name="recipe_tag_quick">Snel</string>
+    <string name="recipe_tag_kid_friendly">Kindvriendelijk</string>
+    <string name="recipe_tag_leftovers">Restjes</string>
     <string name="recipes_tab_browse">Ontdekken</string>
     <string name="recipes_tab_favorites">Favorieten</string>
     <string name="recipes_tab_custom">Mijn recepten</string>
@@ -550,6 +553,7 @@
     <string name="custom_recipe_area_placeholder">Bijv. Italiaans</string>
     <string name="custom_recipe_ready_minutes_label">Bereidingstijd in minuten</string>
     <string name="custom_recipe_servings_label">Aantal porties</string>
+    <string name="custom_recipe_tags_title">Labels</string>
     <string name="custom_recipe_ingredients_title">Ingrediënten</string>
     <string name="custom_recipe_ingredient_name_placeholder">Ingrediënt</string>
     <string name="custom_recipe_ingredient_measure_placeholder">Hoeveelheid</string>

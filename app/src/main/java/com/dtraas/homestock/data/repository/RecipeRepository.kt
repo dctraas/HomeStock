@@ -23,9 +23,17 @@ import kotlinx.coroutines.tasks.await
  * actually uses — null when the list it came from wasn't built from inventory in the first
  * place (see [RecipeRepository.browseAllRecipes]/[RecipeRepository.searchRecipesByName]), as
  * opposed to zero, which would wrongly claim "matches nothing". [matchesArea] is whether it's
- * from the cuisine/region tied to the app's current language.
+ * from the cuisine/region tied to the app's current language. [tags] (see [RecipeTag]) is only
+ * ever non-empty for [RecipeRepository.observeFavoriteRecipes]/[RecipeRepository.observeCustomRecipes]
+ * results — carried here (rather than requiring a full detail fetch) so RecipesViewModel can
+ * filter Favorites/Eigen recepten by tag without a network round trip per row.
  */
-data class RecipeSuggestion(val meal: RecipeSummary, val matchCount: Int? = null, val matchesArea: Boolean = false)
+data class RecipeSuggestion(
+    val meal: RecipeSummary,
+    val matchCount: Int? = null,
+    val matchesArea: Boolean = false,
+    val tags: List<String> = emptyList(),
+)
 
 /** One page of [RecipeRepository.browseAllRecipes]/[RecipeRepository.searchRecipesByName] — [hasMore] mirrors Spoonacular's own `totalResults` for that exact query, so the caller knows whether a further [loadMore]-style call (same params, next `offset`) is worth making. */
 data class RecipePage(val suggestions: List<RecipeSuggestion>, val hasMore: Boolean)
@@ -273,7 +281,7 @@ class RecipeRepository(
                     snapshot.documents
                         .mapNotNull { mapFirestoreDocToDetail(it, isCustom = true) }
                         .sortedBy { it.name.lowercase() }
-                        .map { RecipeSuggestion(RecipeSummary(it.id, it.name, it.thumbnailUrl)) }
+                        .map { RecipeSuggestion(RecipeSummary(it.id, it.name, it.thumbnailUrl), tags = it.tags) }
                 }
             }
         }
@@ -294,6 +302,7 @@ class RecipeRepository(
         servings: Int?,
         instructions: String?,
         ingredients: List<Pair<String, String>>,
+        tags: List<String> = emptyList(),
     ): Result<RecipeDetail> {
         val trimmedName = name.trim()
         if (trimmedName.isEmpty()) return Result.failure(IllegalArgumentException("name is required"))
@@ -310,6 +319,7 @@ class RecipeRepository(
             readyInMinutes = readyInMinutes,
             servings = servings,
             isCustom = true,
+            tags = tags,
         )
         return try {
             customRecipesCollection(householdId).document(recipeId).set(detailToFirestoreMap(detail)).await()
@@ -337,7 +347,7 @@ class RecipeRepository(
         observeFavoriteSnapshots().map { docs ->
             docs.mapNotNull { mapFirestoreDocToDetail(it) }
                 .sortedBy { it.name.lowercase() }
-                .map { RecipeSuggestion(RecipeSummary(it.id, it.name, it.thumbnailUrl)) }
+                .map { RecipeSuggestion(RecipeSummary(it.id, it.name, it.thumbnailUrl), tags = it.tags) }
         }
 
     /** Cheap membership check for RecipeDetailScreen's favorite toggle — avoids mapping full detail just to know one id's state. */
@@ -361,6 +371,28 @@ class RecipeRepository(
     suspend fun removeFavorite(id: String) {
         val householdId = householdSession.householdId.value ?: return
         favoriteRecipesCollection(householdId).document(id).delete().await()
+    }
+
+    /**
+     * Persists [tags] (RecipeTag storage keys) on [detail] by writing to whichever of its own
+     * collections currently store it — its custom-recipe doc when [RecipeDetail.isCustom], its
+     * favorite doc when [isFavorite] — since tags only mean anything on a recipe the household
+     * actually kept a durable copy of. A plain, unfavorited Spoonacular browse result has nowhere
+     * to persist them, so this is a no-op (success, unchanged) rather than an error in that case;
+     * the UI is expected to simply not offer tag editing there in the first place.
+     */
+    suspend fun setRecipeTags(detail: RecipeDetail, tags: List<String>, isFavorite: Boolean): Result<RecipeDetail> {
+        if (!detail.isCustom && !isFavorite) return Result.success(detail)
+        val householdId = householdSession.householdId.value ?: return Result.failure(IllegalStateException("no_household"))
+        val updated = detail.copy(tags = tags)
+        return try {
+            if (detail.isCustom) customRecipesCollection(householdId).document(detail.id).update("tags", tags).await()
+            if (isFavorite) favoriteRecipesCollection(householdId).document(detail.id).update("tags", tags).await()
+            cacheDetail(updated)
+            Result.success(updated)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
 
     /**
@@ -675,6 +707,7 @@ class RecipeRepository(
             carbohydrates = (data["carbohydrates"] as? Number)?.toDouble(),
             isAiGenerated = (data["isAiGenerated"] as? Boolean) ?: false,
             isCustom = isCustom || (data["isCustom"] as? Boolean) ?: false,
+            tags = (data["tags"] as? List<*>)?.filterIsInstance<String>() ?: emptyList(),
         )
     }
 
@@ -694,6 +727,7 @@ class RecipeRepository(
         "carbohydrates" to detail.carbohydrates,
         "isAiGenerated" to detail.isAiGenerated,
         "isCustom" to detail.isCustom,
+        "tags" to detail.tags,
     )
 
     /** Maps `generateRecipe`'s {title, cuisine, estimatedMinutes, ingredients, instructions} shape into the same [RecipeDetail] the rest of the app already knows how to render. */

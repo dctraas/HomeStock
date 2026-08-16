@@ -3,6 +3,7 @@ package com.dtraas.homestock.ui.recipes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.homestock.data.model.Allergen
+import com.dtraas.homestock.data.model.RecipeTag
 import com.dtraas.homestock.data.repository.GenerateRecipeResult
 import com.dtraas.homestock.data.repository.HouseholdMembersRepository
 import com.dtraas.homestock.data.repository.RecipePage
@@ -16,6 +17,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -36,6 +38,10 @@ data class RecipesUiState(
     val recipes: List<RecipeSuggestion> = emptyList(),
     val loadError: RecipesLoadError? = null,
     val excludedAllergens: Set<Allergen> = emptySet(),
+    // Only meaningful for FAVORITES/CUSTOM — see RecipesViewModel.launchLiveList. BROWSE/search
+    // results never carry tags at all (see RecipeSuggestion's doc), so this filter simply isn't
+    // shown on that tab.
+    val selectedTags: Set<RecipeTag> = emptySet(),
     val searchQuery: String = "",
     val isGenerating: Boolean = false,
     val generateError: GenerateRecipeError? = null,
@@ -84,6 +90,11 @@ class RecipesViewModel(
     // need the caller (RecipesScreen) to keep threading the current app language through every action.
     private var languageTag: String? = null
 
+    // Mirrors RecipesUiState.selectedTags — a separate flow (rather than deriving from _uiState
+    // itself) so launchLiveList's combine() below only re-filters on an actual tag-filter change,
+    // not on every unrelated uiState update (e.g. isLoading toggling).
+    private val selectedTags = MutableStateFlow<Set<RecipeTag>>(emptySet())
+
     // Whichever tab's list is currently being collected — cancelled and replaced on every tab
     // switch/reload so a stale Favorites/Custom Firestore listener (or an in-flight Spoonacular
     // call) from before a switch can't race a newer one and overwrite it with older data.
@@ -127,10 +138,17 @@ class RecipesViewModel(
         }
     }
 
+    /** Favorites/Custom are further filtered client-side by [selectedTags] (an AND match — a
+     *  recipe must carry every selected tag) — small, already-loaded lists, so no need for a
+     *  separate Firestore query per tag combination the way BROWSE's allergen filter needs one. */
     private fun launchLiveList(source: () -> Flow<List<RecipeSuggestion>>): Job =
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, loadError = null) }
-            source().collect { list -> _uiState.update { it.copy(isLoading = false, recipes = list, loadError = null) } }
+            combine(source(), selectedTags) { list, tags ->
+                if (tags.isEmpty()) list else list.filter { recipe -> tags.all { it.storageKey in recipe.tags } }
+            }.collect { filtered ->
+                _uiState.update { it.copy(isLoading = false, recipes = filtered, loadError = null) }
+            }
         }
 
     private fun launchBrowseOrSearch(): Job = viewModelScope.launch {
@@ -203,6 +221,16 @@ class RecipesViewModel(
     fun clearSearch() {
         _uiState.update { it.copy(searchQuery = "") }
         search()
+    }
+
+    /** Toggles [tag] in/out of the Favorites/Custom tag filter (see [launchLiveList]) — an AND
+     *  match against every currently selected tag. No re-fetch needed: both lists are already
+     *  live-collected in full, this only changes which of them pass the filter. */
+    fun toggleTagFilter(tag: RecipeTag) {
+        val current = _uiState.value.selectedTags
+        val updated = if (tag in current) current - tag else current + tag
+        _uiState.update { it.copy(selectedTags = updated) }
+        selectedTags.value = updated
     }
 
     /** Toggles [allergen] in/out of the exclusion filter and re-fetches. */
