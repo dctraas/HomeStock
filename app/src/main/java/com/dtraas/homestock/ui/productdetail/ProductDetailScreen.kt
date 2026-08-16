@@ -9,6 +9,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,6 +27,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -368,6 +370,7 @@ fun ProductDetailScreen(
 
                         ExpirationRow(
                             expirationDate = uiState.expirationDate,
+                            category = category,
                             onDateChange = viewModel::setExpirationDate,
                         )
 
@@ -1074,7 +1077,7 @@ private val statusValueMinWidth = 130.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ExpirationRow(expirationDate: Long?, onDateChange: (Long?) -> Unit) {
+private fun ExpirationRow(expirationDate: Long?, category: Category, onDateChange: (Long?) -> Unit) {
     var showPicker by remember { mutableStateOf(false) }
     val isNearExpiry = expirationDate != null && daysUntilExpiration(expirationDate) <= 3
 
@@ -1104,6 +1107,29 @@ private fun ExpirationRow(expirationDate: Long?, onDateChange: (Long?) -> Unit) 
                     }
                 }
             }
+        }
+    }
+
+    // A one-tap estimate based on the product's category (see Category.defaultShelfLifeDays'
+    // doc) — only offered while nothing's set yet, so it reads as "no idea? here's a guess"
+    // rather than second-guessing a date the household already entered themselves.
+    val suggestedDays = category.defaultShelfLifeDays
+    if (expirationDate == null && suggestedDays != null) {
+        TextButton(
+            onClick = {
+                val suggestedMillis = LocalDate.now().plusDays(suggestedDays.toLong())
+                    .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+                onDateChange(suggestedMillis)
+            },
+            contentPadding = PaddingValues(0.dp),
+            modifier = Modifier.padding(top = 4.dp),
+        ) {
+            Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
+            Text(
+                text = stringResource(R.string.product_detail_expiration_suggest_format, suggestedDays),
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.padding(start = 6.dp),
+            )
         }
     }
 
