@@ -1,6 +1,11 @@
 package com.dtraas.homestock.ui.shoppinglist
 
+import android.app.Activity
+import android.content.ActivityNotFoundException
 import android.content.Intent
+import android.speech.RecognizerIntent
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -32,6 +37,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
@@ -163,6 +169,10 @@ fun ShoppingListScreen() {
     val coroutineScope = rememberCoroutineScope()
     val removedFormat = stringResource(R.string.shopping_list_removed_format)
     val undoLabel = stringResource(R.string.common_undo)
+    val voiceUnavailableMessage = stringResource(R.string.shopping_list_voice_input_unavailable)
+    val onVoiceInputUnavailable: () -> Unit = {
+        coroutineScope.launch { snackbarHostState.showSnackbar(voiceUnavailableMessage, duration = SnackbarDuration.Short) }
+    }
 
     // Resolved once via stringResource (composable-only) rather than inside the plain onClick
     // lambda below, which runs outside composition — same pattern as MoreScreen's CSV export.
@@ -361,6 +371,7 @@ fun ShoppingListScreen() {
                 stores = stores,
                 onAddStore = viewModel::addStore,
                 onDismiss = { showAddDialog = false },
+                onVoiceInputUnavailable = onVoiceInputUnavailable,
                 onConfirm = { name, category, store, quantity, note, unit ->
                     viewModel.addItem(name, category, store, quantity, note.trim().ifBlank { null }, unit)
                     showAddDialog = false
@@ -382,6 +393,7 @@ fun ShoppingListScreen() {
                 stores = stores,
                 onAddStore = viewModel::addStore,
                 onDismiss = { editingItem = null },
+                onVoiceInputUnavailable = onVoiceInputUnavailable,
                 onConfirm = { name, category, store, quantity, note, unit ->
                     viewModel.updateItem(
                         item.copy(
@@ -945,6 +957,7 @@ private fun ItemFormDialog(
     stores: List<StoreEntity>,
     onAddStore: (String) -> Unit,
     onDismiss: () -> Unit,
+    onVoiceInputUnavailable: () -> Unit = {},
     onConfirm: (
         name: String,
         category: Category,
@@ -960,6 +973,21 @@ private fun ItemFormDialog(
     var quantity by remember { mutableIntStateOf(initialQuantity) }
     var note by remember { mutableStateOf(initialNote) }
     var unit by remember { mutableStateOf(initialUnit) }
+
+    // Pre-fills the name field with the transcription — never auto-submits, same reasoning as
+    // the AI product-recognition camera: speech recognition can mishear, so the household still
+    // gets to look at (and correct) the result before it becomes a real list item.
+    val speechRecognizerLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spoken = result.data
+                ?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)
+                ?.firstOrNull()
+            if (!spoken.isNullOrBlank()) name = spoken
+        }
+    }
+    val voicePrompt = stringResource(R.string.shopping_list_voice_input_prompt)
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -981,6 +1009,23 @@ private fun ItemFormDialog(
                         value = name,
                         onValueChange = { name = it },
                         label = { Text(stringResource(R.string.common_name)) },
+                        trailingIcon = {
+                            IconButton(
+                                onClick = {
+                                    val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                                        putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                                        putExtra(RecognizerIntent.EXTRA_PROMPT, voicePrompt)
+                                    }
+                                    try {
+                                        speechRecognizerLauncher.launch(intent)
+                                    } catch (e: ActivityNotFoundException) {
+                                        onVoiceInputUnavailable()
+                                    }
+                                },
+                            ) {
+                                Icon(Icons.Filled.Mic, contentDescription = stringResource(R.string.shopping_list_voice_input_cd))
+                            }
+                        },
                         modifier = Modifier.fillMaxWidth(),
                     )
                     CategoryDropdown(

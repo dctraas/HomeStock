@@ -395,6 +395,9 @@
     <string name="shopping_list_check_all_cd">Tout cocher</string>
     <string name="shopping_list_share_cd">Partager la liste de courses</string>
     <string name="shopping_list_share_title">Liste de courses</string>
+    <string name="shopping_list_voice_input_cd">Dicter le nom</string>
+    <string name="shopping_list_voice_input_prompt">Dites le nom du produit</string>
+    <string name="shopping_list_voice_input_unavailable">La reconnaissance vocale n\'est pas disponible sur cet appareil</string>
     <string name="shopping_list_add_item_cd">Ajouter un article</string>
     <string name="shopping_list_search_placeholder">Rechercher dans la liste de courses…</string>
     <string name="shopping_list_removed_format">%1$s supprimé</string>

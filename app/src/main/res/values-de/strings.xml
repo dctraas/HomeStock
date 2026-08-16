@@ -395,6 +395,9 @@
     <string name="shopping_list_check_all_cd">Alles abhaken</string>
     <string name="shopping_list_share_cd">Einkaufsliste teilen</string>
     <string name="shopping_list_share_title">Einkaufsliste</string>
+    <string name="shopping_list_voice_input_cd">Namen einsprechen</string>
+    <string name="shopping_list_voice_input_prompt">Sag den Produktnamen</string>
+    <string name="shopping_list_voice_input_unavailable">Spracherkennung ist auf diesem Gerät nicht verfügbar</string>
     <string name="shopping_list_add_item_cd">Artikel hinzufügen</string>
     <string name="shopping_list_search_placeholder">Einkaufsliste durchsuchen…</string>
     <string name="shopping_list_removed_format">%1$s entfernt</string>

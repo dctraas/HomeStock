@@ -396,6 +396,9 @@
     <string name="shopping_list_check_all_cd">Alles afvinken</string>
     <string name="shopping_list_share_cd">Boodschappenlijst delen</string>
     <string name="shopping_list_share_title">Boodschappenlijst</string>
+    <string name="shopping_list_voice_input_cd">Naam inspreken</string>
+    <string name="shopping_list_voice_input_prompt">Zeg de naam van het product</string>
+    <string name="shopping_list_voice_input_unavailable">Spraakherkenning is niet beschikbaar op dit toestel</string>
     <string name="shopping_list_add_item_cd">Item toevoegen</string>
     <string name="shopping_list_search_placeholder">Zoek in boodschappenlijst…</string>
     <string name="shopping_list_removed_format">%1$s verwijderd</string>
