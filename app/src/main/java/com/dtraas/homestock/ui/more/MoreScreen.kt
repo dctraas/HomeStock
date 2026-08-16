@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Accessibility
+import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
@@ -128,6 +129,8 @@ fun MoreScreen(
     val themeMode by themePreferences.themeMode.collectAsState()
     val largeText by themePreferences.largeText.collectAsState()
     val highContrast by themePreferences.highContrast.collectAsState()
+    val inventoryPreferences = application.container.inventoryPreferences
+    val autoRestockEnabled by inventoryPreferences.autoRestockEnabled.collectAsState()
     val householdSession = application.container.householdSession
     val householdId by householdSession.householdId.collectAsState()
     val deviceProfile = application.container.deviceProfile
@@ -382,6 +385,13 @@ fun MoreScreen(
                 title = stringResource(R.string.more_accessibility_title),
                 subtitle = accessibilitySubtitle(largeText, highContrast),
                 onClick = { showAccessibilityDialog = true },
+            )
+            SettingsSwitchRow(
+                icon = Icons.Filled.AddShoppingCart,
+                title = stringResource(R.string.more_auto_restock_title),
+                subtitle = stringResource(R.string.more_auto_restock_subtitle),
+                checked = autoRestockEnabled,
+                onCheckedChange = inventoryPreferences::setAutoRestockEnabled,
             )
             SettingsRow(
                 icon = Icons.Filled.ImportExport,
@@ -689,6 +699,56 @@ private fun SettingsRow(
                     fontWeight = FontWeight.Bold,
                 )
             }
+        }
+    }
+}
+
+/** Same look as [SettingsRow], but a self-contained on/off toggle (see the debug Premium-
+ *  override row for the pattern this was extracted from) rather than something that opens a
+ *  dialog on tap — for a setting that's just one boolean, with nothing else to configure. */
+@Composable
+private fun SettingsSwitchRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = SoftCardShape,
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                shape = SoftBadgeShape,
+                color = MaterialTheme.colorScheme.primaryContainer,
+                modifier = Modifier.size(44.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    )
+                }
+            }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 12.dp),
+            ) {
+                Text(title, style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Switch(checked = checked, onCheckedChange = onCheckedChange)
         }
     }
 }

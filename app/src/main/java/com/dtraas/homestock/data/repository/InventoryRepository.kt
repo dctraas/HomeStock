@@ -23,6 +23,7 @@ class InventoryRepository(
     private val activityLogRepository: ActivityLogRepository,
     private val productRepository: ProductRepository,
     private val shoppingListRepository: ShoppingListRepository,
+    private val inventoryPreferences: InventoryPreferences,
 ) {
     private fun collection(householdId: String, name: String) =
         firestore.collection("households").document(householdId).collection(name)
@@ -148,6 +149,7 @@ class InventoryRepository(
      * surface that to the user — this otherwise happens silently.
      */
     private suspend fun maybeRestockOnLowQuantity(item: InventoryItemEntity): String? {
+        if (!inventoryPreferences.autoRestockEnabled.value) return null
         val minQuantity = item.minQuantity ?: return null
         if (item.quantity >= minQuantity) return null
         if (shoppingListRepository.hasOpenItemForBarcode(item.barcode)) return null

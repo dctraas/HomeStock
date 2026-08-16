@@ -199,6 +199,8 @@
     <string name="more_accessibility_large_text_description">Vergroot de tekst in de hele app.</string>
     <string name="more_accessibility_high_contrast_title">Hoog contrast</string>
     <string name="more_accessibility_high_contrast_description">Sterker contrast tussen tekst en achtergrond, voor betere leesbaarheid.</string>
+    <string name="more_auto_restock_title">Auto-aanvullen boodschappenlijst</string>
+    <string name="more_auto_restock_subtitle">Voeg een product automatisch aan je boodschappenlijst toe zodra de voorraad onder het ingestelde minimum zakt.</string>
     <string name="more_notifications_row_title">Meldingen</string>
     <string name="more_language_title">Taal</string>
     <string name="more_language_option_nl">Nederlands</string>

@@ -198,6 +198,8 @@
     <string name="more_accessibility_large_text_description">Augmente la taille du texte dans toute l\'application.</string>
     <string name="more_accessibility_high_contrast_title">Contraste élevé</string>
     <string name="more_accessibility_high_contrast_description">Contraste plus marqué entre le texte et l\'arrière-plan, pour une meilleure lisibilité.</string>
+    <string name="more_auto_restock_title">Réapprovisionnement automatique de la liste de courses</string>
+    <string name="more_auto_restock_subtitle">Ajoute automatiquement un produit à votre liste de courses dès que son stock passe sous le minimum défini.</string>
     <string name="more_notifications_row_title">Notifications</string>
     <string name="more_language_title">Langue</string>
     <string name="more_language_option_nl">Néerlandais</string>

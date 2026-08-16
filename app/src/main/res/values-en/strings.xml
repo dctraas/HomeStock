@@ -198,6 +198,8 @@
     <string name="more_accessibility_large_text_description">Increases the text size throughout the app.</string>
     <string name="more_accessibility_high_contrast_title">High contrast</string>
     <string name="more_accessibility_high_contrast_description">Stronger contrast between text and background, for better readability.</string>
+    <string name="more_auto_restock_title">Auto-restock shopping list</string>
+    <string name="more_auto_restock_subtitle">Automatically add a product to your shopping list once its stock drops below the set minimum.</string>
     <string name="more_notifications_row_title">Notifications</string>
     <string name="more_language_title">Language</string>
     <string name="more_language_option_nl">Dutch</string>
