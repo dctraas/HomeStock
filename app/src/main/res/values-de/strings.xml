@@ -393,6 +393,7 @@
     <string name="scan_result_brand_format">Marke: %1$s</string>
     <string name="scan_result_unit_format">Inhalt: %1$s</string>
     <string name="scan_result_confirm">Zum Vorrat hinzufügen</string>
+    <string name="scan_result_confirm_continue">Speichern und weiter scannen</string>
     <string name="scan_result_network_error_title">Keine Verbindung</string>
     <string name="scan_result_network_error_message">Wir konnten die Produktdaten nicht abrufen. Überprüfe deine Internetverbindung und versuche es erneut.</string>
     <string name="scan_result_retry">Erneut versuchen</string>

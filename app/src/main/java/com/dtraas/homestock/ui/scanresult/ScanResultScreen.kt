@@ -46,6 +46,9 @@ fun ScanResultScreen(
     barcode: String,
     onSaved: () -> Unit,
     onBack: () -> Unit,
+    // Batch-scannen: when reached mid-scan from the barcode camera, the confirm button says so
+    // and onSaved (wired by the caller) returns straight to the camera instead of Voorraad.
+    fromScan: Boolean = false,
 ) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: ScanResultViewModel = viewModel(
@@ -155,7 +158,11 @@ fun ScanResultScreen(
                     enabled = uiState.name.isNotBlank(),
                     modifier = Modifier.fillMaxWidth(),
                 ) {
-                    Text(stringResource(R.string.scan_result_confirm))
+                    Text(
+                        stringResource(
+                            if (fromScan) R.string.scan_result_confirm_continue else R.string.scan_result_confirm
+                        )
+                    )
                 }
             }
         }

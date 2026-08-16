@@ -393,6 +393,7 @@
     <string name="scan_result_brand_format">Marca: %1$s</string>
     <string name="scan_result_unit_format">Contenido: %1$s</string>
     <string name="scan_result_confirm">Añadir al inventario</string>
+    <string name="scan_result_confirm_continue">Guardar y seguir escaneando</string>
     <string name="scan_result_network_error_title">Sin conexión</string>
     <string name="scan_result_network_error_message">No pudimos obtener los datos del producto. Comprueba tu conexión a internet e inténtalo de nuevo.</string>
     <string name="scan_result_retry">Intentar de nuevo</string>

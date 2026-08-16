@@ -393,6 +393,7 @@
     <string name="scan_result_brand_format">Brand: %1$s</string>
     <string name="scan_result_unit_format">Content: %1$s</string>
     <string name="scan_result_confirm">Add to inventory</string>
+    <string name="scan_result_confirm_continue">Save and keep scanning</string>
     <string name="scan_result_network_error_title">No connection</string>
     <string name="scan_result_network_error_message">We couldn\'t fetch the product data. Check your internet connection and try again.</string>
     <string name="scan_result_retry">Try again</string>

@@ -116,7 +116,7 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                     isActive = currentRoute == Destination.Scan.route,
                     onBack = { navController.popBackStack() },
                     onNeedsConfirmation = { barcode ->
-                        navController.navigate(Destination.ScanResult.createRoute(barcode))
+                        navController.navigate(Destination.ScanResult.createRoute(barcode, fromScan = true))
                     },
                     onSearchClick = { navController.navigate(Destination.SearchProduct.route) },
                     onAiRecognizeClick = { navController.navigate(Destination.AiRecognize.route) },
@@ -163,28 +163,43 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
             }
             composable(
                 route = Destination.ScanResult.route,
-                arguments = listOf(navArgument("barcode") { type = NavType.StringType }),
+                arguments = listOf(
+                    navArgument("barcode") { type = NavType.StringType },
+                    navArgument("fromScan") { type = NavType.BoolType; defaultValue = false },
+                ),
             ) { entry ->
                 val barcode = entry.arguments?.getString("barcode").orEmpty()
+                val fromScan = entry.arguments?.getBoolean("fromScan") ?: false
                 ScanResultScreen(
                     barcode = barcode,
+                    fromScan = fromScan,
                     onSaved = {
-                        // Inventory is the app's start destination, but it isn't always on the
-                        // *current* back stack: switching to another bottom-nav tab pops
-                        // everything up to and including it off with saveState = true (see
-                        // HomeStockBottomBar), tucking it away in saved state instead of
-                        // leaving it on the live stack. Scanning from the Scan tab after
-                        // switching tabs that way left this popBackStack silently failing
-                        // ("Ignoring popBackStack to route inventory..."), stranding the user
-                        // on this screen. Try the cheap direct pop first (covers the common
-                        // "scanned straight from Inventory" case); if Inventory genuinely isn't
-                        // on the stack, fall back to a full navigate that's guaranteed to land
-                        // there regardless of how this screen was reached.
-                        val popped = navController.popBackStack(Destination.Inventory.route, inclusive = false)
-                        if (!popped) {
-                            navController.navigate(Destination.Inventory.route) {
-                                popUpTo(navController.graph.id) { inclusive = true }
-                                launchSingleTop = true
+                        if (fromScan) {
+                            // Reached mid-batch from the barcode camera (an unknown barcode
+                            // needing confirmation): pop straight back to it instead of all the
+                            // way out to Voorraad, so scanning the next item doesn't require
+                            // re-opening the camera by hand. Known barcodes already never leave
+                            // the camera screen at all (see ScanScreen/ScanViewModel); this
+                            // closes the same gap for new ones.
+                            navController.popBackStack()
+                        } else {
+                            // Inventory is the app's start destination, but it isn't always on
+                            // the *current* back stack: switching to another bottom-nav tab pops
+                            // everything up to and including it off with saveState = true (see
+                            // HomeStockBottomBar), tucking it away in saved state instead of
+                            // leaving it on the live stack. Scanning from the Scan tab after
+                            // switching tabs that way left this popBackStack silently failing
+                            // ("Ignoring popBackStack to route inventory..."), stranding the
+                            // user on this screen. Try the cheap direct pop first (covers the
+                            // common "scanned straight from Inventory" case); if Inventory
+                            // genuinely isn't on the stack, fall back to a full navigate that's
+                            // guaranteed to land there regardless of how this screen was reached.
+                            val popped = navController.popBackStack(Destination.Inventory.route, inclusive = false)
+                            if (!popped) {
+                                navController.navigate(Destination.Inventory.route) {
+                                    popUpTo(navController.graph.id) { inclusive = true }
+                                    launchSingleTop = true
+                                }
                             }
                         }
                     },

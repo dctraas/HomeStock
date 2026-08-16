@@ -17,8 +17,13 @@ sealed class Destination(val route: String) {
     data object Statistics : Destination("statistics")
     data object Notifications : Destination("notifications")
     data object More : Destination("more")
-    data object ScanResult : Destination("scan_result/{barcode}") {
-        fun createRoute(barcode: String) = "scan_result/$barcode"
+    data object ScanResult : Destination("scan_result/{barcode}?fromScan={fromScan}") {
+        /**
+         * [fromScan] marks that this screen was reached mid-batch from the barcode camera
+         * (an unknown barcode needing confirmation) rather than from search/AI-herkenning —
+         * see HomeStockNavHost's onSaved handling for why that changes where "opslaan" lands.
+         */
+        fun createRoute(barcode: String, fromScan: Boolean = false) = "scan_result/$barcode?fromScan=$fromScan"
     }
     data object ProductDetail : Destination("product_detail/{barcode}") {
         fun createRoute(barcode: String) = "product_detail/$barcode"

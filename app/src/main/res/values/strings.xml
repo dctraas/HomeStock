@@ -394,6 +394,7 @@
     <string name="scan_result_brand_format">Merk: %1$s</string>
     <string name="scan_result_unit_format">Inhoud: %1$s</string>
     <string name="scan_result_confirm">Toevoegen aan voorraad</string>
+    <string name="scan_result_confirm_continue">Opslaan en doorscannen</string>
     <string name="scan_result_network_error_title">Geen verbinding</string>
     <string name="scan_result_network_error_message">We konden de productgegevens niet ophalen. Controleer je internetverbinding en probeer het opnieuw.</string>
     <string name="scan_result_retry">Opnieuw proberen</string>

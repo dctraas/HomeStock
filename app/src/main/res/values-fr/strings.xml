@@ -393,6 +393,7 @@
     <string name="scan_result_brand_format">Marque : %1$s</string>
     <string name="scan_result_unit_format">Contenu : %1$s</string>
     <string name="scan_result_confirm">Ajouter au stock</string>
+    <string name="scan_result_confirm_continue">Enregistrer et continuer à scanner</string>
     <string name="scan_result_network_error_title">Pas de connexion</string>
     <string name="scan_result_network_error_message">Nous n\'avons pas pu récupérer les données du produit. Vérifiez votre connexion internet et réessayez.</string>
     <string name="scan_result_retry">Réessayer</string>
