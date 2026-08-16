@@ -429,6 +429,8 @@
     <string name="statistics_title">Statistiken</string>
     <string name="statistics_most_scanned">Meistgescannt</string>
     <string name="statistics_no_scans_yet">Noch keine Scans vorhanden.</string>
+    <string name="statistics_most_wasted">Am meisten verschwendet</string>
+    <string name="statistics_no_waste_yet">Noch nichts als weggeworfen markiert.</string>
     <string name="statistics_category_distribution">Verteilung nach Kategorie</string>
     <string name="statistics_no_products_yet">Noch keine Produkte im Vorrat.</string>
     <string name="statistics_in_stock">Auf Vorrat</string>
@@ -438,6 +440,7 @@
     <string name="statistics_range_month">Diesen Monat</string>
     <string name="statistics_by_actor">Pro Haushaltsmitglied</string>
     <string name="statistics_scan_count_format">%1$dx</string>
+    <string name="statistics_wasted_count_format">%1$dx</string>
     <string name="statistics_section_health">Vorratsgesundheit</string>
     <string name="statistics_expiring_soon">Bald ablaufend</string>
     <string name="statistics_low_stock">Wenig Vorrat</string>

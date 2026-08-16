@@ -429,6 +429,8 @@
     <string name="statistics_title">Estadísticas</string>
     <string name="statistics_most_scanned">Más escaneados</string>
     <string name="statistics_no_scans_yet">Todavía no hay escaneos que mostrar.</string>
+    <string name="statistics_most_wasted">Más desperdiciados</string>
+    <string name="statistics_no_waste_yet">Todavía no hay nada marcado como desperdiciado.</string>
     <string name="statistics_category_distribution">Distribución por categoría</string>
     <string name="statistics_no_products_yet">Todavía no hay productos en el inventario.</string>
     <string name="statistics_in_stock">En existencia</string>
@@ -438,6 +440,7 @@
     <string name="statistics_range_month">Este mes</string>
     <string name="statistics_by_actor">Por miembro del hogar</string>
     <string name="statistics_scan_count_format">%1$dx</string>
+    <string name="statistics_wasted_count_format">%1$dx</string>
     <string name="statistics_section_health">Salud del inventario</string>
     <string name="statistics_expiring_soon">Por caducar</string>
     <string name="statistics_low_stock">Poca existencia</string>

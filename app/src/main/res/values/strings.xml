@@ -430,6 +430,8 @@
     <string name="statistics_title">Statistieken</string>
     <string name="statistics_most_scanned">Meest gescand</string>
     <string name="statistics_no_scans_yet">Nog geen scans om te tonen.</string>
+    <string name="statistics_most_wasted">Meest verspild</string>
+    <string name="statistics_no_waste_yet">Nog niets als weggegooid gemarkeerd.</string>
     <string name="statistics_category_distribution">Verdeling per categorie</string>
     <string name="statistics_no_products_yet">Nog geen producten in voorraad.</string>
     <string name="statistics_in_stock">In voorraad</string>
@@ -439,6 +441,7 @@
     <string name="statistics_range_month">Deze maand</string>
     <string name="statistics_by_actor">Per huisgenoot</string>
     <string name="statistics_scan_count_format">%1$dx</string>
+    <string name="statistics_wasted_count_format">%1$dx</string>
     <string name="statistics_section_health">Voorraadgezondheid</string>
     <string name="statistics_expiring_soon">Bijna houdbaar</string>
     <string name="statistics_low_stock">Laag op voorraad</string>

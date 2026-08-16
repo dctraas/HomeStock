@@ -7,6 +7,7 @@ import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.dao.ActorScanCount
 import com.dtraas.homestock.data.local.dao.CategoryCount
 import com.dtraas.homestock.data.local.dao.TopScannedProduct
+import com.dtraas.homestock.data.local.dao.TopWastedProduct
 import com.dtraas.homestock.data.model.ActivityType
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.repository.StatisticsRepository
@@ -27,6 +28,7 @@ private data class StaticStats(
     val topScannedProducts: List<TopScannedProduct>,
     val categoryDistribution: List<CategoryCount>,
     val scansByActor: List<ActorScanCount>,
+    val topWastedProducts: List<TopWastedProduct> = emptyList(),
 )
 
 /** Inventory "health" counts — not tied to the time-range toggle, always all-current-stock. */
@@ -61,6 +63,7 @@ data class StatisticsUiState(
     val topScannedProducts: List<TopScannedProduct> = emptyList(),
     val categoryDistribution: List<Pair<Category, Int>> = emptyList(),
     val scansByActor: List<ActorScanCount> = emptyList(),
+    val topWastedProducts: List<TopWastedProduct> = emptyList(),
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -70,7 +73,9 @@ class StatisticsViewModel(
 
     private val timeRange = MutableStateFlow(StatisticsTimeRange.WEEK)
 
-    private val staticStats = combine(
+    // combine() only has typed overloads up to 5 flows — topWasted is folded in via a second,
+    // nested combine rather than switching the whole block to the untyped vararg overload.
+    private val staticStatsBase = combine(
         statisticsRepository.observeInventoryCount(),
         statisticsRepository.observeFavoritesCount(),
         statisticsRepository.observeTopScannedProducts(limit = 5),
@@ -79,6 +84,11 @@ class StatisticsViewModel(
     ) { totalInInventory, favoritesCount, topProducts, categoryCounts, scansByActor ->
         StaticStats(totalInInventory, favoritesCount, topProducts, categoryCounts, scansByActor)
     }
+
+    private val staticStats = combine(
+        staticStatsBase,
+        statisticsRepository.observeTopWastedProducts(limit = 5),
+    ) { stats, topWasted -> stats.copy(topWastedProducts = topWasted) }
 
     private val inventoryHealth = combine(
         statisticsRepository.observeExpiringSoonCount(),
@@ -114,6 +124,7 @@ class StatisticsViewModel(
                 .map { Category.fromStorageKey(it.category) to it.count }
                 .sortedByDescending { it.second },
             scansByActor = stats.scansByActor,
+            topWastedProducts = stats.topWastedProducts,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), StatisticsUiState())
 

@@ -21,6 +21,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Category
+import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Inventory2
@@ -61,6 +62,7 @@ import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.dao.ActorScanCount
 import com.dtraas.homestock.data.local.dao.TopScannedProduct
+import com.dtraas.homestock.data.local.dao.TopWastedProduct
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.icon
@@ -143,6 +145,27 @@ fun StatisticsScreen(onBack: () -> Unit) {
                 val maxScanCount = uiState.topScannedProducts.maxOf { it.scanCount }
                 itemsIndexed(uiState.topScannedProducts, key = { _, product -> product.barcode }) { index, product ->
                     TopScannedRow(rank = index + 1, product = product, maxCount = maxScanCount)
+                }
+            }
+
+            // "Meest herhaald gekocht" is answered by "Meest gescand" above — in this app,
+            // scanning is how a product gets restocked, so a high scan count already means
+            // it's bought over and over. "Meest verspild" below is the genuinely new stat.
+            item {
+                Text(stringResource(R.string.statistics_most_wasted), style = MaterialTheme.typography.titleMedium)
+            }
+            if (uiState.topWastedProducts.isEmpty()) {
+                item {
+                    Text(
+                        text = stringResource(R.string.statistics_no_waste_yet),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            } else {
+                val maxWastedCount = uiState.topWastedProducts.maxOf { it.wastedCount }
+                itemsIndexed(uiState.topWastedProducts, key = { _, product -> product.barcode }) { index, product ->
+                    TopWastedRow(rank = index + 1, product = product, maxCount = maxWastedCount)
                 }
             }
 
@@ -392,6 +415,62 @@ private fun TopScannedRow(rank: Int, product: TopScannedProduct, maxCount: Int) 
     }
 }
 
+/** Mirrors [TopScannedRow]'s layout, but tinted toward the error color — this list is a
+ *  "you might want to fix this" ranking, not a neutral usage stat. */
+@Composable
+private fun TopWastedRow(rank: Int, product: TopWastedProduct, maxCount: Int) {
+    val category = Category.fromStorageKey(product.category)
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = SoftCardShapeCompact,
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = rank.toString(),
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.error,
+                modifier = Modifier.width(28.dp),
+            )
+            Icon(
+                imageVector = category.icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(20.dp),
+            )
+            Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
+                Text(
+                    text = product.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                ProportionalBar(
+                    fraction = product.wastedCount.toFloat() / maxCount.toFloat(),
+                    color = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
+            }
+            Icon(
+                imageVector = Icons.Filled.DeleteOutline,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.error,
+                modifier = Modifier.size(16.dp),
+            )
+            Text(
+                text = stringResource(R.string.statistics_wasted_count_format, product.wastedCount),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 4.dp),
+            )
+        }
+    }
+}
+
 @Composable
 private fun ActorScanRow(actorCount: ActorScanCount, maxCount: Int) {
     Card(
@@ -471,7 +550,11 @@ private fun CategoryDistributionCard(distribution: List<Pair<Category, Int>>) {
 }
 
 @Composable
-private fun ProportionalBar(fraction: Float, modifier: Modifier = Modifier) {
+private fun ProportionalBar(
+    fraction: Float,
+    modifier: Modifier = Modifier,
+    color: Color = MaterialTheme.colorScheme.primary,
+) {
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -484,7 +567,7 @@ private fun ProportionalBar(fraction: Float, modifier: Modifier = Modifier) {
                 .fillMaxWidth(fraction.coerceIn(0.05f, 1f))
                 .fillMaxHeight()
                 .clip(RoundedCornerShape(3.dp))
-                .background(MaterialTheme.colorScheme.primary),
+                .background(color),
         )
     }
 }

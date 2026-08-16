@@ -3,6 +3,7 @@ package com.dtraas.homestock.data.repository
 import com.dtraas.homestock.data.local.dao.ActorScanCount
 import com.dtraas.homestock.data.local.dao.CategoryCount
 import com.dtraas.homestock.data.local.dao.TopScannedProduct
+import com.dtraas.homestock.data.local.dao.TopWastedProduct
 import com.dtraas.homestock.data.local.entity.InventoryItemEntity
 import com.dtraas.homestock.data.local.entity.ProductEntity
 import com.dtraas.homestock.data.local.entity.ScanHistoryEntity
@@ -135,6 +136,38 @@ class StatisticsRepository(
                             }
                         }
                         .sortedByDescending { it.scanCount }
+                        .take(limit)
+                }
+            }
+        }
+
+    /** Products most often removed as food waste (rather than used up), all-time. */
+    fun observeTopWastedProducts(limit: Int = 5): Flow<List<TopWastedProduct>> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(emptyList())
+            } else {
+                combine(
+                    collection(householdId, "activityLog").observeSnapshots(),
+                    products(householdId),
+                ) { snapshot, products ->
+                    snapshot.documents
+                        .filter { it.getString("type") == ActivityType.WASTED.storageKey }
+                        .mapNotNull { it.getString("barcode") }
+                        .groupingBy { it }
+                        .eachCount()
+                        .mapNotNull { (barcode, count) ->
+                            products[barcode]?.let { product ->
+                                TopWastedProduct(
+                                    barcode = barcode,
+                                    name = product.name,
+                                    category = product.category,
+                                    imageUrl = product.imageUrl,
+                                    wastedCount = count,
+                                )
+                            }
+                        }
+                        .sortedByDescending { it.wastedCount }
                         .take(limit)
                 }
             }
