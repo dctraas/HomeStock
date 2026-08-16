@@ -468,18 +468,48 @@ fun ProductDetailScreen(
         }
 
         if (showDeleteConfirm) {
+            // Only near/past its expiration date is a removal ambiguous enough to ask about —
+            // otherwise it's almost certainly ordinary consumption, so don't add a question
+            // nobody needs. Same <= 3 days threshold ExpirationRow already uses for isNearExpiry.
+            val isNearExpiry = uiState.expirationDate?.let { daysUntilExpiration(it) <= 3 } ?: false
             AlertDialog(
                 onDismissRequest = { showDeleteConfirm = false },
                 title = { Text(stringResource(R.string.product_detail_delete_dialog_title)) },
-                text = { Text(stringResource(R.string.product_detail_delete_dialog_text)) },
+                text = {
+                    Text(
+                        stringResource(
+                            if (isNearExpiry) R.string.product_detail_delete_dialog_text_wasted_prompt
+                            else R.string.product_detail_delete_dialog_text
+                        )
+                    )
+                },
                 confirmButton = {
-                    TextButton(
-                        onClick = {
-                            showDeleteConfirm = false
-                            viewModel.removeFromInventory()
-                            onBack()
-                        },
-                    ) { Text(stringResource(R.string.product_detail_remove), color = MaterialTheme.colorScheme.error) }
+                    if (isNearExpiry) {
+                        Row {
+                            TextButton(
+                                onClick = {
+                                    showDeleteConfirm = false
+                                    viewModel.removeFromInventory(wasted = false)
+                                    onBack()
+                                },
+                            ) { Text(stringResource(R.string.product_detail_delete_used_up)) }
+                            TextButton(
+                                onClick = {
+                                    showDeleteConfirm = false
+                                    viewModel.removeFromInventory(wasted = true)
+                                    onBack()
+                                },
+                            ) { Text(stringResource(R.string.product_detail_delete_wasted), color = MaterialTheme.colorScheme.error) }
+                        }
+                    } else {
+                        TextButton(
+                            onClick = {
+                                showDeleteConfirm = false
+                                viewModel.removeFromInventory()
+                                onBack()
+                            },
+                        ) { Text(stringResource(R.string.product_detail_remove), color = MaterialTheme.colorScheme.error) }
+                    }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDeleteConfirm = false }) { Text(stringResource(R.string.common_cancel)) }

@@ -128,8 +128,8 @@ class ProductDetailViewModel(
         viewModelScope.launch { inventoryRepository.setFavorite(barcode, newValue) }
     }
 
-    fun removeFromInventory() {
-        viewModelScope.launch { inventoryRepository.removeFromInventory(barcode) }
+    fun removeFromInventory(wasted: Boolean = false) {
+        viewModelScope.launch { inventoryRepository.removeFromInventory(barcode, wasted) }
     }
 
     fun addToShoppingList() {

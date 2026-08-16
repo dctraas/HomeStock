@@ -163,13 +163,17 @@ class InventoryRepository(
         return product.name
     }
 
-    suspend fun removeFromInventory(barcode: String) {
+    suspend fun removeFromInventory(barcode: String, wasted: Boolean = false) {
         val householdId = householdSession.householdId.value ?: return
         val inventoryDoc = inventoryCollection(householdId).document(barcode)
         val existing = InventoryItemEntity.fromDocument(inventoryDoc.get().await())
         inventoryDoc.delete().await()
         if (existing != null) {
-            activityLogRepository.logRemoved(barcode, existing.quantity)
+            if (wasted) {
+                activityLogRepository.logWasted(barcode, existing.quantity)
+            } else {
+                activityLogRepository.logRemoved(barcode, existing.quantity)
+            }
         }
     }
 

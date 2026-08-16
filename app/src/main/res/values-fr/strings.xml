@@ -55,12 +55,14 @@
     <string name="activity_type_scanned">Scanné</string>
     <string name="activity_type_quantity_changed">Quantité modifiée</string>
     <string name="activity_type_removed">Retiré du stock</string>
+    <string name="activity_type_wasted">Gaspillé</string>
     <string name="activity_type_added_to_shopping_list">Ajouté à la liste de courses</string>
 
     <!-- Activity log detail text, rendered on the writer's device at the moment of the action -->
     <string name="activity_detail_scanned">Scanné (%1$s%2$d)</string>
     <string name="activity_detail_quantity_changed">Quantité modifiée de %1$d à %2$d</string>
     <string name="activity_detail_removed">Retiré du stock (%1$dx)</string>
+    <string name="activity_detail_wasted">Gaspillé (%1$dx)</string>
     <string name="activity_actor_unknown">Inconnu</string>
     <string name="activity_actor_detail_format">%1$s · %2$s</string>
 
@@ -294,6 +296,9 @@
     <string name="product_detail_retry_lookup_failure">Échec de la recherche. Réessayez plus tard.</string>
     <string name="product_detail_delete_dialog_title">Supprimer le produit ?</string>
     <string name="product_detail_delete_dialog_text">Voulez-vous vraiment supprimer ce produit de votre stock ?</string>
+    <string name="product_detail_delete_dialog_text_wasted_prompt">Avez-vous consommé ce produit ou l\'avez-vous jeté ?</string>
+    <string name="product_detail_delete_used_up">Consommé</string>
+    <string name="product_detail_delete_wasted">Gaspillé</string>
     <string name="product_detail_edit_photo_cd">Définir une photo personnalisée</string>
     <string name="product_detail_edit_photo_title">Photo personnalisée</string>
     <string name="product_detail_choose_photo_action">Choisir une photo</string>

@@ -55,12 +55,14 @@
     <string name="activity_type_scanned">Gescannt</string>
     <string name="activity_type_quantity_changed">Menge geändert</string>
     <string name="activity_type_removed">Aus dem Vorrat entfernt</string>
+    <string name="activity_type_wasted">Weggeworfen</string>
     <string name="activity_type_added_to_shopping_list">Zur Einkaufsliste hinzugefügt</string>
 
     <!-- Activity log detail text, rendered on the writer's device at the moment of the action -->
     <string name="activity_detail_scanned">Gescannt (%1$s%2$d)</string>
     <string name="activity_detail_quantity_changed">Menge geändert von %1$d auf %2$d</string>
     <string name="activity_detail_removed">Aus dem Vorrat entfernt (%1$dx)</string>
+    <string name="activity_detail_wasted">Weggeworfen (%1$dx)</string>
     <string name="activity_actor_unknown">Unbekannt</string>
     <string name="activity_actor_detail_format">%1$s · %2$s</string>
 
@@ -294,6 +296,9 @@
     <string name="product_detail_retry_lookup_failure">Suche fehlgeschlagen. Versuche es später erneut.</string>
     <string name="product_detail_delete_dialog_title">Produkt löschen?</string>
     <string name="product_detail_delete_dialog_text">Möchtest du dieses Produkt wirklich aus deinem Vorrat entfernen?</string>
+    <string name="product_detail_delete_dialog_text_wasted_prompt">Hast du dieses Produkt aufgebraucht oder weggeworfen?</string>
+    <string name="product_detail_delete_used_up">Aufgebraucht</string>
+    <string name="product_detail_delete_wasted">Weggeworfen</string>
     <string name="product_detail_edit_photo_cd">Eigenes Foto festlegen</string>
     <string name="product_detail_edit_photo_title">Eigenes Foto</string>
     <string name="product_detail_choose_photo_action">Foto auswählen</string>

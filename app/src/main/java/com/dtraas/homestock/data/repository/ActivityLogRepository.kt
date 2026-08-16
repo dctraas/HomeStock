@@ -85,6 +85,10 @@ class ActivityLogRepository(
         log(barcode, ActivityType.REMOVED, context.getString(R.string.activity_detail_removed, quantity))
     }
 
+    suspend fun logWasted(barcode: String, quantity: Int) {
+        log(barcode, ActivityType.WASTED, context.getString(R.string.activity_detail_wasted, quantity))
+    }
+
     suspend fun logAddedToShoppingList(barcode: String) {
         log(barcode, ActivityType.ADDED_TO_SHOPPING_LIST, context.getString(R.string.activity_type_added_to_shopping_list))
     }

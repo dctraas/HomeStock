@@ -55,12 +55,14 @@
     <string name="activity_type_scanned">Escaneado</string>
     <string name="activity_type_quantity_changed">Cantidad modificada</string>
     <string name="activity_type_removed">Eliminado del inventario</string>
+    <string name="activity_type_wasted">Desperdiciado</string>
     <string name="activity_type_added_to_shopping_list">Añadido a la lista de la compra</string>
 
     <!-- Activity log detail text, rendered on the writer's device at the moment of the action -->
     <string name="activity_detail_scanned">Escaneado (%1$s%2$d)</string>
     <string name="activity_detail_quantity_changed">Cantidad modificada de %1$d a %2$d</string>
     <string name="activity_detail_removed">Eliminado del inventario (%1$dx)</string>
+    <string name="activity_detail_wasted">Desperdiciado (%1$dx)</string>
     <string name="activity_actor_unknown">Desconocido</string>
     <string name="activity_actor_detail_format">%1$s · %2$s</string>
 
@@ -294,6 +296,9 @@
     <string name="product_detail_retry_lookup_failure">Error al buscar. Inténtalo de nuevo más tarde.</string>
     <string name="product_detail_delete_dialog_title">¿Eliminar producto?</string>
     <string name="product_detail_delete_dialog_text">¿Seguro que quieres eliminar este producto de tu inventario?</string>
+    <string name="product_detail_delete_dialog_text_wasted_prompt">¿Has consumido este producto o lo has tirado?</string>
+    <string name="product_detail_delete_used_up">Consumido</string>
+    <string name="product_detail_delete_wasted">Desperdiciado</string>
     <string name="product_detail_edit_photo_cd">Establecer foto personalizada</string>
     <string name="product_detail_edit_photo_title">Foto personalizada</string>
     <string name="product_detail_choose_photo_action">Elegir foto</string>
