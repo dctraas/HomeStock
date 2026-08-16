@@ -447,6 +447,8 @@
     <string name="notification_expiry_group_today">Aujourd\'hui</string>
     <string name="notification_expiry_group_tomorrow">Demain</string>
     <string name="notification_expiry_group_days_format">Dans %1$d jours</string>
+    <string name="notification_receipt_queue_title">Ticket traité</string>
+    <string name="notification_receipt_queue_body_format">%1$d produits ajoutés à votre stock</string>
 
     <!-- Statistiques -->
     <string name="statistics_title">Statistiques</string>
@@ -614,6 +616,14 @@
     <string name="receipt_scan_no_items">Aucun produit reconnu sur ce ticket.</string>
     <string name="receipt_scan_confirm_hint">Vérifiez et ajustez les produits reconnus avant de les ajouter.</string>
     <string name="receipt_scan_confirm_action">Ajouter à l\'inventaire</string>
+    <string name="receipt_scan_queued_title">Ticket en attente</string>
+    <string name="receipt_scan_queued_message">Vous êtes hors ligne — le ticket sera traité automatiquement et ajouté à votre stock dès que vous serez de nouveau en ligne.</string>
+    <string name="receipt_scan_queued_scan_another">Scanner un autre ticket</string>
+    <string name="receipt_scan_queued_done">Terminé</string>
+    <plurals name="receipt_scan_queue_pending_format">
+        <item quantity="one">%1$d ticket attend encore d\'être traité</item>
+        <item quantity="other">%1$d tickets attendent encore d\'être traités</item>
+    </plurals>
 
     <!-- Reconnaissance de produit par IA (Bêta) -->
     <string name="ai_recognize_title">Reconnaissance par IA</string>

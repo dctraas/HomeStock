@@ -61,6 +61,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -100,11 +101,13 @@ fun ReceiptScanScreen(onBack: () -> Unit) {
                     productRepository = application.container.productRepository,
                     inventoryRepository = application.container.inventoryRepository,
                     receiptRecognitionRepository = application.container.receiptRecognitionRepository,
+                    receiptQueueRepository = application.container.receiptQueueRepository,
                 )
             }
         },
     )
     val step by viewModel.step.collectAsState()
+    val pendingQueueCount by viewModel.pendingQueueCount.collectAsState()
 
     LaunchedEffect(step) {
         if (step is ReceiptScanStep.Done) onBack()
@@ -125,6 +128,7 @@ fun ReceiptScanScreen(onBack: () -> Unit) {
         when (val current = step) {
             is ReceiptScanStep.Capturing -> ReceiptCamera(
                 padding = padding,
+                pendingQueueCount = pendingQueueCount,
                 onPhotoCaptured = viewModel::onPhotoCaptured,
                 onCaptureFailed = viewModel::onCaptureFailed,
             )
@@ -148,6 +152,11 @@ fun ReceiptScanScreen(onBack: () -> Unit) {
                 loading = false,
                 text = stringResource(R.string.receipt_scan_saved),
             )
+            is ReceiptScanStep.Queued -> ReceiptQueuedView(
+                padding = padding,
+                onScanAnother = viewModel::retake,
+                onDone = onBack,
+            )
             is ReceiptScanStep.Failed -> ReceiptFailedView(
                 padding = padding,
                 reason = current.reason,
@@ -170,6 +179,7 @@ fun ReceiptScanScreen(onBack: () -> Unit) {
 @Composable
 private fun ReceiptCamera(
     padding: PaddingValues,
+    pendingQueueCount: Int,
     onPhotoCaptured: (jpegBytes: ByteArray) -> Unit,
     onCaptureFailed: () -> Unit,
 ) {
@@ -267,18 +277,37 @@ private fun ReceiptCamera(
     Box(modifier = Modifier.fillMaxSize().padding(padding)) {
         AndroidView(modifier = Modifier.fillMaxSize(), factory = { previewView })
 
-        Surface(
+        Column(
             modifier = Modifier.align(Alignment.TopCenter).padding(16.dp),
-            shape = SoftCardShapeCompact,
-            color = Color.Black.copy(alpha = 0.6f),
+            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
-                text = stringResource(R.string.receipt_scan_hint),
-                color = Color.White,
-                textAlign = TextAlign.Center,
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-            )
+            Surface(shape = SoftCardShapeCompact, color = Color.Black.copy(alpha = 0.6f)) {
+                Text(
+                    text = stringResource(R.string.receipt_scan_hint),
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                )
+            }
+            // Visibility into the offline queue (see ReceiptQueueRepository) — without this a
+            // receipt scanned while offline would otherwise just seem to have vanished the
+            // moment this screen is reopened.
+            if (pendingQueueCount > 0) {
+                Surface(
+                    modifier = Modifier.padding(top = 8.dp),
+                    shape = SoftCardShapeCompact,
+                    color = Color.Black.copy(alpha = 0.6f),
+                ) {
+                    Text(
+                        text = pluralStringResource(R.plurals.receipt_scan_queue_pending_format, pendingQueueCount, pendingQueueCount),
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
+            }
         }
 
         Surface(
@@ -344,6 +373,45 @@ private fun ReceiptCenteredMessage(padding: PaddingValues, loading: Boolean, tex
             CircularProgressIndicator()
         }
         Text(text = text, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(top = 16.dp))
+    }
+}
+
+/** Shown after [ReceiptScanViewModel.onPhotoCaptured] hands an offline photo to the local queue
+ *  (see [ReceiptScanStep.Queued]) — deliberately not an auto-dismissing message like [ReceiptScanStep.Done]:
+ *  the user should actually read that nothing was lost before deciding whether to scan another
+ *  receipt or leave. */
+@Composable
+private fun ReceiptQueuedView(padding: PaddingValues, onScanAnother: () -> Unit, onDone: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(padding).padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Icon(
+            imageVector = Icons.Filled.CloudOff,
+            contentDescription = null,
+            modifier = Modifier.size(48.dp),
+            tint = MaterialTheme.colorScheme.primary,
+        )
+        Text(
+            text = stringResource(R.string.receipt_scan_queued_title),
+            style = MaterialTheme.typography.titleMedium,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 16.dp),
+        )
+        Text(
+            text = stringResource(R.string.receipt_scan_queued_message),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        Button(onClick = onScanAnother, modifier = Modifier.padding(top = 24.dp)) {
+            Text(stringResource(R.string.receipt_scan_queued_scan_another))
+        }
+        TextButton(onClick = onDone, modifier = Modifier.padding(top = 4.dp)) {
+            Text(stringResource(R.string.receipt_scan_queued_done))
+        }
     }
 }
 

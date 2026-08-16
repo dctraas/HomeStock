@@ -447,6 +447,8 @@
     <string name="notification_expiry_group_today">Today</string>
     <string name="notification_expiry_group_tomorrow">Tomorrow</string>
     <string name="notification_expiry_group_days_format">In %1$d days</string>
+    <string name="notification_receipt_queue_title">Receipt processed</string>
+    <string name="notification_receipt_queue_body_format">%1$d products added to your inventory</string>
 
     <!-- Statistics -->
     <string name="statistics_title">Statistics</string>
@@ -614,6 +616,14 @@
     <string name="receipt_scan_no_items">No products recognized on this receipt.</string>
     <string name="receipt_scan_confirm_hint">Check and adjust the recognized products before adding them.</string>
     <string name="receipt_scan_confirm_action">Add to inventory</string>
+    <string name="receipt_scan_queued_title">Receipt queued</string>
+    <string name="receipt_scan_queued_message">You\'re offline — the receipt will be processed automatically and added to your inventory once you\'re back online.</string>
+    <string name="receipt_scan_queued_scan_another">Scan another receipt</string>
+    <string name="receipt_scan_queued_done">Done</string>
+    <plurals name="receipt_scan_queue_pending_format">
+        <item quantity="one">%1$d receipt is still waiting to be processed</item>
+        <item quantity="other">%1$d receipts are still waiting to be processed</item>
+    </plurals>
 
     <!-- AI product recognition (Beta) -->
     <string name="ai_recognize_title">AI product recognition</string>

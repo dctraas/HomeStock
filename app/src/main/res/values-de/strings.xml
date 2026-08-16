@@ -447,6 +447,8 @@
     <string name="notification_expiry_group_today">Heute</string>
     <string name="notification_expiry_group_tomorrow">Morgen</string>
     <string name="notification_expiry_group_days_format">In %1$d Tagen</string>
+    <string name="notification_receipt_queue_title">Kassenbon verarbeitet</string>
+    <string name="notification_receipt_queue_body_format">%1$d Produkte zum Vorrat hinzugefügt</string>
 
     <!-- Statistiken -->
     <string name="statistics_title">Statistiken</string>
@@ -614,6 +616,14 @@
     <string name="receipt_scan_no_items">Auf diesem Kassenbon wurden keine Produkte erkannt.</string>
     <string name="receipt_scan_confirm_hint">Überprüfe und passe die erkannten Produkte an, bevor du sie hinzufügst.</string>
     <string name="receipt_scan_confirm_action">Zum Vorrat hinzufügen</string>
+    <string name="receipt_scan_queued_title">Kassenbon in der Warteschlange</string>
+    <string name="receipt_scan_queued_message">Du bist offline — der Kassenbon wird automatisch verarbeitet und zu deinem Vorrat hinzugefügt, sobald du wieder online bist.</string>
+    <string name="receipt_scan_queued_scan_another">Noch einen Kassenbon scannen</string>
+    <string name="receipt_scan_queued_done">Fertig</string>
+    <plurals name="receipt_scan_queue_pending_format">
+        <item quantity="one">%1$d Kassenbon wartet noch auf Verarbeitung</item>
+        <item quantity="other">%1$d Kassenbons warten noch auf Verarbeitung</item>
+    </plurals>
 
     <!-- KI-Produkterkennung (Beta) -->
     <string name="ai_recognize_title">KI-Produkterkennung</string>

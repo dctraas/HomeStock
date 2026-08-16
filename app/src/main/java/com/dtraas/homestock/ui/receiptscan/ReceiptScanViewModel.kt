@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.repository.InventoryRepository
 import com.dtraas.homestock.data.repository.ProductRepository
+import com.dtraas.homestock.data.repository.ReceiptQueueRepository
 import com.dtraas.homestock.data.repository.ReceiptRecognitionRepository
 import com.dtraas.homestock.data.repository.RecognizeReceiptResult
 import com.dtraas.homestock.data.repository.RecognizedReceiptItem
@@ -60,6 +61,11 @@ sealed interface ReceiptScanStep {
     data class Confirming(val items: List<ReceiptConfirmItem>) : ReceiptScanStep
     data object Saving : ReceiptScanStep
     data object Done : ReceiptScanStep
+
+    /** Offline (or a momentary hiccup) when [onPhotoCaptured] tried to reach `recognizeReceipt` —
+     *  the photo has already been handed to [ReceiptQueueRepository] instead of losing it to a
+     *  dead-end error, and will be processed automatically once the device is back online. */
+    data object Queued : ReceiptScanStep
     data class Failed(val reason: ReceiptFailReason) : ReceiptScanStep
 }
 
@@ -67,10 +73,16 @@ class ReceiptScanViewModel(
     private val productRepository: ProductRepository,
     private val inventoryRepository: InventoryRepository,
     private val receiptRecognitionRepository: ReceiptRecognitionRepository,
+    private val receiptQueueRepository: ReceiptQueueRepository,
 ) : ViewModel() {
 
     private val _step = MutableStateFlow<ReceiptScanStep>(ReceiptScanStep.Capturing)
     val step: StateFlow<ReceiptScanStep> = _step
+
+    /** How many receipts (from this device, any session) are still waiting in the offline
+     *  queue — shown on the Capturing screen so scanning while offline doesn't feel like it
+     *  silently vanished. See [ReceiptQueueRepository]. */
+    val pendingQueueCount: StateFlow<Int> = receiptQueueRepository.pendingCount
 
     fun onCaptureFailed() {
         _step.value = ReceiptScanStep.Failed(ReceiptFailReason.CAPTURE)
@@ -88,7 +100,13 @@ class ReceiptScanViewModel(
                     _step.value = ReceiptScanStep.Confirming(items)
                 }
                 RecognizeReceiptResult.PremiumRequired -> _step.value = ReceiptScanStep.Failed(ReceiptFailReason.PREMIUM_REQUIRED)
-                RecognizeReceiptResult.NoConnection -> _step.value = ReceiptScanStep.Failed(ReceiptFailReason.NO_CONNECTION)
+                // Offline-first: rather than a dead-end "geen verbinding" error that loses the
+                // photo the moment the user leaves this screen, hand it to the local queue —
+                // ReceiptQueueWorker processes it automatically once connectivity returns.
+                RecognizeReceiptResult.NoConnection -> {
+                    receiptQueueRepository.enqueue(jpegBytes)
+                    _step.value = ReceiptScanStep.Queued
+                }
                 RecognizeReceiptResult.Failed -> _step.value = ReceiptScanStep.Failed(ReceiptFailReason.UNKNOWN)
             }
         }

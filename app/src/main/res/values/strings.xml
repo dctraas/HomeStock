@@ -448,6 +448,8 @@
     <string name="notification_expiry_group_today">Vandaag</string>
     <string name="notification_expiry_group_tomorrow">Morgen</string>
     <string name="notification_expiry_group_days_format">Over %1$d dagen</string>
+    <string name="notification_receipt_queue_title">Bonnetje verwerkt</string>
+    <string name="notification_receipt_queue_body_format">%1$d producten toegevoegd aan je voorraad</string>
 
     <!-- Statistieken -->
     <string name="statistics_title">Statistieken</string>
@@ -615,6 +617,14 @@
     <string name="receipt_scan_no_items">Geen producten herkend op dit bonnetje.</string>
     <string name="receipt_scan_confirm_hint">Controleer en pas de herkende producten aan voor je ze toevoegt.</string>
     <string name="receipt_scan_confirm_action">Toevoegen aan voorraad</string>
+    <string name="receipt_scan_queued_title">Bonnetje in de wachtrij</string>
+    <string name="receipt_scan_queued_message">Je bent offline — het bonnetje wordt automatisch verwerkt en toegevoegd aan je voorraad zodra je weer verbinding hebt.</string>
+    <string name="receipt_scan_queued_scan_another">Nog een bonnetje scannen</string>
+    <string name="receipt_scan_queued_done">Klaar</string>
+    <plurals name="receipt_scan_queue_pending_format">
+        <item quantity="one">%1$d bonnetje wacht nog op verwerking</item>
+        <item quantity="other">%1$d bonnetjes wachten nog op verwerking</item>
+    </plurals>
 
     <!-- AI-productherkenning (Premium) -->
     <string name="ai_recognize_title">AI-productherkenning</string>
