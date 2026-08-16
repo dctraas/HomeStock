@@ -504,6 +504,17 @@
     <string name="recipes_add_missing_to_shopping_list">Add missing ingredients to shopping list</string>
     <string name="recipes_instructions_title">Instructions</string>
     <string name="recipes_ready_in_minutes_format">%1$d min</string>
+
+    <!-- Kookmodus -->
+    <string name="cook_mode_start">Start cooking</string>
+    <string name="cook_mode_title">Cook mode</string>
+    <string name="cook_mode_step_counter_format">Step %1$d of %2$d</string>
+    <string name="cook_mode_no_instructions">No instructions available for this recipe.</string>
+    <string name="cook_mode_previous">Previous</string>
+    <string name="cook_mode_next">Next</string>
+    <string name="cook_mode_done">Done</string>
+    <string name="cook_mode_timer_start_format">Timer: %1$s</string>
+    <string name="cook_mode_timer_done">Done!</string>
     <string name="recipes_ai_generated_badge">AI-generated recipe</string>
     <string name="recipes_translated_badge">Translated with AI</string>
     <string name="recipes_generate_ai_button">Generate recipe with AI</string>

@@ -505,6 +505,17 @@
     <string name="recipes_add_missing_to_shopping_list">Ontbrekende ingrediënten toevoegen aan boodschappenlijst</string>
     <string name="recipes_instructions_title">Instructies</string>
     <string name="recipes_ready_in_minutes_format">%1$d min</string>
+
+    <!-- Kookmodus -->
+    <string name="cook_mode_start">Start koken</string>
+    <string name="cook_mode_title">Kookmodus</string>
+    <string name="cook_mode_step_counter_format">Stap %1$d van %2$d</string>
+    <string name="cook_mode_no_instructions">Geen instructies beschikbaar voor dit recept.</string>
+    <string name="cook_mode_previous">Vorige</string>
+    <string name="cook_mode_next">Volgende</string>
+    <string name="cook_mode_done">Klaar</string>
+    <string name="cook_mode_timer_start_format">Timer: %1$s</string>
+    <string name="cook_mode_timer_done">Klaar!</string>
     <string name="recipes_ai_generated_badge">AI-gegenereerd recept</string>
     <string name="recipes_translated_badge">Vertaald met AI</string>
     <string name="recipes_generate_ai_button">Genereer recept met AI</string>

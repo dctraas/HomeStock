@@ -43,6 +43,7 @@ import com.dtraas.homestock.ui.notifications.NotificationsScreen
 import com.dtraas.homestock.ui.premium.PremiumScreen
 import com.dtraas.homestock.ui.productdetail.ProductDetailScreen
 import com.dtraas.homestock.ui.receiptscan.ReceiptScanScreen
+import com.dtraas.homestock.ui.recipes.CookModeScreen
 import com.dtraas.homestock.ui.recipes.CustomRecipeEditScreen
 import com.dtraas.homestock.ui.recipes.RecipeDetailScreen
 import com.dtraas.homestock.ui.recipes.RecipesScreen
@@ -226,6 +227,17 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                     mealId = mealId,
                     onBack = { navController.popBackStack() },
                     onEdit = { recipeId -> navController.navigate(Destination.CustomRecipeEdit.createRoute(recipeId)) },
+                    onStartCookMode = { navController.navigate(Destination.CookMode.createRoute(mealId)) },
+                )
+            }
+            composable(
+                route = Destination.CookMode.route,
+                arguments = listOf(navArgument("mealId") { type = NavType.StringType }),
+            ) { entry ->
+                val mealId = entry.arguments?.getString("mealId").orEmpty()
+                CookModeScreen(
+                    mealId = mealId,
+                    onBack = { navController.popBackStack() },
                 )
             }
             composable(

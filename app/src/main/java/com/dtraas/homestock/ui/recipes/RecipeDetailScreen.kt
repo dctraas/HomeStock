@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.WifiOff
@@ -35,6 +36,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -66,6 +68,7 @@ fun RecipeDetailScreen(
     mealId: String,
     onBack: () -> Unit,
     onEdit: (String) -> Unit = {},
+    onStartCookMode: () -> Unit = {},
 ) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val languageTag = LocalConfiguration.current.locales[0].language
@@ -338,12 +341,25 @@ fun RecipeDetailScreen(
                 }
 
                 detail.displayInstructions?.takeIf { it.isNotBlank() }?.let { instructions ->
-                    Text(
-                        text = stringResource(R.string.recipes_instructions_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 20.dp),
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.recipes_instructions_title),
+                            style = MaterialTheme.typography.titleMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        // Only worth its own mode once there's more than one step to walk
+                        // through — a single-paragraph recipe has nothing for "Volgende" to do.
+                        if (splitIntoSteps(instructions).size > 1) {
+                            TextButton(onClick = onStartCookMode) {
+                                Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                                Text(stringResource(R.string.cook_mode_start), modifier = Modifier.padding(start = 6.dp))
+                            }
+                        }
+                    }
                     Surface(
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,

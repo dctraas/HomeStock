@@ -504,6 +504,17 @@
     <string name="recipes_add_missing_to_shopping_list">Añadir ingredientes que faltan a la lista de la compra</string>
     <string name="recipes_instructions_title">Instrucciones</string>
     <string name="recipes_ready_in_minutes_format">%1$d min</string>
+
+    <!-- Kookmodus -->
+    <string name="cook_mode_start">Empezar a cocinar</string>
+    <string name="cook_mode_title">Modo cocina</string>
+    <string name="cook_mode_step_counter_format">Paso %1$d de %2$d</string>
+    <string name="cook_mode_no_instructions">No hay instrucciones disponibles para esta receta.</string>
+    <string name="cook_mode_previous">Anterior</string>
+    <string name="cook_mode_next">Siguiente</string>
+    <string name="cook_mode_done">Listo</string>
+    <string name="cook_mode_timer_start_format">Temporizador: %1$s</string>
+    <string name="cook_mode_timer_done">¡Listo!</string>
     <string name="recipes_ai_generated_badge">Receta generada por IA</string>
     <string name="recipes_translated_badge">Traducido con IA</string>
     <string name="recipes_generate_ai_button">Generar receta con IA</string>

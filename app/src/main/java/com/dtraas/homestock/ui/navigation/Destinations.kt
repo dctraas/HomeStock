@@ -28,6 +28,9 @@ sealed class Destination(val route: String) {
     data object RecipeDetail : Destination("recipe_detail/{mealId}") {
         fun createRoute(mealId: String) = "recipe_detail/$mealId"
     }
+    data object CookMode : Destination("cook_mode/{mealId}") {
+        fun createRoute(mealId: String) = "cook_mode/$mealId"
+    }
     data object CustomRecipeEdit : Destination("custom_recipe_edit?recipeId={recipeId}") {
         /** [recipeId] null creates a new recipe; non-null edits an existing one. */
         fun createRoute(recipeId: String? = null) =
