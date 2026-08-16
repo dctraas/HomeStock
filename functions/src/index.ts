@@ -173,8 +173,11 @@ const RECEIPT_RESPONSE_SCHEMA = {
           name: { type: "string" },
           category: { type: "string", enum: [...CATEGORY_KEYS] },
           quantity: { type: "integer" },
+          // Empty string when no legible price for this line — same empty-string-instead-of-
+          // null convention as TRANSLATE_DETAIL_SCHEMA below (keeps the schema flat).
+          price: { type: "string" },
         },
-        required: ["name", "category", "quantity"],
+        required: ["name", "category", "quantity", "price"],
         additionalProperties: false,
       },
     },
@@ -190,10 +193,28 @@ interface RecognizeReceiptRequest {
   locale?: string;
 }
 
+/** Raw shape Claude actually returns — price is an unparsed string, see [ReceiptLineItem]. */
+interface RawReceiptLineItem {
+  name: string;
+  category: (typeof CATEGORY_KEYS)[number];
+  quantity: number;
+  price: string;
+}
+
 interface ReceiptLineItem {
   name: string;
   category: (typeof CATEGORY_KEYS)[number];
   quantity: number;
+  /** Total price paid for this line (not per-unit — the client divides by quantity itself), or null when not legible. */
+  price: number | null;
+}
+
+/** "3,98", "3.98", "€ 3,98" -> 3.98; anything unparseable -> null. */
+function parseReceiptPrice(raw: string): number | null {
+  const normalized = raw.replace(/[^0-9,.-]/g, "").replace(",", ".");
+  if (normalized.length === 0) return null;
+  const value = Number.parseFloat(normalized);
+  return Number.isFinite(value) && value >= 0 ? value : null;
 }
 
 function buildReceiptPrompt(locale: string): string {
@@ -209,10 +230,14 @@ function buildReceiptPrompt(locale: string): string {
     "- category: exactly one of the provided category keys — pick the single best fit.\n" +
     "- quantity: how many units of this product were purchased. Weighed items (e.g. loose " +
     "produce priced per kg) should get quantity 1 unless the receipt clearly shows a whole-" +
-    "unit count. Default to 1 when the receipt doesn't make quantity clear.\n\n" +
+    "unit count. Default to 1 when the receipt doesn't make quantity clear.\n" +
+    "- price: the total price actually paid for this line, exactly as printed (before any " +
+    "per-unit division), as a plain decimal number using a period, e.g. \"3.98\". Empty string " +
+    "if no legible price for this specific line.\n\n" +
     "Two-line weighed items (a product name row followed by a separate '1,23 €/kg ...' unit-" +
-    "price row) are one product, not two — merge them into a single entry. If the photo " +
-    "doesn't show a legible receipt at all, return an empty items array."
+    "price row) are one product, not two — merge them into a single entry, using the total " +
+    "price from that pair. If the photo doesn't show a legible receipt at all, return an " +
+    "empty items array."
   );
 }
 
@@ -453,15 +478,17 @@ export const recognizeReceipt = onCall(
       RECEIPT_RESPONSE_SCHEMA,
     );
 
-    let parsed: { items: ReceiptLineItem[] };
+    let parsed: { items: RawReceiptLineItem[] };
     try {
-      parsed = JSON.parse(responseText) as { items: ReceiptLineItem[] };
+      parsed = JSON.parse(responseText) as { items: RawReceiptLineItem[] };
     } catch (error) {
       logger.error("recognizeReceipt: could not parse model output as JSON", { responseText, error });
       throw new HttpsError("internal", "invalid_model_response");
     }
 
-    const items = Array.isArray(parsed.items) ? parsed.items.slice(0, 60) : [];
+    const items: ReceiptLineItem[] = (Array.isArray(parsed.items) ? parsed.items.slice(0, 60) : []).map(
+      (item) => ({ ...item, price: parseReceiptPrice(item.price) }),
+    );
     return { items };
   },
 );

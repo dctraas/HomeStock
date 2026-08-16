@@ -24,6 +24,11 @@ data class ProductEntity(
     // Free-text "where in the house" (e.g. "Kelder", "Vriezer", "Voorraadkast") — purely a
     // household-personalized label, same as brand/unit; null means not set, shown nowhere.
     val location: String? = null,
+    // Per-unit price the household last actually paid, auto-filled from a receipt scan
+    // (ReceiptScanViewModel.confirmAndSave) — deliberately read-only and display-only, no
+    // manual edit UI, since a full price-tracking feature was explicitly removed earlier
+    // (see "Verwijder Prijs registreren functionaliteit"). Null means never set from a receipt.
+    val lastPrice: Double? = null,
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
         "name" to name,
@@ -38,6 +43,7 @@ data class ProductEntity(
         "allergens" to allergens,
         "dietLabels" to dietLabels,
         "location" to location,
+        "lastPrice" to lastPrice,
     )
 
     companion object {
@@ -63,6 +69,7 @@ data class ProductEntity(
                 allergens = allergens,
                 dietLabels = dietLabels,
                 location = document.getString("location"),
+                lastPrice = document.getDouble("lastPrice"),
             )
         }
     }

@@ -13,6 +13,10 @@ data class RecognizedReceiptItem(
     val name: String,
     val category: Category,
     val quantity: Int,
+    // Total price for this line as printed on the receipt (not yet divided by quantity) — null
+    // when the model couldn't read a price for this line. See ReceiptScanViewModel for where
+    // this becomes a per-unit "last paid" price on the product.
+    val price: Double? = null,
 )
 
 sealed interface RecognizeReceiptResult {
@@ -82,6 +86,7 @@ class ReceiptRecognitionRepository(
                 name = name,
                 category = Category.fromStorageKey(item["category"] as? String),
                 quantity = (item["quantity"] as? Number)?.toInt()?.coerceAtLeast(1) ?: 1,
+                price = (item["price"] as? Number)?.toDouble(),
             )
         }
     }

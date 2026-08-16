@@ -890,6 +890,27 @@ private fun ProductDetailsCard(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
+            // Read-only, auto-filled from a receipt scan only — deliberately not an editable
+            // field, unlike everything else in this card. A full manual price-tracking UI was
+            // explicitly removed earlier ("Verwijder Prijs registreren functionaliteit"); this
+            // is just a small side effect of Bonnetje scannen, not a return of that feature.
+            product.lastPrice?.let { lastPrice ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = stringResource(R.string.product_detail_field_last_price),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = formatPrice(lastPrice),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+            }
             // Note is a field on the inventory entry, not the catalog product — nothing to
             // save it against for a product that isn't (or no longer) in stock.
             //
@@ -1054,6 +1075,8 @@ private fun NutritionRow(label: String, value: String, indented: Boolean = false
 }
 
 private fun formatKcal(value: Double): String = String.format(Locale.getDefault(), "%.0f kcal", value)
+
+private fun formatPrice(value: Double): String = String.format(Locale.getDefault(), "€%.2f", value)
 private fun formatGrams(value: Double): String = String.format(Locale.getDefault(), "%.1f g", value)
 
 private fun formatExpirationDate(millis: Long): String {

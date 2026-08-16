@@ -33,6 +33,9 @@ data class ReceiptConfirmItem(
     val brand: String? = null,
     val unit: String? = null,
     val imageUrl: String? = null,
+    // Total line price as read off the receipt (not per-unit yet) — divided by quantity in
+    // confirmAndSave() before it's stored as the product's lastPrice. Null when unreadable.
+    val price: Double? = null,
 )
 
 enum class ReceiptFailReason {
@@ -101,7 +104,7 @@ class ReceiptScanViewModel(
      * this matching pass existed.
      */
     private suspend fun matchItem(id: String, item: RecognizedReceiptItem): ReceiptConfirmItem {
-        val base = ReceiptConfirmItem(id = id, name = item.name, category = item.category, quantity = item.quantity)
+        val base = ReceiptConfirmItem(id = id, name = item.name, category = item.category, quantity = item.quantity, price = item.price)
         val barcode = productRepository.searchByName(item.name).getOrNull()?.firstOrNull()?.barcode ?: return base
         val product = productRepository.getOrFetchProduct(barcode).getOrNull() ?: return base
         return base.copy(matchedBarcode = product.barcode, brand = product.brand, unit = product.unit, imageUrl = product.imageUrl)
@@ -144,18 +147,27 @@ class ReceiptScanViewModel(
         viewModelScope.launch {
             toAdd.forEach { item ->
                 val matchedBarcode = item.matchedBarcode
+                val barcode: String
                 if (matchedBarcode != null) {
                     // Already fetched/cached during matchItem() — just apply the receipt's own
                     // category read (same "found online" convention as ScanResultViewModel:
                     // keep the database's name/brand/unit, only the category comes from us).
                     productRepository.updateCategory(matchedBarcode, item.category)
                     inventoryRepository.recordScan(matchedBarcode, item.quantity, item.category)
+                    barcode = matchedBarcode
                 } else {
                     // No database match — synthesize a barcode, same role a scanned barcode
                     // plays elsewhere as the product key.
                     val syntheticBarcode = "receipt-${UUID.randomUUID()}"
                     productRepository.saveManualProduct(syntheticBarcode, item.name, item.category)
                     inventoryRepository.recordScan(syntheticBarcode, item.quantity, item.category)
+                    barcode = syntheticBarcode
+                }
+                // The receipt's price is a line total, not per-unit — divide it back down so
+                // ProductEntity.lastPrice always reflects "price per unit", matching how the
+                // product is priced everywhere else in the app.
+                item.price?.let { totalPrice ->
+                    productRepository.updateLastPrice(barcode, totalPrice / item.quantity.coerceAtLeast(1))
                 }
             }
             _step.value = ReceiptScanStep.Done

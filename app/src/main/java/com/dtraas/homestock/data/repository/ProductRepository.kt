@@ -243,6 +243,12 @@ class ProductRepository(
         productsCollection(householdId).document(barcode).update("location", location).await()
     }
 
+    /** Sets the per-unit "last paid" price — see [ProductEntity.lastPrice] for why this has no manual edit UI. */
+    suspend fun updateLastPrice(barcode: String, lastPrice: Double?) {
+        val householdId = householdSession.householdId.value ?: return
+        productsCollection(householdId).document(barcode).update("lastPrice", lastPrice).await()
+    }
+
     /**
      * Uploads a household-picked photo for [barcode] to Firebase Storage and points the
      * product's `imageUrl` at it, overwriting whatever image was there before (an Open Food
