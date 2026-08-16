@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Campaign
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material3.Card
@@ -231,6 +232,10 @@ private fun activityIcon(type: ActivityType): ImageVector = when (type) {
     ActivityType.QUANTITY_CHANGED -> Icons.Filled.Tune
     ActivityType.REMOVED -> Icons.Filled.Delete
     ActivityType.ADDED_TO_SHOPPING_LIST -> Icons.Filled.AddShoppingCart
+    // Distinct from plain REMOVED so a wasted-food entry reads differently at a glance in the
+    // activity log too, matching how Statistics already tells "verspild" apart from ordinary
+    // consumption (see ActivityType.WASTED's own doc).
+    ActivityType.WASTED -> Icons.Filled.DeleteSweep
 }
 
 @Composable
