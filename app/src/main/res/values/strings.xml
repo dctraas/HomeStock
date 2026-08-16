@@ -328,6 +328,8 @@
     <string name="product_detail_editable_title">Product details</string>
     <string name="product_detail_field_brand">Merk</string>
     <string name="product_detail_field_unit">Eenheid</string>
+    <string name="product_detail_field_location">Locatie in huis</string>
+    <string name="product_detail_field_location_placeholder">Bijv. kelder, vriezer, voorraadkast</string>
     <string name="product_detail_allergens_title">Allergenen</string>
     <string name="product_detail_diet_labels_title">Dieetlabels</string>
     <string name="product_detail_note_title">Persoonlijke notitie</string>

@@ -398,6 +398,7 @@ fun ProductDetailScreen(
                         onBrandChange = viewModel::updateBrand,
                         onCategoryChange = viewModel::updateCategory,
                         onUnitChange = viewModel::updateUnit,
+                        onLocationChange = viewModel::updateLocation,
                         showNote = stillInInventory,
                         note = uiState.note,
                         onNoteChange = viewModel::setNote,
@@ -775,6 +776,7 @@ private fun ProductDetailsCard(
     onBrandChange: (String?) -> Unit,
     onCategoryChange: (Category) -> Unit,
     onUnitChange: (String?) -> Unit,
+    onLocationChange: (String?) -> Unit,
     showNote: Boolean,
     note: String?,
     onNoteChange: (String?) -> Unit,
@@ -783,6 +785,7 @@ private fun ProductDetailsCard(
     var name by remember(product.barcode) { mutableStateOf(product.name) }
     var brand by remember(product.barcode) { mutableStateOf(product.brand ?: "") }
     var unit by remember(product.barcode) { mutableStateOf(product.unit ?: "") }
+    var location by remember(product.barcode) { mutableStateOf(product.location ?: "") }
     // Keyed on the note itself (not just the barcode) — unlike name/brand/unit, this field
     // lives on the inventory entry rather than the catalog product, so it can legitimately
     // change from outside this card (e.g. removed from inventory) while it stays mounted.
@@ -801,6 +804,10 @@ private fun ProductDetailsCard(
     LaunchedEffect(unit) {
         delay(600)
         if (unit != (product.unit ?: "")) onUnitChange(unit.trim().ifBlank { null })
+    }
+    LaunchedEffect(location) {
+        delay(600)
+        if (location != (product.location ?: "")) onLocationChange(location.trim().ifBlank { null })
     }
     LaunchedEffect(noteText) {
         delay(600)
@@ -839,6 +846,14 @@ private fun ProductDetailsCard(
                 value = unit,
                 onValueChange = { unit = it },
                 label = { Text(stringResource(R.string.product_detail_field_unit)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            OutlinedTextField(
+                value = location,
+                onValueChange = { location = it },
+                label = { Text(stringResource(R.string.product_detail_field_location)) },
+                placeholder = { Text(stringResource(R.string.product_detail_field_location_placeholder)) },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )

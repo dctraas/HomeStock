@@ -995,7 +995,7 @@ private fun InventoryRow(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    val subtitle = listOfNotNull(item.brand, item.unit).joinToString(" · ")
+                    val subtitle = listOfNotNull(item.brand, item.unit, item.location).joinToString(" · ")
                     if (subtitle.isNotEmpty()) {
                         Text(
                             text = subtitle,
@@ -1122,7 +1122,7 @@ private fun InventoryGridTile(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            val subtitle = listOfNotNull(item.brand, item.unit).joinToString(" · ")
+            val subtitle = listOfNotNull(item.brand, item.unit, item.location).joinToString(" · ")
             if (subtitle.isNotEmpty()) {
                 Text(
                     text = subtitle,

@@ -238,6 +238,11 @@ class ProductRepository(
         productsCollection(householdId).document(barcode).update("unit", unit).await()
     }
 
+    suspend fun updateLocation(barcode: String, location: String?) {
+        val householdId = householdSession.householdId.value ?: return
+        productsCollection(householdId).document(barcode).update("location", location).await()
+    }
+
     /**
      * Uploads a household-picked photo for [barcode] to Firebase Storage and points the
      * product's `imageUrl` at it, overwriting whatever image was there before (an Open Food

@@ -19,6 +19,7 @@ data class InventoryItemWithProduct(
     val minQuantity: Int? = null,
     val note: String? = null,
     val isFavorite: Boolean = false,
+    val location: String? = null,
 )
 
 /** Number of distinct inventory items per category, for the statistics screen. */

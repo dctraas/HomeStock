@@ -21,6 +21,9 @@ data class ProductEntity(
     val nutrition: NutritionInfo? = null,
     val allergens: List<String> = emptyList(),
     val dietLabels: List<String> = emptyList(),
+    // Free-text "where in the house" (e.g. "Kelder", "Vriezer", "Voorraadkast") — purely a
+    // household-personalized label, same as brand/unit; null means not set, shown nowhere.
+    val location: String? = null,
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
         "name" to name,
@@ -34,6 +37,7 @@ data class ProductEntity(
         "nutrition" to nutrition?.toMap(),
         "allergens" to allergens,
         "dietLabels" to dietLabels,
+        "location" to location,
     )
 
     companion object {
@@ -58,6 +62,7 @@ data class ProductEntity(
                 nutrition = NutritionInfo.fromMap(nutritionMap),
                 allergens = allergens,
                 dietLabels = dietLabels,
+                location = document.getString("location"),
             )
         }
     }

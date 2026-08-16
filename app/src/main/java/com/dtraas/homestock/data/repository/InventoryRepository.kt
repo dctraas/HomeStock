@@ -61,6 +61,7 @@ class InventoryRepository(
                                 minQuantity = item.minQuantity,
                                 note = item.note,
                                 isFavorite = item.isFavorite,
+                                location = product.location,
                             )
                         }
                         .sortedBy { it.name.lowercase() }

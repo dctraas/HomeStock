@@ -109,6 +109,10 @@ class ProductDetailViewModel(
         viewModelScope.launch { productRepository.updateUnit(barcode, unit) }
     }
 
+    fun updateLocation(location: String?) {
+        viewModelScope.launch { productRepository.updateLocation(barcode, location) }
+    }
+
     /** Premium feature — the caller (ProductDetailScreen) checks isPremium before ever letting
      *  the picker that produces [uri] be launched, so this itself doesn't re-check. */
     fun uploadCustomPhoto(uri: Uri) {

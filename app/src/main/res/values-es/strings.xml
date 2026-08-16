@@ -327,6 +327,8 @@
     <string name="product_detail_editable_title">Detalles del producto</string>
     <string name="product_detail_field_brand">Marca</string>
     <string name="product_detail_field_unit">Unidad</string>
+    <string name="product_detail_field_location">Ubicación en casa</string>
+    <string name="product_detail_field_location_placeholder">P. ej. sótano, congelador, despensa</string>
     <string name="product_detail_allergens_title">Alérgenos</string>
     <string name="product_detail_diet_labels_title">Etiquetas dietéticas</string>
     <string name="product_detail_note_title">Nota personal</string>

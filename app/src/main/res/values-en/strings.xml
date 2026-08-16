@@ -327,6 +327,8 @@
     <string name="product_detail_editable_title">Product details</string>
     <string name="product_detail_field_brand">Brand</string>
     <string name="product_detail_field_unit">Unit</string>
+    <string name="product_detail_field_location">Location in the house</string>
+    <string name="product_detail_field_location_placeholder">E.g. basement, freezer, pantry</string>
     <string name="product_detail_allergens_title">Allergens</string>
     <string name="product_detail_diet_labels_title">Diet labels</string>
     <string name="product_detail_note_title">Personal note</string>
