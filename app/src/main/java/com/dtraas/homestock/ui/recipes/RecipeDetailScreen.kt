@@ -71,7 +71,14 @@ fun RecipeDetailScreen(
     val languageTag = LocalConfiguration.current.locales[0].language
     val viewModel: RecipeDetailViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { RecipeDetailViewModel(mealId, languageTag, application.container.recipeRepository) }
+            initializer {
+                RecipeDetailViewModel(
+                    mealId,
+                    languageTag,
+                    application.container.recipeRepository,
+                    application.container.householdMembersRepository,
+                )
+            }
         },
     )
     val uiState by viewModel.uiState.collectAsState()

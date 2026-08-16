@@ -2,11 +2,13 @@ package com.dtraas.homestock.ui.recipes
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dtraas.homestock.data.repository.HouseholdMembersRepository
 import com.dtraas.homestock.data.repository.RecipeDetail
 import com.dtraas.homestock.data.repository.RecipeRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -18,9 +20,10 @@ data class RecipeDetailUiState(
     val addedToShoppingList: Boolean = false,
     val isFavorite: Boolean = false,
     // Portion scaling — how many people the shown ingredient amounts should feed right now.
-    // Starts at the recipe's own [RecipeDetail.servings] once loaded; null (rather than some
-    // default like 4) whenever the recipe has no serving count at all, so RecipeDetailScreen
-    // knows to hide the stepper entirely instead of scaling against a made-up baseline.
+    // Defaults to the household's own member count once loaded (see load()), not the recipe's
+    // own [RecipeDetail.servings] — a 4-serving recipe opened by a 2-person household already
+    // shows halved amounts. Null (rather than some made-up default like 4) whenever the recipe
+    // has no serving count at all, so RecipeDetailScreen knows to hide the stepper entirely.
     val targetServings: Int? = null,
 )
 
@@ -28,6 +31,7 @@ class RecipeDetailViewModel(
     private val mealId: String,
     private val languageTag: String?,
     private val recipeRepository: RecipeRepository,
+    private val householdMembersRepository: HouseholdMembersRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RecipeDetailUiState())
@@ -51,13 +55,24 @@ class RecipeDetailViewModel(
             recipeRepository.getRecipeDetail(mealId, languageTag)
                 .onSuccess { detail ->
                     val matched = recipeRepository.matchedIngredients(detail)
+                    // Default the stepper to "how many of us are there" rather than the
+                    // recipe's own original serving count — a 4-serving recipe opened by a
+                    // 2-person household should already show halved amounts, not require an
+                    // extra manual adjustment every single time. Only when the recipe actually
+                    // has a serving count to scale from at all; falls back to that original
+                    // count if the household size can't be read for some reason (e.g. no
+                    // household, momentary read failure) rather than leaving it null.
+                    val householdSize = runCatching { householdMembersRepository.observeMemberCount().first() }.getOrNull()
+                    val defaultServings = detail.servings?.let { original ->
+                        householdSize?.coerceAtLeast(1) ?: original
+                    }
                     _uiState.update {
                         it.copy(
                             isLoading = false,
                             detail = detail,
                             matchedIngredients = matched,
                             hasError = false,
-                            targetServings = detail.servings,
+                            targetServings = defaultServings,
                         )
                     }
                 }
