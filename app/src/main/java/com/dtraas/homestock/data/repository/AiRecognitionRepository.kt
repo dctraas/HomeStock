@@ -5,6 +5,9 @@ import com.dtraas.homestock.data.model.Category
 import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.functions.FirebaseFunctionsException
 import java.io.IOException
+import java.time.LocalDate
+import java.time.ZoneOffset
+import java.time.format.DateTimeParseException
 import java.util.Locale
 import kotlinx.coroutines.tasks.await
 
@@ -24,6 +27,22 @@ sealed interface RecognizeProductResult {
 
     /** Call succeeded but returned nothing usable, or failed for any other reason. */
     data object Failed : RecognizeProductResult
+}
+
+sealed interface RecognizeExpirationDateResult {
+    /** [epochMillis] is UTC midnight of the recognized date — the same convention
+     *  ProductDetailScreen's own date picker/[InventoryRepository] use for expirationDate. */
+    data class Success(val epochMillis: Long, val confidencePercent: Int) : RecognizeExpirationDateResult
+
+    /** Call succeeded but the model couldn't find a legible date in the photo. */
+    data object NotFound : RecognizeExpirationDateResult
+
+    /** Server re-checked and this household isn't premium (e.g. subscription lapsed mid-session). */
+    data object PremiumRequired : RecognizeExpirationDateResult
+    data object NoConnection : RecognizeExpirationDateResult
+
+    /** Call failed for any other reason (network hiccup, malformed response, ...). */
+    data object Failed : RecognizeExpirationDateResult
 }
 
 /**
@@ -88,5 +107,49 @@ class AiRecognitionRepository(
                 confidencePercent = (candidate["confidence"] as? Number)?.toInt()?.coerceIn(0, 100) ?: 0,
             )
         }
+    }
+
+    /** Client for the `recognizeExpirationDate` Cloud Function — see this class's doc for why
+     *  the Anthropic call itself lives server-side. Used by ProductDetailScreen's "THT-datum
+     *  scannen" camera. */
+    suspend fun recognizeExpirationDate(jpegBytes: ByteArray): RecognizeExpirationDateResult {
+        val householdId = householdSession.householdId.value ?: return RecognizeExpirationDateResult.Failed
+        val requestData = hashMapOf(
+            "imageBase64" to Base64.encodeToString(jpegBytes, Base64.NO_WRAP),
+            "mimeType" to "image/jpeg",
+            "householdId" to householdId,
+            "locale" to Locale.getDefault().language,
+        )
+
+        return try {
+            val result = functions.getHttpsCallable("recognizeExpirationDate").call(requestData).await()
+            parseExpirationDateResult(result.getData())
+        } catch (e: FirebaseFunctionsException) {
+            when (e.code) {
+                FirebaseFunctionsException.Code.PERMISSION_DENIED -> RecognizeExpirationDateResult.PremiumRequired
+                FirebaseFunctionsException.Code.UNAVAILABLE,
+                FirebaseFunctionsException.Code.DEADLINE_EXCEEDED,
+                -> RecognizeExpirationDateResult.NoConnection
+                else -> RecognizeExpirationDateResult.Failed
+            }
+        } catch (e: IOException) {
+            RecognizeExpirationDateResult.NoConnection
+        } catch (e: Exception) {
+            RecognizeExpirationDateResult.Failed
+        }
+    }
+
+    @Suppress("UNCHECKED_CAST")
+    private fun parseExpirationDateResult(rawResponse: Any?): RecognizeExpirationDateResult {
+        val response = rawResponse as? Map<String, Any?> ?: return RecognizeExpirationDateResult.Failed
+        val dateIso = (response["dateIso"] as? String)?.trim()
+        if (dateIso.isNullOrEmpty()) return RecognizeExpirationDateResult.NotFound
+        val confidencePercent = (response["confidence"] as? Number)?.toInt()?.coerceIn(0, 100) ?: 0
+        val epochMillis = try {
+            LocalDate.parse(dateIso).atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+        } catch (e: DateTimeParseException) {
+            return RecognizeExpirationDateResult.NotFound
+        }
+        return RecognizeExpirationDateResult.Success(epochMillis, confidencePercent)
     }
 }

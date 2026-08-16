@@ -242,6 +242,51 @@ function buildReceiptPrompt(locale: string): string {
 }
 
 // ---------------------------------------------------------------------------
+// recognizeExpirationDate — photo of a product's packaging -> its printed best-before date.
+// ---------------------------------------------------------------------------
+
+const EXPIRATION_DATE_RESPONSE_SCHEMA = {
+  type: "object",
+  properties: {
+    // Empty string when no legible date is found — same convention as RECEIPT_RESPONSE_SCHEMA's
+    // price field, keeping the schema flat instead of using a nullable type.
+    dateIso: { type: "string" },
+    confidence: { type: "integer" },
+  },
+  required: ["dateIso", "confidence"],
+  additionalProperties: false,
+} as const;
+
+interface RecognizeExpirationDateRequest {
+  imageBase64: string;
+  mimeType: string;
+  householdId: string;
+  locale?: string;
+}
+
+function buildExpirationDatePrompt(locale: string): string {
+  return (
+    "You are helping a home grocery inventory app read the expiration/best-before date " +
+    "printed or stamped on a product's packaging, from a photo a user just took. Look for a " +
+    "date near wording like 'THT', 'houdbaar tot', 'tenminste houdbaar tot', 'best before', " +
+    `'use by', 'exp', 'EXP', or the local equivalent in this language: ${locale}.\n\n` +
+    "- dateIso: the date in ISO 8601 format (YYYY-MM-DD). If the printed date has no day " +
+    "of month (e.g. only a month and year), use the first day of that month. If there are " +
+    "multiple dates on the packaging (e.g. a production date and a best-before date), use " +
+    "the best-before/expiration date, not the production date. If you cannot find a legible " +
+    "expiration date in the photo at all, return an empty string.\n" +
+    "- confidence: your confidence that dateIso is correct, 0-100 (0 when dateIso is empty).\n\n" +
+    "Do not guess a date you cannot actually see evidence for in the image."
+  );
+}
+
+/** True for a `YYYY-MM-DD` string that also parses as a real calendar date. */
+function isValidIsoDate(value: unknown): value is string {
+  if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  return !Number.isNaN(new Date(`${value}T00:00:00Z`).getTime());
+}
+
+// ---------------------------------------------------------------------------
 // generateRecipe — household ingredients (+ optional wish) -> one AI-authored recipe.
 // ---------------------------------------------------------------------------
 
@@ -490,6 +535,58 @@ export const recognizeReceipt = onCall(
       (item) => ({ ...item, price: parseReceiptPrice(item.price) }),
     );
     return { items };
+  },
+);
+
+/**
+ * Callable Cloud Function backing the "THT-datum scannen" camera on ProductDetailScreen
+ * (premium-only — see AiRecognitionRepository.kt on the client). Takes a single photo of a
+ * product's packaging and asks Claude Haiku 4.5 to read its printed best-before/expiration
+ * date, returning it as an ISO 8601 date string.
+ */
+export const recognizeExpirationDate = onCall(
+  { secrets: [anthropicApiKey], cors: false, timeoutSeconds: 30, invoker: "public" },
+  async (request) => {
+    const uid = requireUid(request.auth);
+    const data = request.data as Partial<RecognizeExpirationDateRequest> | undefined;
+    const householdId = data?.householdId;
+    const imageBase64 = data?.imageBase64;
+    const mimeType = data?.mimeType;
+    const locale = typeof data?.locale === "string" && data.locale.trim().length > 0 ? data.locale : "nl";
+
+    if (!householdId || typeof householdId !== "string") {
+      throw new HttpsError("invalid-argument", "householdId is required.");
+    }
+    if (!imageBase64 || typeof imageBase64 !== "string") {
+      throw new HttpsError("invalid-argument", "imageBase64 is required.");
+    }
+    if (imageBase64.length > MAX_BASE64_LENGTH) {
+      throw new HttpsError("invalid-argument", "Image is too large.");
+    }
+    if (!mimeType || !ALLOWED_MIME_TYPES.has(mimeType)) {
+      throw new HttpsError("invalid-argument", "Unsupported or missing mimeType.");
+    }
+
+    await requirePremiumHousehold(uid, householdId);
+
+    const responseText = await callAnthropicWithImage(
+      anthropicApiKey.value(),
+      imageBase64,
+      mimeType,
+      buildExpirationDatePrompt(locale),
+      EXPIRATION_DATE_RESPONSE_SCHEMA,
+    );
+
+    let parsed: { dateIso: string; confidence: number };
+    try {
+      parsed = JSON.parse(responseText) as { dateIso: string; confidence: number };
+    } catch (error) {
+      logger.error("recognizeExpirationDate: could not parse model output as JSON", { responseText, error });
+      throw new HttpsError("internal", "invalid_model_response");
+    }
+
+    const dateIso = isValidIsoDate(parsed.dateIso) ? parsed.dateIso : null;
+    return { dateIso, confidence: dateIso ? Math.max(0, Math.min(100, Math.round(parsed.confidence))) : 0 };
   },
 );
 

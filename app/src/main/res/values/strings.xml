@@ -630,6 +630,19 @@
     <string name="ai_recognize_disclaimer">De AI geeft een indicatie op basis van de foto — controleer en pas de naam en categorie hieronder aan voordat je toevoegt.</string>
     <string name="ai_recognize_confirm">Toevoegen aan voorraad</string>
 
+    <!-- THT-datum scannen (Premium) -->
+    <string name="expiration_scan_entry_cd">THT-datum scannen met camera</string>
+    <string name="expiration_scan_title">THT-datum scannen</string>
+    <string name="expiration_scan_hint">Richt de camera op de houdbaarheidsdatum</string>
+    <string name="expiration_scan_capture_cd">Foto maken</string>
+    <string name="expiration_scan_analyzing">Datum herkennen…</string>
+    <string name="expiration_scan_found_format">Gevonden: %1$s</string>
+    <string name="expiration_scan_confidence_format">%1$d%% zeker</string>
+    <string name="expiration_scan_apply">Toepassen</string>
+    <string name="expiration_scan_retry">Opnieuw proberen</string>
+    <string name="expiration_scan_not_found">Geen datum gevonden op de foto. Probeer een duidelijkere foto van de THT-datum.</string>
+    <string name="expiration_scan_failed">Kon de foto niet verwerken. Probeer het opnieuw.</string>
+
     <!-- Premium -->
     <string name="premium_title">Premium</string>
     <string name="premium_pitch_title">Haal meer uit HomeStock</string>

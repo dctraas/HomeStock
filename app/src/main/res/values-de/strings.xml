@@ -629,6 +629,19 @@
     <string name="ai_recognize_disclaimer">Die KI gibt eine Einschätzung anhand des Fotos — überprüfe Name und Kategorie unten, bevor du hinzufügst.</string>
     <string name="ai_recognize_confirm">Zum Vorrat hinzufügen</string>
 
+    <!-- THT-Datum scannen (Premium) -->
+    <string name="expiration_scan_entry_cd">Haltbarkeitsdatum mit Kamera scannen</string>
+    <string name="expiration_scan_title">Haltbarkeitsdatum scannen</string>
+    <string name="expiration_scan_hint">Richte die Kamera auf das Haltbarkeitsdatum</string>
+    <string name="expiration_scan_capture_cd">Foto aufnehmen</string>
+    <string name="expiration_scan_analyzing">Datum wird erkannt…</string>
+    <string name="expiration_scan_found_format">Gefunden: %1$s</string>
+    <string name="expiration_scan_confidence_format">%1$d%% sicher</string>
+    <string name="expiration_scan_apply">Übernehmen</string>
+    <string name="expiration_scan_retry">Erneut versuchen</string>
+    <string name="expiration_scan_not_found">Kein Datum auf dem Foto gefunden. Versuche ein deutlicheres Foto des Haltbarkeitsdatums.</string>
+    <string name="expiration_scan_failed">Foto konnte nicht verarbeitet werden. Bitte versuche es erneut.</string>
+
     <!-- Premium -->
     <string name="premium_title">Premium</string>
     <string name="premium_pitch_title">Hol mehr aus HomeStock heraus</string>

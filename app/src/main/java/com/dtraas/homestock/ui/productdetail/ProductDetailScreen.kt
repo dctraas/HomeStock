@@ -372,6 +372,8 @@ fun ProductDetailScreen(
                             expirationDate = uiState.expirationDate,
                             category = category,
                             onDateChange = viewModel::setExpirationDate,
+                            isPremium = isPremium,
+                            onNavigateToPremium = onNavigateToPremium,
                         )
 
                         MinQuantityRow(
@@ -1130,8 +1132,15 @@ private val statusValueMinWidth = 130.dp
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ExpirationRow(expirationDate: Long?, category: Category, onDateChange: (Long?) -> Unit) {
+private fun ExpirationRow(
+    expirationDate: Long?,
+    category: Category,
+    onDateChange: (Long?) -> Unit,
+    isPremium: Boolean,
+    onNavigateToPremium: () -> Unit,
+) {
     var showPicker by remember { mutableStateOf(false) }
+    var showAiScan by remember { mutableStateOf(false) }
     val isNearExpiry = expirationDate != null && daysUntilExpiration(expirationDate) <= 3
 
     Row(
@@ -1142,6 +1151,22 @@ private fun ExpirationRow(expirationDate: Long?, category: Category, onDateChang
         Text(stringResource(R.string.product_detail_expiration_label), style = MaterialTheme.typography.bodyLarge)
         Box(modifier = Modifier.widthIn(min = statusValueMinWidth), contentAlignment = Alignment.CenterEnd) {
             Row(verticalAlignment = Alignment.CenterVertically) {
+                // AI-productherkenning is already premium-only elsewhere in the app (see
+                // ScanScreen/AiRecognizeScreen) since the photo leaves the device — this THT-
+                // datum scan is the same real per-scan cost, so it follows the same gate:
+                // premium households open the camera dialog directly, everyone else goes
+                // straight to the paywall instead of a dead-end "premium required" screen.
+                IconButton(
+                    onClick = { if (isPremium) showAiScan = true else onNavigateToPremium() },
+                    modifier = Modifier.size(32.dp),
+                ) {
+                    Icon(
+                        Icons.Filled.PhotoCamera,
+                        contentDescription = stringResource(R.string.expiration_scan_entry_cd),
+                        modifier = Modifier.size(18.dp),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Text(
                     text = expirationDate?.let { formatExpirationDate(it) }
                         ?: stringResource(R.string.product_detail_expiration_set),
@@ -1161,6 +1186,13 @@ private fun ExpirationRow(expirationDate: Long?, category: Category, onDateChang
                 }
             }
         }
+    }
+
+    if (showAiScan) {
+        ExpirationDateScanDialog(
+            onDismiss = { showAiScan = false },
+            onDateRecognized = { onDateChange(it) },
+        )
     }
 
     // A one-tap estimate based on the product's category (see Category.defaultShelfLifeDays'

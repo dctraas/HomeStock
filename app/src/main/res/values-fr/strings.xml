@@ -629,6 +629,19 @@
     <string name="ai_recognize_disclaimer">L\'IA donne une indication basée sur la photo — vérifiez et ajustez le nom et la catégorie ci-dessous avant d\'ajouter.</string>
     <string name="ai_recognize_confirm">Ajouter à l\'inventaire</string>
 
+    <!-- Scan de la date de péremption (Premium) -->
+    <string name="expiration_scan_entry_cd">Scanner la date de péremption avec l\'appareil photo</string>
+    <string name="expiration_scan_title">Scanner la date de péremption</string>
+    <string name="expiration_scan_hint">Pointez l\'appareil photo vers la date de péremption</string>
+    <string name="expiration_scan_capture_cd">Prendre une photo</string>
+    <string name="expiration_scan_analyzing">Reconnaissance de la date…</string>
+    <string name="expiration_scan_found_format">Trouvée : %1$s</string>
+    <string name="expiration_scan_confidence_format">%1$d%% de confiance</string>
+    <string name="expiration_scan_apply">Appliquer</string>
+    <string name="expiration_scan_retry">Réessayer</string>
+    <string name="expiration_scan_not_found">Aucune date trouvée sur la photo. Essayez une photo plus nette de la date de péremption.</string>
+    <string name="expiration_scan_failed">Impossible de traiter la photo. Veuillez réessayer.</string>
+
     <!-- Premium -->
     <string name="premium_title">Premium</string>
     <string name="premium_pitch_title">Profitez encore plus de HomeStock</string>

@@ -629,6 +629,19 @@
     <string name="ai_recognize_disclaimer">The AI gives an indication based on the photo — review and adjust the name and category below before adding.</string>
     <string name="ai_recognize_confirm">Add to inventory</string>
 
+    <!-- Expiration date scan (Premium) -->
+    <string name="expiration_scan_entry_cd">Scan expiration date with camera</string>
+    <string name="expiration_scan_title">Scan expiration date</string>
+    <string name="expiration_scan_hint">Point the camera at the expiration date</string>
+    <string name="expiration_scan_capture_cd">Take photo</string>
+    <string name="expiration_scan_analyzing">Recognizing date…</string>
+    <string name="expiration_scan_found_format">Found: %1$s</string>
+    <string name="expiration_scan_confidence_format">%1$d%% confident</string>
+    <string name="expiration_scan_apply">Apply</string>
+    <string name="expiration_scan_retry">Try again</string>
+    <string name="expiration_scan_not_found">No date found in the photo. Try a clearer photo of the expiration date.</string>
+    <string name="expiration_scan_failed">Could not process the photo. Please try again.</string>
+
     <!-- Premium -->
     <string name="premium_title">Premium</string>
     <string name="premium_pitch_title">Get more out of HomeStock</string>

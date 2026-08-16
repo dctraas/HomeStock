@@ -629,6 +629,19 @@
     <string name="ai_recognize_disclaimer">La IA da una indicación basada en la foto — revisa y ajusta el nombre y la categoría abajo antes de añadirlo.</string>
     <string name="ai_recognize_confirm">Añadir al inventario</string>
 
+    <!-- Escanear fecha de caducidad (Premium) -->
+    <string name="expiration_scan_entry_cd">Escanear fecha de caducidad con la cámara</string>
+    <string name="expiration_scan_title">Escanear fecha de caducidad</string>
+    <string name="expiration_scan_hint">Apunta la cámara a la fecha de caducidad</string>
+    <string name="expiration_scan_capture_cd">Hacer foto</string>
+    <string name="expiration_scan_analyzing">Reconociendo fecha…</string>
+    <string name="expiration_scan_found_format">Encontrada: %1$s</string>
+    <string name="expiration_scan_confidence_format">%1$d%% de confianza</string>
+    <string name="expiration_scan_apply">Aplicar</string>
+    <string name="expiration_scan_retry">Intentar de nuevo</string>
+    <string name="expiration_scan_not_found">No se encontró ninguna fecha en la foto. Prueba con una foto más clara de la fecha de caducidad.</string>
+    <string name="expiration_scan_failed">No se pudo procesar la foto. Inténtalo de nuevo.</string>
+
     <!-- Premium -->
     <string name="premium_title">Premium</string>
     <string name="premium_pitch_title">Saca más partido a HomeStock</string>
