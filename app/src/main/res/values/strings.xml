@@ -403,6 +403,10 @@
     <string name="shopping_list_title">Boodschappenlijst</string>
     <string name="shopping_list_clear_checked_cd">Wis afgevinkte items</string>
     <string name="shopping_list_check_all_cd">Alles afvinken</string>
+    <string name="shopping_list_sort_cd">Sorteren</string>
+    <string name="shopping_list_sort_active_cd_format">Sorteren (actief: %1$s)</string>
+    <string name="shopping_list_sort_manual">Handmatige volgorde</string>
+    <string name="shopping_list_sort_aisle">Winkelindeling</string>
     <string name="shopping_list_share_cd">Boodschappenlijst delen</string>
     <string name="shopping_list_share_title">Boodschappenlijst</string>
     <string name="shopping_list_voice_input_cd">Naam inspreken</string>

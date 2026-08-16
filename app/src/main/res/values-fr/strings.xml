@@ -402,6 +402,10 @@
     <string name="shopping_list_title">Liste de courses</string>
     <string name="shopping_list_clear_checked_cd">Effacer les articles cochés</string>
     <string name="shopping_list_check_all_cd">Tout cocher</string>
+    <string name="shopping_list_sort_cd">Trier</string>
+    <string name="shopping_list_sort_active_cd_format">Trier (actif : %1$s)</string>
+    <string name="shopping_list_sort_manual">Ordre manuel</string>
+    <string name="shopping_list_sort_aisle">Disposition du magasin</string>
     <string name="shopping_list_share_cd">Partager la liste de courses</string>
     <string name="shopping_list_share_title">Liste de courses</string>
     <string name="shopping_list_voice_input_cd">Dicter le nom</string>

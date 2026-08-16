@@ -402,6 +402,10 @@
     <string name="shopping_list_title">Einkaufsliste</string>
     <string name="shopping_list_clear_checked_cd">Abgehakte Artikel löschen</string>
     <string name="shopping_list_check_all_cd">Alles abhaken</string>
+    <string name="shopping_list_sort_cd">Sortieren</string>
+    <string name="shopping_list_sort_active_cd_format">Sortieren (aktiv: %1$s)</string>
+    <string name="shopping_list_sort_manual">Manuelle Reihenfolge</string>
+    <string name="shopping_list_sort_aisle">Ladenaufteilung</string>
     <string name="shopping_list_share_cd">Einkaufsliste teilen</string>
     <string name="shopping_list_share_title">Einkaufsliste</string>
     <string name="shopping_list_voice_input_cd">Namen einsprechen</string>

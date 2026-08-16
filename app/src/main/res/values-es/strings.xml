@@ -402,6 +402,10 @@
     <string name="shopping_list_title">Lista de la compra</string>
     <string name="shopping_list_clear_checked_cd">Borrar artículos marcados</string>
     <string name="shopping_list_check_all_cd">Marcar todo</string>
+    <string name="shopping_list_sort_cd">Ordenar</string>
+    <string name="shopping_list_sort_active_cd_format">Ordenar (activo: %1$s)</string>
+    <string name="shopping_list_sort_manual">Orden manual</string>
+    <string name="shopping_list_sort_aisle">Distribución de la tienda</string>
     <string name="shopping_list_share_cd">Compartir lista de la compra</string>
     <string name="shopping_list_share_title">Lista de la compra</string>
     <string name="shopping_list_voice_input_cd">Dictar nombre</string>

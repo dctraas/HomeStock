@@ -1,7 +1,9 @@
 package com.dtraas.homestock.ui.shoppinglist
 
+import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.entity.ShoppingListItemEntity
 import com.dtraas.homestock.data.local.entity.StoreEntity
 import com.dtraas.homestock.data.model.Category
@@ -15,6 +17,15 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/** How items are ordered within each store's group. */
+enum class ShoppingListSortMode(@StringRes val labelRes: Int) {
+    /** The household's own drag-to-reorder order (see moveItem/ReorderableShoppingList). */
+    MANUAL(R.string.shopping_list_sort_manual),
+    /** Supermarket-aisle order (see Category.sortOrder) — same order Voorraad's default
+     *  category grouping uses, so items line up the way they're laid out in a typical store. */
+    AISLE(R.string.shopping_list_sort_aisle),
+}
+
 class ShoppingListViewModel(
     private val shoppingListRepository: ShoppingListRepository,
     private val storeRepository: StoreRepository,
@@ -22,6 +33,9 @@ class ShoppingListViewModel(
 
     private val searchQuery = MutableStateFlow("")
     val searchQueryState: StateFlow<String> = searchQuery
+
+    private val sortMode = MutableStateFlow(ShoppingListSortMode.MANUAL)
+    val sortModeState: StateFlow<ShoppingListSortMode> = sortMode
 
     val stores: StateFlow<List<StoreEntity>> =
         storeRepository.observeStores().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
@@ -33,22 +47,43 @@ class ShoppingListViewModel(
             shoppingListRepository.observeShoppingList(),
             searchQuery,
             storeRepository.observeStores(),
-        ) { items, query, knownStores ->
+            sortMode,
+        ) { items, query, knownStores, mode ->
             val sortOrderByName = knownStores.associate { it.name to it.sortOrder }
-            items
+            val grouped = items
                 .filter { query.isBlank() || it.name.contains(query, ignoreCase = true) }
                 .groupBy { it.store }
-                .toSortedMap(
-                    compareBy(
-                        { it.isBlank() },
-                        { sortOrderByName[it] ?: Double.MAX_VALUE / 2 },
-                        { it },
-                    ),
-                )
+            val ordered = if (mode == ShoppingListSortMode.AISLE) {
+                // isChecked stays the primary key even here — an already-checked item
+                // shouldn't jump back among the unchecked ones just because its category
+                // happens to sort earlier than theirs.
+                grouped.mapValues { (_, itemsInStore) ->
+                    itemsInStore.sortedWith(
+                        compareBy(
+                            { it.isChecked },
+                            { Category.fromStorageKey(it.category).sortOrder },
+                            { it.name.lowercase() },
+                        ),
+                    )
+                }
+            } else {
+                grouped
+            }
+            ordered.toSortedMap(
+                compareBy(
+                    { it.isBlank() },
+                    { sortOrderByName[it] ?: Double.MAX_VALUE / 2 },
+                    { it },
+                ),
+            )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     fun onSearchQueryChange(query: String) {
         searchQuery.value = query
+    }
+
+    fun onSortModeChange(mode: ShoppingListSortMode) {
+        sortMode.value = mode
     }
 
     fun addItem(

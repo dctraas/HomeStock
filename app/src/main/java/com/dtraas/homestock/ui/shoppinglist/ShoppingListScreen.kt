@@ -31,6 +31,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
@@ -42,12 +43,17 @@ import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -158,6 +164,7 @@ fun ShoppingListScreen() {
     val groupedByStore by viewModel.groupedByStore.collectAsState()
     val stores by viewModel.stores.collectAsState()
     val searchQuery by viewModel.searchQueryState.collectAsState()
+    val sortMode by viewModel.sortModeState.collectAsState()
     val hasCheckedItems = groupedByStore.values.flatten().any { it.isChecked }
     val hasUncheckedItems = groupedByStore.values.flatten().any { !it.isChecked }
     var viewMode by remember { mutableStateOf(ShoppingListViewMode.LIST) }
@@ -273,6 +280,12 @@ fun ShoppingListScreen() {
                                 )
                             }
                         }
+                        if (groupedByStore.isNotEmpty()) {
+                            ShoppingListSortMenuButton(
+                                selected = sortMode,
+                                onSelected = viewModel::onSortModeChange,
+                            )
+                        }
                         IconButton(
                             onClick = {
                                 viewMode = if (viewMode == ShoppingListViewMode.LIST) {
@@ -319,7 +332,7 @@ fun ShoppingListScreen() {
                     isFiltered = searchQuery.isNotBlank(),
                     modifier = Modifier.fillMaxSize(),
                 )
-            } else if (viewMode == ShoppingListViewMode.LIST) {
+            } else if (viewMode == ShoppingListViewMode.LIST && sortMode == ShoppingListSortMode.MANUAL) {
                 ReorderableShoppingList(
                     groupedByStore = groupedByStore,
                     onCheckedChange = { item, checked -> viewModel.setChecked(item.id, checked) },
@@ -335,6 +348,24 @@ fun ShoppingListScreen() {
                     onDelete = { deleteWithUndo(it) },
                     onMove = viewModel::moveItem,
                     onStoreChange = { item, newStore -> viewModel.setStore(item.id, newStore) },
+                )
+            } else if (viewMode == ShoppingListViewMode.LIST) {
+                // Winkelindeling: a fixed, generated order (see ShoppingListViewModel) rather
+                // than something the household drags around — so this renders the same rows
+                // without ReorderableShoppingList's drag machinery, same as the grid view below.
+                AisleOrderedShoppingList(
+                    groupedByStore = groupedByStore,
+                    onCheckedChange = { item, checked -> viewModel.setChecked(item.id, checked) },
+                    onItemClick = { editingItem = it },
+                    onIncrease = {
+                        val step = MeasurementUnit.fromStorageKey(it.unit).step
+                        viewModel.setQuantity(it.id, it.quantity + step)
+                    },
+                    onDecrease = {
+                        val step = MeasurementUnit.fromStorageKey(it.unit).step
+                        viewModel.setQuantity(it.id, (it.quantity - step).coerceAtLeast(1))
+                    },
+                    onDelete = { deleteWithUndo(it) },
                 )
             } else {
                 LazyVerticalGrid(
@@ -408,6 +439,53 @@ fun ShoppingListScreen() {
                     editingItem = null
                 },
             )
+        }
+    }
+}
+
+/** Handmatige volgorde (drag-to-reorder) vs. Winkelindeling (supermarket-aisle order) —
+ *  see [ShoppingListSortMode]. Mirrors InventoryScreen's SortMenuButton shape. */
+@Composable
+private fun ShoppingListSortMenuButton(
+    selected: ShoppingListSortMode,
+    onSelected: (ShoppingListSortMode) -> Unit,
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    val isCustomSort = selected != ShoppingListSortMode.MANUAL
+    Box {
+        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(56.dp)) {
+            if (isCustomSort) {
+                val activeFormat = stringResource(R.string.shopping_list_sort_active_cd_format)
+                BadgedBox(badge = { Badge() }) {
+                    Icon(
+                        Icons.Filled.Sort,
+                        contentDescription = activeFormat.format(stringResource(selected.labelRes)),
+                        modifier = Modifier.size(28.dp),
+                    )
+                }
+            } else {
+                Icon(
+                    Icons.Filled.Sort,
+                    contentDescription = stringResource(R.string.shopping_list_sort_cd),
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+        }
+        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+            ShoppingListSortMode.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(option.labelRes)) },
+                    trailingIcon = {
+                        if (option == selected) {
+                            Icon(Icons.Filled.Check, contentDescription = null)
+                        }
+                    },
+                    onClick = {
+                        onSelected(option)
+                        menuExpanded = false
+                    },
+                )
+            }
         }
     }
 }
@@ -586,6 +664,49 @@ private fun ReorderableShoppingList(
                                 Modifier.animateItem()
                             }
                         ),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Plain, non-draggable counterpart to [ReorderableShoppingList] — used when
+ * [ShoppingListSortMode.AISLE] is active, since that order is generated from each item's
+ * category rather than something the household drags around by hand (see
+ * ShoppingListViewModel.groupedByStore). [ShoppingListRow] still requires drag callbacks, so
+ * no-ops are passed through rather than reworking it to make them optional just for this.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun AisleOrderedShoppingList(
+    groupedByStore: Map<String, List<ShoppingListItemEntity>>,
+    onCheckedChange: (ShoppingListItemEntity, Boolean) -> Unit,
+    onItemClick: (ShoppingListItemEntity) -> Unit,
+    onIncrease: (ShoppingListItemEntity) -> Unit,
+    onDecrease: (ShoppingListItemEntity) -> Unit,
+    onDelete: (ShoppingListItemEntity) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(vertical = 8.dp),
+    ) {
+        groupedByStore.forEach { (storeName, itemsInStore) ->
+            stickyHeader(key = "header_$storeName") {
+                StoreHeader(storeName, itemCount = itemsInStore.size)
+            }
+            items(itemsInStore, key = { it.id }) { item ->
+                ShoppingListRow(
+                    item = item,
+                    onCheckedChange = { checked -> onCheckedChange(item, checked) },
+                    onClick = { onItemClick(item) },
+                    onIncrease = { onIncrease(item) },
+                    onDecrease = { onDecrease(item) },
+                    onDelete = { onDelete(item) },
+                    onDragStart = {},
+                    onDrag = {},
+                    onDragEnd = {},
+                    modifier = Modifier.animateItem(),
                 )
             }
         }
