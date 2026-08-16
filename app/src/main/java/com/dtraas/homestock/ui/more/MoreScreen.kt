@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
@@ -125,6 +126,8 @@ fun MoreScreen(
     val notificationsEnabled by notificationPreferences.expiryNotificationsEnabled.collectAsState()
     val themePreferences = application.container.themePreferences
     val themeMode by themePreferences.themeMode.collectAsState()
+    val largeText by themePreferences.largeText.collectAsState()
+    val highContrast by themePreferences.highContrast.collectAsState()
     val householdSession = application.container.householdSession
     val householdId by householdSession.householdId.collectAsState()
     val deviceProfile = application.container.deviceProfile
@@ -149,6 +152,7 @@ fun MoreScreen(
 
     var showProfileDialog by remember { mutableStateOf(false) }
     var showThemeDialog by remember { mutableStateOf(false) }
+    var showAccessibilityDialog by remember { mutableStateOf(false) }
     var showNotificationsDialog by remember { mutableStateOf(false) }
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showStoresDialog by remember { mutableStateOf(false) }
@@ -374,6 +378,12 @@ fun MoreScreen(
                 onClick = { showThemeDialog = true },
             )
             SettingsRow(
+                icon = Icons.Filled.Accessibility,
+                title = stringResource(R.string.more_accessibility_title),
+                subtitle = accessibilitySubtitle(largeText, highContrast),
+                onClick = { showAccessibilityDialog = true },
+            )
+            SettingsRow(
                 icon = Icons.Filled.ImportExport,
                 title = stringResource(R.string.more_data_csv_title),
                 trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
@@ -484,6 +494,16 @@ fun MoreScreen(
             selected = themeMode,
             onSelect = { themePreferences.setThemeMode(it) },
             onDismiss = { showThemeDialog = false },
+        )
+    }
+
+    if (showAccessibilityDialog) {
+        AccessibilityDialog(
+            largeText = largeText,
+            onLargeTextChange = { themePreferences.setLargeText(it) },
+            highContrast = highContrast,
+            onHighContrastChange = { themePreferences.setHighContrast(it) },
+            onDismiss = { showAccessibilityDialog = false },
         )
     }
 
@@ -761,6 +781,67 @@ private fun ThemeDialog(selected: ThemeMode, onSelect: (ThemeMode) -> Unit, onDi
         },
         confirmButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+        },
+    )
+}
+
+/** Subtitle for the Toegankelijkheid row — "Uit" when neither toggle is on, otherwise the
+ *  enabled option(s) joined so the row itself already shows current state without opening
+ *  the dialog. */
+@Composable
+private fun accessibilitySubtitle(largeText: Boolean, highContrast: Boolean): String {
+    val enabled = listOfNotNull(
+        stringResource(R.string.more_accessibility_large_text_title).takeIf { largeText },
+        stringResource(R.string.more_accessibility_high_contrast_title).takeIf { highContrast },
+    )
+    return if (enabled.isEmpty()) stringResource(R.string.common_off) else enabled.joinToString(", ")
+}
+
+@Composable
+private fun AccessibilityDialog(
+    largeText: Boolean,
+    onLargeTextChange: (Boolean) -> Unit,
+    highContrast: Boolean,
+    onHighContrastChange: (Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.more_accessibility_title)) },
+        text = {
+            Column {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.more_accessibility_large_text_title), style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            text = stringResource(R.string.more_accessibility_large_text_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = largeText, onCheckedChange = onLargeTextChange)
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.more_accessibility_high_contrast_title), style = MaterialTheme.typography.titleSmall)
+                        Text(
+                            text = stringResource(R.string.more_accessibility_high_contrast_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Switch(checked = highContrast, onCheckedChange = onHighContrastChange)
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) }
         },
     )
 }

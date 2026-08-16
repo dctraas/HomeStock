@@ -3,6 +3,7 @@ package com.dtraas.homestock.ui.theme
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
@@ -10,7 +11,10 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.sp
 
 private val LightColors = lightColorScheme(
     primary = SageGreenPrimary,
@@ -89,24 +93,53 @@ val LocalTopAppBarContainerColor = compositionLocalOf { TopAppBarContainer }
 // color for contrast rather than MaterialTheme's usual ink-dark onSurface.
 val LocalTopAppBarContentColor = compositionLocalOf { OnTopAppBarContainer }
 
+/** "Groot lettertype" scale factor — a modest, layout-safe bump (Android's own system-wide
+ *  large-text setting uses a similar range) rather than something aggressive enough to start
+ *  overflowing this app's many fixed-height cards/rows. */
+private const val LARGE_TEXT_SCALE = 1.15f
+
 /**
  * [dynamicColor] defaults to false: this app has a deliberately designed
  * "Keukenlinnen" palette, and letting Android 12+ override it with
  * wallpaper-based colors would undermine that. Callers can still opt in.
+ *
+ * [largeText]/[highContrast] are the two toegankelijkheid toggles in Instellingen (see
+ * ThemePreferences) — both are additive tweaks on top of the normal light/dark scheme rather
+ * than a wholly separate theme, so the app's own palette/typography identity stays recognizable
+ * while still meaningfully improving legibility for low-vision users.
  */
 @Composable
 fun HomeStockTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
     dynamicColor: Boolean = false,
+    largeText: Boolean = false,
+    highContrast: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val context = LocalContext.current
-    val colorScheme = when {
+    val baseColorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S ->
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         darkTheme -> DarkColors
         else -> LightColors
     }
+    // Boosts exactly the colors that carry text/boundary legibility rather than restyling the
+    // whole palette — pure black-on-linen (light) / white-on-ink (dark) for body text, and the
+    // same strong tone for outlines so card/field boundaries read clearly too. Primary/secondary/
+    // tertiary and their containers are left alone: this is a contrast fix, not a re-theme.
+    val colorScheme = if (highContrast) {
+        val ink = if (darkTheme) Color.White else Color.Black
+        baseColorScheme.copy(
+            onSurface = ink,
+            onBackground = ink,
+            onSurfaceVariant = ink,
+            outline = ink,
+            outlineVariant = ink.copy(alpha = 0.6f),
+        )
+    } else {
+        baseColorScheme
+    }
+    val typography = if (largeText) scaledTypography(HomeStockTypography, LARGE_TEXT_SCALE) else HomeStockTypography
     // Dynamic color has no equivalent of our custom top app bar tone, so it falls back to
     // the wallpaper-derived surfaceContainer instead of the fixed sage tint below.
     val topAppBarContainerColor = when {
@@ -129,9 +162,33 @@ fun HomeStockTheme(
     ) {
         MaterialTheme(
             colorScheme = colorScheme,
-            typography = HomeStockTypography,
+            typography = typography,
             shapes = HomeStockShapes,
             content = content,
         )
     }
 }
+
+private fun TextStyle.scaled(factor: Float): TextStyle =
+    copy(fontSize = (fontSize.value * factor).sp, lineHeight = (lineHeight.value * factor).sp)
+
+/** Scales every named style in [base] by [factor] — used for the "groot lettertype" toggle
+ *  rather than relying on the system font-scale setting alone, so it works the same for every
+ *  user regardless of their device-wide accessibility settings. */
+private fun scaledTypography(base: Typography, factor: Float): Typography = base.copy(
+    displayLarge = base.displayLarge.scaled(factor),
+    displayMedium = base.displayMedium.scaled(factor),
+    displaySmall = base.displaySmall.scaled(factor),
+    headlineLarge = base.headlineLarge.scaled(factor),
+    headlineMedium = base.headlineMedium.scaled(factor),
+    headlineSmall = base.headlineSmall.scaled(factor),
+    titleLarge = base.titleLarge.scaled(factor),
+    titleMedium = base.titleMedium.scaled(factor),
+    titleSmall = base.titleSmall.scaled(factor),
+    bodyLarge = base.bodyLarge.scaled(factor),
+    bodyMedium = base.bodyMedium.scaled(factor),
+    bodySmall = base.bodySmall.scaled(factor),
+    labelLarge = base.labelLarge.scaled(factor),
+    labelMedium = base.labelMedium.scaled(factor),
+    labelSmall = base.labelSmall.scaled(factor),
+)

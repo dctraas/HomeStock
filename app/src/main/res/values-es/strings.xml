@@ -193,6 +193,11 @@
     <string name="more_theme_option_system">Predeterminado del sistema</string>
     <string name="more_theme_option_light">Claro</string>
     <string name="more_theme_option_dark">Oscuro</string>
+    <string name="more_accessibility_title">Accesibilidad</string>
+    <string name="more_accessibility_large_text_title">Texto grande</string>
+    <string name="more_accessibility_large_text_description">Aumenta el tamaño del texto en toda la aplicación.</string>
+    <string name="more_accessibility_high_contrast_title">Alto contraste</string>
+    <string name="more_accessibility_high_contrast_description">Mayor contraste entre el texto y el fondo, para una mejor legibilidad.</string>
     <string name="more_notifications_row_title">Notificaciones</string>
     <string name="more_language_title">Idioma</string>
     <string name="more_language_option_nl">Neerlandés</string>

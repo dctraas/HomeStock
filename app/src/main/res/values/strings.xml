@@ -194,6 +194,11 @@
     <string name="more_theme_option_system">Systeem standaard</string>
     <string name="more_theme_option_light">Licht</string>
     <string name="more_theme_option_dark">Donker</string>
+    <string name="more_accessibility_title">Toegankelijkheid</string>
+    <string name="more_accessibility_large_text_title">Groot lettertype</string>
+    <string name="more_accessibility_large_text_description">Vergroot de tekst in de hele app.</string>
+    <string name="more_accessibility_high_contrast_title">Hoog contrast</string>
+    <string name="more_accessibility_high_contrast_description">Sterker contrast tussen tekst en achtergrond, voor betere leesbaarheid.</string>
     <string name="more_notifications_row_title">Meldingen</string>
     <string name="more_language_title">Taal</string>
     <string name="more_language_option_nl">Nederlands</string>

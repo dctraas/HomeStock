@@ -54,12 +54,14 @@ class MainActivity : AppCompatActivity() {
         setContent {
             val application = LocalContext.current.applicationContext as HomeStockApplication
             val themeMode by application.container.themePreferences.themeMode.collectAsState()
+            val largeText by application.container.themePreferences.largeText.collectAsState()
+            val highContrast by application.container.themePreferences.highContrast.collectAsState()
             val darkTheme = when (themeMode) {
                 ThemeMode.SYSTEM -> isSystemInDarkTheme()
                 ThemeMode.LIGHT -> false
                 ThemeMode.DARK -> true
             }
-            HomeStockTheme(darkTheme = darkTheme) {
+            HomeStockTheme(darkTheme = darkTheme, largeText = largeText, highContrast = highContrast) {
                 // enableEdgeToEdge() alone draws app content behind a transparent status
                 // bar and relies on each top app bar's own background to show through —
                 // in practice that band can stop short of the physical top edge on some
