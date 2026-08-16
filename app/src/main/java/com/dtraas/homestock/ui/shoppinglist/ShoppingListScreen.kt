@@ -1,5 +1,6 @@
 package com.dtraas.homestock.ui.shoppinglist
 
+import android.content.Intent
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
@@ -33,6 +34,7 @@ import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.ViewList
@@ -107,10 +109,39 @@ import kotlin.math.roundToInt
 
 private enum class ShoppingListViewMode { LIST, GRID }
 
+/**
+ * Plain-text shopping list for the system share sheet — grouped by store like the on-screen
+ * list, only the still-unchecked items (sharing is "here's what to pick up", not a dump of
+ * everything including what's already bought). [unitLabels] is the same storage-key ->
+ * localized-label lookup CSV export uses, built once via `stringResource` in composition since
+ * this function itself runs from a plain onClick lambda outside of it.
+ */
+private fun buildShoppingListShareText(
+    groupedByStore: Map<String, List<ShoppingListItemEntity>>,
+    title: String,
+    noStoreLabel: String,
+    unitLabels: Map<String, String>,
+): String {
+    val builder = StringBuilder(title)
+    groupedByStore.forEach { (storeName, items) ->
+        val unchecked = items.filterNot { it.isChecked }
+        if (unchecked.isEmpty()) return@forEach
+        builder.append("\n\n").append(storeName.ifBlank { noStoreLabel })
+        unchecked.forEach { item ->
+            val unit = MeasurementUnit.fromStorageKey(item.unit)
+            val label = unitLabels[unit.storageKey] ?: unit.storageKey
+            val quantityText = if (unit.spaceBeforeLabel) "${item.quantity} $label" else "${item.quantity}$label"
+            builder.append("\n- ").append(item.name).append(" (").append(quantityText).append(')')
+        }
+    }
+    return builder.toString()
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun ShoppingListScreen() {
-    val application = LocalContext.current.applicationContext as HomeStockApplication
+    val context = LocalContext.current
+    val application = context.applicationContext as HomeStockApplication
     val viewModel: ShoppingListViewModel = viewModel(
         factory = viewModelFactory {
             initializer {
@@ -132,6 +163,23 @@ fun ShoppingListScreen() {
     val coroutineScope = rememberCoroutineScope()
     val removedFormat = stringResource(R.string.shopping_list_removed_format)
     val undoLabel = stringResource(R.string.common_undo)
+
+    // Resolved once via stringResource (composable-only) rather than inside the plain onClick
+    // lambda below, which runs outside composition — same pattern as MoreScreen's CSV export.
+    val shareTitle = stringResource(R.string.shopping_list_share_title)
+    val noStoreLabel = stringResource(R.string.store_geen)
+    val unitLabels = MeasurementUnit.entries.associate { it.storageKey to stringResource(it.shortLabelRes) }
+
+    fun shareList() {
+        // Only the still-to-buy items — sharing is "here's what to pick up", not a full
+        // export of everything that happens to be checked off already.
+        val text = buildShoppingListShareText(groupedByStore, shareTitle, noStoreLabel, unitLabels)
+        val sendIntent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, text)
+        }
+        context.startActivity(Intent.createChooser(sendIntent, shareTitle))
+    }
 
     Scaffold(
         topBar = {
@@ -188,6 +236,15 @@ fun ShoppingListScreen() {
                         )
                     }
                     Row(verticalAlignment = Alignment.CenterVertically) {
+                        if (groupedByStore.isNotEmpty()) {
+                            IconButton(onClick = ::shareList, modifier = Modifier.size(56.dp)) {
+                                Icon(
+                                    Icons.Filled.Share,
+                                    contentDescription = stringResource(R.string.shopping_list_share_cd),
+                                    modifier = Modifier.size(28.dp),
+                                )
+                            }
+                        }
                         if (hasUncheckedItems) {
                             IconButton(onClick = viewModel::checkAll, modifier = Modifier.size(56.dp)) {
                                 Icon(

@@ -388,6 +388,8 @@
     <string name="shopping_list_title">Boodschappenlijst</string>
     <string name="shopping_list_clear_checked_cd">Wis afgevinkte items</string>
     <string name="shopping_list_check_all_cd">Alles afvinken</string>
+    <string name="shopping_list_share_cd">Boodschappenlijst delen</string>
+    <string name="shopping_list_share_title">Boodschappenlijst</string>
     <string name="shopping_list_add_item_cd">Item toevoegen</string>
     <string name="shopping_list_search_placeholder">Zoek in boodschappenlijst…</string>
     <string name="shopping_list_removed_format">%1$s verwijderd</string>

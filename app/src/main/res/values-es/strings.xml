@@ -387,6 +387,8 @@
     <string name="shopping_list_title">Lista de la compra</string>
     <string name="shopping_list_clear_checked_cd">Borrar artículos marcados</string>
     <string name="shopping_list_check_all_cd">Marcar todo</string>
+    <string name="shopping_list_share_cd">Compartir lista de la compra</string>
+    <string name="shopping_list_share_title">Lista de la compra</string>
     <string name="shopping_list_add_item_cd">Añadir artículo</string>
     <string name="shopping_list_search_placeholder">Buscar en la lista de la compra…</string>
     <string name="shopping_list_removed_format">%1$s eliminado</string>
