@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Receipt
@@ -357,15 +358,27 @@ fun InventoryScreen(
                             favoritesOnly = uiState.favoritesOnly,
                             lowStockOnly = uiState.lowStockOnly,
                             expiringSoonOnly = uiState.expiringSoonOnly,
+                            availableLocations = uiState.availableLocations,
+                            selectedLocation = uiState.selectedLocation,
                             onCategorySelected = viewModel::onCategoryFilterChange,
                             onFavoritesToggle = viewModel::onFavoritesFilterChange,
                             onLowStockToggle = viewModel::onLowStockFilterChange,
                             onExpiringSoonToggle = viewModel::onExpiringSoonFilterChange,
+                            onLocationSelected = viewModel::onLocationFilterChange,
                         )
                         SortMenuButton(
                             selected = uiState.sortOption,
                             onSelected = viewModel::onSortOptionChange,
                         )
+                        // Only worth offering once there's more than one location in use —
+                        // with zero or one, "group by location" would either be pointless
+                        // (nothing to group) or identical to the flat list.
+                        if (uiState.availableLocations.size > 1) {
+                            GroupByMenuButton(
+                                selected = uiState.groupBy,
+                                onSelected = viewModel::onGroupByChange,
+                            )
+                        }
                         IconButton(
                             onClick = {
                                 viewMode = if (viewMode == InventoryViewMode.LIST) {
@@ -396,10 +409,15 @@ fun InventoryScreen(
             // flat list instead of grouping by category at all.
             val isFlatSort = uiState.sortOption == InventorySortOption.EXPIRATION
 
-            if (uiState.groupedInventory.isEmpty()) {
+            // Grouped by location instead of category once selected — same filtered/sorted
+            // items either way, just bucketed differently for the section headers below.
+            val isLocationGrouped = !isFlatSort && uiState.groupBy == InventoryGroupBy.LOCATION
+
+            if (uiState.flatInventory.isEmpty()) {
                 EmptyInventory(
                     isFiltered = uiState.searchQuery.isNotBlank() || uiState.selectedCategory != null ||
-                        uiState.favoritesOnly || uiState.lowStockOnly || uiState.expiringSoonOnly,
+                        uiState.favoritesOnly || uiState.lowStockOnly || uiState.expiringSoonOnly ||
+                        uiState.selectedLocation != null,
                     modifier = Modifier.fillMaxSize(),
                 )
             } else if (viewMode == InventoryViewMode.LIST) {
@@ -424,6 +442,29 @@ fun InventoryScreen(
                                 onToggleFavorite = { viewModel.toggleFavorite(item) },
                                 modifier = Modifier.animateItem(),
                             )
+                        }
+                    } else if (isLocationGrouped) {
+                        uiState.groupedByLocation.forEach { (location, itemsAtLocation) ->
+                            stickyHeader {
+                                LocationHeader(location, itemCount = itemsAtLocation.size)
+                            }
+                            items(itemsAtLocation, key = { it.barcode }) { item ->
+                                InventoryRow(
+                                    item = item,
+                                    selected = item.barcode in selectedBarcodes,
+                                    selectionMode = selectionMode,
+                                    onClick = {
+                                        if (selectionMode) toggleSelected(item.barcode) else onProductClick(item.barcode)
+                                    },
+                                    onLongClick = { toggleSelected(item.barcode) },
+                                    onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
+                                    onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
+                                    onDelete = { deleteWithUndo(item) },
+                                    onAddToShoppingList = { addToShoppingListWithFeedback(item) },
+                                    onToggleFavorite = { viewModel.toggleFavorite(item) },
+                                    modifier = Modifier.animateItem(),
+                                )
+                            }
                         }
                     } else {
                         uiState.groupedInventory.forEach { (category, itemsInCategory) ->
@@ -472,6 +513,26 @@ fun InventoryScreen(
                                 onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
                                 onAddToShoppingList = { addToShoppingListWithFeedback(item) },
                             )
+                        }
+                    } else if (isLocationGrouped) {
+                        uiState.groupedByLocation.forEach { (location, itemsAtLocation) ->
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                LocationHeader(location, itemCount = itemsAtLocation.size, horizontalPadding = 0.dp)
+                            }
+                            items(itemsAtLocation, key = { it.barcode }) { item ->
+                                InventoryGridTile(
+                                    item = item,
+                                    selected = item.barcode in selectedBarcodes,
+                                    selectionMode = selectionMode,
+                                    onClick = {
+                                        if (selectionMode) toggleSelected(item.barcode) else onProductClick(item.barcode)
+                                    },
+                                    onLongClick = { toggleSelected(item.barcode) },
+                                    onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
+                                    onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
+                                    onAddToShoppingList = { addToShoppingListWithFeedback(item) },
+                                )
+                            }
                         }
                     } else {
                         uiState.groupedInventory.forEach { (category, itemsInCategory) ->
@@ -664,6 +725,55 @@ private fun AddMenuTile(
     }
 }
 
+/** Switches the section headers below between category and location grouping — a small,
+ *  always-two-choice menu, so a dropdown of checkable items (mirroring SortMenuButton) rather
+ *  than a whole filter-style sheet. Only shown at all once there's more than one location in
+ *  use — see the call site in InventoryScreen. */
+@Composable
+private fun GroupByMenuButton(
+    selected: InventoryGroupBy,
+    onSelected: (InventoryGroupBy) -> Unit,
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    val isCustomGrouping = selected != InventoryGroupBy.CATEGORY
+    Box {
+        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(48.dp)) {
+            if (isCustomGrouping) {
+                val activeFormat = stringResource(R.string.inventory_group_by_active_cd_format)
+                BadgedBox(badge = { Badge() }) {
+                    Icon(
+                        Icons.Filled.LocationOn,
+                        contentDescription = activeFormat.format(stringResource(selected.labelRes)),
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+            } else {
+                Icon(
+                    Icons.Filled.LocationOn,
+                    contentDescription = stringResource(R.string.inventory_group_by_cd),
+                    modifier = Modifier.size(24.dp),
+                )
+            }
+        }
+        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+            InventoryGroupBy.entries.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(option.labelRes)) },
+                    trailingIcon = {
+                        if (option == selected) {
+                            Icon(Icons.Filled.Check, contentDescription = null)
+                        }
+                    },
+                    onClick = {
+                        onSelected(option)
+                        menuExpanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun SortMenuButton(
     selected: InventorySortOption,
@@ -715,13 +825,16 @@ private fun FilterMenuButton(
     favoritesOnly: Boolean,
     lowStockOnly: Boolean,
     expiringSoonOnly: Boolean,
+    availableLocations: List<String>,
+    selectedLocation: String?,
     onCategorySelected: (Category?) -> Unit,
     onFavoritesToggle: (Boolean) -> Unit,
     onLowStockToggle: (Boolean) -> Unit,
     onExpiringSoonToggle: (Boolean) -> Unit,
+    onLocationSelected: (String?) -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
-    val isActive = selectedCategory != null || favoritesOnly || lowStockOnly || expiringSoonOnly
+    val isActive = selectedCategory != null || favoritesOnly || lowStockOnly || expiringSoonOnly || selectedLocation != null
     Box {
         IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(48.dp)) {
             if (isActive) {
@@ -733,6 +846,7 @@ private fun FilterMenuButton(
                     selectedCategory?.let { stringResource(it.displayNameRes) },
                     stringResource(R.string.inventory_quick_filter_low_stock).takeIf { lowStockOnly },
                     stringResource(R.string.inventory_quick_filter_expiring_soon).takeIf { expiringSoonOnly },
+                    selectedLocation,
                 ).joinToString(", ")
                 val activeFormat = stringResource(R.string.inventory_filter_active_cd_format)
                 BadgedBox(badge = { Badge() }) {
@@ -854,6 +968,34 @@ private fun FilterMenuButton(
                     menuExpanded = false
                 },
             )
+            // Only offered once at least one item has a location set — an always-visible
+            // empty "Locatie" section would just be dead space for households not using the
+            // field at all yet.
+            if (availableLocations.isNotEmpty()) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                availableLocations.forEach { location ->
+                    DropdownMenuItem(
+                        text = { Text(location) },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Filled.LocationOn,
+                                contentDescription = null,
+                                tint = if (selectedLocation == location) MaterialTheme.colorScheme.primary else LocalContentColor.current,
+                                modifier = Modifier.size(20.dp),
+                            )
+                        },
+                        trailingIcon = {
+                            if (selectedLocation == location) {
+                                Icon(Icons.Filled.Check, contentDescription = null)
+                            }
+                        },
+                        onClick = {
+                            onLocationSelected(if (selectedLocation == location) null else location)
+                            menuExpanded = false
+                        },
+                    )
+                }
+            }
         }
     }
 }
@@ -871,6 +1013,37 @@ private fun CategoryHeader(
     // it — grid callers pass 0.dp here so the header lines up flush with the tiles.
     horizontalPadding: Dp = 16.dp,
 ) {
+    GroupHeader(
+        title = stringResource(category.displayNameRes),
+        itemCount = itemCount,
+        icon = category.icon,
+        horizontalPadding = horizontalPadding,
+    )
+}
+
+/** Same shape as [CategoryHeader], for the "group by locatie" view — see InventoryGroupBy. Null
+ *  [location] is the bucket of items nobody's given a location yet. */
+@Composable
+private fun LocationHeader(
+    location: String?,
+    itemCount: Int,
+    horizontalPadding: Dp = 16.dp,
+) {
+    GroupHeader(
+        title = location ?: stringResource(R.string.inventory_no_location_label),
+        itemCount = itemCount,
+        icon = Icons.Filled.LocationOn,
+        horizontalPadding = horizontalPadding,
+    )
+}
+
+@Composable
+private fun GroupHeader(
+    title: String,
+    itemCount: Int,
+    icon: ImageVector,
+    horizontalPadding: Dp = 16.dp,
+) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -881,13 +1054,13 @@ private fun CategoryHeader(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Icon(
-                imageVector = category.icon,
+                imageVector = icon,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp),
             )
             Text(
-                text = stringResource(category.displayNameRes),
+                text = title,
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(start = 8.dp),

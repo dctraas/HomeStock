@@ -275,12 +275,19 @@
     <string name="inventory_status_low">Lage voorraad</string>
     <string name="inventory_status_expiring_soon">Houdbaarheid bijna verstreken</string>
     <string name="inventory_status_out_of_stock">Geen voorraad</string>
+    <string name="inventory_group_by_cd">Groeperen</string>
+    <string name="inventory_group_by_active_cd_format">Groeperen (actief: %1$s)</string>
+    <string name="inventory_no_location_label">Geen locatie</string>
 
     <!-- Voorraad sort options -->
     <string name="sort_option_name">Naam</string>
     <string name="sort_option_quantity">Aantal</string>
     <string name="sort_option_recently_updated">Laatst toegevoegd</string>
     <string name="sort_option_expiration">Houdbaarheid</string>
+
+    <!-- Voorraad group-by options -->
+    <string name="group_by_category">Categorie</string>
+    <string name="group_by_location">Locatie</string>
 
     <!-- Nieuws -->
     <string name="notifications_tab_notices">Meldingen</string>

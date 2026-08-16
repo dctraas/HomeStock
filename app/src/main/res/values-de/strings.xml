@@ -274,12 +274,19 @@
     <string name="inventory_status_low">Wenig Vorrat</string>
     <string name="inventory_status_expiring_soon">Läuft bald ab</string>
     <string name="inventory_status_out_of_stock">Kein Vorrat</string>
+    <string name="inventory_group_by_cd">Gruppieren</string>
+    <string name="inventory_group_by_active_cd_format">Gruppieren (aktiv: %1$s)</string>
+    <string name="inventory_no_location_label">Kein Ort</string>
 
     <!-- Vorrat sort options -->
     <string name="sort_option_name">Name</string>
     <string name="sort_option_quantity">Menge</string>
     <string name="sort_option_recently_updated">Zuletzt hinzugefügt</string>
     <string name="sort_option_expiration">Haltbarkeit</string>
+
+    <!-- Voorraad group-by options -->
+    <string name="group_by_category">Kategorie</string>
+    <string name="group_by_location">Ort</string>
 
     <!-- Neuigkeiten -->
     <string name="notifications_tab_notices">Meldungen</string>

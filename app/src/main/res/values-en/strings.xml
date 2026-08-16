@@ -274,12 +274,19 @@
     <string name="inventory_status_low">Low stock</string>
     <string name="inventory_status_expiring_soon">Expiring soon</string>
     <string name="inventory_status_out_of_stock">Out of stock</string>
+    <string name="inventory_group_by_cd">Group by</string>
+    <string name="inventory_group_by_active_cd_format">Group by (active: %1$s)</string>
+    <string name="inventory_no_location_label">No location</string>
 
     <!-- Inventory sort options -->
     <string name="sort_option_name">Name</string>
     <string name="sort_option_quantity">Quantity</string>
     <string name="sort_option_recently_updated">Recently added</string>
     <string name="sort_option_expiration">Best-before date</string>
+
+    <!-- Voorraad group-by options -->
+    <string name="group_by_category">Category</string>
+    <string name="group_by_location">Location</string>
 
     <!-- News -->
     <string name="notifications_tab_notices">Notices</string>

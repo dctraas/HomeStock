@@ -274,12 +274,19 @@
     <string name="inventory_status_low">Stock faible</string>
     <string name="inventory_status_expiring_soon">Bientôt périmé</string>
     <string name="inventory_status_out_of_stock">Rupture de stock</string>
+    <string name="inventory_group_by_cd">Grouper par</string>
+    <string name="inventory_group_by_active_cd_format">Grouper par (actif : %1$s)</string>
+    <string name="inventory_no_location_label">Aucun emplacement</string>
 
     <!-- Stock sort options -->
     <string name="sort_option_name">Nom</string>
     <string name="sort_option_quantity">Quantité</string>
     <string name="sort_option_recently_updated">Ajout récent</string>
     <string name="sort_option_expiration">Date de péremption</string>
+
+    <!-- Voorraad group-by options -->
+    <string name="group_by_category">Catégorie</string>
+    <string name="group_by_location">Emplacement</string>
 
     <!-- Actualités -->
     <string name="notifications_tab_notices">Notifications</string>
