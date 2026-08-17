@@ -351,7 +351,9 @@
     <string name="product_detail_field_brand">Merk</string>
     <string name="product_detail_field_unit">Eenheid</string>
     <string name="product_detail_field_location">Locatie in huis</string>
-    <string name="product_detail_field_location_placeholder">Bijv. kelder, vriezer, voorraadkast</string>
+    <string name="location_pantry">Voorraadkast</string>
+    <string name="location_cellar">Kelder</string>
+    <string name="location_freezer">Vriezer</string>
     <string name="product_detail_field_last_price">Laatst betaald</string>
     <string name="product_detail_allergens_title">Allergenen</string>
     <string name="product_detail_diet_labels_title">Dieetlabels</string>

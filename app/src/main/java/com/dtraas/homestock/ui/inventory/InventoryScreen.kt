@@ -104,6 +104,7 @@ import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.InventoryStockStatus
+import com.dtraas.homestock.data.model.Location
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.ProductImage
 import com.dtraas.homestock.ui.components.ProfileEditDialog
@@ -975,7 +976,7 @@ private fun FilterMenuButton(
                 HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                 availableLocations.forEach { location ->
                     DropdownMenuItem(
-                        text = { Text(location) },
+                        text = { Text(locationDisplayLabel(location)) },
                         leadingIcon = {
                             Icon(
                                 Icons.Filled.LocationOn,
@@ -1030,12 +1031,19 @@ private fun LocationHeader(
     horizontalPadding: Dp = 16.dp,
 ) {
     GroupHeader(
-        title = location ?: stringResource(R.string.inventory_no_location_label),
+        title = location?.let { locationDisplayLabel(it) } ?: stringResource(R.string.inventory_no_location_label),
         itemCount = itemCount,
         icon = Icons.Filled.LocationOn,
         horizontalPadding = horizontalPadding,
     )
 }
+
+/** Maps a stored location value to its displayed label — one of [Location]'s three fixed
+ *  options when it matches a [Location.storageKey], or the raw value as-is for a legacy
+ *  free-text location saved before that enum existed (see its doc). */
+@Composable
+private fun locationDisplayLabel(raw: String): String =
+    Location.fromStorageKey(raw)?.let { stringResource(it.labelRes) } ?: raw
 
 @Composable
 private fun GroupHeader(
@@ -1168,7 +1176,7 @@ private fun InventoryRow(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    val subtitle = listOfNotNull(item.brand, item.unit, item.location).joinToString(" · ")
+                    val subtitle = listOfNotNull(item.brand, item.unit, item.location?.let { locationDisplayLabel(it) }).joinToString(" · ")
                     if (subtitle.isNotEmpty()) {
                         Text(
                             text = subtitle,
@@ -1295,7 +1303,7 @@ private fun InventoryGridTile(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            val subtitle = listOfNotNull(item.brand, item.unit, item.location).joinToString(" · ")
+            val subtitle = listOfNotNull(item.brand, item.unit, item.location?.let { locationDisplayLabel(it) }).joinToString(" · ")
             if (subtitle.isNotEmpty()) {
                 Text(
                     text = subtitle,

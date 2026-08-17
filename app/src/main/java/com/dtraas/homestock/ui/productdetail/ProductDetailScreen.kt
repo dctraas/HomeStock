@@ -94,6 +94,7 @@ import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.DietLabel
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.CategoryDropdown
+import com.dtraas.homestock.ui.components.LocationDropdown
 import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.theme.SoftCardShape
@@ -820,7 +821,6 @@ private fun ProductDetailsCard(
     var name by remember(product.barcode) { mutableStateOf(product.name) }
     var brand by remember(product.barcode) { mutableStateOf(product.brand ?: "") }
     var unit by remember(product.barcode) { mutableStateOf(product.unit ?: "") }
-    var location by remember(product.barcode) { mutableStateOf(product.location ?: "") }
     // Keyed on the note itself (not just the barcode) — unlike name/brand/unit, this field
     // lives on the inventory entry rather than the catalog product, so it can legitimately
     // change from outside this card (e.g. removed from inventory) while it stays mounted.
@@ -839,10 +839,6 @@ private fun ProductDetailsCard(
     LaunchedEffect(unit) {
         delay(600)
         if (unit != (product.unit ?: "")) onUnitChange(unit.trim().ifBlank { null })
-    }
-    LaunchedEffect(location) {
-        delay(600)
-        if (location != (product.location ?: "")) onLocationChange(location.trim().ifBlank { null })
     }
     LaunchedEffect(noteText) {
         delay(600)
@@ -884,12 +880,9 @@ private fun ProductDetailsCard(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
-            OutlinedTextField(
-                value = location,
-                onValueChange = { location = it },
-                label = { Text(stringResource(R.string.product_detail_field_location)) },
-                placeholder = { Text(stringResource(R.string.product_detail_field_location_placeholder)) },
-                singleLine = true,
+            LocationDropdown(
+                selected = product.location,
+                onSelected = onLocationChange,
                 modifier = Modifier.fillMaxWidth(),
             )
             // Read-only, auto-filled from a receipt scan only — deliberately not an editable

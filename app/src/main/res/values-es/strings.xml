@@ -350,7 +350,9 @@
     <string name="product_detail_field_brand">Marca</string>
     <string name="product_detail_field_unit">Unidad</string>
     <string name="product_detail_field_location">Ubicación en casa</string>
-    <string name="product_detail_field_location_placeholder">P. ej. sótano, congelador, despensa</string>
+    <string name="location_pantry">Despensa</string>
+    <string name="location_cellar">Sótano</string>
+    <string name="location_freezer">Congelador</string>
     <string name="product_detail_field_last_price">Último precio pagado</string>
     <string name="product_detail_allergens_title">Alérgenos</string>
     <string name="product_detail_diet_labels_title">Etiquetas dietéticas</string>

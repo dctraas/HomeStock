@@ -350,7 +350,9 @@
     <string name="product_detail_field_brand">Marke</string>
     <string name="product_detail_field_unit">Einheit</string>
     <string name="product_detail_field_location">Standort im Haus</string>
-    <string name="product_detail_field_location_placeholder">Z. B. Keller, Gefrierfach, Vorratsschrank</string>
+    <string name="location_pantry">Vorratsschrank</string>
+    <string name="location_cellar">Keller</string>
+    <string name="location_freezer">Gefrierfach</string>
     <string name="product_detail_field_last_price">Zuletzt bezahlt</string>
     <string name="product_detail_allergens_title">Allergene</string>
     <string name="product_detail_diet_labels_title">Ernährungslabel</string>
