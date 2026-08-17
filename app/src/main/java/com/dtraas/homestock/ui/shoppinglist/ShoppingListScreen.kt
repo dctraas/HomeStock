@@ -837,6 +837,16 @@ private fun ShoppingListRow(
                     )
                 },
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            // Card's own drop shadow is semi-transparent — without disabling it explicitly, it
+            // shows whatever sits directly behind it, which here is this row's swipe-to-delete
+            // backgroundContent (a warm salmon errorContainer, see Theme.kt's
+            // LinenErrorContainer), not the plain screen background. That blend is what read as
+            // an orange-ish glow around every item, even after clipping the background's square
+            // corners away — the clip only stops the background's own shape from poking out, it
+            // does nothing about the shadow tinting from the color directly beneath it.
+            // ShoppingListGridTile never had this because it uses a plain Column + background,
+            // no Card, so no shadow to begin with.
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             shape = SoftCardShapeCompact,
         ) {
             Row(
