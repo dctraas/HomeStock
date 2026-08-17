@@ -653,6 +653,16 @@ interface SpoonacularNutrition {
   nutrients?: SpoonacularNutrient[];
 }
 
+interface SpoonacularAnalyzedInstructionStep {
+  number: number;
+  step: string;
+}
+
+interface SpoonacularAnalyzedInstruction {
+  name?: string;
+  steps: SpoonacularAnalyzedInstructionStep[];
+}
+
 interface SpoonacularInfoResult {
   id: number;
   title: string;
@@ -660,6 +670,11 @@ interface SpoonacularInfoResult {
   cuisines?: string[];
   dishTypes?: string[];
   instructions?: string;
+  // Spoonacular's plain-text `instructions` above is frequently empty even when the recipe
+  // does have real steps — this structured field is the reliable source in that case, always
+  // included in both /information and complexSearch's addRecipeInformation results, no extra
+  // request param needed. See instructionsFromAnalyzed's doc for why both exist here.
+  analyzedInstructions?: SpoonacularAnalyzedInstruction[];
   extendedIngredients?: SpoonacularIngredient[];
   readyInMinutes?: number;
   servings?: number;
@@ -693,6 +708,26 @@ function cleanInstructions(html: string | undefined): string | null {
   return text.length > 0 ? text : null;
 }
 
+/** Fallback for when [cleanInstructions] comes back empty — built from `analyzedInstructions`
+ *  instead, which Spoonacular keeps populated far more reliably than the plain-text field.
+ *  Numbered "1. ...", one step per line, same shape [generateRecipe]'s Claude-authored recipes
+ *  already produce — RecipeDetailScreen's cook mode (see the Kotlin-side splitIntoSteps) parses
+ *  that exact "leading number + separator" pattern to break instructions into individual steps,
+ *  so this has to match it rather than use its own formatting. Multiple named groups (e.g.
+ *  "Sauce" / "Assembly") are flattened into one continuous numbering — the client has no concept
+ *  of named sub-sections, only a flat step list. */
+function instructionsFromAnalyzed(analyzed: SpoonacularAnalyzedInstruction[] | undefined): string | null {
+  if (!analyzed || analyzed.length === 0) return null;
+  const lines: string[] = [];
+  for (const group of analyzed) {
+    for (const step of group.steps ?? []) {
+      const text = step.step?.trim();
+      if (text) lines.push(`${lines.length + 1}. ${text}`);
+    }
+  }
+  return lines.length > 0 ? lines.join("\n") : null;
+}
+
 /** Looks up one named nutrient (e.g. "Calories", "Protein") from Spoonacular's per-serving nutrition breakdown, rounded to 1 decimal — null if that recipe has no nutrition data (older cache entries from before this field existed, or Spoonacular simply not having it for that recipe) or doesn't list this particular nutrient. */
 function findNutrientAmount(nutrients: SpoonacularNutrient[] | undefined, name: string): number | null {
   const nutrient = nutrients?.find((n) => n.name === name);
@@ -707,7 +742,7 @@ function toRecipeDetail(result: SpoonacularInfoResult) {
     thumbnailUrl: result.image ?? null,
     category: result.dishTypes?.[0] ?? null,
     area: result.cuisines?.[0] ?? null,
-    instructions: cleanInstructions(result.instructions),
+    instructions: cleanInstructions(result.instructions) ?? instructionsFromAnalyzed(result.analyzedInstructions),
     ingredients: (result.extendedIngredients ?? []).slice(0, 20).map((ingredient) => ({
       name: ingredient.name,
       measure: [ingredient.amount, ingredient.unit].filter((part) => part !== undefined && part !== "").join(" "),
@@ -1007,7 +1042,14 @@ export const getRecipeInformation = onCall(
     await requirePremiumHousehold(uid, householdId);
 
     const cached = await getFreshCache<RecipeDetailPayload>("recipeDetailCache", id, RECIPE_DETAIL_CACHE_TTL_MS);
-    if (cached) return { detail: cached };
+    // A cached entry with no instructions at all is treated as a miss rather than trusted as
+    // "this recipe genuinely has none" — instructionsFromAnalyzed above didn't exist until this
+    // fix, so any entry written before it (up to RECIPE_DETAIL_CACHE_TTL_MS old) can be stuck
+    // with a null instructions that a live re-fetch would now actually fill in. Once that
+    // window has fully rolled over this branch never triggers in practice (a fresh cache miss
+    // and a "really has no instructions" hit look the same, both null), so it's safe to leave
+    // in permanently rather than needing to remember to revert it.
+    if (cached && cached.instructions) return { detail: cached };
 
     const result = await spoonacularGet<SpoonacularInfoResult>(
       `/recipes/${encodeURIComponent(id)}/information`,
