@@ -132,7 +132,8 @@ fun InventoryScreen(
     onNavigateToPremium: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
 ) {
-    val application = LocalContext.current.applicationContext as HomeStockApplication
+    val context = LocalContext.current
+    val application = context.applicationContext as HomeStockApplication
     val viewModel: InventoryViewModel = viewModel(
         factory = viewModelFactory {
             initializer {
@@ -210,6 +211,22 @@ fun InventoryScreen(
         val items = uiState.groupedInventory.values.flatten().filter { it.barcode in selectedBarcodes }
         items.forEach { viewModel.removeFromInventory(it.barcode) }
         selectedBarcodes = emptySet()
+        coroutineScope.launch {
+            // Count is only known once the user has tapped delete, so this can't be resolved
+            // via pluralStringResource (a @Composable call) like the other pre-resolved
+            // snackbar strings in this file — same reasoning as bulkAddedFormat, but plural.
+            val message = context.resources.getQuantityString(
+                R.plurals.inventory_bulk_removed_snackbar_format, items.size, items.size,
+            )
+            val result = snackbarHostState.showSnackbar(
+                message = message,
+                actionLabel = undoLabel,
+                duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                items.forEach { viewModel.restoreItem(it) }
+            }
+        }
     }
 
     fun bulkAddSelectedToShoppingList() {

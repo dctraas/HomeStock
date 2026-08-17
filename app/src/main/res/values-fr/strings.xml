@@ -104,6 +104,7 @@
     <string name="household_created_title">Foyer créé !</string>
     <string name="household_created_subtitle">Partagez ce code avec vos colocataires afin qu\'ils puissent eux aussi rejoindre le foyer.</string>
     <string name="household_copy_code">Copier le code</string>
+    <string name="household_code_copied_snackbar">Code copié</string>
     <string name="household_continue">Continuer</string>
     <string name="household_join_title">Rejoindre un foyer</string>
     <string name="household_code_label">Code du foyer</string>
@@ -265,6 +266,10 @@
     <string name="inventory_search_close_cd">Fermer la recherche</string>
     <string name="inventory_sort_active_cd_format">Trier (actif : %1$s)</string>
     <string name="inventory_removed_snackbar_format">%1$s supprimé</string>
+    <plurals name="inventory_bulk_removed_snackbar_format">
+        <item quantity="one">%1$d produit supprimé</item>
+        <item quantity="other">%1$d produits supprimés</item>
+    </plurals>
     <string name="inventory_add_to_shopping_list_cd">Ajouter à la liste de courses</string>
     <string name="inventory_added_to_shopping_list_snackbar">Ajouté à la liste de courses</string>
     <string name="inventory_restocked_snackbar_format">%1$s a été ajouté automatiquement à votre liste de courses (stock faible)</string>
@@ -424,6 +429,10 @@
     <string name="shopping_list_add_item_cd">Ajouter un article</string>
     <string name="shopping_list_search_placeholder">Rechercher dans la liste de courses…</string>
     <string name="shopping_list_removed_format">%1$s supprimé</string>
+    <plurals name="shopping_list_cleared_snackbar_format">
+        <item quantity="one">%1$d article supprimé</item>
+        <item quantity="other">%1$d articles supprimés</item>
+    </plurals>
     <string name="shopping_list_delete_cd">Supprimer</string>
     <string name="shopping_list_mark_unchecked_cd">Marquer comme non coché</string>
     <string name="shopping_list_mark_checked_cd">Marquer comme coché</string>

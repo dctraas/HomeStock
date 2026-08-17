@@ -14,7 +14,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Close
@@ -30,6 +32,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -96,12 +101,23 @@ fun HouseholdScreen(prefillJoinCode: String? = null) {
         },
     )
     val uiState by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val codeCopiedMessage = stringResource(R.string.household_code_copied_snackbar)
 
-    Scaffold { padding ->
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
+                // Several steps here (profile photo, household name, the created-code card)
+                // can add up to more than one screen's worth of content — especially with
+                // "Groot lettertype" (see more_accessibility_large_text) or on a small device
+                // — so this needs a scroll escape hatch instead of clipping the "Doorgaan"
+                // button that gates entry to the rest of the app.
+                .verticalScroll(rememberScrollState())
                 .padding(32.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
@@ -128,6 +144,11 @@ fun HouseholdScreen(prefillJoinCode: String? = null) {
                         onConfirm = viewModel::confirmCreatedHousehold,
                         onRetry = viewModel::submitHouseholdName,
                         onBack = viewModel::back,
+                        onCodeCopied = {
+                            coroutineScope.launch {
+                                snackbarHostState.showSnackbar(codeCopiedMessage, duration = SnackbarDuration.Short)
+                            }
+                        },
                     )
                 }
                 HouseholdMode.JOIN -> JoinContent(
@@ -325,6 +346,7 @@ private fun CreateContent(
     onConfirm: () -> Unit,
     onRetry: () -> Unit,
     onBack: () -> Unit,
+    onCodeCopied: () -> Unit,
 ) {
     var hasCopiedCode by remember { mutableStateOf(false) }
     var showBackWarning by remember { mutableStateOf(false) }
@@ -394,6 +416,7 @@ private fun CreateContent(
                 onClick = {
                     clipboard.setText(AnnotatedString(code))
                     hasCopiedCode = true
+                    onCodeCopied()
                 },
                 modifier = Modifier.padding(top = 8.dp),
             ) {

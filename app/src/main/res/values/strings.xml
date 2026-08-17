@@ -105,6 +105,7 @@
     <string name="household_created_title">Huishouden aangemaakt!</string>
     <string name="household_created_subtitle">Deel deze code met je huisgenoten zodat zij ook kunnen aansluiten.</string>
     <string name="household_copy_code">Kopieer code</string>
+    <string name="household_code_copied_snackbar">Code gekopieerd</string>
     <string name="household_continue">Doorgaan</string>
     <string name="household_join_title">Huishouden koppelen</string>
     <string name="household_code_label">Huishouden-code</string>
@@ -266,6 +267,10 @@
     <string name="inventory_search_close_cd">Zoeken sluiten</string>
     <string name="inventory_sort_active_cd_format">Sorteren (actief: %1$s)</string>
     <string name="inventory_removed_snackbar_format">%1$s verwijderd</string>
+    <plurals name="inventory_bulk_removed_snackbar_format">
+        <item quantity="one">%1$d product verwijderd</item>
+        <item quantity="other">%1$d producten verwijderd</item>
+    </plurals>
     <string name="inventory_add_to_shopping_list_cd">Toevoegen aan boodschappenlijst</string>
     <string name="inventory_added_to_shopping_list_snackbar">Toegevoegd aan boodschappenlijst</string>
     <string name="inventory_restocked_snackbar_format">%1$s is automatisch aan je boodschappenlijst toegevoegd (voorraad laag)</string>
@@ -425,6 +430,10 @@
     <string name="shopping_list_add_item_cd">Item toevoegen</string>
     <string name="shopping_list_search_placeholder">Zoek in boodschappenlijst…</string>
     <string name="shopping_list_removed_format">%1$s verwijderd</string>
+    <plurals name="shopping_list_cleared_snackbar_format">
+        <item quantity="one">%1$d item verwijderd</item>
+        <item quantity="other">%1$d items verwijderd</item>
+    </plurals>
     <string name="shopping_list_delete_cd">Verwijderen</string>
     <string name="shopping_list_mark_unchecked_cd">Zet terug als niet afgevinkt</string>
     <string name="shopping_list_mark_checked_cd">Markeer als afgevinkt</string>

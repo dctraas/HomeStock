@@ -198,6 +198,28 @@ fun ShoppingListScreen() {
         context.startActivity(Intent.createChooser(sendIntent, shareTitle))
     }
 
+    fun clearCheckedWithUndo() {
+        val itemsToRemove = groupedByStore.values.flatten().filter { it.isChecked }
+        if (itemsToRemove.isEmpty()) return
+        viewModel.clearChecked()
+        coroutineScope.launch {
+            // Count is only known here, once the user has tapped the icon, so this can't be
+            // resolved via pluralStringResource (a @Composable call) like the other
+            // pre-resolved snackbar strings above — same reasoning as shareTitle/unitLabels.
+            val message = context.resources.getQuantityString(
+                R.plurals.shopping_list_cleared_snackbar_format, itemsToRemove.size, itemsToRemove.size,
+            )
+            val result = snackbarHostState.showSnackbar(
+                message = message,
+                actionLabel = undoLabel,
+                duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                itemsToRemove.forEach { viewModel.restoreItem(it) }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             HomeStockTopAppBar(title = { Text(stringResource(R.string.shopping_list_title)) })
@@ -272,7 +294,7 @@ fun ShoppingListScreen() {
                             }
                         }
                         if (hasCheckedItems) {
-                            IconButton(onClick = viewModel::clearChecked, modifier = Modifier.size(56.dp)) {
+                            IconButton(onClick = ::clearCheckedWithUndo, modifier = Modifier.size(56.dp)) {
                                 Icon(
                                     Icons.Filled.DeleteSweep,
                                     contentDescription = stringResource(R.string.shopping_list_clear_checked_cd),
