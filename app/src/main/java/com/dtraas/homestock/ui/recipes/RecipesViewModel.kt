@@ -42,6 +42,12 @@ data class RecipesUiState(
     // results never carry tags at all (see RecipeSuggestion's doc), so this filter simply isn't
     // shown on that tab.
     val selectedTags: Set<RecipeTag> = emptySet(),
+    // Free-text labels households typed themselves (see RecipeDetailScreen's tag editor) —
+    // filtered/derived the same way as [selectedTags], just against raw strings instead of the
+    // fixed [RecipeTag] enum. [availableCustomTags] is derived from the *unfiltered* Favorites/
+    // Custom list (see launchLiveList) so picking one filter doesn't hide the others.
+    val availableCustomTags: List<String> = emptyList(),
+    val selectedCustomTags: Set<String> = emptySet(),
     val searchQuery: String = "",
     val isGenerating: Boolean = false,
     val generateError: GenerateRecipeError? = null,
@@ -95,6 +101,9 @@ class RecipesViewModel(
     // not on every unrelated uiState update (e.g. isLoading toggling).
     private val selectedTags = MutableStateFlow<Set<RecipeTag>>(emptySet())
 
+    // Mirrors RecipesUiState.selectedCustomTags — same reasoning as [selectedTags] above.
+    private val selectedCustomTags = MutableStateFlow<Set<String>>(emptySet())
+
     // Whichever tab's list is currently being collected — cancelled and replaced on every tab
     // switch/reload so a stale Favorites/Custom Firestore listener (or an in-flight Spoonacular
     // call) from before a switch can't race a newer one and overwrite it with older data.
@@ -138,16 +147,26 @@ class RecipesViewModel(
         }
     }
 
-    /** Favorites/Custom are further filtered client-side by [selectedTags] (an AND match — a
-     *  recipe must carry every selected tag) — small, already-loaded lists, so no need for a
-     *  separate Firestore query per tag combination the way BROWSE's allergen filter needs one. */
+    /** Favorites/Custom are further filtered client-side by [selectedTags]/[selectedCustomTags]
+     *  (an AND match across both — a recipe must carry every selected tag, fixed or custom) —
+     *  small, already-loaded lists, so no need for a separate Firestore query per tag combination
+     *  the way BROWSE's allergen filter needs one. [RecipesUiState.availableCustomTags] is
+     *  derived here from the unfiltered [list], not the filtered result, so narrowing by one
+     *  custom tag doesn't make the others disappear from the filter row. */
     private fun launchLiveList(source: () -> Flow<List<RecipeSuggestion>>): Job =
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, loadError = null) }
-            combine(source(), selectedTags) { list, tags ->
-                if (tags.isEmpty()) list else list.filter { recipe -> tags.all { it.storageKey in recipe.tags } }
-            }.collect { filtered ->
-                _uiState.update { it.copy(isLoading = false, recipes = filtered, loadError = null) }
+            combine(source(), selectedTags, selectedCustomTags) { list, tags, customTags ->
+                val fixedKeys = RecipeTag.entries.map { it.storageKey }.toSet()
+                val available = list.flatMap { it.tags }.filterNot { it in fixedKeys }.distinct().sorted()
+                val filtered = list.filter { recipe ->
+                    tags.all { it.storageKey in recipe.tags } && customTags.all { it in recipe.tags }
+                }
+                available to filtered
+            }.collect { (available, filtered) ->
+                _uiState.update {
+                    it.copy(isLoading = false, recipes = filtered, loadError = null, availableCustomTags = available)
+                }
             }
         }
 
@@ -231,6 +250,14 @@ class RecipesViewModel(
         val updated = if (tag in current) current - tag else current + tag
         _uiState.update { it.copy(selectedTags = updated) }
         selectedTags.value = updated
+    }
+
+    /** Same as [toggleTagFilter], for a free-text custom label instead of a fixed [RecipeTag]. */
+    fun toggleCustomTagFilter(label: String) {
+        val current = _uiState.value.selectedCustomTags
+        val updated = if (label in current) current - label else current + label
+        _uiState.update { it.copy(selectedCustomTags = updated) }
+        selectedCustomTags.value = updated
     }
 
     /** Toggles [allergen] in/out of the exclusion filter and re-fetches. */

@@ -185,7 +185,13 @@ fun RecipesScreen(
             // on a BROWSE/search result (see RecipeSuggestion's doc) — so the filter row only
             // shows on Favorieten/Eigen recepten.
             if (uiState.tab == RecipesTab.FAVORITES || uiState.tab == RecipesTab.CUSTOM) {
-                RecipeTagFilterRow(selectedTags = uiState.selectedTags, onToggle = viewModel::toggleTagFilter)
+                RecipeTagFilterRow(
+                    selectedTags = uiState.selectedTags,
+                    onToggle = viewModel::toggleTagFilter,
+                    customTags = uiState.availableCustomTags,
+                    selectedCustomTags = uiState.selectedCustomTags,
+                    onToggleCustom = viewModel::toggleCustomTagFilter,
+                )
             }
 
             when {
@@ -416,11 +422,19 @@ private fun AllergenFilterMenuButton(excludedAllergens: Set<Allergen>, onToggle:
     }
 }
 
-/** Chip row for filtering Favorieten/Eigen recepten by [RecipeTag] — an AND match against every
- *  selected tag (see [RecipesViewModel.toggleTagFilter]). Only 3 tags exist, so a plain always-
- *  visible row reads faster than a dropdown here, unlike [AllergenFilterMenuButton]'s much longer list. */
+/** Chip row for filtering Favorieten/Eigen recepten by [RecipeTag] plus any custom labels a
+ *  household has typed themselves (see RecipeDetailScreen's tag editor) — an AND match against
+ *  every selected chip (see [RecipesViewModel.toggleTagFilter]/[RecipesViewModel.toggleCustomTagFilter]).
+ *  Only 3 fixed tags exist, so a plain always-visible row reads faster than a dropdown here,
+ *  unlike [AllergenFilterMenuButton]'s much longer list; custom labels ride along in the same row. */
 @Composable
-private fun RecipeTagFilterRow(selectedTags: Set<RecipeTag>, onToggle: (RecipeTag) -> Unit) {
+private fun RecipeTagFilterRow(
+    selectedTags: Set<RecipeTag>,
+    onToggle: (RecipeTag) -> Unit,
+    customTags: List<String>,
+    selectedCustomTags: Set<String>,
+    onToggleCustom: (String) -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -433,6 +447,13 @@ private fun RecipeTagFilterRow(selectedTags: Set<RecipeTag>, onToggle: (RecipeTa
                 selected = tag in selectedTags,
                 onClick = { onToggle(tag) },
                 label = { Text(stringResource(tag.labelRes)) },
+            )
+        }
+        customTags.forEach { label ->
+            FilterChip(
+                selected = label in selectedCustomTags,
+                onClick = { onToggleCustom(label) },
+                label = { Text(label) },
             )
         }
     }

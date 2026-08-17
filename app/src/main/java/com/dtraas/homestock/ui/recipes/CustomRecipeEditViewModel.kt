@@ -26,6 +26,9 @@ data class CustomRecipeEditUiState(
     val instructions: String = "",
     val ingredients: List<CustomIngredientInput> = listOf(CustomIngredientInput()),
     val tags: Set<RecipeTag> = emptySet(),
+    /** Free-text labels typed in alongside the fixed [RecipeTag] set — same pattern as
+     *  RecipeDetailScreen's tag editor, just pre-populated here for an existing recipe by [load]. */
+    val customTags: List<String> = emptyList(),
     val showValidationError: Boolean = false,
     val showSaveError: Boolean = false,
     /** Set once [save] succeeds — the screen navigates to RecipeDetailScreen with this id. */
@@ -73,6 +76,7 @@ class CustomRecipeEditViewModel(
                                 .map { (name, measure) -> CustomIngredientInput(name = name, measure = measure) }
                                 .ifEmpty { listOf(CustomIngredientInput()) },
                             tags = detail.tags.mapNotNull(RecipeTag::fromStorageKey).toSet(),
+                            customTags = detail.tags.filter { RecipeTag.fromStorageKey(it) == null },
                         )
                     }
                 }
@@ -97,6 +101,19 @@ class CustomRecipeEditViewModel(
         val updated = if (tag in state.tags) state.tags - tag else state.tags + tag
         state.copy(tags = updated)
     }
+
+    /** Adds a free-text label — a no-op for a blank label, one colliding with a fixed tag's own
+     *  storage key (case-insensitively), or an exact duplicate (also case-insensitively) of a
+     *  custom label already added. Same validation as [RecipeDetailViewModel.addCustomTag]. */
+    fun onAddCustomTag(label: String) = _uiState.update { state ->
+        val trimmed = label.trim()
+        if (trimmed.isEmpty()) return@update state
+        if (RecipeTag.entries.any { it.storageKey.equals(trimmed, ignoreCase = true) }) return@update state
+        if (state.customTags.any { it.equals(trimmed, ignoreCase = true) }) return@update state
+        state.copy(customTags = state.customTags + trimmed)
+    }
+
+    fun onRemoveCustomTag(label: String) = _uiState.update { it.copy(customTags = it.customTags - label) }
 
     fun addIngredientRow() = _uiState.update { it.copy(ingredients = it.ingredients + CustomIngredientInput()) }
 
@@ -136,7 +153,7 @@ class CustomRecipeEditViewModel(
                 servings = state.servings.toIntOrNull(),
                 instructions = state.instructions.takeIf { it.isNotBlank() },
                 ingredients = ingredients,
-                tags = state.tags.map { it.storageKey },
+                tags = state.tags.map { it.storageKey } + state.customTags,
             )
                 .onSuccess { detail -> _uiState.update { it.copy(isSaving = false, savedRecipeId = detail.id) } }
                 .onFailure { _uiState.update { it.copy(isSaving = false, showSaveError = true) } }

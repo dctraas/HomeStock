@@ -546,6 +546,11 @@
     <string name="recipe_tag_quick">Snel</string>
     <string name="recipe_tag_kid_friendly">Kindvriendelijk</string>
     <string name="recipe_tag_leftovers">Restjes</string>
+    <string name="recipe_tag_remove_custom_cd">Label verwijderen</string>
+    <string name="recipe_tag_add_custom_button">Label toevoegen</string>
+    <string name="recipe_tag_add_dialog_title">Eigen label toevoegen</string>
+    <string name="recipe_tag_add_dialog_label">Label</string>
+    <string name="recipe_tag_add_dialog_confirm">Toevoegen</string>
     <string name="recipes_tab_browse">Ontdekken</string>
     <string name="recipes_tab_favorites">Favorieten</string>
     <string name="recipes_tab_custom">Mijn recepten</string>

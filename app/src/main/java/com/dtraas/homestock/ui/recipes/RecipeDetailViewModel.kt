@@ -112,16 +112,56 @@ class RecipeDetailViewModel(
      * isn't (yet) a favorite either, since [RecipeRepository.setRecipeTags] has nowhere durable
      * to write it in that case (see that function's doc). RecipeDetailScreen only shows the tag
      * editor at all when one of those is true, so this guard is a safety net, not the primary gate.
+     *
+     * Operates on [RecipeDetail.tags] in place (add/remove just this one storage key) rather than
+     * rebuilding the list from only the fixed [RecipeTag] entries, so any custom free-text labels
+     * already on the recipe (see [addCustomTag]) survive a fixed-tag toggle untouched.
      */
     fun toggleTag(tag: RecipeTag) {
         val detail = _uiState.value.detail ?: return
         val isFavorite = _uiState.value.isFavorite
         if (!detail.isCustom && !isFavorite) return
-        val currentTags = detail.tags.mapNotNull(RecipeTag::fromStorageKey).toMutableSet()
-        if (!currentTags.add(tag)) currentTags.remove(tag)
-        val updatedKeys = currentTags.map { it.storageKey }
+        val updatedTags = if (tag.storageKey in detail.tags) {
+            detail.tags - tag.storageKey
+        } else {
+            detail.tags + tag.storageKey
+        }
         viewModelScope.launch {
-            recipeRepository.setRecipeTags(detail, updatedKeys, isFavorite)
+            recipeRepository.setRecipeTags(detail, updatedTags, isFavorite)
+                .onSuccess { updated -> _uiState.update { it.copy(detail = updated) } }
+        }
+    }
+
+    /**
+     * Adds a free-text label the household typed themselves, alongside the fixed [RecipeTag]
+     * set — a no-op for a blank label, one that collides with a fixed tag's own storage key
+     * (case-insensitively, to avoid a confusing duplicate-looking chip), or an exact duplicate
+     * (also case-insensitively) of a custom label already on the recipe. Same durable-copy gate
+     * as [toggleTag].
+     */
+    fun addCustomTag(label: String) {
+        val detail = _uiState.value.detail ?: return
+        val isFavorite = _uiState.value.isFavorite
+        if (!detail.isCustom && !isFavorite) return
+        val trimmed = label.trim()
+        if (trimmed.isEmpty()) return
+        if (RecipeTag.entries.any { it.storageKey.equals(trimmed, ignoreCase = true) }) return
+        if (detail.tags.any { it.equals(trimmed, ignoreCase = true) }) return
+        val updatedTags = detail.tags + trimmed
+        viewModelScope.launch {
+            recipeRepository.setRecipeTags(detail, updatedTags, isFavorite)
+                .onSuccess { updated -> _uiState.update { it.copy(detail = updated) } }
+        }
+    }
+
+    /** Removes a previously added custom label. Same durable-copy gate as [toggleTag]. */
+    fun removeCustomTag(label: String) {
+        val detail = _uiState.value.detail ?: return
+        val isFavorite = _uiState.value.isFavorite
+        if (!detail.isCustom && !isFavorite) return
+        val updatedTags = detail.tags - label
+        viewModelScope.launch {
+            recipeRepository.setRecipeTags(detail, updatedTags, isFavorite)
                 .onSuccess { updated -> _uiState.update { it.copy(detail = updated) } }
         }
     }

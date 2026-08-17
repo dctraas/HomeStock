@@ -545,6 +545,11 @@
     <string name="recipe_tag_quick">Schnell</string>
     <string name="recipe_tag_kid_friendly">Kindgerecht</string>
     <string name="recipe_tag_leftovers">Resteessen</string>
+    <string name="recipe_tag_remove_custom_cd">Label entfernen</string>
+    <string name="recipe_tag_add_custom_button">Label hinzufügen</string>
+    <string name="recipe_tag_add_dialog_title">Eigenes Label hinzufügen</string>
+    <string name="recipe_tag_add_dialog_label">Label</string>
+    <string name="recipe_tag_add_dialog_confirm">Hinzufügen</string>
     <string name="recipes_tab_browse">Entdecken</string>
     <string name="recipes_tab_favorites">Favoriten</string>
     <string name="recipes_tab_custom">Meine Rezepte</string>

@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -37,6 +38,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -207,6 +211,7 @@ private fun CustomRecipeForm(padding: PaddingValues, uiState: CustomRecipeEditUi
             color = MaterialTheme.colorScheme.primary,
             modifier = Modifier.padding(top = 20.dp),
         )
+        var showAddTagDialog by remember { mutableStateOf(false) }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -221,6 +226,58 @@ private fun CustomRecipeForm(padding: PaddingValues, uiState: CustomRecipeEditUi
                     label = { Text(stringResource(tag.labelRes)) },
                 )
             }
+            uiState.customTags.forEach { label ->
+                AssistChip(
+                    onClick = { viewModel.onRemoveCustomTag(label) },
+                    label = { Text(label) },
+                    trailingIcon = {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.recipe_tag_remove_custom_cd),
+                            modifier = Modifier.size(16.dp),
+                        )
+                    },
+                )
+            }
+            AssistChip(
+                onClick = { showAddTagDialog = true },
+                label = { Text(stringResource(R.string.recipe_tag_add_custom_button)) },
+                leadingIcon = {
+                    Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                },
+            )
+        }
+
+        if (showAddTagDialog) {
+            var input by remember { mutableStateOf("") }
+            AlertDialog(
+                onDismissRequest = { showAddTagDialog = false },
+                title = { Text(stringResource(R.string.recipe_tag_add_dialog_title)) },
+                text = {
+                    OutlinedTextField(
+                        value = input,
+                        onValueChange = { input = it },
+                        label = { Text(stringResource(R.string.recipe_tag_add_dialog_label)) },
+                        singleLine = true,
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.onAddCustomTag(input)
+                            showAddTagDialog = false
+                        },
+                        enabled = input.isNotBlank(),
+                    ) {
+                        Text(stringResource(R.string.recipe_tag_add_dialog_confirm))
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAddTagDialog = false }) {
+                        Text(stringResource(R.string.common_cancel))
+                    }
+                },
+            )
         }
 
         Text(

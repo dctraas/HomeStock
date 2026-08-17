@@ -15,9 +15,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.PlayArrow
@@ -25,6 +27,8 @@ import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.outlined.FavoriteBorder
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -35,6 +39,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -42,6 +47,9 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -191,6 +199,9 @@ fun RecipeDetailScreen(
                     RecipeTagEditor(
                         tags = detail.tags.mapNotNull(RecipeTag::fromStorageKey).toSet(),
                         onToggle = viewModel::toggleTag,
+                        customTags = detail.tags.filter { RecipeTag.fromStorageKey(it) == null },
+                        onAddCustom = viewModel::addCustomTag,
+                        onRemoveCustom = viewModel::removeCustomTag,
                     )
                 }
 
@@ -445,7 +456,14 @@ private fun formatScaledQuantity(value: Double): String {
 
 /** Toggleable chip row for [RecipeTag] — shown under RecipeDetailScreen's badges for a recipe the household has saved (custom or favorited), where tags actually have somewhere to persist. */
 @Composable
-private fun RecipeTagEditor(tags: Set<RecipeTag>, onToggle: (RecipeTag) -> Unit) {
+private fun RecipeTagEditor(
+    tags: Set<RecipeTag>,
+    onToggle: (RecipeTag) -> Unit,
+    customTags: List<String>,
+    onAddCustom: (String) -> Unit,
+    onRemoveCustom: (String) -> Unit,
+) {
+    var showAddDialog by remember { mutableStateOf(false) }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -460,6 +478,58 @@ private fun RecipeTagEditor(tags: Set<RecipeTag>, onToggle: (RecipeTag) -> Unit)
                 label = { Text(stringResource(tag.labelRes)) },
             )
         }
+        customTags.forEach { label ->
+            AssistChip(
+                onClick = { onRemoveCustom(label) },
+                label = { Text(label) },
+                trailingIcon = {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.recipe_tag_remove_custom_cd),
+                        modifier = Modifier.size(16.dp),
+                    )
+                },
+            )
+        }
+        AssistChip(
+            onClick = { showAddDialog = true },
+            label = { Text(stringResource(R.string.recipe_tag_add_custom_button)) },
+            leadingIcon = {
+                Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+            },
+        )
+    }
+
+    if (showAddDialog) {
+        var input by remember { mutableStateOf("") }
+        AlertDialog(
+            onDismissRequest = { showAddDialog = false },
+            title = { Text(stringResource(R.string.recipe_tag_add_dialog_title)) },
+            text = {
+                OutlinedTextField(
+                    value = input,
+                    onValueChange = { input = it },
+                    label = { Text(stringResource(R.string.recipe_tag_add_dialog_label)) },
+                    singleLine = true,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        onAddCustom(input)
+                        showAddDialog = false
+                    },
+                    enabled = input.isNotBlank(),
+                ) {
+                    Text(stringResource(R.string.recipe_tag_add_dialog_confirm))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showAddDialog = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+        )
     }
 }
 
