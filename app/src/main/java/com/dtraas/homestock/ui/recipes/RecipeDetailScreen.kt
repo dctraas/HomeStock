@@ -356,10 +356,13 @@ fun RecipeDetailScreen(
                         onClick = viewModel::addMissingIngredientsToShoppingList,
                         modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     ) {
-                        Icon(Icons.Filled.PlaylistAdd, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Text(
-                            text = stringResource(R.string.recipes_add_missing_to_shopping_list),
-                            modifier = Modifier.padding(start = 8.dp),
+                        // Icon-only on purpose — the button's own shape/color already reads as
+                        // "tap me", and the long label crowded this row; the action is still
+                        // exposed to screen readers via the icon's contentDescription.
+                        Icon(
+                            Icons.Filled.PlaylistAdd,
+                            contentDescription = stringResource(R.string.recipes_add_missing_to_shopping_list),
+                            modifier = Modifier.size(24.dp),
                         )
                     }
                 }

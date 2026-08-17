@@ -63,10 +63,17 @@ data class RecipeDetail(
     val translatedIngredients: List<Pair<String, String>>? = null,
 ) {
     private val hasTranslation: Boolean get() = translatedForLocale != null
+    // Every translatedX field falls back to its English original when the translation call
+    // didn't come back with that particular field — translatedForLocale being set only means
+    // "a translation attempt happened for this locale", not "every field in it succeeded".
+    // displayInstructions previously had no such fallback (unlike the others here), so a
+    // translation response missing/blank "instructions" — a partial AI/network hiccup, or a
+    // stale cached entry from before this fix — silently blanked out the recipe's entire
+    // bereidingswijze instead of falling back to the still-intact English original.
     val displayName: String get() = if (hasTranslation) translatedName ?: name else name
-    val displayCategory: String? get() = if (hasTranslation) translatedCategory else category
-    val displayArea: String? get() = if (hasTranslation) translatedArea else area
-    val displayInstructions: String? get() = if (hasTranslation) translatedInstructions else instructions
+    val displayCategory: String? get() = if (hasTranslation) translatedCategory ?: category else category
+    val displayArea: String? get() = if (hasTranslation) translatedArea ?: area else area
+    val displayInstructions: String? get() = if (hasTranslation) translatedInstructions ?: instructions else instructions
     val displayIngredients: List<Pair<String, String>>
         get() = if (hasTranslation) translatedIngredients ?: ingredients else ingredients
 }

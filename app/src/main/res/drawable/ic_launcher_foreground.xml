@@ -19,8 +19,4 @@
         android:strokeWidth="3"
         android:strokeLineCap="round"
         android:pathData="M46,58 L43,78 M62,58 L65,78 M54,58 L54,78" />
-    <!-- Fresh leaf accent -->
-    <path
-        android:fillColor="#A8F5A2"
-        android:pathData="M54,16 C60,16 64,21 61,27 C59,30.5 51,30.5 49,27 C46,21 48,16 54,16 Z" />
 </vector>
