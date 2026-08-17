@@ -142,29 +142,32 @@ class BillingRepository(context: Context, private val analyticsRepository: Analy
         })
     }
 
-    // A single query mixing SUBS and INAPP products is fine — QueryProductDetailsParams.Product
-    // carries its own type per entry, the query itself isn't type-scoped the way
-    // QueryPurchasesParams below is.
+    // Despite QueryProductDetailsParams.Product carrying its own type per entry, the Billing
+    // Library itself rejects a product list mixing SUBS and INAPP in one call
+    // ("All products should be of the same product type.", thrown by Builder.setProductList) —
+    // confirmed by a crash on a real device. Two type-scoped queries it is, same as
+    // refreshPurchases() below already has to do for queryPurchasesAsync.
     private suspend fun queryProductDetails() {
-        val idsAndTypes = listOf(
-            PREMIUM_MONTHLY_PRODUCT_ID to BillingClient.ProductType.SUBS,
-            PREMIUM_YEARLY_PRODUCT_ID to BillingClient.ProductType.SUBS,
-            PREMIUM_LIFETIME_PRODUCT_ID to BillingClient.ProductType.INAPP,
-            PREMIUM_UNLIMITED_MEMBERS_PRODUCT_ID to BillingClient.ProductType.INAPP,
-        )
-        val params = QueryProductDetailsParams.newBuilder()
+        val subsIds = listOf(PREMIUM_MONTHLY_PRODUCT_ID, PREMIUM_YEARLY_PRODUCT_ID)
+        val inAppIds = listOf(PREMIUM_LIFETIME_PRODUCT_ID, PREMIUM_UNLIMITED_MEMBERS_PRODUCT_ID)
+        val subsResult = client.queryProductDetails(buildProductDetailsParams(subsIds, BillingClient.ProductType.SUBS))
+        val inAppResult = client.queryProductDetails(buildProductDetailsParams(inAppIds, BillingClient.ProductType.INAPP))
+        _productDetails.value = (
+            (subsResult.productDetailsList ?: emptyList()) + (inAppResult.productDetailsList ?: emptyList())
+            ).associateBy { it.productId }
+    }
+
+    private fun buildProductDetailsParams(productIds: List<String>, productType: String): QueryProductDetailsParams =
+        QueryProductDetailsParams.newBuilder()
             .setProductList(
-                idsAndTypes.map { (id, type) ->
+                productIds.map { id ->
                     QueryProductDetailsParams.Product.newBuilder()
                         .setProductId(id)
-                        .setProductType(type)
+                        .setProductType(productType)
                         .build()
                 },
             )
             .build()
-        val result = client.queryProductDetails(params)
-        _productDetails.value = (result.productDetailsList ?: emptyList()).associateBy { it.productId }
-    }
 
     /** Re-checks Play's purchase records; called on connect and from a "Restore aankopen"
      *  action. Unlike the query above, purchases have to be fetched per product type — there's
