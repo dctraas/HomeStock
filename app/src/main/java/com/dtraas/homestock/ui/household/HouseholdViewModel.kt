@@ -3,6 +3,7 @@ package com.dtraas.homestock.ui.household
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.homestock.data.repository.DeviceProfile
+import com.dtraas.homestock.data.repository.HouseholdJoinResult
 import com.dtraas.homestock.data.repository.HouseholdMembersRepository
 import com.dtraas.homestock.data.repository.HouseholdNotFoundException
 import com.dtraas.homestock.data.repository.HouseholdRepository
@@ -23,6 +24,10 @@ data class HouseholdUiState(
     val hasGenericError: Boolean = false,
     /** The household exists and the code is valid, but it's already at the free-tier member limit. */
     val householdFull: Boolean = false,
+    /** The household exists, is already Premium, but has hit its (higher) Premium member cap
+     *  without owning the unlimited-members add-on — a different message from [householdFull],
+     *  see HouseholdScreen's JoinContent. */
+    val householdPremiumCapReached: Boolean = false,
     val createdCode: String? = null,
     val joinCodeInput: String = "",
     val householdNameInput: String = "",
@@ -100,7 +105,9 @@ class HouseholdViewModel(
     }
 
     fun selectJoin() {
-        _uiState.update { it.copy(mode = HouseholdMode.JOIN, errorMessage = null, hasGenericError = false, householdFull = false) }
+        _uiState.update {
+            it.copy(mode = HouseholdMode.JOIN, errorMessage = null, hasGenericError = false, householdFull = false, householdPremiumCapReached = false)
+        }
     }
 
     fun back() {
@@ -108,7 +115,9 @@ class HouseholdViewModel(
     }
 
     fun onJoinCodeChange(value: String) {
-        _uiState.update { it.copy(joinCodeInput = value, errorMessage = null, hasGenericError = false, householdFull = false) }
+        _uiState.update {
+            it.copy(joinCodeInput = value, errorMessage = null, hasGenericError = false, householdFull = false, householdPremiumCapReached = false)
+        }
     }
 
     /** Called once the user has shared/noted a freshly created household's code. */
@@ -126,18 +135,25 @@ class HouseholdViewModel(
     fun joinHousehold() {
         val code = _uiState.value.joinCodeInput
         if (code.length != HouseholdRepository.CODE_LENGTH) return
-        _uiState.update { it.copy(isLoading = true, errorMessage = null, hasGenericError = false, householdFull = false) }
+        _uiState.update {
+            it.copy(isLoading = true, errorMessage = null, hasGenericError = false, householdFull = false, householdPremiumCapReached = false)
+        }
         viewModelScope.launch {
             householdRepository.joinHousehold(code)
                 .onSuccess { joinedCode ->
-                    if (householdMembersRepository.canJoin(joinedCode)) {
-                        householdMembersRepository.registerCurrentDevice(joinedCode)
-                        // Name isn't known yet here (joining is by code alone) — HouseholdSettingsScreen
-                        // fills it in once the household document's name has actually been read.
-                        householdSession.rememberHousehold(joinedCode, name = null)
-                        householdSession.setHousehold(joinedCode)
-                    } else {
-                        _uiState.update { it.copy(isLoading = false, householdFull = true) }
+                    when (householdMembersRepository.canJoin(joinedCode)) {
+                        HouseholdJoinResult.ALLOWED -> {
+                            householdMembersRepository.registerCurrentDevice(joinedCode)
+                            // Name isn't known yet here (joining is by code alone) —
+                            // HouseholdSettingsScreen fills it in once the household document's
+                            // name has actually been read.
+                            householdSession.rememberHousehold(joinedCode, name = null)
+                            householdSession.setHousehold(joinedCode)
+                        }
+                        HouseholdJoinResult.BLOCKED_FREE_LIMIT ->
+                            _uiState.update { it.copy(isLoading = false, householdFull = true) }
+                        HouseholdJoinResult.BLOCKED_PREMIUM_CAP ->
+                            _uiState.update { it.copy(isLoading = false, householdPremiumCapReached = true) }
                     }
                 }
                 .onFailure { error -> _uiState.update { it.copy(isLoading = false).withError(error) } }

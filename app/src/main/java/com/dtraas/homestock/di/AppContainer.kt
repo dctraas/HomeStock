@@ -6,6 +6,7 @@ import com.dtraas.homestock.data.remote.OpenFoodFactsApi
 import com.dtraas.homestock.data.repository.AccountLinkRepository
 import com.dtraas.homestock.data.repository.ActivityLogRepository
 import com.dtraas.homestock.data.repository.AiRecognitionRepository
+import com.dtraas.homestock.data.repository.AnalyticsRepository
 import com.dtraas.homestock.data.repository.BillingRepository
 import com.dtraas.homestock.data.repository.DeviceProfile
 import com.dtraas.homestock.data.repository.DismissedNoticesStore
@@ -21,6 +22,7 @@ import com.dtraas.homestock.data.repository.ProductRepository
 import com.dtraas.homestock.data.repository.ReceiptQueueRepository
 import com.dtraas.homestock.data.repository.ReceiptRecognitionRepository
 import com.dtraas.homestock.data.repository.RecipeRepository
+import com.dtraas.homestock.data.repository.RemoteConfigRepository
 import com.dtraas.homestock.data.repository.ShoppingListRepository
 import com.dtraas.homestock.data.repository.StatisticsRepository
 import com.dtraas.homestock.data.repository.StoreRepository
@@ -57,6 +59,8 @@ class AppContainer(context: Context) {
     val dismissedNoticesStore: DismissedNoticesStore = DismissedNoticesStore(context)
     val themePreferences: ThemePreferences = ThemePreferences(context)
     val inventoryPreferences: InventoryPreferences = InventoryPreferences(context)
+    val analyticsRepository: AnalyticsRepository = AnalyticsRepository(context)
+    val remoteConfigRepository: RemoteConfigRepository = RemoteConfigRepository(context)
 
     // Firestore persists writes to disk by default on Android, but the cache size is
     // capped (~100MB) unless set explicitly — for a household's full inventory/shopping
@@ -85,11 +89,14 @@ class AppContainer(context: Context) {
     }
 
     val billingRepository: BillingRepository by lazy {
-        BillingRepository(appContext)
+        BillingRepository(appContext, analyticsRepository)
     }
 
     val householdMembersRepository: HouseholdMembersRepository by lazy {
-        HouseholdMembersRepository(firestore, storage, householdSession, auth, billingRepository, deviceProfile)
+        HouseholdMembersRepository(
+            firestore, storage, householdSession, auth, billingRepository, deviceProfile,
+            remoteConfigRepository, analyticsRepository,
+        )
     }
 
     // Region must match where the Cloud Function is deployed (see functions/src/index.ts's

@@ -1,5 +1,6 @@
 package com.dtraas.homestock.ui.household
 
+import android.app.Activity
 import android.content.Intent
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.clickable
@@ -67,7 +68,9 @@ import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
+import com.dtraas.homestock.data.repository.HouseholdCapacityInfo
 import com.dtraas.homestock.data.repository.HouseholdInviteLink
+import com.dtraas.homestock.data.repository.HouseholdJoinResult
 import com.dtraas.homestock.data.repository.HouseholdMember
 import com.dtraas.homestock.data.repository.HouseholdMembersRepository
 import com.dtraas.homestock.data.repository.HouseholdRepository
@@ -93,6 +96,11 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
     val householdName by householdRepository.observeHouseholdName().collectAsState(initial = null)
     val householdMembersRepository = application.container.householdMembersRepository
     val members by householdMembersRepository.observeMembers().collectAsState(initial = emptyList())
+    val capacityInfo by householdMembersRepository.observeCapacityInfo().collectAsState(
+        initial = HouseholdCapacityInfo(memberCount = 0, limit = HouseholdMembersRepository.FREE_MEMBER_LIMIT, isPremium = false, hasUnlimitedMembers = false),
+    )
+    val billingRepository = application.container.billingRepository
+    val activity = context as? Activity
     val recentHouseholds by householdSession.recentHouseholds.collectAsState()
     // Switching to the current household would be a no-op, and it's already shown above as
     // "this" household — only *other* previously-joined households belong in the switcher.
@@ -103,6 +111,7 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
     val deleteSuccessMessage = stringResource(R.string.more_delete_household_success)
     val deleteErrorMessage = stringResource(R.string.more_delete_household_error)
     val switchFullMessage = stringResource(R.string.household_join_full_error)
+    val switchPremiumCapMessage = stringResource(R.string.household_join_premium_cap_error)
     val switchNotFoundMessage = stringResource(R.string.household_switch_not_found_error)
 
     // Re-seeds from the live household name whenever it changes (e.g. this screen reopening,
@@ -129,8 +138,14 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
             try {
                 householdRepository.joinHousehold(target.id)
                     .onSuccess { validId ->
-                        if (!householdMembersRepository.canJoin(validId)) {
-                            snackbarHostState.showSnackbar(switchFullMessage, duration = SnackbarDuration.Short)
+                        val joinResult = householdMembersRepository.canJoin(validId)
+                        if (joinResult != HouseholdJoinResult.ALLOWED) {
+                            val message = if (joinResult == HouseholdJoinResult.BLOCKED_PREMIUM_CAP) {
+                                switchPremiumCapMessage
+                            } else {
+                                switchFullMessage
+                            }
+                            snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Short)
                             return@onSuccess
                         }
                         // Leave the currently active household before joining the new one, so
@@ -222,6 +237,8 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                     nameInput = nameInput,
                     onNameInputChange = { if (it.length <= HouseholdRepository.HOUSEHOLD_NAME_MAX_LENGTH) nameInput = it },
                     members = members,
+                    capacityInfo = capacityInfo,
+                    onBuyUnlimitedMembers = { activity?.let(billingRepository::launchUnlimitedMembersPurchaseFlow) },
                     isDeleting = isDeleting,
                     onLeaveClick = { showLeaveConfirm = true },
                     onDeleteClick = { showDeleteConfirm = true },
@@ -389,6 +406,8 @@ private fun HouseholdSection(
     nameInput: String,
     onNameInputChange: (String) -> Unit,
     members: List<HouseholdMember>,
+    capacityInfo: HouseholdCapacityInfo,
+    onBuyUnlimitedMembers: () -> Unit,
     isDeleting: Boolean,
     onLeaveClick: () -> Unit,
     onDeleteClick: () -> Unit,
@@ -409,7 +428,11 @@ private fun HouseholdSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = stringResource(R.string.more_household_members_title),
+                text = if (capacityInfo.limit != null) {
+                    stringResource(R.string.household_members_title_with_limit_format, capacityInfo.memberCount, capacityInfo.limit)
+                } else {
+                    stringResource(R.string.more_household_members_title)
+                },
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.weight(1f),
@@ -420,11 +443,48 @@ private fun HouseholdSection(
             members.forEach { member -> HouseholdMemberRow(member) }
         }
 
+        // Only worth showing once Premium and actually close to the cap — a household nowhere
+        // near it doesn't need to know an add-on for a problem it doesn't have exists yet, and
+        // a household that already bought it (hasUnlimitedMembers) has no cap left to nudge
+        // about. See HouseholdMembersRepository.HouseholdCapacityInfo.isAtOrNearLimit.
+        if (capacityInfo.isPremium && !capacityInfo.hasUnlimitedMembers && capacityInfo.isAtOrNearLimit) {
+            UnlimitedMembersNudgeCard(onBuyClick = onBuyUnlimitedMembers)
+        }
+
         ActionButtonsRow(
             isDeleting = isDeleting,
             onLeaveClick = onLeaveClick,
             onDeleteClick = onDeleteClick,
         )
+    }
+}
+
+/** Shown inside [HouseholdSection] once a Premium household is at or near its member cap
+ *  without owning the "Onbeperkt huisgenoten" add-on — the moment this upsell is actually
+ *  relevant, rather than a permanent fixture every household sees regardless of size. */
+@Composable
+private fun UnlimitedMembersNudgeCard(onBuyClick: () -> Unit) {
+    Surface(
+        shape = SoftCardShape,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.household_unlimited_members_nudge_title),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+            )
+            Text(
+                text = stringResource(R.string.household_unlimited_members_nudge_subtitle),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+            )
+            OutlinedButton(onClick = onBuyClick, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.household_unlimited_members_nudge_action))
+            }
+        }
     }
 }
 

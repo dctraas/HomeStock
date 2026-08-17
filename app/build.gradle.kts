@@ -82,6 +82,13 @@ dependencies {
     // AiRecognitionRepository and functions/src/index.ts. Keeps the Anthropic API key off
     // the device entirely.
     implementation(libs.firebase.functions.ktx)
+    // Premium funnel instrumentation (AnalyticsRepository) — paywall views, plan selection,
+    // purchase outcomes. No PII is logged, only event names/params (see AnalyticsRepository).
+    implementation(libs.firebase.analytics.ktx)
+    // Server-tunable monetization knobs without an app update (RemoteConfigRepository) — e.g.
+    // the Premium household member cap. Same trust model as the rest of this app's household
+    // logic: a soft business limit read client-side, not a hard security boundary.
+    implementation(libs.firebase.config.ktx)
     implementation(libs.kotlinx.coroutines.play.services)
     // Firestore pulls in gRPC, which drags in a plain (non-Android) Guava that can win
     // Gradle's version conflict resolution over CameraX's own Guava/ListenableFuture

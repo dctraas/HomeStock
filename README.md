@@ -74,6 +74,41 @@ aanmaken, dat moet je zelf doen (gratis):
 
 Zonder deze stappen start de app niet (of kan geen huishouden aanmaken/koppelen).
 
+## Play Console opzetten (eenmalig, vereist voor Premium/in-app aankopen)
+
+De app zelf kan geen Play Console-producten aanmaken (zie de doc-comments in
+`BillingRepository.kt`) — dat moet je zelf doen, in de Play Console van je eigen
+ontwikkelaarsaccount, met **exact** deze product-id's:
+
+| Product-id | Type | Notities |
+| --- | --- | --- |
+| `premium_monthly` | Abonnement | Basisplan met een gratis-proefperiode-aanbod (zie hieronder). |
+| `premium_yearly` | Abonnement | Idem, met een aanbod dat goedkoper uitpakt dan 12× de maandprijs — dat verschil wordt automatisch als "Bespaar X%" getoond, dus geen aparte configuratie in de app nodig. |
+| `premium_lifetime` | Eenmalig (managed) | Voor gebruikers die liever één keer betalen dan een abonnement nemen. Nooit als consumable instellen — de app consumeert 'm nooit, alleen "acknowledge". |
+| `premium_unlimited_members` | Eenmalig (managed) | Het huishouden-uitbreidingspakket (zie `HouseholdMembersRepository`) — heft de Premium-ledenlimiet voor dat hele huishouden op. Ook nooit als consumable instellen. |
+
+Voor beide abonnementen: maak een aanbod ("offer") met twee prijsfases — een gratis fase
+(free trial) gevolgd door de doorlopende prijs. De lengte van die proefperiode staat nergens
+in de code zelf; hij wordt alleen getoond via de `trial_days`-waarde in Remote Config
+hieronder, dus hou die twee handmatig gelijk als je de proefperiode ooit wijzigt.
+
+**Remote Config** (Firebase Console → Remote Config — zelfde project als hierboven): dit werkt
+ook zonder dat je hier iets instelt (de app valt terug op ingebouwde standaardwaarden), maar om
+ze op afstand te kunnen bijstellen zonder appupdate, voeg je deze parameters toe:
+
+| Parameter | Type | Standaard |
+| --- | --- | --- |
+| `premium_member_cap` | Number | `10` — max. huishoudleden met Premium, zonder het `premium_unlimited_members`-pakket. |
+| `trial_days` | Number | `7` — alleen voor de tekst in de app; moet gelijk blijven aan de proefperiode die je in de Play Console-aanbieding hierboven instelt. |
+| `monthly_plan_enabled` | Boolean | `true` — noodrem om de maandelijkse kaart te verbergen zonder appupdate. |
+
+**Analytics**: werkt automatisch zodra Google Analytics gekoppeld is aan het Firebase-project
+(vink je meestal aan bij het aanmaken van het project hierboven; kan achteraf ook via Firebase
+Console → Projectinstellingen → Integraties). Geen paywall-events zonder die koppeling.
+
+Zonder de Play Console-producten hierboven blijft de Premium-betaalmuur werken, maar toont
+iedere prijs "Prijs laden…" en is geen enkele koop-knop klikbaar.
+
 ## Bouwen
 
 Open het project in Android Studio (Ladybug of nieuwer) en laat Gradle syncen, of vanaf de command line:

@@ -114,6 +114,7 @@
     <string name="household_generic_error">Something went wrong. Please try again.</string>
     <string name="household_join_code_length_hint">A household code is %1$d characters</string>
     <string name="household_join_full_error">This household already has 2 members on the free plan. Ask someone in the household to go Premium, or to leave to make room for you.</string>
+    <string name="household_join_premium_cap_error">This household has reached its maximum number of Premium members. Ask a housemate to buy \'Unlimited housemates\' via Settings &gt; Household.</string>
     <string name="household_create_back_warning_title">Code not saved yet?</string>
     <string name="household_create_back_warning_text">Make sure you\'ve copied the household code before going back — you won\'t be able to find it again afterwards.</string>
     <string name="household_create_back_warning_confirm">Go back anyway</string>
@@ -143,6 +144,10 @@
         <item quantity="other">%1$d members · Code: %2$s</item>
     </plurals>
     <string name="more_household_members_title">Members</string>
+    <string name="household_members_title_with_limit_format">Members (%1$d/%2$d)</string>
+    <string name="household_unlimited_members_nudge_title">Almost full</string>
+    <string name="household_unlimited_members_nudge_subtitle">Buy \'Unlimited housemates\' to add more people to this household.</string>
+    <string name="household_unlimited_members_nudge_action">Buy unlimited housemates</string>
     <string name="more_household_member_unnamed">Unnamed member</string>
     <string name="more_household_member_you">You</string>
     <string name="household_allergens_menu_cd">My allergens and dietary preferences</string>
@@ -685,8 +690,18 @@
     <string name="premium_benefit_household">More than 2 members in one household</string>
     <string name="premium_price_loading">Loading price…</string>
     <string name="premium_price_per_year_format">%1$s per year</string>
+    <string name="premium_price_per_month_format">%1$s per month</string>
+    <string name="premium_plan_monthly">Monthly</string>
+    <string name="premium_plan_yearly">Yearly</string>
+    <string name="premium_plan_lifetime">One-time (lifetime)</string>
+    <string name="premium_plan_trial_badge_format">First %1$d days free</string>
+    <string name="premium_plan_savings_badge_format">Save %1$d%%</string>
+    <string name="premium_plan_lifetime_badge">No subscription</string>
     <string name="premium_subscribe_button">Subscribe</string>
-    <string name="premium_terms_notice">Yearly subscription, renews automatically. Cancel any time via Google Play.</string>
+    <string name="premium_subscribe_trial_button">Start free trial (%1$d days)</string>
+    <string name="premium_buy_lifetime_button">Buy once</string>
+    <string name="premium_terms_notice">Renews automatically. Cancel any time via Google Play.</string>
+    <string name="premium_terms_notice_lifetime">One-time payment. No subscription, no automatic renewal.</string>
     <string name="premium_restore_action">Restore a previous purchase</string>
     <string name="premium_restore_done">Purchases checked</string>
 </resources>

@@ -114,6 +114,7 @@
     <string name="household_generic_error">Une erreur s\'est produite. Réessayez.</string>
     <string name="household_join_code_length_hint">Un code de foyer comporte %1$d caractères</string>
     <string name="household_join_full_error">Ce foyer compte déjà 2 membres dans la formule gratuite. Demandez à quelqu\'un du foyer de passer à Premium, ou de le quitter pour vous faire de la place.</string>
+    <string name="household_join_premium_cap_error">Ce foyer a atteint son nombre maximal de membres Premium. Demandez à un colocataire d\'acheter \'Colocataires illimités\' via Paramètres &gt; Foyer.</string>
     <string name="household_create_back_warning_title">Code pas encore enregistré ?</string>
     <string name="household_create_back_warning_text">Assurez-vous d\'avoir copié le code du foyer avant de revenir en arrière — vous ne pourrez plus le retrouver ensuite.</string>
     <string name="household_create_back_warning_confirm">Revenir quand même</string>
@@ -143,6 +144,10 @@
         <item quantity="other">%1$d membres · Code : %2$s</item>
     </plurals>
     <string name="more_household_members_title">Membres</string>
+    <string name="household_members_title_with_limit_format">Membres (%1$d/%2$d)</string>
+    <string name="household_unlimited_members_nudge_title">Presque complet</string>
+    <string name="household_unlimited_members_nudge_subtitle">Achetez \'Colocataires illimités\' pour ajouter plus de personnes à ce foyer.</string>
+    <string name="household_unlimited_members_nudge_action">Acheter colocataires illimités</string>
     <string name="more_household_member_unnamed">Membre sans nom</string>
     <string name="more_household_member_you">Toi</string>
     <string name="household_allergens_menu_cd">Mes allergènes et préférences alimentaires</string>
@@ -685,8 +690,18 @@
     <string name="premium_benefit_household">Plus de 2 membres dans un même foyer</string>
     <string name="premium_price_loading">Chargement du prix…</string>
     <string name="premium_price_per_year_format">%1$s par an</string>
+    <string name="premium_price_per_month_format">%1$s par mois</string>
+    <string name="premium_plan_monthly">Mensuel</string>
+    <string name="premium_plan_yearly">Annuel</string>
+    <string name="premium_plan_lifetime">Paiement unique (à vie)</string>
+    <string name="premium_plan_trial_badge_format">%1$d premiers jours gratuits</string>
+    <string name="premium_plan_savings_badge_format">Économisez %1$d %%</string>
+    <string name="premium_plan_lifetime_badge">Sans abonnement</string>
     <string name="premium_subscribe_button">S\'abonner</string>
-    <string name="premium_terms_notice">Abonnement annuel, renouvelé automatiquement. Résiliable à tout moment via Google Play.</string>
+    <string name="premium_subscribe_trial_button">Démarrer l\'essai gratuit (%1$d jours)</string>
+    <string name="premium_buy_lifetime_button">Acheter une fois</string>
+    <string name="premium_terms_notice">Renouvelé automatiquement. Résiliable à tout moment via Google Play.</string>
+    <string name="premium_terms_notice_lifetime">Paiement unique. Sans abonnement, sans renouvellement automatique.</string>
     <string name="premium_restore_action">Restaurer un achat précédent</string>
     <string name="premium_restore_done">Achats vérifiés</string>
 </resources>

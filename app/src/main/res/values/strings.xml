@@ -115,6 +115,7 @@
     <string name="household_generic_error">Er ging iets mis. Probeer het opnieuw.</string>
     <string name="household_join_code_length_hint">Een huishouden-code bestaat uit %1$d tekens</string>
     <string name="household_join_full_error">Dit huishouden heeft al 2 leden op het gratis abonnement. Vraag iemand in het huishouden om Premium, of laat iemand het huishouden verlaten om plek te maken.</string>
+    <string name="household_join_premium_cap_error">Dit huishouden heeft het maximale aantal Premium-leden bereikt. Vraag een huisgenoot om \'Onbeperkt huisgenoten\' te kopen via Instellingen &gt; Huishouden.</string>
     <string name="household_create_back_warning_title">Code nog niet opgeslagen?</string>
     <string name="household_create_back_warning_text">Zorg dat je de huishouden-code hebt gekopieerd voordat je teruggaat — je kunt hem hierna niet meer terugvinden.</string>
     <string name="household_create_back_warning_confirm">Toch teruggaan</string>
@@ -144,6 +145,10 @@
         <item quantity="other">%1$d leden · Code: %2$s</item>
     </plurals>
     <string name="more_household_members_title">Leden</string>
+    <string name="household_members_title_with_limit_format">Leden (%1$d/%2$d)</string>
+    <string name="household_unlimited_members_nudge_title">Bijna vol</string>
+    <string name="household_unlimited_members_nudge_subtitle">Koop \'Onbeperkt huisgenoten\' om meer mensen aan dit huishouden toe te voegen.</string>
+    <string name="household_unlimited_members_nudge_action">Onbeperkt huisgenoten kopen</string>
     <string name="more_household_member_unnamed">Naamloos lid</string>
     <string name="more_household_member_you">Jij</string>
     <string name="household_allergens_menu_cd">Mijn allergenen en dieetwensen</string>
@@ -686,8 +691,18 @@
     <string name="premium_benefit_household">Meer dan 2 huisgenoten in één huishouden</string>
     <string name="premium_price_loading">Prijs laden…</string>
     <string name="premium_price_per_year_format">%1$s per jaar</string>
+    <string name="premium_price_per_month_format">%1$s per maand</string>
+    <string name="premium_plan_monthly">Maandelijks</string>
+    <string name="premium_plan_yearly">Jaarlijks</string>
+    <string name="premium_plan_lifetime">Eenmalig (levenslang)</string>
+    <string name="premium_plan_trial_badge_format">Eerste %1$d dagen gratis</string>
+    <string name="premium_plan_savings_badge_format">Bespaar %1$d%%</string>
+    <string name="premium_plan_lifetime_badge">Geen abonnement</string>
     <string name="premium_subscribe_button">Abonneren</string>
-    <string name="premium_terms_notice">Jaarabonnement, wordt automatisch verlengd. Op elk moment opzegbaar via Google Play.</string>
+    <string name="premium_subscribe_trial_button">Start gratis proefperiode (%1$d dagen)</string>
+    <string name="premium_buy_lifetime_button">Eenmalig kopen</string>
+    <string name="premium_terms_notice">Wordt automatisch verlengd. Op elk moment opzegbaar via Google Play.</string>
+    <string name="premium_terms_notice_lifetime">Eenmalige betaling. Geen abonnement, geen automatische verlenging.</string>
     <string name="premium_restore_action">Eerdere aankoop herstellen</string>
     <string name="premium_restore_done">Aankopen gecontroleerd</string>
 </resources>
