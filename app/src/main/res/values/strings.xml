@@ -137,6 +137,25 @@
     <string name="household_switch_confirm">Wisselen</string>
     <string name="household_switch_not_found_error">Dit huishouden bestaat niet meer.</string>
 
+    <!-- Onboarding-tour (eenmalig, direct na het aanmaken/aansluiten bij een huishouden) -->
+    <string name="onboarding_skip">Overslaan</string>
+    <string name="onboarding_next">Volgende</string>
+    <string name="onboarding_get_started">Aan de slag</string>
+    <string name="onboarding_welcome_title">Welkom bij HomeStock</string>
+    <string name="onboarding_welcome_description">Houd moeiteloos bij wat je in huis hebt en wat je nog moet kopen. Een korte rondleiding langs de belangrijkste functies.</string>
+    <string name="onboarding_inventory_title">Voorraad bijhouden</string>
+    <string name="onboarding_inventory_description">Scan een barcode en het product staat meteen in je voorraad. Zie in één oogopslag wat bijna op is of over datum raakt.</string>
+    <string name="onboarding_shopping_list_title">Boodschappenlijst</string>
+    <string name="onboarding_shopping_list_description">Voeg zelf items toe, of laat producten automatisch op de lijst komen zodra de voorraad laag is. Ingedeeld per winkel, zodat je niet hoeft te zoeken.</string>
+    <string name="onboarding_scanning_title">Slim scannen</string>
+    <string name="onboarding_scanning_description">Geen barcode op de verpakking? Maak een foto en AI herkent het product. Of scan in één keer een heel kassabonnetje.</string>
+    <string name="onboarding_recipes_title">Recepten &amp; maaltijden</string>
+    <string name="onboarding_recipes_description">Ontdek recepten op basis van wat je al in huis hebt, of laat AI iets voor je bedenken. Plan je week vooruit met de maaltijdplanner.</string>
+    <string name="onboarding_household_title">Samen met je huisgenoten</string>
+    <string name="onboarding_household_description">Deel je voorraad en boodschappenlijst met je hele huishouden — iedereen ziet meteen dezelfde, actuele lijst.</string>
+    <string name="onboarding_ready_title">Klaar om te beginnen</string>
+    <string name="onboarding_ready_description">Begin met het scannen van je eerste product, of verken de app rustig zelf verder.</string>
+
     <!-- Meer -->
     <string name="more_household_title">Huishouden</string>
     <string name="more_household_code_format">Code: %1$s</string>

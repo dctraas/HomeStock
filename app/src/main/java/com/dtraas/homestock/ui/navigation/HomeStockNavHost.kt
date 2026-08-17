@@ -40,6 +40,7 @@ import com.dtraas.homestock.ui.more.LicensesScreen
 import com.dtraas.homestock.ui.more.MoreScreen
 import com.dtraas.homestock.ui.more.PrivacyPolicyScreen
 import com.dtraas.homestock.ui.notifications.NotificationsScreen
+import com.dtraas.homestock.ui.onboarding.OnboardingTourScreen
 import com.dtraas.homestock.ui.premium.PremiumScreen
 import com.dtraas.homestock.ui.productdetail.ProductDetailScreen
 import com.dtraas.homestock.ui.receiptscan.ReceiptScanScreen
@@ -63,8 +64,15 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val householdSession = application.container.householdSession
     val accountLinkRepository = application.container.accountLinkRepository
+    val onboardingTourPreferences = application.container.onboardingTourPreferences
     val justJoinedHousehold by householdSession.justJoinedHousehold.collectAsState()
     var showAccountLinkPrompt by remember { mutableStateOf(false) }
+    // Purely "has this device ever seen it", independent of justJoinedHousehold below — a
+    // device joining via invite code, not just one creating/joining fresh from CHOOSE, is
+    // just as much a first-time HomeStockApp landing, and an existing install updating to the
+    // version that first ships this tour has never seen it either, so it gets the same
+    // one-time introduction.
+    var showOnboardingTour by remember { mutableStateOf(!onboardingTourPreferences.hasSeenTour) }
 
     // Fires once, right when this composable first mounts after creating/joining a household
     // (see HouseholdSession.setHousehold) — a one-time nudge rather than a blocking step in
@@ -313,13 +321,25 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
         }
     }
 
-    if (showAccountLinkPrompt) {
+    // Tour first, account-link nudge only once it's out of the way — showing both overlays at
+    // once (a brand new device that also just created/joined a household hits both conditions
+    // together) would just be two modals fighting for attention on someone's very first screen.
+    if (showAccountLinkPrompt && !showOnboardingTour) {
         AccountLinkPromptDialog(
             onLinkNow = {
                 showAccountLinkPrompt = false
                 navController.navigate(Destination.AccountLink.route)
             },
             onDismiss = { showAccountLinkPrompt = false },
+        )
+    }
+
+    if (showOnboardingTour) {
+        OnboardingTourScreen(
+            onFinish = {
+                onboardingTourPreferences.markTourSeen()
+                showOnboardingTour = false
+            },
         )
     }
 }

@@ -77,4 +77,17 @@ class AnalyticsRepository(context: Context) {
     fun logRestorePurchasesTapped() {
         analytics.logEvent("premium_restore_tapped", null)
     }
+
+    /** The first-run feature tour (see
+     *  [com.dtraas.homestock.ui.onboarding.OnboardingTourScreen]) was watched all the way to
+     *  its last page and finished via "Aan de slag". */
+    fun logOnboardingTourCompleted() {
+        analytics.logEvent("onboarding_tour_completed", null)
+    }
+
+    /** The tour was dismissed early via "Overslaan" — [page] is the 0-indexed page it was
+     *  skipped from, useful for spotting which page people bail out at. */
+    fun logOnboardingTourSkipped(page: Int) {
+        analytics.logEvent("onboarding_tour_skipped", Bundle().apply { putLong("page", page.toLong()) })
+    }
 }

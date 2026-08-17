@@ -136,6 +136,25 @@
     <string name="household_switch_confirm">Wechseln</string>
     <string name="household_switch_not_found_error">Dieser Haushalt existiert nicht mehr.</string>
 
+    <!-- Onboarding-Tour (einmalig, direkt nach dem Erstellen/Beitreten eines Haushalts) -->
+    <string name="onboarding_skip">Überspringen</string>
+    <string name="onboarding_next">Weiter</string>
+    <string name="onboarding_get_started">Los geht\'s</string>
+    <string name="onboarding_welcome_title">Willkommen bei HomeStock</string>
+    <string name="onboarding_welcome_description">Behalte mühelos im Blick, was du zu Hause hast und was noch fehlt. Eine kurze Tour durch die wichtigsten Funktionen.</string>
+    <string name="onboarding_inventory_title">Vorrat verwalten</string>
+    <string name="onboarding_inventory_description">Scanne einen Barcode und das Produkt ist sofort in deinem Vorrat. Sieh auf einen Blick, was knapp wird oder bald abläuft.</string>
+    <string name="onboarding_shopping_list_title">Einkaufsliste</string>
+    <string name="onboarding_shopping_list_description">Füge selbst Artikel hinzu, oder lass Produkte automatisch auf die Liste setzen, sobald der Vorrat knapp wird. Nach Geschäft sortiert, damit du nie suchen musst.</string>
+    <string name="onboarding_scanning_title">Intelligentes Scannen</string>
+    <string name="onboarding_scanning_description">Kein Barcode auf der Verpackung? Mach ein Foto und die KI erkennt das Produkt. Oder scanne einen ganzen Kassenbon auf einmal.</string>
+    <string name="onboarding_recipes_title">Rezepte &amp; Mahlzeiten</string>
+    <string name="onboarding_recipes_description">Entdecke Rezepte basierend auf dem, was du bereits zu Hause hast, oder lass dir von der KI etwas vorschlagen. Plane deine Woche mit dem Essensplaner.</string>
+    <string name="onboarding_household_title">Gemeinsam mit deinen Mitbewohnern</string>
+    <string name="onboarding_household_description">Teile deinen Vorrat und deine Einkaufsliste mit deinem ganzen Haushalt — alle sehen sofort dieselbe, aktuelle Liste.</string>
+    <string name="onboarding_ready_title">Bereit loszulegen</string>
+    <string name="onboarding_ready_description">Scanne dein erstes Produkt, oder erkunde die App in deinem eigenen Tempo.</string>
+
     <!-- Mehr -->
     <string name="more_household_title">Haushalt</string>
     <string name="more_household_code_format">Code: %1$s</string>

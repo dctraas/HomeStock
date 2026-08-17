@@ -136,6 +136,25 @@
     <string name="household_switch_confirm">Changer</string>
     <string name="household_switch_not_found_error">Ce foyer n\'existe plus.</string>
 
+    <!-- Visite guidée (une seule fois, juste après la création d'un foyer ou l'adhésion à un foyer) -->
+    <string name="onboarding_skip">Passer</string>
+    <string name="onboarding_next">Suivant</string>
+    <string name="onboarding_get_started">C\'est parti</string>
+    <string name="onboarding_welcome_title">Bienvenue sur HomeStock</string>
+    <string name="onboarding_welcome_description">Suivez sans effort ce que vous avez à la maison et ce qu\'il vous reste à acheter. Une visite rapide des fonctionnalités les plus importantes.</string>
+    <string name="onboarding_inventory_title">Gérer votre stock</string>
+    <string name="onboarding_inventory_description">Scannez un code-barres et le produit apparaît aussitôt dans votre stock. Voyez en un coup d\'œil ce qui vient à manquer ou approche de la date de péremption.</string>
+    <string name="onboarding_shopping_list_title">Liste de courses</string>
+    <string name="onboarding_shopping_list_description">Ajoutez vous-même des articles, ou laissez les produits rejoindre la liste automatiquement dès que le stock est bas. Classée par magasin, pour ne jamais avoir à chercher.</string>
+    <string name="onboarding_scanning_title">Scan intelligent</string>
+    <string name="onboarding_scanning_description">Pas de code-barres sur l\'emballage ? Prenez une photo et l\'IA reconnaît le produit. Ou scannez un ticket de caisse entier d\'un coup.</string>
+    <string name="onboarding_recipes_title">Recettes &amp; repas</string>
+    <string name="onboarding_recipes_description">Découvrez des recettes basées sur ce que vous avez déjà à la maison, ou laissez l\'IA vous proposer quelque chose. Planifiez votre semaine avec le planificateur de repas.</string>
+    <string name="onboarding_household_title">Avec vos colocataires</string>
+    <string name="onboarding_household_description">Partagez votre stock et votre liste de courses avec tout votre foyer — tout le monde voit aussitôt la même liste, à jour.</string>
+    <string name="onboarding_ready_title">Prêt à commencer</string>
+    <string name="onboarding_ready_description">Commencez par scanner votre premier produit, ou explorez l\'application par vous-même.</string>
+
     <!-- Plus -->
     <string name="more_household_title">Foyer</string>
     <string name="more_household_code_format">Code : %1$s</string>

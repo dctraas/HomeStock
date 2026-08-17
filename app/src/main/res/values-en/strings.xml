@@ -136,6 +136,25 @@
     <string name="household_switch_confirm">Switch</string>
     <string name="household_switch_not_found_error">This household no longer exists.</string>
 
+    <!-- Onboarding tour (one-time, right after creating/joining a household) -->
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_get_started">Get started</string>
+    <string name="onboarding_welcome_title">Welcome to HomeStock</string>
+    <string name="onboarding_welcome_description">Effortlessly keep track of what you have at home and what you still need to buy. A quick tour of the most important features.</string>
+    <string name="onboarding_inventory_title">Keeping track of stock</string>
+    <string name="onboarding_inventory_description">Scan a barcode and the product is instantly in your inventory. See at a glance what\'s running low or about to expire.</string>
+    <string name="onboarding_shopping_list_title">Shopping list</string>
+    <string name="onboarding_shopping_list_description">Add items yourself, or let products join the list automatically once stock runs low. Grouped by store, so you never have to search.</string>
+    <string name="onboarding_scanning_title">Smart scanning</string>
+    <string name="onboarding_scanning_description">No barcode on the packaging? Take a photo and AI recognizes the product. Or scan a whole receipt at once.</string>
+    <string name="onboarding_recipes_title">Recipes &amp; meals</string>
+    <string name="onboarding_recipes_description">Discover recipes based on what you already have at home, or let AI come up with something. Plan your week ahead with the meal planner.</string>
+    <string name="onboarding_household_title">Together with your housemates</string>
+    <string name="onboarding_household_description">Share your inventory and shopping list with your whole household — everyone instantly sees the same, up-to-date list.</string>
+    <string name="onboarding_ready_title">Ready to get started</string>
+    <string name="onboarding_ready_description">Start by scanning your first product, or explore the app on your own.</string>
+
     <!-- More -->
     <string name="more_household_title">Household</string>
     <string name="more_household_code_format">Code: %1$s</string>

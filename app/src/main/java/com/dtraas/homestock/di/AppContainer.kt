@@ -18,6 +18,7 @@ import com.dtraas.homestock.data.repository.InventoryPreferences
 import com.dtraas.homestock.data.repository.InventoryRepository
 import com.dtraas.homestock.data.repository.MealPlanRepository
 import com.dtraas.homestock.data.repository.NotificationPreferences
+import com.dtraas.homestock.data.repository.OnboardingTourPreferences
 import com.dtraas.homestock.data.repository.ProductRepository
 import com.dtraas.homestock.data.repository.ReceiptQueueRepository
 import com.dtraas.homestock.data.repository.ReceiptRecognitionRepository
@@ -61,6 +62,7 @@ class AppContainer(context: Context) {
     val inventoryPreferences: InventoryPreferences = InventoryPreferences(context)
     val analyticsRepository: AnalyticsRepository = AnalyticsRepository(context)
     val remoteConfigRepository: RemoteConfigRepository = RemoteConfigRepository(context)
+    val onboardingTourPreferences: OnboardingTourPreferences = OnboardingTourPreferences(context)
 
     // Firestore persists writes to disk by default on Android, but the cache size is
     // capped (~100MB) unless set explicitly — for a household's full inventory/shopping
