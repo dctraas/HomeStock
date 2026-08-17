@@ -88,7 +88,15 @@ class HouseholdRepository(
         return try {
             ensureSignedIn()
             val normalized = code.trim().uppercase()
-            if (normalized.isEmpty()) {
+            // Rejects anything that isn't a plausible generateCode() output *before* it ever
+            // reaches .document(normalized) — Firestore's CollectionReference.document(path)
+            // treats "/" in the string as path separators, not literal characters, so an
+            // unvalidated code (typed by hand, or from a crafted homestock://join deep link)
+            // could otherwise resolve to some other document nested under households/ instead
+            // of a top-level household — see firestore.rules for why that alone doesn't cross a
+            // real permission boundary, but the app should never treat an arbitrary nested doc
+            // as if it were a household.
+            if (normalized.isEmpty() || normalized.length != CODE_LENGTH || normalized.any { it !in CODE_CHARS }) {
                 return Result.failure(HouseholdNotFoundException(context.getString(R.string.household_not_found_format, normalized)))
             }
             val snapshot = firestore.collection(HOUSEHOLDS_COLLECTION).document(normalized).get().await()
