@@ -46,6 +46,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -1136,6 +1137,11 @@ private fun ExpirationRow(
     var showAiScan by remember { mutableStateOf(false) }
     val isNearExpiry = expirationDate != null && daysUntilExpiration(expirationDate) <= 3
 
+    // A one-tap estimate based on the product's category (see Category.defaultShelfLifeDays'
+    // doc) — only offered while nothing's set yet, so it reads as "no idea? here's a guess"
+    // rather than second-guessing a date the household already entered themselves.
+    val suggestedDays = category.defaultShelfLifeDays
+
     Row(
         modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -1167,6 +1173,24 @@ private fun ExpirationRow(
                     color = if (isNearExpiry) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                     modifier = Modifier.clickable { showPicker = true },
                 )
+                if (expirationDate == null && suggestedDays != null) {
+                    FilledTonalButton(
+                        onClick = {
+                            val suggestedMillis = LocalDate.now().plusDays(suggestedDays.toLong())
+                                .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+                            onDateChange(suggestedMillis)
+                        },
+                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
+                        modifier = Modifier.padding(start = 8.dp),
+                    ) {
+                        Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(14.dp))
+                        Text(
+                            text = stringResource(R.string.product_detail_expiration_suggest_format, suggestedDays),
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(start = 4.dp),
+                        )
+                    }
+                }
                 if (expirationDate != null) {
                     IconButton(onClick = { onDateChange(null) }, modifier = Modifier.size(32.dp)) {
                         Icon(
@@ -1186,29 +1210,6 @@ private fun ExpirationRow(
             onDismiss = { showAiScan = false },
             onDateRecognized = { onDateChange(it) },
         )
-    }
-
-    // A one-tap estimate based on the product's category (see Category.defaultShelfLifeDays'
-    // doc) — only offered while nothing's set yet, so it reads as "no idea? here's a guess"
-    // rather than second-guessing a date the household already entered themselves.
-    val suggestedDays = category.defaultShelfLifeDays
-    if (expirationDate == null && suggestedDays != null) {
-        TextButton(
-            onClick = {
-                val suggestedMillis = LocalDate.now().plusDays(suggestedDays.toLong())
-                    .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-                onDateChange(suggestedMillis)
-            },
-            contentPadding = PaddingValues(0.dp),
-            modifier = Modifier.padding(top = 4.dp),
-        ) {
-            Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
-            Text(
-                text = stringResource(R.string.product_detail_expiration_suggest_format, suggestedDays),
-                style = MaterialTheme.typography.labelMedium,
-                modifier = Modifier.padding(start = 6.dp),
-            )
-        }
     }
 
     if (showPicker) {

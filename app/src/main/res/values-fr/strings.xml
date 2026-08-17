@@ -334,7 +334,7 @@
     <string name="product_detail_expiration_label">Date de péremption</string>
     <string name="product_detail_expiration_set">Définir</string>
     <string name="product_detail_expiration_clear_cd">Effacer la date de péremption</string>
-    <string name="product_detail_expiration_suggest_format">Estimer selon la catégorie (%1$d jours)</string>
+    <string name="product_detail_expiration_suggest_format">Estimer (%1$d j)</string>
     <string name="product_detail_status_label">Statut</string>
     <string name="product_detail_status_not_set">Non défini</string>
     <string name="product_detail_status_expired">Périmé</string>

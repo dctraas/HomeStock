@@ -334,7 +334,7 @@
     <string name="product_detail_expiration_label">Fecha de caducidad</string>
     <string name="product_detail_expiration_set">Establecer</string>
     <string name="product_detail_expiration_clear_cd">Borrar fecha de caducidad</string>
-    <string name="product_detail_expiration_suggest_format">Estimar según la categoría (%1$d días)</string>
+    <string name="product_detail_expiration_suggest_format">Estimar (%1$d d)</string>
     <string name="product_detail_status_label">Estado</string>
     <string name="product_detail_status_not_set">Sin establecer</string>
     <string name="product_detail_status_expired">Caducado</string>

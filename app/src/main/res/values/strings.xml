@@ -335,7 +335,7 @@
     <string name="product_detail_expiration_label">Houdbaarheidsdatum</string>
     <string name="product_detail_expiration_set">Instellen</string>
     <string name="product_detail_expiration_clear_cd">Houdbaarheidsdatum wissen</string>
-    <string name="product_detail_expiration_suggest_format">Schat in op basis van categorie (%1$d dagen)</string>
+    <string name="product_detail_expiration_suggest_format">Schatten (%1$d d)</string>
     <string name="product_detail_status_label">Status</string>
     <string name="product_detail_status_not_set">Niet ingesteld</string>
     <string name="product_detail_status_expired">Verlopen</string>
