@@ -6,7 +6,6 @@ import android.content.Intent
 import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -838,8 +837,6 @@ private fun ShoppingListRow(
                     )
                 },
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-            // Matches InventoryRow's list row exactly.
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             shape = SoftCardShapeCompact,
         ) {
             Row(
