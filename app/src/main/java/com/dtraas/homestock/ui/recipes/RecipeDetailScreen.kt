@@ -479,15 +479,22 @@ private fun RecipeTagEditor(
             )
         }
         customTags.forEach { label ->
+            // onClick is a no-op — only the trailing X (its own IconButton, below) removes the
+            // label, so tapping the chip's body/text doesn't delete it by surprise.
             AssistChip(
-                onClick = { onRemoveCustom(label) },
+                onClick = {},
                 label = { Text(label) },
                 trailingIcon = {
-                    Icon(
-                        Icons.Filled.Close,
-                        contentDescription = stringResource(R.string.recipe_tag_remove_custom_cd),
-                        modifier = Modifier.size(16.dp),
-                    )
+                    IconButton(
+                        onClick = { onRemoveCustom(label) },
+                        modifier = Modifier.size(18.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = stringResource(R.string.recipe_tag_remove_custom_cd),
+                            modifier = Modifier.size(14.dp),
+                        )
+                    }
                 },
             )
         }

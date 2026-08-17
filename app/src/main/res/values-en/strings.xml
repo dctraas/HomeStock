@@ -334,7 +334,7 @@
     <string name="product_detail_expiration_label">Best-before date</string>
     <string name="product_detail_expiration_set">Set</string>
     <string name="product_detail_expiration_clear_cd">Clear expiration date</string>
-    <string name="product_detail_expiration_suggest_format">Estimate (%1$d d)</string>
+    <string name="product_detail_expiration_suggest_format">Estimate based on category (%1$d days)</string>
     <string name="product_detail_status_label">Status</string>
     <string name="product_detail_status_not_set">Not set</string>
     <string name="product_detail_status_expired">Expired</string>

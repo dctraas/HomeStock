@@ -9,7 +9,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -46,7 +45,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledTonalButton
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -1174,20 +1173,22 @@ private fun ExpirationRow(
                     modifier = Modifier.clickable { showPicker = true },
                 )
                 if (expirationDate == null && suggestedDays != null) {
-                    FilledTonalButton(
+                    // Icon-only — same 32dp footprint as the camera/clear icons either side of it,
+                    // so it reads as a real button (filled, tappable) without crowding this row the
+                    // way a labeled button did. The full explanation lives in the content
+                    // description instead of on-screen text.
+                    FilledIconButton(
                         onClick = {
                             val suggestedMillis = LocalDate.now().plusDays(suggestedDays.toLong())
                                 .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
                             onDateChange(suggestedMillis)
                         },
-                        contentPadding = PaddingValues(horizontal = 10.dp, vertical = 6.dp),
-                        modifier = Modifier.padding(start = 8.dp),
+                        modifier = Modifier.size(32.dp).padding(start = 4.dp),
                     ) {
-                        Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(14.dp))
-                        Text(
-                            text = stringResource(R.string.product_detail_expiration_suggest_format, suggestedDays),
-                            style = MaterialTheme.typography.labelMedium,
-                            modifier = Modifier.padding(start = 4.dp),
+                        Icon(
+                            Icons.Filled.AutoAwesome,
+                            contentDescription = stringResource(R.string.product_detail_expiration_suggest_format, suggestedDays),
+                            modifier = Modifier.size(16.dp),
                         )
                     }
                 }

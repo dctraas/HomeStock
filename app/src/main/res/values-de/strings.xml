@@ -334,7 +334,7 @@
     <string name="product_detail_expiration_label">Mindesthaltbarkeitsdatum</string>
     <string name="product_detail_expiration_set">Festlegen</string>
     <string name="product_detail_expiration_clear_cd">Haltbarkeitsdatum löschen</string>
-    <string name="product_detail_expiration_suggest_format">Schätzen (%1$d T)</string>
+    <string name="product_detail_expiration_suggest_format">Schätzung basierend auf Kategorie (%1$d Tage)</string>
     <string name="product_detail_status_label">Status</string>
     <string name="product_detail_status_not_set">Nicht festgelegt</string>
     <string name="product_detail_status_expired">Abgelaufen</string>

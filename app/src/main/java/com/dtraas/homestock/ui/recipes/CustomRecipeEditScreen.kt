@@ -227,15 +227,22 @@ private fun CustomRecipeForm(padding: PaddingValues, uiState: CustomRecipeEditUi
                 )
             }
             uiState.customTags.forEach { label ->
+                // onClick is a no-op — only the trailing X (its own IconButton, below) removes
+                // the label, so tapping the chip's body/text doesn't delete it by surprise.
                 AssistChip(
-                    onClick = { viewModel.onRemoveCustomTag(label) },
+                    onClick = {},
                     label = { Text(label) },
                     trailingIcon = {
-                        Icon(
-                            Icons.Filled.Close,
-                            contentDescription = stringResource(R.string.recipe_tag_remove_custom_cd),
-                            modifier = Modifier.size(16.dp),
-                        )
+                        IconButton(
+                            onClick = { viewModel.onRemoveCustomTag(label) },
+                            modifier = Modifier.size(18.dp),
+                        ) {
+                            Icon(
+                                Icons.Filled.Close,
+                                contentDescription = stringResource(R.string.recipe_tag_remove_custom_cd),
+                                modifier = Modifier.size(14.dp),
+                            )
+                        }
                     },
                 )
             }
