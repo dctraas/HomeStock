@@ -23,6 +23,10 @@ enum class Category(
     GROENTE_FRUIT("groente_fruit", R.string.category_groente_fruit, 1, defaultShelfLifeDays = 5),
     VLEES_VIS("vlees_vis", R.string.category_vlees_vis, 2, defaultShelfLifeDays = 3),
     BROOD_BAKKERIJ("brood_bakkerij", R.string.category_brood_bakkerij, 3, defaultShelfLifeDays = 4),
+    // Displayed as "Kruidenierswaren" ("Dry goods"), not "Voorraadkast" — this is what kind of
+    // product it is (pasta/rijst/conserven/beleg), unrelated to [Location.PANTRY]'s "Voorraadkast"
+    // option for where in the house something's physically stored. storageKey stays "voorraadkast"
+    // (its original, pre-rename value) so already-saved products keep resolving correctly.
     VOORRAADKAST("voorraadkast", R.string.category_voorraadkast, 4, defaultShelfLifeDays = 180),
     DIEPVRIES("diepvries", R.string.category_diepvries, 5, defaultShelfLifeDays = 90),
     DRANKEN("dranken", R.string.category_dranken, 6, defaultShelfLifeDays = 180),
