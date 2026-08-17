@@ -85,6 +85,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
@@ -793,28 +794,37 @@ private fun ShoppingListRow(
     SwipeToDismissBox(
         state = dismissState,
         // .clip(SoftCardShapeCompact) on the box itself (not just its children below) — same
-        // as ShoppingListGridTile/InventoryGridTile already do. Without this, nothing stops
-        // the swipe-to-delete background's errorContainer color (a warm salmon/orange tone,
-        // see Theme.kt's LinenErrorContainer) from rendering past the card's rounded corners
-        // at rest, which is what read as an orange outline around every item — a plain border
-        // drawn on the Card sits on *top* of that, it doesn't stop it from showing at all.
-        // Clipping the whole swipe container to the same rounded rect the Card uses guarantees
-        // nothing can ever render outside those bounds, matching Voorraad's InventoryRow.
+        // as ShoppingListGridTile/InventoryGridTile already do, matching Voorraad's
+        // InventoryRow. The swipe-to-delete background (backgroundContent below) only actually
+        // paints its errorContainer color while a swipe is in progress now, so this clip is
+        // mainly defense-in-depth for that brief window — keeps its square corners from ever
+        // poking out past the rounded card shape while it's visible, on top of it not being
+        // permanently present behind the card any more (see backgroundContent's own comment).
         modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 3.dp).clip(SoftCardShapeCompact),
         enableDismissFromStartToEnd = false,
         backgroundContent = {
+            // Transparent at rest (dismissDirection reports Settled whenever offset == 0f, not
+            // just "not currently dragging") rather than a permanently-present errorContainer —
+            // SwipeToDismissBox always composes backgroundContent regardless of swipe state, so
+            // a resting-state color here was never actually confined to "during an active
+            // swipe" the way it visually reads; it just always sat directly behind the Card,
+            // shadow or no shadow, tinting anything semi-transparent above it (see the Card's
+            // elevation comment below). Only paint it once a swipe is actually happening.
+            val isSettled = dismissState.dismissDirection == SwipeToDismissBoxValue.Settled
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.errorContainer)
+                    .background(if (isSettled) Color.Transparent else MaterialTheme.colorScheme.errorContainer)
                     .padding(horizontal = 20.dp),
                 contentAlignment = Alignment.CenterEnd,
             ) {
-                Icon(
-                    imageVector = Icons.Filled.Delete,
-                    contentDescription = stringResource(R.string.shopping_list_delete_cd),
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                )
+                if (!isSettled) {
+                    Icon(
+                        imageVector = Icons.Filled.Delete,
+                        contentDescription = stringResource(R.string.shopping_list_delete_cd),
+                        tint = MaterialTheme.colorScheme.onErrorContainer,
+                    )
+                }
             }
         },
     ) {
@@ -837,15 +847,12 @@ private fun ShoppingListRow(
                     )
                 },
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-            // Card's own drop shadow is semi-transparent — without disabling it explicitly, it
-            // shows whatever sits directly behind it, which here is this row's swipe-to-delete
-            // backgroundContent (a warm salmon errorContainer, see Theme.kt's
-            // LinenErrorContainer), not the plain screen background. That blend is what read as
-            // an orange-ish glow around every item, even after clipping the background's square
-            // corners away — the clip only stops the background's own shape from poking out, it
-            // does nothing about the shadow tinting from the color directly beneath it.
-            // ShoppingListGridTile never had this because it uses a plain Column + background,
-            // no Card, so no shadow to begin with.
+            // Belt-and-braces alongside backgroundContent now being transparent at rest (see
+            // above): Card's own drop shadow is semi-transparent, so it shows whatever sits
+            // directly behind it — even with nothing painted there any more, still 0dp so
+            // there's nothing for a future change to that background to accidentally tint again.
+            // ShoppingListGridTile never had this class of bug at all — it uses a plain
+            // Column + background, no Card, so no shadow to begin with.
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             shape = SoftCardShapeCompact,
         ) {
@@ -953,12 +960,21 @@ private fun ShoppingListGridTile(
         state = dismissState,
         modifier = Modifier.clip(SoftCardShapeCompact),
         backgroundContent = {
+            // Transparent at rest, same reasoning as the list-view row above — dismissDirection
+            // is Settled whenever offset == 0f, not just "not currently mid-drag", so without
+            // this branch a resting tile always sat on a fully-opaque errorContainer/
+            // primaryContainer background regardless of whether anyone was swiping it.
+            val isSettled = dismissState.dismissDirection == SwipeToDismissBoxValue.Settled
             val isDelete = dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        if (isDelete) MaterialTheme.colorScheme.errorContainer else MaterialTheme.colorScheme.primaryContainer,
+                        when {
+                            isSettled -> Color.Transparent
+                            isDelete -> MaterialTheme.colorScheme.errorContainer
+                            else -> MaterialTheme.colorScheme.primaryContainer
+                        },
                     )
                     .padding(horizontal = 16.dp),
                 contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
@@ -967,19 +983,21 @@ private fun ShoppingListGridTile(
                     Alignment.CenterEnd
                 },
             ) {
-                Icon(
-                    imageVector = when {
-                        isDelete -> Icons.Filled.Delete
-                        item.isChecked -> Icons.Filled.RadioButtonUnchecked
-                        else -> Icons.Filled.CheckCircle
-                    },
-                    contentDescription = null,
-                    tint = if (isDelete) {
-                        MaterialTheme.colorScheme.onErrorContainer
-                    } else {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    },
-                )
+                if (!isSettled) {
+                    Icon(
+                        imageVector = when {
+                            isDelete -> Icons.Filled.Delete
+                            item.isChecked -> Icons.Filled.RadioButtonUnchecked
+                            else -> Icons.Filled.CheckCircle
+                        },
+                        contentDescription = null,
+                        tint = if (isDelete) {
+                            MaterialTheme.colorScheme.onErrorContainer
+                        } else {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        },
+                    )
+                }
             }
         },
     ) {
