@@ -182,10 +182,12 @@ class ReceiptScanViewModel(
                     barcode = syntheticBarcode
                 }
                 // The receipt's price is a line total, not per-unit — divide it back down so
-                // ProductEntity.lastPrice always reflects "price per unit", matching how the
-                // product is priced everywhere else in the app.
+                // it reflects "price per unit", matching how the product is priced everywhere
+                // else in the app. No store attached: the receipt scanner doesn't currently
+                // read off which store a receipt is from, unlike a shopping list item's own
+                // price (see ShoppingListRepository.setChecked), which does.
                 item.price?.let { totalPrice ->
-                    productRepository.updateLastPrice(barcode, totalPrice / item.quantity.coerceAtLeast(1))
+                    productRepository.addPricePoint(barcode, totalPrice / item.quantity.coerceAtLeast(1), store = null)
                 }
             }
             _step.value = ReceiptScanStep.Done

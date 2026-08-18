@@ -32,6 +32,17 @@ data class ShoppingListItemEntity(
     val sortOrder: Double = -addedAt.toDouble(),
     // Storage key of the MeasurementUnit quantity is expressed in (stuks/gram/kg/ml/L).
     val unit: String = MeasurementUnit.STUKS.storageKey,
+    // Per-unit price the household expects/paid for this line — optional, entered by hand (see
+    // ItemFormDialog); shown per row and summed into ShoppingListScreen's running total. The
+    // moment this item is checked off with both a price and a barcode set, it becomes a
+    // [PricePoint] on the matching product (see ShoppingListRepository.setChecked) — the same
+    // history a receipt scan feeds, so either path builds one continuous price record.
+    val price: Double? = null,
+    // Which named list (see ShoppingListsRepository) this item belongs to — null means the
+    // default, unnamed list every household starts with. Every item ever written before this
+    // field existed simply has it absent from Firestore, which reads back as null here too, so
+    // it's automatically "on the default list" with no migration needed.
+    val listId: String? = null,
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
         "barcode" to barcode,
@@ -45,6 +56,8 @@ data class ShoppingListItemEntity(
         "note" to note,
         "sortOrder" to sortOrder,
         "unit" to unit,
+        "price" to price,
+        "listId" to listId,
     )
 
     companion object {
@@ -79,6 +92,8 @@ data class ShoppingListItemEntity(
                 note = document.getString("note")?.takeIf { it.isNotBlank() },
                 sortOrder = document.getDouble("sortOrder") ?: -addedAt.toDouble(),
                 unit = document.getString("unit") ?: MeasurementUnit.STUKS.storageKey,
+                price = document.getDouble("price"),
+                listId = document.getString("listId"),
             )
         }
     }

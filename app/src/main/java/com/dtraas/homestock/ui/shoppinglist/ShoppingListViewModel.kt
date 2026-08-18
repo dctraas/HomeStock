@@ -5,15 +5,20 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.entity.ShoppingListItemEntity
+import com.dtraas.homestock.data.local.entity.ShoppingListMeta
 import com.dtraas.homestock.data.local.entity.StoreEntity
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.MeasurementUnit
 import com.dtraas.homestock.data.repository.ShoppingListRepository
+import com.dtraas.homestock.data.repository.ShoppingListsRepository
 import com.dtraas.homestock.data.repository.StoreRepository
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -26,9 +31,17 @@ enum class ShoppingListSortMode(@StringRes val labelRes: Int) {
     AISLE(R.string.shopping_list_sort_aisle),
 }
 
+/**
+ * [defaultListName] is resolved once from a string resource by the caller (ShoppingListScreen) —
+ * a ViewModel can't call `stringResource` itself — and used as the synthesized default list's
+ * display name (see [ShoppingListMeta]'s doc for why the default list is never a real document).
+ */
+@OptIn(ExperimentalCoroutinesApi::class)
 class ShoppingListViewModel(
     private val shoppingListRepository: ShoppingListRepository,
     private val storeRepository: StoreRepository,
+    private val shoppingListsRepository: ShoppingListsRepository,
+    defaultListName: String,
 ) : ViewModel() {
 
     private val searchQuery = MutableStateFlow("")
@@ -40,11 +53,31 @@ class ShoppingListViewModel(
     val stores: StateFlow<List<StoreEntity>> =
         storeRepository.observeStores().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    private val defaultListMeta = ShoppingListMeta(id = null, name = defaultListName, sortOrder = -1.0)
+
+    /** The default list first, always — even in a brand-new household with no custom lists
+     *  yet — followed by every named list the household created (see [ShoppingListsRepository]). */
+    val lists: StateFlow<List<ShoppingListMeta>> =
+        shoppingListsRepository.observeLists()
+            .map { custom -> listOf(defaultListMeta) + custom }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), listOf(defaultListMeta))
+
+    // In-memory only (not persisted) — resets to the default list on a cold start, same as most
+    // list apps opening back to their primary list. Deliberately device-local: which list a
+    // household member happens to be looking at right now isn't shared state the way the lists
+    // and their items are.
+    private val activeListId = MutableStateFlow<String?>(null)
+
+    val activeList: StateFlow<ShoppingListMeta> =
+        combine(lists, activeListId) { allLists, activeId ->
+            allLists.firstOrNull { it.id == activeId } ?: defaultListMeta
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), defaultListMeta)
+
     // Grouped and ordered by each store's sortOrder (custom store list), with any store
     // name no longer in that list falling after the known ones and "no store" always last.
     val groupedByStore: StateFlow<Map<String, List<ShoppingListItemEntity>>> =
         combine(
-            shoppingListRepository.observeShoppingList(),
+            activeListId.flatMapLatest { listId -> shoppingListRepository.observeItemsForList(listId) },
             searchQuery,
             storeRepository.observeStores(),
             sortMode,
@@ -78,12 +111,49 @@ class ShoppingListViewModel(
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
+    /** Sum of price × quantity across every item on the active list that has a price set
+     *  (checked or not) — null (rather than 0.0) when nothing on the list has a price yet, so
+     *  ShoppingListScreen can hide the total entirely instead of showing a misleading €0,00. */
+    val totalPrice: StateFlow<Double?> =
+        groupedByStore.map { grouped ->
+            val priced = grouped.values.flatten().mapNotNull { item -> item.price?.let { it * item.quantity } }
+            priced.takeIf { it.isNotEmpty() }?.sum()
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     fun onSearchQueryChange(query: String) {
         searchQuery.value = query
     }
 
     fun onSortModeChange(mode: ShoppingListSortMode) {
         sortMode.value = mode
+    }
+
+    fun selectList(listId: String?) {
+        activeListId.value = listId
+    }
+
+    /** [onCreated] switches straight to the new list — called from ShoppingListScreen right
+     *  after the "nieuwe lijst" dialog is confirmed, so creating a list also opens it. */
+    fun createList(name: String, onCreated: () -> Unit = {}) {
+        if (name.isBlank()) return
+        viewModelScope.launch {
+            shoppingListsRepository.createList(name).onSuccess { id ->
+                activeListId.value = id
+                onCreated()
+            }
+        }
+    }
+
+    fun renameList(id: String, name: String) {
+        viewModelScope.launch { shoppingListsRepository.renameList(id, name) }
+    }
+
+    /** Falls back to the default list if the deleted one was active — there's nothing left to show otherwise. */
+    fun deleteList(id: String) {
+        viewModelScope.launch {
+            shoppingListsRepository.deleteList(id)
+            if (activeListId.value == id) activeListId.value = null
+        }
     }
 
     fun addItem(
@@ -93,10 +163,14 @@ class ShoppingListViewModel(
         quantity: Int,
         note: String? = null,
         unit: MeasurementUnit = MeasurementUnit.STUKS,
+        price: Double? = null,
     ) {
         if (name.isBlank()) return
         viewModelScope.launch {
-            shoppingListRepository.addItem(name, category, store, quantity, note = note, unit = unit)
+            shoppingListRepository.addItem(
+                name, category, store, quantity,
+                note = note, unit = unit, price = price, listId = activeListId.value,
+            )
         }
     }
 
@@ -123,6 +197,10 @@ class ShoppingListViewModel(
 
     fun setStore(id: String, store: String) {
         viewModelScope.launch { shoppingListRepository.setStore(id, store) }
+    }
+
+    fun setPrice(id: String, price: Double?) {
+        viewModelScope.launch { shoppingListRepository.setPrice(id, price) }
     }
 
     fun moveItem(item: ShoppingListItemEntity, previous: ShoppingListItemEntity?, next: ShoppingListItemEntity?) {

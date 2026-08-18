@@ -24,11 +24,17 @@ data class ProductEntity(
     // Free-text "where in the house" (e.g. "Kelder", "Vriezer", "Voorraadkast") — purely a
     // household-personalized label, same as brand/unit; null means not set, shown nowhere.
     val location: String? = null,
-    // Per-unit price the household last actually paid, auto-filled from a receipt scan
-    // (ReceiptScanViewModel.confirmAndSave) — deliberately read-only and display-only, no
-    // manual edit UI, since a full price-tracking feature was explicitly removed earlier
-    // (see "Verwijder Prijs registreren functionaliteit"). Null means never set from a receipt.
+    // Per-unit price the household last actually paid — always [priceHistory]'s first entry's
+    // price once there is one, kept as its own field purely so every existing display site can
+    // keep reading a plain Double? instead of unwrapping the list. Populated from a checked-off
+    // shopping list item's own price (ShoppingListRepository.setChecked) or a receipt scan
+    // (ReceiptScanViewModel.confirmAndSave) — both go through ProductRepository.addPricePoint,
+    // which is what keeps this and [priceHistory] in sync. Null means never priced yet.
     val lastPrice: Double? = null,
+    // Newest-first, capped at ProductRepository.MAX_PRICE_HISTORY entries — see [PricePoint].
+    // Powers ProductDetailScreen's price-history list, including comparing what different
+    // stores charged for the same product.
+    val priceHistory: List<PricePoint> = emptyList(),
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
         "name" to name,
@@ -44,6 +50,7 @@ data class ProductEntity(
         "dietLabels" to dietLabels,
         "location" to location,
         "lastPrice" to lastPrice,
+        "priceHistory" to priceHistory.map { it.toMap() },
     )
 
     companion object {
@@ -55,6 +62,9 @@ data class ProductEntity(
             val allergens = document.get("allergens") as? List<String> ?: emptyList()
             @Suppress("UNCHECKED_CAST")
             val dietLabels = document.get("dietLabels") as? List<String> ?: emptyList()
+            @Suppress("UNCHECKED_CAST")
+            val priceHistory = (document.get("priceHistory") as? List<Map<*, *>>)
+                ?.mapNotNull { PricePoint.fromMap(it) } ?: emptyList()
             return ProductEntity(
                 barcode = document.id,
                 name = name,
@@ -70,6 +80,7 @@ data class ProductEntity(
                 dietLabels = dietLabels,
                 location = document.getString("location"),
                 lastPrice = document.getDouble("lastPrice"),
+                priceHistory = priceHistory,
             )
         }
     }

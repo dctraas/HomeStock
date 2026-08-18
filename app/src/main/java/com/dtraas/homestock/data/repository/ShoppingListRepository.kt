@@ -19,6 +19,7 @@ class ShoppingListRepository(
     private val context: Context,
     private val firestore: FirebaseFirestore,
     private val householdSession: HouseholdSession,
+    private val productRepository: ProductRepository,
 ) {
     private fun shoppingListCollection(householdId: String) =
         firestore.collection("households").document(householdId).collection("shoppingList")
@@ -41,6 +42,19 @@ class ShoppingListRepository(
             }
         }
 
+    /**
+     * [observeShoppingList] filtered to one list — [listId] null means the default (unnamed)
+     * list. Client-side filtering rather than a Firestore `.whereEqualTo("listId", listId)`
+     * query deliberately: every item written before lists existed has no `listId` field at all
+     * (rather than an explicit null), and Firestore's equality operator only matches an
+     * explicit null, never a genuinely absent field — a query-level filter would silently
+     * exclude every pre-existing item from the default list. Reusing the same underlying
+     * listener this way also means switching lists in the UI is instant, no new Firestore
+     * round-trip.
+     */
+    fun observeItemsForList(listId: String?): Flow<List<ShoppingListItemEntity>> =
+        observeShoppingList().map { items -> items.filter { it.listId == listId } }
+
     /** One-shot (non-listening) fetch of unchecked items, for surfaces like the home screen widget that can't hold a live Firestore listener open. */
     suspend fun getUncheckedItemsOnce(): List<ShoppingListItemEntity> {
         val householdId = householdSession.householdId.value ?: return emptyList()
@@ -59,6 +73,12 @@ class ShoppingListRepository(
         imageUrl: String? = null,
         note: String? = null,
         unit: MeasurementUnit = MeasurementUnit.STUKS,
+        price: Double? = null,
+        // null = the default (unnamed) list — see [ShoppingListItemEntity.listId]. Every
+        // existing caller (recipe/meal-planner/notification/widget quick-adds, ScanResultScreen,
+        // ProductDetailScreen) omits this and keeps landing on the default list unchanged;
+        // only ShoppingListScreen's own add-item flow ever passes a real one.
+        listId: String? = null,
     ) {
         val householdId = householdSession.householdId.value ?: return
         val entity = ShoppingListItemEntity(
@@ -73,6 +93,8 @@ class ShoppingListRepository(
             addedAt = System.currentTimeMillis(),
             note = note?.trim()?.takeIf { it.isNotEmpty() },
             unit = unit.storageKey,
+            price = price,
+            listId = listId,
         )
         shoppingListCollection(householdId).add(entity.toMap()).await()
         refreshWidget()
@@ -103,9 +125,33 @@ class ShoppingListRepository(
         refreshWidget()
     }
 
+    /**
+     * Checking an item off with both a [ShoppingListItemEntity.price] and a [ShoppingListItemEntity.barcode]
+     * set records that price on the matching product (see [ProductRepository.addPricePoint]) —
+     * the same price history a receipt scan feeds, so "typed it in myself" and "scanned the
+     * receipt" build one continuous record either way. Requires the extra read below (this
+     * previously updated the `isChecked` field alone, blind to the rest of the document) only
+     * when actually checking something *on*; unchecking stays the same single write it always was.
+     */
     suspend fun setChecked(id: String, checked: Boolean) {
         val householdId = householdSession.householdId.value ?: return
-        shoppingListCollection(householdId).document(id).update("isChecked", checked).await()
+        val itemRef = shoppingListCollection(householdId).document(id)
+        if (checked) {
+            val item = ShoppingListItemEntity.fromDocument(itemRef.get().await())
+            val price = item?.price
+            val barcode = item?.barcode
+            if (price != null && barcode != null) {
+                productRepository.addPricePoint(barcode, price, item.store)
+            }
+        }
+        itemRef.update("isChecked", checked).await()
+        refreshWidget()
+    }
+
+    /** Sets (or clears, with `null`) this item's own per-unit price — see [ShoppingListItemEntity.price]. */
+    suspend fun setPrice(id: String, price: Double?) {
+        val householdId = householdSession.householdId.value ?: return
+        shoppingListCollection(householdId).document(id).update("price", price).await()
         refreshWidget()
     }
 

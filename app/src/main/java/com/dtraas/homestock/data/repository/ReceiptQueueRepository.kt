@@ -113,7 +113,7 @@ class ReceiptQueueRepository(
                 barcode = syntheticBarcode
             }
             item.price?.let { totalPrice ->
-                productRepository.updateLastPrice(barcode, totalPrice / item.quantity.coerceAtLeast(1))
+                productRepository.addPricePoint(barcode, totalPrice / item.quantity.coerceAtLeast(1), store = null)
             }
             saved++
         }

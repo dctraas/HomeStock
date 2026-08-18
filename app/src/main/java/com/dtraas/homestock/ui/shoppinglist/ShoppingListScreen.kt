@@ -10,6 +10,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,14 +31,17 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.DoneAll
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
@@ -90,6 +94,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -101,6 +106,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.entity.ShoppingListItemEntity
+import com.dtraas.homestock.data.local.entity.ShoppingListMeta
 import com.dtraas.homestock.data.local.entity.StoreEntity
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.MeasurementUnit
@@ -113,11 +119,16 @@ import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.components.StoreDropdown
 import com.dtraas.homestock.ui.components.formatQuantityWithUnit
 import com.dtraas.homestock.ui.components.icon
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
 import kotlinx.coroutines.launch
+import java.util.Locale
 import kotlin.math.roundToInt
+
+/** €-formatted per-unit price, e.g. "€1,89" — same shape as ProductDetailScreen's own price display. */
+private fun formatPrice(value: Double): String = String.format(Locale.getDefault(), "€%.2f", value)
 
 private enum class ShoppingListViewMode { LIST, GRID }
 
@@ -154,10 +165,16 @@ private fun buildShoppingListShareText(
 fun ShoppingListScreen() {
     val context = LocalContext.current
     val application = context.applicationContext as HomeStockApplication
+    val defaultListName = stringResource(R.string.shopping_list_title)
     val viewModel: ShoppingListViewModel = viewModel(
         factory = viewModelFactory {
             initializer {
-                ShoppingListViewModel(application.container.shoppingListRepository, application.container.storeRepository)
+                ShoppingListViewModel(
+                    application.container.shoppingListRepository,
+                    application.container.storeRepository,
+                    application.container.shoppingListsRepository,
+                    defaultListName,
+                )
             }
         },
     )
@@ -165,6 +182,9 @@ fun ShoppingListScreen() {
     val stores by viewModel.stores.collectAsState()
     val searchQuery by viewModel.searchQueryState.collectAsState()
     val sortMode by viewModel.sortModeState.collectAsState()
+    val lists by viewModel.lists.collectAsState()
+    val activeList by viewModel.activeList.collectAsState()
+    val totalPrice by viewModel.totalPrice.collectAsState()
     val hasCheckedItems = groupedByStore.values.flatten().any { it.isChecked }
     val hasUncheckedItems = groupedByStore.values.flatten().any { !it.isChecked }
     var viewMode by remember { mutableStateOf(ShoppingListViewMode.LIST) }
@@ -172,6 +192,10 @@ fun ShoppingListScreen() {
 
     var showAddDialog by remember { mutableStateOf(false) }
     var editingItem by remember { mutableStateOf<ShoppingListItemEntity?>(null) }
+    var showListMenu by remember { mutableStateOf(false) }
+    var showCreateListDialog by remember { mutableStateOf(false) }
+    var listToRename by remember { mutableStateOf<ShoppingListMeta?>(null) }
+    var listToDelete by remember { mutableStateOf<ShoppingListMeta?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val removedFormat = stringResource(R.string.shopping_list_removed_format)
@@ -222,7 +246,43 @@ fun ShoppingListScreen() {
 
     Scaffold(
         topBar = {
-            HomeStockTopAppBar(title = { Text(stringResource(R.string.shopping_list_title)) })
+            HomeStockTopAppBar(
+                title = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.clickable { showListMenu = true },
+                        ) {
+                            Text(
+                                text = activeList.name,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                            Icon(
+                                Icons.Filled.ArrowDropDown,
+                                contentDescription = stringResource(R.string.shopping_list_switch_list_cd),
+                            )
+                        }
+                        if (totalPrice != null) {
+                            Text(
+                                text = stringResource(R.string.shopping_list_total_format, formatPrice(totalPrice!!)),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = LocalTopAppBarContentColor.current.copy(alpha = 0.8f),
+                            )
+                        }
+                        ShoppingListSwitcherMenu(
+                            expanded = showListMenu,
+                            lists = lists,
+                            activeListId = activeList.id,
+                            onDismiss = { showListMenu = false },
+                            onSelect = { viewModel.selectList(it) },
+                            onCreateNew = { showCreateListDialog = true },
+                            onRename = { listToRename = it },
+                            onDelete = { listToDelete = it },
+                        )
+                    }
+                },
+            )
         },
         floatingActionButton = {
             FloatingActionButton(onClick = { showAddDialog = true }) {
@@ -425,8 +485,8 @@ fun ShoppingListScreen() {
                 onAddStore = viewModel::addStore,
                 onDismiss = { showAddDialog = false },
                 onVoiceInputUnavailable = onVoiceInputUnavailable,
-                onConfirm = { name, category, store, quantity, note, unit ->
-                    viewModel.addItem(name, category, store, quantity, note.trim().ifBlank { null }, unit)
+                onConfirm = { name, category, store, quantity, note, unit, price ->
+                    viewModel.addItem(name, category, store, quantity, note.trim().ifBlank { null }, unit, price)
                     showAddDialog = false
                 },
             )
@@ -442,12 +502,13 @@ fun ShoppingListScreen() {
                 initialQuantity = item.quantity,
                 initialNote = item.note ?: "",
                 initialUnit = MeasurementUnit.fromStorageKey(item.unit),
+                initialPrice = item.price,
                 imageUrl = item.imageUrl,
                 stores = stores,
                 onAddStore = viewModel::addStore,
                 onDismiss = { editingItem = null },
                 onVoiceInputUnavailable = onVoiceInputUnavailable,
-                onConfirm = { name, category, store, quantity, note, unit ->
+                onConfirm = { name, category, store, quantity, note, unit, price ->
                     viewModel.updateItem(
                         item.copy(
                             name = name,
@@ -456,9 +517,54 @@ fun ShoppingListScreen() {
                             quantity = quantity,
                             note = note.trim().ifBlank { null },
                             unit = unit.storageKey,
+                            price = price,
                         )
                     )
                     editingItem = null
+                },
+            )
+        }
+
+        if (showCreateListDialog) {
+            ListNameDialog(
+                title = stringResource(R.string.shopping_list_new_list_title),
+                confirmLabel = stringResource(R.string.shopping_list_new_list_confirm),
+                onDismiss = { showCreateListDialog = false },
+                onConfirm = { name ->
+                    viewModel.createList(name)
+                    showCreateListDialog = false
+                },
+            )
+        }
+
+        listToRename?.let { list ->
+            ListNameDialog(
+                title = stringResource(R.string.shopping_list_rename_list_title),
+                confirmLabel = stringResource(R.string.common_save),
+                initialName = list.name,
+                onDismiss = { listToRename = null },
+                onConfirm = { name ->
+                    list.id?.let { viewModel.renameList(it, name) }
+                    listToRename = null
+                },
+            )
+        }
+
+        listToDelete?.let { list ->
+            AlertDialog(
+                onDismissRequest = { listToDelete = null },
+                title = { Text(stringResource(R.string.shopping_list_delete_list_title)) },
+                text = { Text(stringResource(R.string.shopping_list_delete_list_text_format, list.name)) },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            list.id?.let(viewModel::deleteList)
+                            listToDelete = null
+                        },
+                    ) { Text(stringResource(R.string.shopping_list_delete_list_confirm), color = MaterialTheme.colorScheme.error) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { listToDelete = null }) { Text(stringResource(R.string.common_cancel)) }
                 },
             )
         }
@@ -895,7 +1001,7 @@ private fun ShoppingListRow(
                         overflow = TextOverflow.Ellipsis,
                     )
                     Text(
-                        text = listOfNotNull(stringResource(category.displayNameRes), item.note).joinToString(" · "),
+                        text = listOfNotNull(stringResource(category.displayNameRes), item.note, item.price?.let(::formatPrice)).joinToString(" · "),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -1026,7 +1132,7 @@ private fun ShoppingListGridTile(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                val subtitle = listOfNotNull(stringResource(category.displayNameRes), item.note).joinToString(" · ")
+                val subtitle = listOfNotNull(stringResource(category.displayNameRes), item.note, item.price?.let(::formatPrice)).joinToString(" · ")
                 if (subtitle.isNotEmpty()) {
                     Text(
                         text = subtitle,
@@ -1121,6 +1227,7 @@ private fun ItemFormDialog(
     initialQuantity: Int = 1,
     initialNote: String = "",
     initialUnit: MeasurementUnit = MeasurementUnit.STUKS,
+    initialPrice: Double? = null,
     imageUrl: String? = null,
     stores: List<StoreEntity>,
     onAddStore: (String) -> Unit,
@@ -1133,6 +1240,7 @@ private fun ItemFormDialog(
         quantity: Int,
         note: String,
         unit: MeasurementUnit,
+        price: Double?,
     ) -> Unit,
 ) {
     var name by remember { mutableStateOf(initialName) }
@@ -1141,6 +1249,10 @@ private fun ItemFormDialog(
     var quantity by remember { mutableIntStateOf(initialQuantity) }
     var note by remember { mutableStateOf(initialNote) }
     var unit by remember { mutableStateOf(initialUnit) }
+    // Plain text rather than a parsed Double while typing — same reasoning as any other free-text
+    // numeric field in this app, lets the household type "1," mid-entry without it snapping back.
+    // Accepts both "1.89" and "1,89": whichever decimal separator this locale's keyboard produces.
+    var priceText by remember { mutableStateOf(initialPrice?.let { formatPrice(it).removePrefix("€") } ?: "") }
 
     // Pre-fills the name field with the transcription — never auto-submits, same reasoning as
     // the AI product-recognition camera: speech recognition can mishear, so the household still
@@ -1234,12 +1346,25 @@ private fun ItemFormDialog(
                         placeholder = { Text(stringResource(R.string.shopping_list_note_placeholder)) },
                         modifier = Modifier.fillMaxWidth(),
                     )
+                    OutlinedTextField(
+                        value = priceText,
+                        onValueChange = { priceText = it },
+                        label = { Text(stringResource(R.string.shopping_list_price_label)) },
+                        placeholder = { Text(stringResource(R.string.shopping_list_price_placeholder)) },
+                        leadingIcon = { Text("€", style = MaterialTheme.typography.bodyLarge) },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
         },
         confirmButton = {
             TextButton(
-                onClick = { onConfirm(name, category, store, quantity, note, unit) },
+                onClick = {
+                    val price = priceText.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it >= 0 }
+                    onConfirm(name, category, store, quantity, note, unit, price)
+                },
                 enabled = name.isNotBlank(),
             ) {
                 Text(confirmLabel)
@@ -1258,6 +1383,111 @@ private fun ItemFormAvatar(imageUrl: String?, category: Category) {
         fallbackIcon = category.icon,
         shape = RoundedCornerShape(24.dp),
         modifier = Modifier.size(88.dp),
+    )
+}
+
+/**
+ * The list-switcher dropdown, anchored to the title in the top app bar — every list the
+ * household has (default first, see [ShoppingListViewModel.lists]), a checkmark on the active
+ * one, and "+ Nieuwe lijst" at the bottom. The default list has no rename/delete menu (it isn't
+ * a document [com.dtraas.homestock.data.repository.ShoppingListsRepository] manages, see
+ * [ShoppingListMeta]'s doc) — only named lists get the "…" overflow.
+ */
+@Composable
+private fun ShoppingListSwitcherMenu(
+    expanded: Boolean,
+    lists: List<ShoppingListMeta>,
+    activeListId: String?,
+    onDismiss: () -> Unit,
+    onSelect: (String?) -> Unit,
+    onCreateNew: () -> Unit,
+    onRename: (ShoppingListMeta) -> Unit,
+    onDelete: (ShoppingListMeta) -> Unit,
+) {
+    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
+        lists.forEach { list ->
+            DropdownMenuItem(
+                text = { Text(list.name) },
+                leadingIcon = {
+                    if (list.id == activeListId) Icon(Icons.Filled.Check, contentDescription = null)
+                },
+                trailingIcon = if (list.id != null) {
+                    {
+                        var itemMenuExpanded by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(onClick = { itemMenuExpanded = true }, modifier = Modifier.size(24.dp)) {
+                                Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.shopping_list_list_options_cd))
+                            }
+                            DropdownMenu(expanded = itemMenuExpanded, onDismissRequest = { itemMenuExpanded = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.shopping_list_rename_list_action)) },
+                                    leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                                    onClick = {
+                                        itemMenuExpanded = false
+                                        onDismiss()
+                                        onRename(list)
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.shopping_list_delete_list_action)) },
+                                    leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
+                                    onClick = {
+                                        itemMenuExpanded = false
+                                        onDismiss()
+                                        onDelete(list)
+                                    },
+                                )
+                            }
+                        }
+                    }
+                } else {
+                    null
+                },
+                onClick = {
+                    onSelect(list.id)
+                    onDismiss()
+                },
+            )
+        }
+        DropdownMenuItem(
+            text = { Text(stringResource(R.string.shopping_list_new_list_action)) },
+            leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
+            onClick = {
+                onDismiss()
+                onCreateNew()
+            },
+        )
+    }
+}
+
+/** Shared by "nieuwe lijst" and "lijst hernoemen" — same single-field form either way. */
+@Composable
+private fun ListNameDialog(
+    title: String,
+    confirmLabel: String,
+    initialName: String = "",
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var name by remember { mutableStateOf(initialName) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text(stringResource(R.string.common_name)) },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(name) }, enabled = name.isNotBlank()) { Text(confirmLabel) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+        },
     )
 }
 

@@ -103,6 +103,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
@@ -885,10 +886,11 @@ private fun ProductDetailsCard(
                 onSelected = onLocationChange,
                 modifier = Modifier.fillMaxWidth(),
             )
-            // Read-only, auto-filled from a receipt scan only — deliberately not an editable
-            // field, unlike everything else in this card. A full manual price-tracking UI was
-            // explicitly removed earlier ("Verwijder Prijs registreren functionaliteit"); this
-            // is just a small side effect of Bonnetje scannen, not a return of that feature.
+            // Read-only, like every field in this section — a price only ever gets here two
+            // ways: checking off a priced shopping list item (ShoppingListRepository.setChecked)
+            // or a receipt scan, both via ProductRepository.addPricePoint. [product.priceHistory]
+            // below is the same data, newest-first, with per-store context where known — lets a
+            // household compare what different stores charged the last few times they bought this.
             product.lastPrice?.let { lastPrice ->
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -904,6 +906,34 @@ private fun ProductDetailsCard(
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
+                }
+            }
+            if (product.priceHistory.size > 1) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.fillMaxWidth()) {
+                    Text(
+                        text = stringResource(R.string.product_detail_price_history_title),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    // The first entry is already shown above as "Laatste prijs" — this is the
+                    // rest of the trend, oldest of the kept window last.
+                    product.priceHistory.drop(1).forEach { point ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(
+                                text = listOfNotNull(formatPriceDate(point.date), point.store).joinToString(" · "),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                text = formatPrice(point.price),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
             }
             // Note is a field on the inventory entry, not the catalog product — nothing to
@@ -1076,6 +1106,14 @@ private fun formatGrams(value: Double): String = String.format(Locale.getDefault
 
 private fun formatExpirationDate(millis: Long): String {
     val date = Instant.ofEpochMilli(millis).atZone(ZoneOffset.UTC).toLocalDate()
+    return DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault()).format(date)
+}
+
+/** Unlike [formatExpirationDate], [millis] here is a real moment in time (when a price point
+ *  was recorded), not a date-only value encoded at UTC midnight — so this converts using the
+ *  device's actual timezone rather than UTC. */
+private fun formatPriceDate(millis: Long): String {
+    val date = Instant.ofEpochMilli(millis).atZone(ZoneId.systemDefault()).toLocalDate()
     return DateTimeFormatter.ofPattern("d MMM yyyy", Locale.getDefault()).format(date)
 }
 

@@ -2,6 +2,7 @@ package com.dtraas.homestock.data.repository
 
 import android.net.Uri
 import com.dtraas.homestock.data.local.entity.NutritionInfo
+import com.dtraas.homestock.data.local.entity.PricePoint
 import com.dtraas.homestock.data.local.entity.ProductEntity
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.model.Category
@@ -243,10 +244,34 @@ class ProductRepository(
         productsCollection(householdId).document(barcode).update("location", location).await()
     }
 
-    /** Sets the per-unit "last paid" price — see [ProductEntity.lastPrice] for why this has no manual edit UI. */
-    suspend fun updateLastPrice(barcode: String, lastPrice: Double?) {
+    /**
+     * Records a new [PricePoint] for [barcode] — prepended (newest-first) onto
+     * [ProductEntity.priceHistory], capped at [MAX_PRICE_HISTORY], and mirrored onto
+     * [ProductEntity.lastPrice] for the cheap common case of "just show the latest price".
+     * Called from both places a price actually gets observed: a checked-off shopping list
+     * item's own price ([ShoppingListRepository.setChecked]) and a receipt scan
+     * (`ReceiptScanViewModel.confirmAndSave`) — see [PricePoint]'s doc for why funneling both
+     * through here matters. A no-op if [barcode] has no product document yet (e.g. a synthetic
+     * receipt-only barcode whose `saveManualProduct` write hasn't landed): reads it fresh rather
+     * than trusting a possibly-stale cached copy, since this only ever fires right after a
+     * price becomes known and correctness here matters more than saving one read.
+     */
+    suspend fun addPricePoint(barcode: String, price: Double, store: String?) {
         val householdId = householdSession.householdId.value ?: return
-        productsCollection(householdId).document(barcode).update("lastPrice", lastPrice).await()
+        val doc = productsCollection(householdId).document(barcode)
+        val existing = doc.get().await()
+        if (!existing.exists()) return
+        val currentHistory = (existing.get("priceHistory") as? List<Map<*, *>>)
+            ?.mapNotNull { PricePoint.fromMap(it) }
+            ?: emptyList()
+        val updatedHistory = (listOf(PricePoint(price = price, store = store?.takeIf { it.isNotBlank() }, date = System.currentTimeMillis())) + currentHistory)
+            .take(MAX_PRICE_HISTORY)
+        doc.update(
+            mapOf(
+                "lastPrice" to price,
+                "priceHistory" to updatedHistory.map { it.toMap() },
+            ),
+        ).await()
     }
 
     /**
@@ -354,6 +379,10 @@ class ProductRepository(
         // household's recurring weekly staples, short enough that a genuinely renamed/discontinued
         // product doesn't stay wrong for too long.
         private const val SEARCH_CACHE_TTL_MILLIS = 14L * 24 * 60 * 60 * 1000 // 14 days
+
+        // Enough to show a meaningful trend/store comparison (see [PricePoint]) without a
+        // household's frequently-bought staples growing an unbounded Firestore array.
+        const val MAX_PRICE_HISTORY = 20
     }
 }
 

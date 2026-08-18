@@ -25,6 +25,7 @@ import com.dtraas.homestock.data.repository.ReceiptRecognitionRepository
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RemoteConfigRepository
 import com.dtraas.homestock.data.repository.ShoppingListRepository
+import com.dtraas.homestock.data.repository.ShoppingListsRepository
 import com.dtraas.homestock.data.repository.StatisticsRepository
 import com.dtraas.homestock.data.repository.StoreRepository
 import com.dtraas.homestock.data.repository.ThemePreferences
@@ -165,11 +166,15 @@ class AppContainer(context: Context) {
     }
 
     val shoppingListRepository: ShoppingListRepository by lazy {
-        ShoppingListRepository(appContext, firestore, householdSession)
+        ShoppingListRepository(appContext, firestore, householdSession, productRepository)
     }
 
     val storeRepository: StoreRepository by lazy {
         StoreRepository(firestore, householdSession)
+    }
+
+    val shoppingListsRepository: ShoppingListsRepository by lazy {
+        ShoppingListsRepository(firestore, householdSession)
     }
 
     val inventoryRepository: InventoryRepository by lazy {
