@@ -52,25 +52,11 @@ class AnalyticsRepository(context: Context) {
         )
     }
 
-    /** The one-time "Onbeperkt huisgenoten" add-on (see [HouseholdMembersRepository]) was
-     *  purchased — tracked separately from the main Premium purchase events since it's sold
-     *  to already-Premium households, a distinct upsell funnel. */
-    fun logUnlimitedMembersAddonPurchased() {
-        analytics.logEvent("unlimited_members_addon_purchased", null)
-    }
-
     /** A join attempt was refused by the free-tier 2-member cap (see
-     *  [HouseholdMembersRepository.FREE_MEMBER_LIMIT]) — the household isn't Premium at all. */
+     *  [HouseholdMembersRepository.FREE_MEMBER_LIMIT]) — the clearest possible signal that
+     *  this household needs the Premium upsell (Premium lifts the cap entirely). */
     fun logHouseholdJoinBlockedFreeLimit() {
         analytics.logEvent("household_join_blocked_free_limit", null)
-    }
-
-    /** A join attempt was refused by the Premium household cap (see
-     *  [HouseholdMembersRepository.PREMIUM_MEMBER_LIMIT]) — the household is already Premium
-     *  but hasn't bought the unlimited-members add-on. The clearest possible signal that this
-     *  add-on's upsell is actually being shown to a household that needs it. */
-    fun logHouseholdJoinBlockedPremiumCap() {
-        analytics.logEvent("household_join_blocked_premium_cap", null)
     }
 
     /** "Eerdere aankoop herstellen" was tapped on the Premium screen. */

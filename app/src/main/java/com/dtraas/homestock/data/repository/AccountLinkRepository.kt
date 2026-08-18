@@ -4,10 +4,16 @@ import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.functions.FirebaseFunctions
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
+
+/** One household [AccountLinkRepository.findMyHouseholds] found for the signed-in uid — see
+ *  that function's doc. [name] falls back to [id] server-side if the household document is
+ *  somehow missing a name, so this is never blank. */
+data class RecoverableHousehold(val id: String, val name: String)
 
 /**
  * Upgrades the app's anonymous Firebase Auth session (see [HouseholdRepository.ensureSignedIn])
@@ -17,9 +23,16 @@ import kotlinx.coroutines.tasks.await
  *
  * Without linking, uninstalling the app or switching devices loses access to whichever
  * household this device was signed into: an anonymous session has nothing else identifying
- * it, and there's no "forgot password"-style recovery for it.
+ * it, and there's no "forgot password"-style recovery for it — [switchToExistingGoogleAccount]
+ * and [findMyHouseholds] together *are* that recovery path, for the one case where recovery is
+ * actually still possible (the Google account itself was linked before, on some other now-lost
+ * session).
  */
-class AccountLinkRepository(context: Context, private val auth: FirebaseAuth) {
+class AccountLinkRepository(
+    context: Context,
+    private val auth: FirebaseAuth,
+    private val functions: FirebaseFunctions,
+) {
 
     private val prefs = context.applicationContext.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
 
@@ -72,6 +85,49 @@ class AccountLinkRepository(context: Context, private val auth: FirebaseAuth) {
         val credential = GoogleAuthProvider.getCredential(idToken, null)
         user.linkWithCredential(credential).await()
         Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    /**
+     * The other side of a [linkWithGoogleIdToken] collision: instead of refusing, this signs
+     * the device *into* whichever existing account [idToken]'s Google credential already
+     * belongs to — swapping this session's uid outright (Firebase's `signInWithCredential`,
+     * not `linkWithCredential`). Follow with [findMyHouseholds] to show which household(s) that
+     * account can now rejoin (see that function's doc for why a plain Firestore query can't do
+     * this from the client).
+     *
+     * This *replaces* the current session. Anything this device created/joined under its
+     * previous anonymous uid is untouched in Firestore, but this device stops being signed in
+     * as that uid — it won't reappear in a switcher or a future [findMyHouseholds] call unless
+     * separately rejoined by code. Callers must make that consequence explicit to the user
+     * *before* calling this (see AccountLinkScreen's collision dialog) — there is no undo.
+     */
+    suspend fun switchToExistingGoogleAccount(idToken: String): Result<Unit> = try {
+        val credential = GoogleAuthProvider.getCredential(idToken, null)
+        auth.signInWithCredential(credential).await()
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    /**
+     * Every household the *currently signed-in* uid already belongs to, via the
+     * `findMyHouseholds` Cloud Function — meant to be called right after
+     * [switchToExistingGoogleAccount] succeeds, to offer the old household(s) this device can
+     * now rejoin (HouseholdSession.setHousehold + rememberHousehold, same as the existing
+     * "wisselen van huishouden" switcher uses).
+     */
+    suspend fun findMyHouseholds(): Result<List<RecoverableHousehold>> = try {
+        val result = functions.getHttpsCallable("findMyHouseholds").call().await()
+        val response = result.getData() as? Map<*, *>
+        @Suppress("UNCHECKED_CAST")
+        val rawHouseholds = response?.get("households") as? List<Map<*, *>> ?: emptyList()
+        val households = rawHouseholds.mapNotNull { entry ->
+            val id = entry["id"] as? String ?: return@mapNotNull null
+            RecoverableHousehold(id, name = entry["name"] as? String ?: id)
+        }
+        Result.success(households)
     } catch (e: Exception) {
         Result.failure(e)
     }

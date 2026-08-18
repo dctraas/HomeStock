@@ -1,12 +1,14 @@
 package com.dtraas.homestock.data.repository
 
 import android.net.Uri
+import com.android.billingclient.api.Purchase
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.remote.observeSnapshots
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.storage.FirebaseStorage
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -34,22 +36,18 @@ data class HouseholdMember(
     val excludedAllergens: Set<Allergen> = emptySet(),
 )
 
-/** What [HouseholdMembersRepository.canJoin] decided, and why — the "why" is what lets
- *  HouseholdViewModel show a different message (and, for the Premium case, a different
- *  upsell) for "this household isn't Premium yet" versus "this household is Premium but has
- *  hit its member cap and hasn't bought the unlimited-members add-on". */
-enum class HouseholdJoinResult { ALLOWED, BLOCKED_FREE_LIMIT, BLOCKED_PREMIUM_CAP }
+/** What [HouseholdMembersRepository.canJoin] decided — Premium lifts the member cap entirely
+ *  (see [HouseholdCapacityInfo]), so the only way a join can be blocked at all now is the
+ *  free-tier cap. */
+enum class HouseholdJoinResult { ALLOWED, BLOCKED_FREE_LIMIT }
 
 /** Instellingen > Huishouden's view of how full the household is, and why — [limit] is `null`
- *  when there effectively is no cap (the unlimited-members add-on is owned); otherwise it's
- *  whichever cap currently applies ([HouseholdMembersRepository.FREE_MEMBER_LIMIT] or the
- *  Premium cap from [RemoteConfigRepository.premiumMemberCap]), so the UI can show "X / Y
- *  leden" and, once premium and close to or at that cap, nudge toward the add-on. */
+ *  once the household is Premium (that tier has no member cap at all); otherwise it's
+ *  [HouseholdMembersRepository.FREE_MEMBER_LIMIT], so the UI can show "X / Y leden". */
 data class HouseholdCapacityInfo(
     val memberCount: Int,
     val limit: Int?,
     val isPremium: Boolean,
-    val hasUnlimitedMembers: Boolean,
 ) {
     val isAtOrNearLimit: Boolean get() = limit != null && memberCount >= limit - 1
 }
@@ -57,16 +55,14 @@ data class HouseholdCapacityInfo(
 /**
  * Tracks which distinct devices belong to a household, at `households/{id}/members/{uid}`
  * (keyed by this device's Firebase Anonymous Auth uid — the only stable per-device
- * identifier the app has; see [HouseholdRepository.ensureSignedIn]). Backs four things: the
- * free-tier cap of [FREE_MEMBER_LIMIT] people per household; the higher Premium cap (from
- * [RemoteConfigRepository.premiumMemberCap]) once any member has an active subscription or
- * owns the lifetime purchase; the fact that a household that's bought the one-time
- * "Onbeperkt huisgenoten" add-on has no cap at all; and the household members list
- * (Instellingen > Huishouden), so housemates can see who else is linked.
+ * identifier the app has; see [HouseholdRepository.ensureSignedIn]). Backs three things: the
+ * free-tier cap of [FREE_MEMBER_LIMIT] people per household; the fact that Premium lifts that
+ * cap entirely, no separate cap tier or add-on purchase involved (see [PremiumPlan]'s doc for
+ * why); and the household members list (Instellingen > Huishouden), so housemates can see who
+ * else is linked.
  *
- * Both the subscription/lifetime Premium unlock and the unlimited-members add-on are
- * household-wide — if any member has either, every device in that household gets it, not
- * just the one that paid.
+ * The Premium unlock is household-wide — if any member has an active subscription, every
+ * device in that household gets it, not just the one that paid.
  *
  * [DeviceProfile]'s name/photo are otherwise purely local; syncing them here (name as plain
  * text, photo uploaded to Firebase Storage — a device's own photo file isn't reachable by
@@ -80,8 +76,8 @@ class HouseholdMembersRepository(
     private val auth: FirebaseAuth,
     private val billingRepository: BillingRepository,
     private val deviceProfile: DeviceProfile,
-    private val remoteConfigRepository: RemoteConfigRepository,
     private val analyticsRepository: AnalyticsRepository,
+    private val functions: FirebaseFunctions,
 ) {
     private val repositoryScope = CoroutineScope(Dispatchers.IO)
 
@@ -100,10 +96,11 @@ class HouseholdMembersRepository(
             .onEach { (householdId, isPremium) -> if (householdId != null) syncPremiumStatus(householdId, isPremium) }
             .launchIn(repositoryScope)
 
-        // Same idea, for the "Onbeperkt huisgenoten" add-on — lets every device in the
-        // household see the cap lifted as soon as anyone buys it, not just the buyer.
-        combine(householdSession.householdId, billingRepository.hasUnlimitedMembersAddon) { householdId, hasAddon -> householdId to hasAddon }
-            .onEach { (householdId, hasAddon) -> if (householdId != null) syncUnlimitedMembersStatus(householdId, hasAddon) }
+        // Best-effort server-side confirmation of each active purchase, via the
+        // `verifyPurchase` Cloud Function — see [BillingRepository.activePurchases]' doc for
+        // why this exists alongside (not instead of, for now) the client-derived write above.
+        combine(householdSession.householdId, billingRepository.activePurchases) { householdId, purchases -> householdId to purchases }
+            .onEach { (householdId, purchases) -> if (householdId != null) verifyPurchases(householdId, purchases) }
             .launchIn(repositoryScope)
 
         // Keeps this device's own member doc's displayName in sync with DeviceProfile —
@@ -132,40 +129,19 @@ class HouseholdMembersRepository(
             }
         }
 
-    /** True if any device in the household owns the "Onbeperkt huisgenoten" add-on. */
-    fun observeHouseholdHasUnlimitedMembers(): Flow<Boolean> =
-        householdSession.householdId.flatMapLatest { householdId ->
-            if (householdId == null) {
-                flowOf(false)
-            } else {
-                membersCollection(householdId).observeSnapshots().map { snapshot ->
-                    snapshot.documents.any { it.getBoolean("hasUnlimitedMembers") == true }
-                }
-            }
-        }
-
     /** See [HouseholdCapacityInfo] — everything Instellingen > Huishouden needs to show the
-     *  current member cap and, once relevant, nudge toward the unlimited-members add-on. */
+     *  current member cap (or that there isn't one, once Premium). */
     fun observeCapacityInfo(): Flow<HouseholdCapacityInfo> =
         householdSession.householdId.flatMapLatest { householdId ->
             if (householdId == null) {
-                flowOf(HouseholdCapacityInfo(memberCount = 0, limit = FREE_MEMBER_LIMIT, isPremium = false, hasUnlimitedMembers = false))
+                flowOf(HouseholdCapacityInfo(memberCount = 0, limit = FREE_MEMBER_LIMIT, isPremium = false))
             } else {
-                combine(
-                    membersCollection(householdId).observeSnapshots(),
-                    remoteConfigRepository.premiumMemberCap,
-                ) { snapshot, premiumCap ->
+                membersCollection(householdId).observeSnapshots().map { snapshot ->
                     val isPremium = snapshot.documents.any { it.getBoolean("isPremium") == true }
-                    val hasUnlimitedMembers = snapshot.documents.any { it.getBoolean("hasUnlimitedMembers") == true }
                     HouseholdCapacityInfo(
                         memberCount = snapshot.size(),
-                        limit = when {
-                            hasUnlimitedMembers -> null
-                            isPremium -> premiumCap.toInt()
-                            else -> FREE_MEMBER_LIMIT
-                        },
+                        limit = if (isPremium) null else FREE_MEMBER_LIMIT,
                         isPremium = isPremium,
-                        hasUnlimitedMembers = hasUnlimitedMembers,
                     )
                 }
             }
@@ -201,33 +177,23 @@ class HouseholdMembersRepository(
 
     /**
      * Whether this device may join [householdId]: always [HouseholdJoinResult.ALLOWED] if it's
-     * already a member (e.g. reinstalling the app) or the household is under whichever cap
-     * currently applies to it — see [HouseholdCapacityInfo]. Otherwise [BLOCKED_FREE_LIMIT] (not
-     * Premium at all yet) or [BLOCKED_PREMIUM_CAP] (Premium, but at its member cap without the
-     * unlimited-members add-on) — also logs the matching analytics event, since a join blocked
-     * by the Premium cap is the clearest possible "show this household the add-on" signal.
+     * already a member (e.g. reinstalling the app), the household is under [FREE_MEMBER_LIMIT],
+     * or the household is Premium (no cap at all — see [HouseholdCapacityInfo]). Otherwise
+     * [HouseholdJoinResult.BLOCKED_FREE_LIMIT] — also logs the matching analytics event, since
+     * a blocked join is the clearest possible "show this household the Premium upsell" signal.
      */
     suspend fun canJoin(householdId: String): HouseholdJoinResult {
         val uid = auth.currentUser?.uid ?: return HouseholdJoinResult.BLOCKED_FREE_LIMIT
         val snapshot = membersCollection(householdId).get().await()
         if (snapshot.documents.any { it.id == uid }) return HouseholdJoinResult.ALLOWED
 
-        val memberCount = snapshot.size()
-        if (memberCount < FREE_MEMBER_LIMIT) return HouseholdJoinResult.ALLOWED
-
         val isHouseholdPremium = snapshot.documents.any { it.getBoolean("isPremium") == true }
-        if (!isHouseholdPremium) {
-            analyticsRepository.logHouseholdJoinBlockedFreeLimit()
-            return HouseholdJoinResult.BLOCKED_FREE_LIMIT
-        }
+        if (isHouseholdPremium) return HouseholdJoinResult.ALLOWED
 
-        val hasUnlimitedMembers = snapshot.documents.any { it.getBoolean("hasUnlimitedMembers") == true }
-        if (hasUnlimitedMembers) return HouseholdJoinResult.ALLOWED
+        if (snapshot.size() < FREE_MEMBER_LIMIT) return HouseholdJoinResult.ALLOWED
 
-        if (memberCount < remoteConfigRepository.premiumMemberCap.value) return HouseholdJoinResult.ALLOWED
-
-        analyticsRepository.logHouseholdJoinBlockedPremiumCap()
-        return HouseholdJoinResult.BLOCKED_PREMIUM_CAP
+        analyticsRepository.logHouseholdJoinBlockedFreeLimit()
+        return HouseholdJoinResult.BLOCKED_FREE_LIMIT
     }
 
     /**
@@ -244,7 +210,6 @@ class HouseholdMembersRepository(
                 mapOf(
                     "joinedAt" to System.currentTimeMillis(),
                     "isPremium" to billingRepository.isPremium.value,
-                    "hasUnlimitedMembers" to billingRepository.hasUnlimitedMembersAddon.value,
                     "displayName" to deviceProfile.displayName.value,
                 ),
             )
@@ -312,9 +277,26 @@ class HouseholdMembersRepository(
         membersCollection(householdId).document(uid).set(mapOf("isPremium" to isPremium), SetOptions.merge()).await()
     }
 
-    private suspend fun syncUnlimitedMembersStatus(householdId: String, hasAddon: Boolean) {
-        val uid = auth.currentUser?.uid ?: return
-        membersCollection(householdId).document(uid).set(mapOf("hasUnlimitedMembers" to hasAddon), SetOptions.merge()).await()
+    /** Asks the `verifyPurchase` Cloud Function to confirm each of [purchases] directly with
+     *  Google and, on success, overwrite this uid's member doc with the verified result — see
+     *  [BillingRepository.activePurchases]' doc for the full rationale. Best-effort: any
+     *  failure (offline, or the Play Console access `verifyPurchase` needs not being granted
+     *  yet — see its doc in functions/src/index.ts) is silently swallowed, leaving
+     *  [syncPremiumStatus]'s client-derived write as the only source for [isPremium] until it
+     *  succeeds, exactly as it always has been. */
+    private suspend fun verifyPurchases(householdId: String, purchases: List<Purchase>) {
+        for (purchase in purchases) {
+            val productId = purchase.products.firstOrNull() ?: continue
+            if (productId != BillingRepository.PREMIUM_MONTHLY_PRODUCT_ID && productId != BillingRepository.PREMIUM_YEARLY_PRODUCT_ID) continue
+            runCatching {
+                val requestData = hashMapOf(
+                    "householdId" to householdId,
+                    "productId" to productId,
+                    "purchaseToken" to purchase.purchaseToken,
+                )
+                functions.getHttpsCallable("verifyPurchase").call(requestData).await()
+            }
+        }
     }
 
     private suspend fun syncDisplayName(householdId: String, name: String?) {

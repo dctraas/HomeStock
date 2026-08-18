@@ -114,7 +114,6 @@
     <string name="household_generic_error">Something went wrong. Please try again.</string>
     <string name="household_join_code_length_hint">A household code is %1$d characters</string>
     <string name="household_join_full_error">This household already has 2 members on the free plan. Ask someone in the household to go Premium, or to leave to make room for you.</string>
-    <string name="household_join_premium_cap_error">This household has reached its maximum number of Premium members. Ask a housemate to buy \'Unlimited housemates\' via Settings &gt; Household.</string>
     <string name="household_create_back_warning_title">Code not saved yet?</string>
     <string name="household_create_back_warning_text">Make sure you\'ve copied the household code before going back — you won\'t be able to find it again afterwards.</string>
     <string name="household_create_back_warning_confirm">Go back anyway</string>
@@ -164,9 +163,6 @@
     </plurals>
     <string name="more_household_members_title">Members</string>
     <string name="household_members_title_with_limit_format">Members (%1$d/%2$d)</string>
-    <string name="household_unlimited_members_nudge_title">Almost full</string>
-    <string name="household_unlimited_members_nudge_subtitle">Buy \'Unlimited housemates\' to add more people to this household.</string>
-    <string name="household_unlimited_members_nudge_action">Buy unlimited housemates</string>
     <string name="more_household_member_unnamed">Unnamed member</string>
     <string name="more_household_member_you">You</string>
     <string name="household_allergens_menu_cd">My allergens and dietary preferences</string>
@@ -203,7 +199,17 @@
     <string name="account_link_google_button">Continue with Google</string>
     <string name="account_link_linked_title">Account linked</string>
     <string name="account_link_linked_subtitle_format">Linked with %1$s. Your access to this household is preserved, even after a reinstall.</string>
-    <string name="account_link_error_collision">This Google account is already linked to a different household. Choose another account, or use that account to join with the household code instead.</string>
+    <string name="account_link_error_collision">This Google account is already linked to a different household.</string>
+    <string name="account_link_recover_button">Switch to that account</string>
+    <string name="account_link_recover_dialog_title">Switch to existing account?</string>
+    <string name="account_link_recover_dialog_text">This device will switch to the account already linked to this Google account. Anything you created on this device since reinstalling (like a new household) stays intact, but this device loses access to it — you can rejoin later with its household code.</string>
+    <string name="account_link_recover_confirm">Switch</string>
+    <string name="account_link_recover_error">Switching failed. Please try again.</string>
+    <string name="account_link_recover_none_found">You switched accounts, but no household was found for this account.</string>
+    <string name="account_link_recover_picker_title">Which household do you want to reopen?</string>
+    <string name="account_link_recover_picker_text">This account is linked to the household below. Choose it to reconnect this device.</string>
+    <string name="account_link_recover_retry">Try again</string>
+    <string name="account_link_recover_switching">Switching…</string>
     <string name="account_link_error_generic">Couldn\'t link your account. Please try again.</string>
     <string name="account_link_prompt_title">Link your account</string>
     <string name="account_link_prompt_message">Prevent losing access to this household if you uninstall the app or switch devices. It only takes a couple of taps, and you can also do this later via More.</string>
@@ -712,15 +718,11 @@
     <string name="premium_price_per_month_format">%1$s per month</string>
     <string name="premium_plan_monthly">Monthly</string>
     <string name="premium_plan_yearly">Yearly</string>
-    <string name="premium_plan_lifetime">One-time (lifetime)</string>
     <string name="premium_plan_trial_badge_format">First %1$d days free</string>
     <string name="premium_plan_savings_badge_format">Save %1$d%%</string>
-    <string name="premium_plan_lifetime_badge">No subscription</string>
     <string name="premium_subscribe_button">Subscribe</string>
     <string name="premium_subscribe_trial_button">Start free trial (%1$d days)</string>
-    <string name="premium_buy_lifetime_button">Buy once</string>
     <string name="premium_terms_notice">Renews automatically. Cancel any time via Google Play.</string>
-    <string name="premium_terms_notice_lifetime">One-time payment. No subscription, no automatic renewal.</string>
     <string name="premium_restore_action">Restore a previous purchase</string>
     <string name="premium_restore_done">Purchases checked</string>
 </resources>

@@ -1,8 +1,10 @@
 package com.dtraas.homestock.ui.account
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,6 +14,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -44,6 +47,7 @@ import androidx.credentials.exceptions.GetCredentialException
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.BuildConfig
 import com.dtraas.homestock.R
+import com.dtraas.homestock.data.repository.RecoverableHousehold
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
@@ -78,6 +82,7 @@ fun AccountLinkScreen(onBack: () -> Unit) {
     val context = LocalContext.current
     val application = context.applicationContext as HomeStockApplication
     val accountLinkRepository = application.container.accountLinkRepository
+    val householdSession = application.container.householdSession
     val isLinked by accountLinkRepository.observeIsLinked().collectAsState(initial = accountLinkRepository.linkedEmail != null)
     val coroutineScope = rememberCoroutineScope()
 
@@ -88,6 +93,17 @@ fun AccountLinkScreen(onBack: () -> Unit) {
     val collisionErrorMessage = stringResource(R.string.account_link_error_collision)
     val genericErrorMessage = stringResource(R.string.account_link_error_generic)
     val unlinkErrorMessage = stringResource(R.string.account_link_unlink_error)
+    val recoverErrorMessage = stringResource(R.string.account_link_recover_error)
+    val recoverNoneFoundMessage = stringResource(R.string.account_link_recover_none_found)
+
+    // See AccountLinkRepository.switchToExistingGoogleAccount's doc — captured from the
+    // collision so "Overstappen naar dat account" can retry linking with the exact same
+    // credential the user just picked, instead of asking them to sign in with Google twice.
+    var collidingIdToken by remember { mutableStateOf<String?>(null) }
+    var showRecoverConfirm by remember { mutableStateOf(false) }
+    var isRecovering by remember { mutableStateOf(false) }
+    var recoverableHouseholds by remember { mutableStateOf<List<RecoverableHousehold>?>(null) }
+    var isSwitchedAwaitingHouseholds by remember { mutableStateOf(false) }
 
     fun unlinkAccount() {
         isUnlinking = true
@@ -102,6 +118,7 @@ fun AccountLinkScreen(onBack: () -> Unit) {
 
     fun startGoogleSignIn() {
         errorMessage = null
+        collidingIdToken = null
         isLinking = true
         coroutineScope.launch {
             try {
@@ -115,6 +132,7 @@ fun AccountLinkScreen(onBack: () -> Unit) {
                 accountLinkRepository.linkWithGoogleIdToken(googleIdTokenCredential.idToken).onFailure { e ->
                     val friendly = if (e is FirebaseAuthUserCollisionException) collisionErrorMessage else genericErrorMessage
                     errorMessage = friendly.withDebugDetail(e)
+                    if (e is FirebaseAuthUserCollisionException) collidingIdToken = googleIdTokenCredential.idToken
                 }
             } catch (e: GetCredentialCancellationException) {
                 // The user backed out of the account picker — a deliberate choice, not a
@@ -125,6 +143,63 @@ fun AccountLinkScreen(onBack: () -> Unit) {
                 isLinking = false
             }
         }
+    }
+
+    // See AccountLinkRepository.switchToExistingGoogleAccount/findMyHouseholds' docs — the
+    // account-recovery path for exactly the collision above: switch this session to the
+    // account the Google credential already belongs to, then look up which household(s) it's
+    // a member of so the user can pick one to reopen on this device.
+    fun switchToExistingAccount() {
+        val idToken = collidingIdToken ?: return
+        isRecovering = true
+        errorMessage = null
+        coroutineScope.launch {
+            accountLinkRepository.switchToExistingGoogleAccount(idToken)
+                .onSuccess {
+                    isSwitchedAwaitingHouseholds = true
+                    accountLinkRepository.findMyHouseholds()
+                        .onSuccess { households ->
+                            if (households.isEmpty()) {
+                                errorMessage = recoverNoneFoundMessage
+                            } else {
+                                recoverableHouseholds = households
+                            }
+                        }
+                        .onFailure { e -> errorMessage = recoverErrorMessage.withDebugDetail(e) }
+                }
+                .onFailure { e -> errorMessage = recoverErrorMessage.withDebugDetail(e) }
+            isRecovering = false
+        }
+    }
+
+    fun retryFindHouseholds() {
+        isRecovering = true
+        errorMessage = null
+        coroutineScope.launch {
+            accountLinkRepository.findMyHouseholds()
+                .onSuccess { households ->
+                    if (households.isEmpty()) {
+                        errorMessage = recoverNoneFoundMessage
+                    } else {
+                        recoverableHouseholds = households
+                    }
+                }
+                .onFailure { e -> errorMessage = recoverErrorMessage.withDebugDetail(e) }
+            isRecovering = false
+        }
+    }
+
+    fun selectRecoveredHousehold(household: RecoverableHousehold) {
+        // Deliberately doesn't call HouseholdMembersRepository.registerCurrentDevice: this uid
+        // is already a member of [household] (that's how findMyHouseholds found it in the
+        // first place), and that call fully overwrites the member doc rather than merging,
+        // which would wipe fields like isPremium/photoUrl/excludedAllergens that aren't in its
+        // write. Flipping the session's householdId is enough — HouseholdMembersRepository's
+        // reactive syncPremiumStatus/syncDisplayName/syncCurrentDevicePhoto observers (all
+        // merge writes) pick it up and keep it current from here.
+        householdSession.rememberHousehold(household.id, household.name)
+        householdSession.setHousehold(household.id)
+        onBack()
     }
 
     Scaffold(
@@ -162,7 +237,10 @@ fun AccountLinkScreen(onBack: () -> Unit) {
                 UnlinkedState(
                     isLinking = isLinking,
                     errorMessage = errorMessage,
+                    canRecover = collidingIdToken != null && !isSwitchedAwaitingHouseholds,
+                    isRecovering = isRecovering,
                     onSignInClick = ::startGoogleSignIn,
+                    onRecoverClick = { showRecoverConfirm = true },
                 )
             }
         }
@@ -186,10 +264,107 @@ fun AccountLinkScreen(onBack: () -> Unit) {
             },
         )
     }
+
+    if (showRecoverConfirm) {
+        AlertDialog(
+            onDismissRequest = { if (!isRecovering) showRecoverConfirm = false },
+            title = { Text(stringResource(R.string.account_link_recover_dialog_title)) },
+            text = { Text(stringResource(R.string.account_link_recover_dialog_text)) },
+            confirmButton = {
+                TextButton(
+                    enabled = !isRecovering,
+                    onClick = {
+                        showRecoverConfirm = false
+                        switchToExistingAccount()
+                    },
+                ) { Text(stringResource(R.string.account_link_recover_confirm)) }
+            },
+            dismissButton = {
+                TextButton(enabled = !isRecovering, onClick = { showRecoverConfirm = false }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
+        )
+    }
+
+    recoverableHouseholds?.let { households ->
+        AlertDialog(
+            onDismissRequest = {},
+            title = { Text(stringResource(R.string.account_link_recover_picker_title)) },
+            text = {
+                Column {
+                    Text(
+                        text = stringResource(R.string.account_link_recover_picker_text),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 12.dp),
+                    )
+                    households.forEach { household ->
+                        RecoverableHouseholdRow(household = household, onClick = { selectRecoveredHousehold(household) })
+                    }
+                }
+            },
+            confirmButton = {},
+        )
+    }
+
+    // Switched accounts but findMyHouseholds came back empty or failed and the user hasn't
+    // dismissed the error yet — offers a retry rather than stranding them mid-flow, since the
+    // account switch itself already succeeded at this point.
+    if (isSwitchedAwaitingHouseholds && recoverableHouseholds == null && errorMessage != null) {
+        AlertDialog(
+            onDismissRequest = { errorMessage = null; isSwitchedAwaitingHouseholds = false },
+            title = { Text(stringResource(R.string.account_link_recover_dialog_title)) },
+            text = { Text(errorMessage.orEmpty()) },
+            confirmButton = {
+                TextButton(enabled = !isRecovering, onClick = ::retryFindHouseholds) {
+                    if (isRecovering) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text(stringResource(R.string.account_link_recover_retry))
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { errorMessage = null; isSwitchedAwaitingHouseholds = false },
+                ) { Text(stringResource(R.string.common_cancel)) }
+            },
+        )
+    }
 }
 
 @Composable
-private fun UnlinkedState(isLinking: Boolean, errorMessage: String?, onSignInClick: () -> Unit) {
+private fun RecoverableHouseholdRow(household: RecoverableHousehold, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = Icons.Filled.Home,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(vertical = 12.dp),
+        )
+        Text(
+            text = household.name,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.padding(start = 12.dp),
+        )
+    }
+}
+
+@Composable
+private fun UnlinkedState(
+    isLinking: Boolean,
+    errorMessage: String?,
+    canRecover: Boolean,
+    isRecovering: Boolean,
+    onSignInClick: () -> Unit,
+    onRecoverClick: () -> Unit,
+) {
     Surface(
         shape = SoftBadgeShape,
         color = MaterialTheme.colorScheme.primaryContainer,
@@ -233,6 +408,19 @@ private fun UnlinkedState(isLinking: Boolean, errorMessage: String?, onSignInCli
             )
         } else {
             Text(stringResource(R.string.account_link_google_button))
+        }
+    }
+    if (canRecover) {
+        TextButton(
+            onClick = onRecoverClick,
+            enabled = !isRecovering,
+            modifier = Modifier.padding(top = 4.dp),
+        ) {
+            if (isRecovering) {
+                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+            } else {
+                Text(stringResource(R.string.account_link_recover_button))
+            }
         }
     }
 }

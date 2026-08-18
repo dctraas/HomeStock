@@ -60,6 +60,19 @@ All functions deploy to `europe-west1` (see `setGlobalOptions` in `src/index.ts`
 your Firestore is in a different region; keeping Functions and Firestore in the same region
 avoids cross-region latency on every call).
 
+## Unit tests
+
+```sh
+cd functions
+npm test
+```
+
+Runs the pure, I/O-free helpers exported from `src/index.ts` (receipt price parsing, the
+`analyzedInstructions` fallback that fixed the missing-instructions bug, cache-key building,
+etc. — see `src/index.test.ts`) via [Vitest](https://vitest.dev). The `onCall` handlers
+themselves aren't covered here — they talk to Firestore/Anthropic/Spoonacular, so exercising
+them for real means the emulator below, not a unit test.
+
 ## Local testing (emulator)
 
 ```sh

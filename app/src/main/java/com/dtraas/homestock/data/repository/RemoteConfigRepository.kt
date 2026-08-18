@@ -24,11 +24,6 @@ class RemoteConfigRepository(context: Context) {
     private val repositoryScope = CoroutineScope(Dispatchers.IO)
     private val remoteConfig = FirebaseRemoteConfig.getInstance()
 
-    private val _premiumMemberCap = MutableStateFlow(DEFAULT_PREMIUM_MEMBER_CAP)
-    /** Max household members a Premium household gets *without* the "Onbeperkt huisgenoten"
-     *  add-on (see [HouseholdMembersRepository.PREMIUM_MEMBER_LIMIT]). */
-    val premiumMemberCap: StateFlow<Long> = _premiumMemberCap
-
     private val _trialDays = MutableStateFlow(DEFAULT_TRIAL_DAYS)
     /** Free-trial length shown in the Premium screen's copy. The actual trial is configured
      *  as a Play Console subscription offer (see [BillingRepository]); this only drives what
@@ -55,7 +50,6 @@ class RemoteConfigRepository(context: Context) {
             runCatching {
                 remoteConfig.setDefaultsAsync(
                     mapOf(
-                        KEY_PREMIUM_MEMBER_CAP to DEFAULT_PREMIUM_MEMBER_CAP,
                         KEY_TRIAL_DAYS to DEFAULT_TRIAL_DAYS,
                         KEY_MONTHLY_PLAN_ENABLED to true,
                     ),
@@ -65,18 +59,15 @@ class RemoteConfigRepository(context: Context) {
             // Read back regardless of whether the fetch above actually succeeded — the
             // defaults just set are already in effect either way, so this never leaves the
             // StateFlows at their pre-init placeholder values.
-            _premiumMemberCap.value = remoteConfig.getLong(KEY_PREMIUM_MEMBER_CAP).takeIf { it > 0 } ?: DEFAULT_PREMIUM_MEMBER_CAP
             _trialDays.value = remoteConfig.getLong(KEY_TRIAL_DAYS).takeIf { it > 0 } ?: DEFAULT_TRIAL_DAYS
             _monthlyPlanEnabled.value = remoteConfig.getBoolean(KEY_MONTHLY_PLAN_ENABLED)
         }
     }
 
     companion object {
-        private const val KEY_PREMIUM_MEMBER_CAP = "premium_member_cap"
         private const val KEY_TRIAL_DAYS = "trial_days"
         private const val KEY_MONTHLY_PLAN_ENABLED = "monthly_plan_enabled"
 
-        const val DEFAULT_PREMIUM_MEMBER_CAP = 10L
         const val DEFAULT_TRIAL_DAYS = 7L
     }
 }

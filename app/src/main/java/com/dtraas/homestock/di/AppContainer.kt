@@ -87,7 +87,7 @@ class AppContainer(context: Context) {
     }
 
     val accountLinkRepository: AccountLinkRepository by lazy {
-        AccountLinkRepository(appContext, auth)
+        AccountLinkRepository(appContext, auth, functions)
     }
 
     val billingRepository: BillingRepository by lazy {
@@ -96,8 +96,7 @@ class AppContainer(context: Context) {
 
     val householdMembersRepository: HouseholdMembersRepository by lazy {
         HouseholdMembersRepository(
-            firestore, storage, householdSession, auth, billingRepository, deviceProfile,
-            remoteConfigRepository, analyticsRepository,
+            firestore, storage, householdSession, auth, billingRepository, deviceProfile, analyticsRepository, functions,
         )
     }
 

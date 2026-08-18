@@ -89,6 +89,11 @@ dependencies {
     // the Premium household member cap. Same trust model as the rest of this app's household
     // logic: a soft business limit read client-side, not a hard security boundary.
     implementation(libs.firebase.config.ktx)
+    // See HomeStockApplication.installAppCheck's doc — both providers are plain (not
+    // debug-only) implementation deps so the same source compiles for every build type;
+    // installAppCheck itself picks the right one at runtime via BuildConfig.DEBUG.
+    implementation(libs.firebase.appcheck.playintegrity)
+    implementation(libs.firebase.appcheck.debug)
     implementation(libs.kotlinx.coroutines.play.services)
     // Firestore pulls in gRPC, which drags in a plain (non-Android) Guava that can win
     // Gradle's version conflict resolution over CameraX's own Guava/ListenableFuture
@@ -119,4 +124,11 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+
+    // Local (JVM, no device/emulator) unit tests — see app/src/test. Kept deliberately plain:
+    // no mocking framework yet, so tests only cover logic that's already free of Android
+    // framework/Firebase/Play Billing dependencies (data class getters, pure business rules).
+    // A mocking library (e.g. MockK) would be the natural next addition once repository logic
+    // needs covering too.
+    testImplementation(libs.junit)
 }

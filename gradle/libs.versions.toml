@@ -22,6 +22,7 @@ appcompat = "1.7.0"
 billing = "7.1.1"
 credentials = "1.3.0"
 googleid = "1.1.1"
+junit = "4.13.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -64,6 +65,10 @@ firebase-storage-ktx = { group = "com.google.firebase", name = "firebase-storage
 firebase-functions-ktx = { group = "com.google.firebase", name = "firebase-functions-ktx" }
 firebase-analytics-ktx = { group = "com.google.firebase", name = "firebase-analytics-ktx" }
 firebase-config-ktx = { group = "com.google.firebase", name = "firebase-config-ktx" }
+# App Check — see HomeStockApplication.installAppCheck's doc and README.md for what this does
+# and doesn't protect, and why enforcement is a deliberately separate, manual Console step.
+firebase-appcheck-playintegrity = { group = "com.google.firebase", name = "firebase-appcheck-playintegrity" }
+firebase-appcheck-debug = { group = "com.google.firebase", name = "firebase-appcheck-debug" }
 guava = { group = "com.google.guava", name = "guava", version.ref = "guava" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workManager" }
 
@@ -76,6 +81,8 @@ billing-ktx = { group = "com.android.billingclient", name = "billing-ktx", versi
 androidx-credentials = { group = "androidx.credentials", name = "credentials", version.ref = "credentials" }
 androidx-credentials-play-services-auth = { group = "androidx.credentials", name = "credentials-play-services-auth", version.ref = "credentials" }
 googleid = { group = "com.google.android.libraries.identity.googleid", name = "googleid", version.ref = "googleid" }
+
+junit = { group = "junit", name = "junit", version.ref = "junit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

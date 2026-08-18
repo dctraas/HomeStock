@@ -74,6 +74,54 @@ aanmaken, dat moet je zelf doen (gratis):
 
 Zonder deze stappen start de app niet (of kan geen huishouden aanmaken/koppelen).
 
+## Toegangsmodel: wat de huishouden-code beschermt, en wat (nog) niet
+
+De huishouden-code is bewust de enige toegangscontrole (zie `firestore.rules`'s eigen
+class-doc) — passend bij een lichte gezins-/huisgenotenapp, niet bedoeld als harde
+beveiligingsgrens. Concreet betekent dat: wie de code kent (of raadt — 6 tekens uit een
+33-teken alfabet, dus ~1,3 miljard mogelijkheden, zonder rate limiting) heeft volledige
+lees/schrijftoegang tot dat huishouden. Prima voor het beoogde gebruik; iets om bewust van te
+blijven als de app ooit gevoeligere data zou gaan bevatten.
+
+**App Check is nu aan de clientkant aangesloten** (zie `HomeStockApplication.installAppCheck`)
+— elke Firestore/Auth/Functions-aanroep draagt vanaf nu een token mee dat bewijst dat de
+aanroep echt van deze eigen, ongewijzigde app komt (Play Integrity in release, een
+debug-token in debug builds), in plaats van een gescript verzoek dat de huishouden-code gewoon
+raadt of een Cloud Function-aanroep met de hand in elkaar zet. Dit token wordt op dit moment
+nog **niet afgedwongen** — Firebase negeert het gewoon totdat je het zelf inschakelt, dus deze
+stap alleen verandert nog niets aan wat werkt. Om het echt te laten gelden:
+
+1. Firebase Console → App Check → registreer de Android-app met de Play Integrity-provider
+   (en voor debug builds: voeg het debug-token toe dat bij de eerste opstart in Logcat
+   verschijnt, via "Manage debug tokens").
+2. Laat het een tijdje in de metrics-weergave meelopen (Firebase Console → App Check laat
+   geverifieerd-vs-ongeverifieerd verkeer zien) om te controleren dat legitieme app-aanroepen
+   ook echt als geverifieerd binnenkomen, vóórdat je afdwinging aanzet.
+3. Pas dan: zet afdwinging aan per product (Firestore, en optioneel `enforceAppCheck: true`
+   toevoegen aan de `onCall`-opties in `functions/src/index.ts` voor de Cloud Functions).
+
+Net als bij de `verifyPurchase`-stappen hierboven: bewust in losse, controleerbare stappen in
+plaats van in één keer afdwingen, want afdwingen vóórdat elk legitiem toestel (inclusief je
+eigen testtoestellen) een geldig token krijgt, sluit die toestellen zelf ook buiten.
+
+**Andere opties, niet geïmplementeerd, om te overwegen als dit ooit een groter/publieker
+product wordt:**
+
+- **Rate limiting op `joinHousehold`** (client of via een Cloud Function ervoor) — beperkt hoe
+  snel iemand codes kan afraden, onafhankelijk van App Check.
+  <br>Effort: laag · Impact: verkleint het brute-force-venster aanzienlijk zonder de rest van
+  het model te veranderen.
+- **Een explicieter lidmaatschapsmodel** — bijv. een eigenaar/beheerder-rol per huishouden die
+  nieuwe aansluitverzoeken moet goedkeuren, in plaats van dat de code zelf volledige toegang
+  geeft. Dit is een echte productbeslissing (verandert de "iedereen met de code kan meteen
+  mee doen"-belofte die de app nu juist laagdrempelig maakt) — bewust niet zomaar
+  doorgevoerd zonder dat expliciet te bespreken.
+  <br>Effort: hoog (raakt join-flow, meerdere schermen, Cloud Functions) · Impact: sluit het
+  belangrijkste resterende gat echt af, ten koste van laagdrempeligheid.
+- **Firestore-brede audit-logging** (Cloud Audit Logs voor Firestore, in Google Cloud Console)
+  — geeft achteraf inzicht bij een vermoeden van misbruik, voorkomt niets zelf.
+  <br>Effort: laag (aanvinken in Cloud Console) · Impact: forensisch, niet preventief.
+
 ## Play Console opzetten (eenmalig, vereist voor Premium/in-app aankopen)
 
 De app zelf kan geen Play Console-producten aanmaken (zie de doc-comments in
@@ -84,8 +132,13 @@ ontwikkelaarsaccount, met **exact** deze product-id's:
 | --- | --- | --- |
 | `premium_monthly` | Abonnement | Basisplan met een gratis-proefperiode-aanbod (zie hieronder). |
 | `premium_yearly` | Abonnement | Idem, met een aanbod dat goedkoper uitpakt dan 12× de maandprijs — dat verschil wordt automatisch als "Bespaar X%" getoond, dus geen aparte configuratie in de app nodig. |
-| `premium_lifetime` | Eenmalig (managed) | Voor gebruikers die liever één keer betalen dan een abonnement nemen. Nooit als consumable instellen — de app consumeert 'm nooit, alleen "acknowledge". |
-| `premium_unlimited_members` | Eenmalig (managed) | Het huishouden-uitbreidingspakket (zie `HouseholdMembersRepository`) — heft de Premium-ledenlimiet voor dat hele huishouden op. Ook nooit als consumable instellen. |
+
+Dit zijn de twee enige koopbare producten — beide ontgrendelen exact dezelfde ene Premium-laag
+(inclusief een onbeperkt aantal huishoudleden), alleen het facturatie-ritme verschilt. Er was
+hiernaast ooit een losse eenmalige "Levenslang"-aankoop en een apart huishouden-uitbreidingspakket
+(`premium_lifetime`/`premium_unlimited_members`); beide zijn samengevoegd tot deze ene laag om de
+aankoopbeslissing simpel te houden. Bestaande Play Console-producten met die id's mogen blijven
+staan (iemand die ze al kocht, verliest niets), de app biedt en bevraagt ze alleen niet meer.
 
 Voor beide abonnementen: maak een aanbod ("offer") met twee prijsfases — een gratis fase
 (free trial) gevolgd door de doorlopende prijs. De lengte van die proefperiode staat nergens
@@ -98,7 +151,6 @@ ze op afstand te kunnen bijstellen zonder appupdate, voeg je deze parameters toe
 
 | Parameter | Type | Standaard |
 | --- | --- | --- |
-| `premium_member_cap` | Number | `10` — max. huishoudleden met Premium, zonder het `premium_unlimited_members`-pakket. |
 | `trial_days` | Number | `7` — alleen voor de tekst in de app; moet gelijk blijven aan de proefperiode die je in de Play Console-aanbieding hierboven instelt. |
 | `monthly_plan_enabled` | Boolean | `true` — noodrem om de maandelijkse kaart te verbergen zonder appupdate. |
 
@@ -108,6 +160,47 @@ Console → Projectinstellingen → Integraties). Geen paywall-events zonder die
 
 Zonder de Play Console-producten hierboven blijft de Premium-betaalmuur werken, maar toont
 iedere prijs "Prijs laden…" en is geen enkele koop-knop klikbaar.
+
+### Server-side verificatie van Premium (`verifyPurchase`)
+
+`isPremium` wordt van huis uit door het toestel zelf afgeleid uit wat de Play Billing Library
+teruggeeft — genoeg om de UI te sturen, maar een aangepaste APK zou dat in theorie kunnen
+vervalsen. De `verifyPurchase` Cloud Function (zie `functions/src/index.ts`) controleert een
+aankoop in plaats daarvan rechtstreeks bij Google (de Play Developer API) en schrijft het
+geverifieerde resultaat zelf naar Firestore. De app roept deze functie al automatisch aan bij
+elke actieve aankoop (`HouseholdMembersRepository.verifyPurchases`) — er is maar één handmatige
+stap nodig om hem ook daadwerkelijk te laten werken:
+
+1. **Play Console → Gebruikers en machtigingen → Nieuwe gebruikers uitnodigen.** Nodig het
+   service-account van je Cloud Functions-project uit (standaard
+   `<project-id>@appspot.gserviceaccount.com`, te vinden via Firebase Console →
+   Projectinstellingen → Serviceaccounts) met minimaal de machtiging **"Financiële gegevens,
+   orders en enquêtereacties over annuleringen bekijken"**.
+2. Deploy `functions` opnieuw zodat `verifyPurchase` live staat.
+
+Zonder deze stap blijft alles gewoon werken zoals nu — `verifyPurchases` faalt dan stil op elke
+aanroep (zie de doc-comment erboven) en `isPremium` blijft net als voorheen volledig
+toestel-afgeleid.
+
+**Belangrijk — dit is bewust nog geen harde afdwinging.** Zolang `firestore.rules` een
+signed-in client toestaat om `isPremium` op zijn eigen member-document te schrijven (de huidige
+regel), kan een aangepaste APK dat nog steeds direct doen, los van `verifyPurchase`. Die
+server-verificatie wordt pas de *echte* beveiligingsgrens zodra je, ná het bevestigen dat stap 1
+hierboven werkt (controleer een testaankoop en kijk of `isPremiumVerifiedAt` op het
+member-document verschijnt), zelf deze twee dingen doet:
+
+1. In `firestore.rules`, onder `match /households/{householdId}`, een specifiekere
+   `match /members/{uid}` regel toevoegen die een client-`create`/`update` geen `isPremium`- of
+   `isPremiumVerifiedAt`-veld meer laat aanraken (`request.resource.data.diff(resource.data)
+   .affectedKeys().hasAny([...])`), zodat alleen de Admin SDK (dus `verifyPurchase`) dat veld
+   nog kan zetten.
+2. In `HouseholdMembersRepository.kt`, de `syncPremiumStatus`-aanroep in `init` verwijderen
+   (die client-write zou na stap 1 toch alleen nog een permission-denied opleveren).
+
+Dat bewust in twee losse stappen: de eerste is zonder risico (verandert niets aan wat al werkt),
+de tweede zet de daadwerkelijke beveiligingsgrens en moet je pas doen als je zeker weet dat
+`verifyPurchase` betrouwbaar aanslaat — anders verliest iedereen die net een abonnement heeft
+afgesloten in de tussentijd zijn Premium.
 
 ## Bouwen
 

@@ -50,7 +50,6 @@ import com.android.billingclient.api.ProductDetails
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.repository.PremiumPlan
-import com.dtraas.homestock.data.repository.formattedOneTimePrice
 import com.dtraas.homestock.data.repository.formattedRecurringPrice
 import com.dtraas.homestock.data.repository.hasTrialOffer
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
@@ -166,7 +165,6 @@ fun PremiumScreen(onBack: () -> Unit) {
             if (!isPremium) {
                 val monthlyDetails = productDetails[PremiumPlan.MONTHLY.productId]
                 val yearlyDetails = productDetails[PremiumPlan.YEARLY.productId]
-                val lifetimeDetails = productDetails[PremiumPlan.LIFETIME.productId]
                 val savingsPercent = yearlySavingsPercent(monthlyDetails, yearlyDetails)
 
                 Column(
@@ -194,36 +192,25 @@ fun PremiumScreen(onBack: () -> Unit) {
                         selected = selectedPlan == PremiumPlan.YEARLY,
                         onClick = { selectedPlan = PremiumPlan.YEARLY; analyticsRepository.logPremiumPlanSelected("yearly") },
                     )
-                    PlanCard(
-                        label = stringResource(R.string.premium_plan_lifetime),
-                        priceText = lifetimeDetails?.formattedOneTimePrice ?: stringResource(R.string.premium_price_loading),
-                        badgeText = stringResource(R.string.premium_plan_lifetime_badge),
-                        selected = selectedPlan == PremiumPlan.LIFETIME,
-                        onClick = { selectedPlan = PremiumPlan.LIFETIME; analyticsRepository.logPremiumPlanSelected("lifetime") },
-                    )
                 }
 
                 val selectedDetails = productDetails[selectedPlan.productId]
-                val showsTrial = selectedPlan != PremiumPlan.LIFETIME && selectedDetails?.hasTrialOffer == true
+                val showsTrial = selectedDetails?.hasTrialOffer == true
                 Button(
                     onClick = { activity?.let { billingRepository.launchPurchaseFlow(it, selectedPlan) } },
                     enabled = selectedDetails != null && activity != null,
                     modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
                 ) {
                     Text(
-                        when {
-                            showsTrial -> stringResource(R.string.premium_subscribe_trial_button, trialDays)
-                            selectedPlan == PremiumPlan.LIFETIME -> stringResource(R.string.premium_buy_lifetime_button)
-                            else -> stringResource(R.string.premium_subscribe_button)
+                        if (showsTrial) {
+                            stringResource(R.string.premium_subscribe_trial_button, trialDays)
+                        } else {
+                            stringResource(R.string.premium_subscribe_button)
                         },
                     )
                 }
                 Text(
-                    text = if (selectedPlan == PremiumPlan.LIFETIME) {
-                        stringResource(R.string.premium_terms_notice_lifetime)
-                    } else {
-                        stringResource(R.string.premium_terms_notice)
-                    },
+                    text = stringResource(R.string.premium_terms_notice),
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,

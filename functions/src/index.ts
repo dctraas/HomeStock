@@ -3,6 +3,7 @@ import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
+import { google } from "googleapis";
 
 admin.initializeApp();
 setGlobalOptions({ region: "europe-west1", maxInstances: 10 });
@@ -64,7 +65,7 @@ async function requirePremiumHousehold(uid: string, householdId: string): Promis
   }
 }
 
-function requireUid(auth: { uid: string } | undefined): string {
+export function requireUid(auth: { uid: string } | undefined): string {
   const uid = auth?.uid;
   if (!uid) throw new HttpsError("unauthenticated", "Sign-in required.");
   return uid;
@@ -210,7 +211,7 @@ interface ReceiptLineItem {
 }
 
 /** "3,98", "3.98", "€ 3,98" -> 3.98; anything unparseable -> null. */
-function parseReceiptPrice(raw: string): number | null {
+export function parseReceiptPrice(raw: string): number | null {
   const normalized = raw.replace(/[^0-9,.-]/g, "").replace(",", ".");
   if (normalized.length === 0) return null;
   const value = Number.parseFloat(normalized);
@@ -281,7 +282,7 @@ function buildExpirationDatePrompt(locale: string): string {
 }
 
 /** True for a `YYYY-MM-DD` string that also parses as a real calendar date. */
-function isValidIsoDate(value: unknown): value is string {
+export function isValidIsoDate(value: unknown): value is string {
   if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   return !Number.isNaN(new Date(`${value}T00:00:00Z`).getTime());
 }
@@ -695,7 +696,7 @@ interface SpoonacularFindByIngredientsResult {
 }
 
 /** Strips Spoonacular's (usually HTML) instructions field down to plain, line-broken text. */
-function cleanInstructions(html: string | undefined): string | null {
+export function cleanInstructions(html: string | undefined): string | null {
   if (!html) return null;
   const text = html
     .replace(/<li[^>]*>/gi, "\n- ")
@@ -716,7 +717,7 @@ function cleanInstructions(html: string | undefined): string | null {
  *  so this has to match it rather than use its own formatting. Multiple named groups (e.g.
  *  "Sauce" / "Assembly") are flattened into one continuous numbering — the client has no concept
  *  of named sub-sections, only a flat step list. */
-function instructionsFromAnalyzed(analyzed: SpoonacularAnalyzedInstruction[] | undefined): string | null {
+export function instructionsFromAnalyzed(analyzed: SpoonacularAnalyzedInstruction[] | undefined): string | null {
   if (!analyzed || analyzed.length === 0) return null;
   const lines: string[] = [];
   for (const group of analyzed) {
@@ -729,7 +730,7 @@ function instructionsFromAnalyzed(analyzed: SpoonacularAnalyzedInstruction[] | u
 }
 
 /** Looks up one named nutrient (e.g. "Calories", "Protein") from Spoonacular's per-serving nutrition breakdown, rounded to 1 decimal — null if that recipe has no nutrition data (older cache entries from before this field existed, or Spoonacular simply not having it for that recipe) or doesn't list this particular nutrient. */
-function findNutrientAmount(nutrients: SpoonacularNutrient[] | undefined, name: string): number | null {
+export function findNutrientAmount(nutrients: SpoonacularNutrient[] | undefined, name: string): number | null {
   const nutrient = nutrients?.find((n) => n.name === name);
   return nutrient ? Math.round(nutrient.amount * 10) / 10 : null;
 }
@@ -781,7 +782,7 @@ interface RecipeSearchCachePayload {
 }
 
 /** Deterministic key for a "browse" mode call's exact param combination — order-independent on intolerances so ["Gluten","Dairy"] and ["Dairy","Gluten"] share a cache entry. Includes [offset] so each page of a paginated browse gets its own cache entry rather than colliding on page 1's. */
-function browseCacheKey(cuisine: string | undefined, intolerances: string[] | undefined, number: number, offset: number): string {
+export function browseCacheKey(cuisine: string | undefined, intolerances: string[] | undefined, number: number, offset: number): string {
   const intolerancesKey = intolerances && intolerances.length > 0 ? [...intolerances].sort().join(",") : "none";
   return `browse_${cuisine ?? "none"}_${intolerancesKey}_${number}_${offset}`;
 }
@@ -1079,7 +1080,7 @@ const LOCALE_LANGUAGE_NAMES: Record<string, string> = {
   fr: "French",
 };
 
-function languageNameForLocale(locale: string): string {
+export function languageNameForLocale(locale: string): string {
   return LOCALE_LANGUAGE_NAMES[locale] ?? locale;
 }
 
@@ -1224,11 +1225,11 @@ interface CachedRecipeTranslation {
 }
 
 /** AI-generated and hand-entered recipes are private, household-specific content — never worth (or safe) sharing in a cross-household cache, unlike real Spoonacular recipes. */
-function isCacheableRecipeId(id: string | null | undefined): id is string {
+export function isCacheableRecipeId(id: string | null | undefined): id is string {
   return typeof id === "string" && id.length > 0 && !id.startsWith("ai-") && !id.startsWith("custom-");
 }
 
-function translationDocId(id: string, locale: string): string {
+export function translationDocId(id: string, locale: string): string {
   return `${id}_${locale}`;
 }
 
@@ -1353,5 +1354,166 @@ export const translateRecipe = onCall(
     }
 
     return { detail: translated };
+  },
+);
+
+// ---------------------------------------------------------------------------
+// findMyHouseholds — account-recovery lookup for AccountLinkRepository.
+// ---------------------------------------------------------------------------
+
+/**
+ * Lets a signed-in device find every household its *own* Firebase uid already belongs to —
+ * the piece the client itself structurally can't do, since firestore.rules denies `list` on
+ * `households` (so a client can never enumerate/search it) and there is no client-readable
+ * index from uid to household. Only ever queries for `request.auth`'s own uid, taken from the
+ * verified ID token rather than any client-supplied value, so this can't be used to probe
+ * which household some *other* uid belongs to.
+ *
+ * Exists for the account-linking collision case (see AccountLinkRepository.switchToExistingGoogleAccount):
+ * a Google account already linked to an old, locally-forgotten anonymous uid (e.g. after a
+ * reinstall) has no way for that device to rediscover which household it was in. Once the
+ * client switches its session to that old uid (signInWithCredential), calling this tells it
+ * where to go.
+ *
+ * Member docs have always lived at `households/{id}/members/{uid}` (see
+ * HouseholdMembersRepository.kt) — the document ID *is* the uid, and always has been, so
+ * matching on document ID finds every member doc ever written, old or new, with zero
+ * migration/backfill needed. The tradeoff: Firestore has no way to filter a collectionGroup
+ * query by "last path segment equals X" alone, so this reads the *entire* `members` collection
+ * group on every call and filters in code. Fine at this app's current scale (a household-code
+ * app has no reason to have huge member counts); if that ever stops being true, add an
+ * explicit `uid` field to each member doc (written going forward, backfilled for old docs by a
+ * one-off admin script) and switch this to `.where("uid", "==", uid)` with a collection-group
+ * index on that field instead.
+ */
+export const findMyHouseholds = onCall(
+  { cors: false, timeoutSeconds: 30, invoker: "public" },
+  async (request) => {
+    const uid = requireUid(request.auth);
+
+    const snapshot = await db.collectionGroup("members").get();
+    const ownDocs = snapshot.docs.filter((doc) => doc.id === uid);
+
+    const households = await Promise.all(
+      ownDocs.map(async (doc) => {
+        const householdId = doc.ref.parent.parent?.id;
+        if (!householdId) return null;
+        const householdDoc = await db.collection("households").doc(householdId).get();
+        if (!householdDoc.exists) return null;
+        const name = (householdDoc.data()?.name as string | undefined) ?? householdId;
+        return { id: householdId, name };
+      }),
+    );
+
+    return { households: households.filter((h): h is { id: string; name: string } => h !== null) };
+  },
+);
+
+// ---------------------------------------------------------------------------
+// verifyPurchase — server-side confirmation of a Play Billing purchase, via the Play
+// Developer API, so `isPremium` stops being a value the client alone gets to assert.
+// ---------------------------------------------------------------------------
+
+// Must match applicationId in app/build.gradle.kts.
+const ANDROID_PACKAGE_NAME = "com.dtraas.homestock";
+
+// Mirrors BillingRepository.PremiumPlan's product ids — kept as an explicit allowlist so a
+// malformed/probing request can't ask this function to look up an arbitrary product id via the
+// Play Developer API using this project's credentials.
+const VERIFIABLE_SUBSCRIPTION_IDS = new Set(["premium_monthly", "premium_yearly"]);
+
+let cachedAndroidPublisher: ReturnType<typeof google.androidpublisher> | null = null;
+
+/**
+ * Lazily builds (and caches for the life of this function instance) an Android Publisher API
+ * client authenticated as this Cloud Function's own runtime service account — Application
+ * Default Credentials, no key file/secret to manage. That service account must be added as a
+ * user in Play Console (Play Console → Users and permissions → Invite new users → the service
+ * account's email, e.g. `<project-id>@appspot.gserviceaccount.com`) with the "View financial
+ * data, orders, and cancellation survey responses" permission — without that grant, every call
+ * below fails with a 403 from Google's side, not this code's.
+ */
+async function getAndroidPublisher() {
+  if (cachedAndroidPublisher) return cachedAndroidPublisher;
+  const auth = new google.auth.GoogleAuth({ scopes: ["https://www.googleapis.com/auth/androidpublisher"] });
+  cachedAndroidPublisher = google.androidpublisher({ version: "v3", auth });
+  return cachedAndroidPublisher;
+}
+
+interface VerifyPurchaseRequest {
+  householdId: string;
+  productId: string;
+  purchaseToken: string;
+}
+
+/**
+ * Re-derives whether [request]'s caller genuinely owns an active `premium_monthly`/
+ * `premium_yearly` subscription by asking Google directly (`purchases.subscriptions.get`),
+ * rather than trusting `BillingRepository.isPremium` — a value the client computes from Play
+ * Billing Library responses that a modified APK could simply fabricate. On success, writes the
+ * verified result straight to this uid's member doc via the Admin SDK, which bypasses
+ * firestore.rules — see that file's `members/{uid}` rule for why the client itself is no
+ * longer allowed to write `isPremium` directly once this exists.
+ *
+ * Called by BillingRepository right after Play Billing acknowledges a new purchase (see its
+ * `verifiedPurchases` flow) — not on every app start, since the Play Developer API has its own
+ * quota and a purchase's active/expired state only actually changes at renewal/cancellation
+ * time, which Play's own webhook-driven flow could refresh later without the client's help.
+ * That real-time-notification path (Play Console → Monetization setup → Real-time developer
+ * notifications, delivered to a Pub/Sub topic this project would subscribe another function to)
+ * is the natural next step once this manual client-triggered path is in place — it's what
+ * catches a cancellation/expiry between app opens, which this function alone can't.
+ */
+export const verifyPurchase = onCall(
+  { cors: false, timeoutSeconds: 20, invoker: "public" },
+  async (request) => {
+    const uid = requireUid(request.auth);
+    const data = request.data as Partial<VerifyPurchaseRequest> | undefined;
+    const householdId = data?.householdId;
+    const productId = data?.productId;
+    const purchaseToken = data?.purchaseToken;
+
+    if (!householdId || typeof householdId !== "string") {
+      throw new HttpsError("invalid-argument", "householdId is required.");
+    }
+    if (!productId || !VERIFIABLE_SUBSCRIPTION_IDS.has(productId)) {
+      throw new HttpsError("invalid-argument", "productId is not a recognized subscription.");
+    }
+    if (!purchaseToken || typeof purchaseToken !== "string") {
+      throw new HttpsError("invalid-argument", "purchaseToken is required.");
+    }
+
+    const memberRef = db.collection("households").doc(householdId).collection("members").doc(uid);
+    const memberSnapshot = await memberRef.get();
+    if (!memberSnapshot.exists) {
+      throw new HttpsError("permission-denied", "not_a_household_member");
+    }
+
+    // Active states per Google's own subscriptionState enum — grace period still has access
+    // (Play is retrying a failed renewal payment), everything else (canceled/expired/on hold/
+    // paused/pending) doesn't. See https://developer.android.com/google/play/billing/lifecycle/subscriptions.
+    const ACTIVE_STATES = new Set(["SUBSCRIPTION_STATE_ACTIVE", "SUBSCRIPTION_STATE_IN_GRACE_PERIOD"]);
+
+    let isActive: boolean;
+    try {
+      const publisher = await getAndroidPublisher();
+      const response = await publisher.purchases.subscriptionsv2.get({
+        packageName: ANDROID_PACKAGE_NAME,
+        token: purchaseToken,
+      });
+      const purchase = response.data;
+      // The token alone identifies the purchase; cross-checking that it actually contains the
+      // product id the client claims stops a valid-but-unrelated purchase token being replayed
+      // to claim a different product.
+      const matchesProduct = purchase.lineItems?.some((item) => item.productId === productId) === true;
+      isActive = matchesProduct && ACTIVE_STATES.has(purchase.subscriptionState ?? "");
+    } catch (error) {
+      logger.error("verifyPurchase: Play Developer API call failed", { error, productId, householdId });
+      throw new HttpsError("internal", "play_verification_failed");
+    }
+
+    await memberRef.set({ isPremium: isActive, isPremiumVerifiedAt: Date.now() }, { merge: true });
+
+    return { verified: true, isPremium: isActive };
   },
 );

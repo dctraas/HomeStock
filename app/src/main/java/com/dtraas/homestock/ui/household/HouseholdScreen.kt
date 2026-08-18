@@ -469,16 +469,14 @@ private fun JoinContent(
         modifier = Modifier.padding(top = 16.dp, bottom = 20.dp),
     )
     val isCompleteLength = uiState.joinCodeInput.length == HouseholdRepository.CODE_LENGTH
-    val hasError = uiState.errorMessage != null || uiState.hasGenericError ||
-        uiState.householdFull || uiState.householdPremiumCapReached
+    val hasError = uiState.errorMessage != null || uiState.hasGenericError || uiState.householdFull
     val supportingMessage = when {
         uiState.errorMessage != null -> uiState.errorMessage
         uiState.hasGenericError -> stringResource(R.string.household_generic_error)
+        // Premium households have no member cap at all (see
+        // HouseholdMembersRepository.HouseholdJoinResult), so this can only mean the
+        // household isn't Premium yet.
         uiState.householdFull -> stringResource(R.string.household_join_full_error)
-        // Distinct from householdFull above: this household already has Premium (so the
-        // free-tier pitch would be wrong), it's just hit its member cap without the
-        // unlimited-members add-on — see HouseholdMembersRepository.HouseholdJoinResult.
-        uiState.householdPremiumCapReached -> stringResource(R.string.household_join_premium_cap_error)
         uiState.joinCodeInput.isNotEmpty() && !isCompleteLength ->
             stringResource(R.string.household_join_code_length_hint, HouseholdRepository.CODE_LENGTH)
         else -> null

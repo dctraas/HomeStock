@@ -26,21 +26,25 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** The three ways to buy Premium (see PremiumScreen) — two recurring subscriptions and one
- *  permanent one-time purchase for people who'd rather not subscribe at all. Kept as three
- *  separate Play Console products rather than base plans of one subscription product — the
- *  app already had [PREMIUM_YEARLY_PRODUCT_ID] as its own product before this, and separate
- *  products keep [BillingRepository] from needing to parse base-plan ids out of offer tokens. */
+/** The two ways to buy Premium (see PremiumScreen) — monthly or yearly billing of the exact
+ *  same one Premium tier, nothing else differs between them but price and period. Kept as two
+ *  separate Play Console products rather than base plans of one subscription product — the app
+ *  already had [PREMIUM_YEARLY_PRODUCT_ID] as its own product before this, and separate
+ *  products keep [BillingRepository] from needing to parse base-plan ids out of offer tokens.
+ *
+ *  Deliberately just these two: Premium used to also offer a one-time "Levenslang" purchase and
+ *  a separately-purchasable "Onbeperkt huisgenoten" add-on on top of a capped Premium tier —
+ *  two extra purchase decisions for what's otherwise one clear product. Both were folded into
+ *  this single tier (see [HouseholdMembersRepository.observeCapacityInfo]) rather than kept as
+ *  parallel options. */
 enum class PremiumPlan(val productId: String, val productType: String) {
     MONTHLY(BillingRepository.PREMIUM_MONTHLY_PRODUCT_ID, BillingClient.ProductType.SUBS),
     YEARLY(BillingRepository.PREMIUM_YEARLY_PRODUCT_ID, BillingClient.ProductType.SUBS),
-    LIFETIME(BillingRepository.PREMIUM_LIFETIME_PRODUCT_ID, BillingClient.ProductType.INAPP),
 }
 
 /** The recurring price shown after any trial phase — the *last* pricing phase in a
  *  subscription offer's list, since a free-trial offer prepends a zero-price phase before the
- *  real recurring one. For a plan with no trial (a single-phase offer) this is that one phase.
- *  `null` for a one-time (INAPP) product — see [formattedOneTimePrice] for those. */
+ *  real recurring one. For a plan with no trial (a single-phase offer) this is that one phase. */
 val ProductDetails.formattedRecurringPrice: String?
     get() = subscriptionOfferDetails?.firstOrNull()?.pricingPhases?.pricingPhaseList?.lastOrNull()?.formattedPrice
 
@@ -52,27 +56,17 @@ val ProductDetails.formattedRecurringPrice: String?
 val ProductDetails.hasTrialOffer: Boolean
     get() = subscriptionOfferDetails?.firstOrNull()?.pricingPhases?.pricingPhaseList?.firstOrNull()?.priceAmountMicros == 0L
 
-/** The one-time price for a non-subscription (INAPP) product — the lifetime plan or the
- *  unlimited-members household add-on. `null` for a subscription — see [formattedRecurringPrice]. */
-val ProductDetails.formattedOneTimePrice: String?
-    get() = oneTimePurchaseOfferDetails?.formattedPrice
-
 /**
- * HomeStock Premium — three ways to buy it (see [PremiumPlan]: monthly/yearly subscriptions,
- * each expected to carry a free-trial offer configured in the Play Console, plus a one-time
- * "Levenslang" purchase) and one household add-on ([PREMIUM_UNLIMITED_MEMBERS_PRODUCT_ID], a
- * one-time purchase that lifts the Premium household member cap — see
- * [HouseholdMembersRepository]). None of these four products can be created by this class;
- * they must already exist in the Play Console with these exact ids (two SUBS, two INAPP) —
- * this repository can't create them.
+ * HomeStock Premium — one tier, bought as either of two subscription cadences (see
+ * [PremiumPlan]: monthly or yearly, each expected to carry a free-trial offer configured in
+ * the Play Console). Neither product can be created by this class; both must already exist in
+ * the Play Console with these exact ids — this repository can't create them.
  *
- * [isPremium] is this device's own entitlement, always re-derived from Play's purchase
- * records rather than trusted from a local cache alone — true for an active monthly/yearly
- * subscription *or* an owned lifetime purchase (a one-time purchase never expires, so once
- * owned it stays owned without Play re-confirming anything on a schedule the way a
- * subscription does). A household's shared premium status (any member unlocks it for
- * everyone) is handled one layer up, in [HouseholdMembersRepository]; so is
- * [hasUnlimitedMembersAddon].
+ * [isPremium] is this device's own entitlement, always re-derived from Play's purchase records
+ * rather than trusted from a local cache alone — true for an active monthly or yearly
+ * subscription. A household's shared premium status (any member unlocks it for everyone,
+ * including lifting the member cap entirely) is handled one layer up, in
+ * [HouseholdMembersRepository].
  *
  * [isPremium] also honors [debugPremiumOverride] in debug builds only — a locally persisted
  * toggle for testing the gated screens and the household member cap without needing real Play
@@ -84,7 +78,18 @@ class BillingRepository(context: Context, private val analyticsRepository: Analy
     private val repositoryScope = CoroutineScope(Dispatchers.IO)
 
     private val _isPremiumFromPlay = MutableStateFlow(false)
-    private val _hasUnlimitedMembersAddonFromPlay = MutableStateFlow(false)
+
+    private val _activePurchases = MutableStateFlow<List<Purchase>>(emptyList())
+    /** Every currently-owned, Play-confirmed subscription purchase (not just its derived
+     *  [isPremium] boolean) — [HouseholdMembersRepository] uses this to ask the `verifyPurchase`
+     *  Cloud Function to confirm each one server-side and write a tamper-proof `isPremium` onto
+     *  this device's member doc. See that function's doc comment in functions/src/index.ts for
+     *  why this exists alongside (not instead of) the client-derived value below: server
+     *  verification only becomes the actual security boundary once firestore.rules is
+     *  tightened to require it, which needs the Play Console access grant documented there
+     *  first — until then this is authoritative when it succeeds, and a no-op fallback to the
+     *  client-derived value otherwise (e.g. offline, or that grant not set up yet). */
+    val activePurchases: StateFlow<List<Purchase>> = _activePurchases
 
     private val debugPrefs = appContext.getSharedPreferences(DEBUG_PREFS_NAME, Context.MODE_PRIVATE)
     private val _debugPremiumOverride = MutableStateFlow(debugPrefs.getBoolean(KEY_DEBUG_PREMIUM_OVERRIDE, false))
@@ -94,18 +99,10 @@ class BillingRepository(context: Context, private val analyticsRepository: Analy
         fromPlay || (BuildConfig.DEBUG && debugOverride)
     }.stateIn(repositoryScope, SharingStarted.Eagerly, false)
 
-    /** Whether this device owns the "Onbeperkt huisgenoten" household add-on. Debug override
-     *  piggybacks on [debugPremiumOverride] too — no separate toggle, since testing the addon
-     *  behavior needs Premium active anyway. */
-    val hasUnlimitedMembersAddon: StateFlow<Boolean> =
-        combine(_hasUnlimitedMembersAddonFromPlay, _debugPremiumOverride) { fromPlay, debugOverride ->
-            fromPlay || (BuildConfig.DEBUG && debugOverride)
-        }.stateIn(repositoryScope, SharingStarted.Eagerly, false)
-
     private val _productDetails = MutableStateFlow<Map<String, ProductDetails>>(emptyMap())
-    /** Keyed by product id (see [PremiumPlan.productId]/[PREMIUM_UNLIMITED_MEMBERS_PRODUCT_ID])
-     *  — empty until Play answers the initial query, and permanently missing an entry for any
-     *  product id that doesn't exist yet in the Play Console. */
+    /** Keyed by product id (see [PremiumPlan.productId]) — empty until Play answers the initial
+     *  query, and permanently missing an entry for any product id that doesn't exist yet in
+     *  the Play Console. */
     val productDetails: StateFlow<Map<String, ProductDetails>> = _productDetails
 
     private val purchasesUpdatedListener = PurchasesUpdatedListener { result, purchases ->
@@ -142,19 +139,18 @@ class BillingRepository(context: Context, private val analyticsRepository: Analy
         })
     }
 
-    // Despite QueryProductDetailsParams.Product carrying its own type per entry, the Billing
-    // Library itself rejects a product list mixing SUBS and INAPP in one call
-    // ("All products should be of the same product type.", thrown by Builder.setProductList) —
-    // confirmed by a crash on a real device. Two type-scoped queries it is, same as
-    // refreshPurchases() below already has to do for queryPurchasesAsync.
+    // Both Premium products are subscriptions now (see PremiumPlan's doc for why the former
+    // one-time products were folded away) — just one type-scoped query. Kept going through
+    // buildProductDetailsParams rather than inlined: the Billing Library itself rejects a
+    // product list mixing SUBS and INAPP in one call ("All products should be of the same
+    // product type.", thrown by Builder.setProductList, confirmed by a crash on a real device
+    // back when this queried both types) — if a one-time product ever comes back, this helper
+    // is already the right shape to add a second type-scoped call again instead of reintroducing
+    // that crash.
     private suspend fun queryProductDetails() {
-        val subsIds = listOf(PREMIUM_MONTHLY_PRODUCT_ID, PREMIUM_YEARLY_PRODUCT_ID)
-        val inAppIds = listOf(PREMIUM_LIFETIME_PRODUCT_ID, PREMIUM_UNLIMITED_MEMBERS_PRODUCT_ID)
+        val subsIds = PremiumPlan.entries.map { it.productId }
         val subsResult = client.queryProductDetails(buildProductDetailsParams(subsIds, BillingClient.ProductType.SUBS))
-        val inAppResult = client.queryProductDetails(buildProductDetailsParams(inAppIds, BillingClient.ProductType.INAPP))
-        _productDetails.value = (
-            (subsResult.productDetailsList ?: emptyList()) + (inAppResult.productDetailsList ?: emptyList())
-            ).associateBy { it.productId }
+        _productDetails.value = (subsResult.productDetailsList ?: emptyList()).associateBy { it.productId }
     }
 
     private fun buildProductDetailsParams(productIds: List<String>, productType: String): QueryProductDetailsParams =
@@ -170,16 +166,12 @@ class BillingRepository(context: Context, private val analyticsRepository: Analy
             .build()
 
     /** Re-checks Play's purchase records; called on connect and from a "Restore aankopen"
-     *  action. Unlike the query above, purchases have to be fetched per product type — there's
-     *  no combined SUBS+INAPP call. */
+     *  action. Only SUBS purchases exist now (see [queryProductDetails]'s doc). */
     suspend fun refreshPurchases() {
         val subsResult = client.queryPurchasesAsync(
             QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.SUBS).build(),
         )
-        val inAppResult = client.queryPurchasesAsync(
-            QueryPurchasesParams.newBuilder().setProductType(BillingClient.ProductType.INAPP).build(),
-        )
-        handlePurchases(subsResult.purchasesList + inAppResult.purchasesList)
+        handlePurchases(subsResult.purchasesList)
     }
 
     private suspend fun handlePurchases(purchases: List<Purchase>) {
@@ -188,17 +180,15 @@ class BillingRepository(context: Context, private val analyticsRepository: Analy
             .flatMap { it.products }
             .toSet()
         _isPremiumFromPlay.value = PremiumPlan.entries.any { it.productId in purchasedProductIds }
-        _hasUnlimitedMembersAddonFromPlay.value = PREMIUM_UNLIMITED_MEMBERS_PRODUCT_ID in purchasedProductIds
+        _activePurchases.value = purchases.filter { it.purchaseState == Purchase.PurchaseState.PURCHASED }
 
         // Unacknowledged purchases are refunded automatically by Play after 3 days, so this
-        // must run on every purchase we see, not just ones made this session — true for
-        // subscriptions and both one-time products here alike (neither one-time product is
-        // ever consumed: both are meant to stay permanently owned, not be repurchasable). Only
-        // fires once per purchase (the *next* time this list is fetched, it's acknowledged
-        // already and filtered back out here), which is also exactly the point to fire the
-        // one-time "a purchase actually completed" analytics event rather than on every
-        // refresh — see AnalyticsRepository.logPurchaseCompleted's doc for what [isTrial]
-        // here does and doesn't guarantee.
+        // must run on every purchase we see, not just ones made this session. Only fires once
+        // per purchase (the *next* time this list is fetched, it's acknowledged already and
+        // filtered back out here), which is also exactly the point to fire the one-time "a
+        // purchase actually completed" analytics event rather than on every refresh — see
+        // AnalyticsRepository.logPurchaseCompleted's doc for what [isTrial] here does and
+        // doesn't guarantee.
         purchases
             .filter { it.purchaseState == Purchase.PurchaseState.PURCHASED && !it.isAcknowledged }
             .forEach { purchase ->
@@ -229,19 +219,6 @@ class BillingRepository(context: Context, private val analyticsRepository: Analy
         client.launchBillingFlow(activity, flowParams)
     }
 
-    /** Opens Play's checkout sheet for the one-time "Onbeperkt huisgenoten" household add-on
-     *  (see [HouseholdMembersRepository]); a no-op until its product details have loaded. */
-    fun launchUnlimitedMembersPurchaseFlow(activity: Activity) {
-        val details = _productDetails.value[PREMIUM_UNLIMITED_MEMBERS_PRODUCT_ID] ?: return
-        analyticsRepository.logPurchaseStarted(PREMIUM_UNLIMITED_MEMBERS_PRODUCT_ID)
-        val flowParams = BillingFlowParams.newBuilder()
-            .setProductDetailsParamsList(
-                listOf(BillingFlowParams.ProductDetailsParams.newBuilder().setProductDetails(details).build()),
-            )
-            .build()
-        client.launchBillingFlow(activity, flowParams)
-    }
-
     /** Debug builds only — see the class doc. Silently ignored in release. */
     fun setDebugPremiumOverride(enabled: Boolean) {
         if (!BuildConfig.DEBUG) return
@@ -255,17 +232,14 @@ class BillingRepository(context: Context, private val analyticsRepository: Analy
         // RemoteConfigRepository.trialDays for the length shown in the app's own copy, which
         // must be kept in sync with that offer by hand (Play Billing has no API to read a
         // trial's configured length back out of an offer).
+        //
+        // premium_lifetime and premium_unlimited_members used to exist alongside these as a
+        // one-time no-subscription purchase and a separate member-cap add-on respectively —
+        // both folded into this single tier (see PremiumPlan's doc); their Play Console
+        // products can stay defined (nothing un-purchases them for anyone who already bought
+        // one), the app just no longer offers or queries them.
         const val PREMIUM_MONTHLY_PRODUCT_ID = "premium_monthly"
         const val PREMIUM_YEARLY_PRODUCT_ID = "premium_yearly"
-
-        // Must be created as a one-time (managed) in-app product in the Play Console — for
-        // people who'd rather pay once than subscribe.
-        const val PREMIUM_LIFETIME_PRODUCT_ID = "premium_lifetime"
-
-        // Must be created as a one-time (managed) in-app product in the Play Console — the
-        // household member-cap add-on, see HouseholdMembersRepository and
-        // RemoteConfigRepository.premiumMemberCap for the cap it lifts.
-        const val PREMIUM_UNLIMITED_MEMBERS_PRODUCT_ID = "premium_unlimited_members"
 
         private const val DEBUG_PREFS_NAME = "billing_debug_prefs"
         private const val KEY_DEBUG_PREMIUM_OVERRIDE = "debug_premium_override"

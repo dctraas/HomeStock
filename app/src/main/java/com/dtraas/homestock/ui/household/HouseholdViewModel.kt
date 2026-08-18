@@ -22,12 +22,10 @@ data class HouseholdUiState(
     val errorMessage: String? = null,
     /** Set for anything else (network failure, unexpected exception) — the UI shows a generic string for these. */
     val hasGenericError: Boolean = false,
-    /** The household exists and the code is valid, but it's already at the free-tier member limit. */
+    /** The household exists and the code is valid, but it's already at the free-tier member
+     *  limit — Premium households have no cap at all, so this can only happen to a
+     *  non-Premium one. */
     val householdFull: Boolean = false,
-    /** The household exists, is already Premium, but has hit its (higher) Premium member cap
-     *  without owning the unlimited-members add-on — a different message from [householdFull],
-     *  see HouseholdScreen's JoinContent. */
-    val householdPremiumCapReached: Boolean = false,
     val createdCode: String? = null,
     val joinCodeInput: String = "",
     val householdNameInput: String = "",
@@ -106,7 +104,7 @@ class HouseholdViewModel(
 
     fun selectJoin() {
         _uiState.update {
-            it.copy(mode = HouseholdMode.JOIN, errorMessage = null, hasGenericError = false, householdFull = false, householdPremiumCapReached = false)
+            it.copy(mode = HouseholdMode.JOIN, errorMessage = null, hasGenericError = false, householdFull = false)
         }
     }
 
@@ -116,7 +114,7 @@ class HouseholdViewModel(
 
     fun onJoinCodeChange(value: String) {
         _uiState.update {
-            it.copy(joinCodeInput = value, errorMessage = null, hasGenericError = false, householdFull = false, householdPremiumCapReached = false)
+            it.copy(joinCodeInput = value, errorMessage = null, hasGenericError = false, householdFull = false)
         }
     }
 
@@ -136,7 +134,7 @@ class HouseholdViewModel(
         val code = _uiState.value.joinCodeInput
         if (code.length != HouseholdRepository.CODE_LENGTH) return
         _uiState.update {
-            it.copy(isLoading = true, errorMessage = null, hasGenericError = false, householdFull = false, householdPremiumCapReached = false)
+            it.copy(isLoading = true, errorMessage = null, hasGenericError = false, householdFull = false)
         }
         viewModelScope.launch {
             householdRepository.joinHousehold(code)
@@ -152,8 +150,6 @@ class HouseholdViewModel(
                         }
                         HouseholdJoinResult.BLOCKED_FREE_LIMIT ->
                             _uiState.update { it.copy(isLoading = false, householdFull = true) }
-                        HouseholdJoinResult.BLOCKED_PREMIUM_CAP ->
-                            _uiState.update { it.copy(isLoading = false, householdPremiumCapReached = true) }
                     }
                 }
                 .onFailure { error -> _uiState.update { it.copy(isLoading = false).withError(error) } }

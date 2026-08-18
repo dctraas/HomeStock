@@ -115,7 +115,6 @@
     <string name="household_generic_error">Er ging iets mis. Probeer het opnieuw.</string>
     <string name="household_join_code_length_hint">Een huishouden-code bestaat uit %1$d tekens</string>
     <string name="household_join_full_error">Dit huishouden heeft al 2 leden op het gratis abonnement. Vraag iemand in het huishouden om Premium, of laat iemand het huishouden verlaten om plek te maken.</string>
-    <string name="household_join_premium_cap_error">Dit huishouden heeft het maximale aantal Premium-leden bereikt. Vraag een huisgenoot om \'Onbeperkt huisgenoten\' te kopen via Instellingen &gt; Huishouden.</string>
     <string name="household_create_back_warning_title">Code nog niet opgeslagen?</string>
     <string name="household_create_back_warning_text">Zorg dat je de huishouden-code hebt gekopieerd voordat je teruggaat — je kunt hem hierna niet meer terugvinden.</string>
     <string name="household_create_back_warning_confirm">Toch teruggaan</string>
@@ -165,9 +164,6 @@
     </plurals>
     <string name="more_household_members_title">Leden</string>
     <string name="household_members_title_with_limit_format">Leden (%1$d/%2$d)</string>
-    <string name="household_unlimited_members_nudge_title">Bijna vol</string>
-    <string name="household_unlimited_members_nudge_subtitle">Koop \'Onbeperkt huisgenoten\' om meer mensen aan dit huishouden toe te voegen.</string>
-    <string name="household_unlimited_members_nudge_action">Onbeperkt huisgenoten kopen</string>
     <string name="more_household_member_unnamed">Naamloos lid</string>
     <string name="more_household_member_you">Jij</string>
     <string name="household_allergens_menu_cd">Mijn allergenen en dieetwensen</string>
@@ -204,8 +200,18 @@
     <string name="account_link_google_button">Doorgaan met Google</string>
     <string name="account_link_linked_title">Account gekoppeld</string>
     <string name="account_link_linked_subtitle_format">Gekoppeld met %1$s. Je toegang tot dit huishouden blijft behouden, ook na een nieuwe installatie.</string>
-    <string name="account_link_error_collision">Dit Google-account is al gekoppeld aan een ander huishouden. Kies een ander account, of sluit vanaf dat account aan met de huishouden-code.</string>
+    <string name="account_link_error_collision">Dit Google-account is al gekoppeld aan een ander huishouden.</string>
     <string name="account_link_error_generic">Koppelen is niet gelukt. Probeer het opnieuw.</string>
+    <string name="account_link_recover_button">Overstappen naar dat account</string>
+    <string name="account_link_recover_dialog_title">Overstappen naar bestaand account?</string>
+    <string name="account_link_recover_dialog_text">Dit toestel schakelt over naar het account dat al aan dit Google-account gekoppeld is. Gegevens die je op dit toestel al hebt aangemaakt sinds de herinstallatie (zoals een nieuw huishouden) blijven bestaan, maar dit toestel raakt de toegang ertoe kwijt — je kunt daar later weer bij met de huishouden-code.</string>
+    <string name="account_link_recover_confirm">Overstappen</string>
+    <string name="account_link_recover_error">Overstappen is niet gelukt. Probeer het opnieuw.</string>
+    <string name="account_link_recover_none_found">Je bent overgestapt, maar er is geen huishouden gevonden voor dit account.</string>
+    <string name="account_link_recover_picker_title">Welk huishouden wil je heropenen?</string>
+    <string name="account_link_recover_picker_text">Dit account is gekoppeld aan het onderstaande huishouden. Kies het om dit toestel er weer mee te verbinden.</string>
+    <string name="account_link_recover_retry">Opnieuw proberen</string>
+    <string name="account_link_recover_switching">Overstappen…</string>
     <string name="account_link_prompt_title">Koppel je account</string>
     <string name="account_link_prompt_message">Voorkom dat je toegang tot dit huishouden kwijtraakt als je de app verwijdert of van toestel wisselt. Dit duurt maar een paar tikken, en kan ook later nog via Meer.</string>
     <string name="account_link_prompt_confirm">Nu koppelen</string>
@@ -713,15 +719,11 @@
     <string name="premium_price_per_month_format">%1$s per maand</string>
     <string name="premium_plan_monthly">Maandelijks</string>
     <string name="premium_plan_yearly">Jaarlijks</string>
-    <string name="premium_plan_lifetime">Eenmalig (levenslang)</string>
     <string name="premium_plan_trial_badge_format">Eerste %1$d dagen gratis</string>
     <string name="premium_plan_savings_badge_format">Bespaar %1$d%%</string>
-    <string name="premium_plan_lifetime_badge">Geen abonnement</string>
     <string name="premium_subscribe_button">Abonneren</string>
     <string name="premium_subscribe_trial_button">Start gratis proefperiode (%1$d dagen)</string>
-    <string name="premium_buy_lifetime_button">Eenmalig kopen</string>
     <string name="premium_terms_notice">Wordt automatisch verlengd. Op elk moment opzegbaar via Google Play.</string>
-    <string name="premium_terms_notice_lifetime">Eenmalige betaling. Geen abonnement, geen automatische verlenging.</string>
     <string name="premium_restore_action">Eerdere aankoop herstellen</string>
     <string name="premium_restore_done">Aankopen gecontroleerd</string>
 </resources>

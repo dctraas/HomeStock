@@ -114,7 +114,6 @@
     <string name="household_generic_error">Algo salió mal. Inténtalo de nuevo.</string>
     <string name="household_join_code_length_hint">Un código de hogar tiene %1$d caracteres</string>
     <string name="household_join_full_error">Este hogar ya tiene 2 miembros en el plan gratuito. Pide a alguien del hogar que se pase a Premium, o que lo abandone para hacerte sitio.</string>
-    <string name="household_join_premium_cap_error">Este hogar ha alcanzado el número máximo de miembros Premium. Pide a alguien del hogar que compre \'Convivientes ilimitados\' desde Ajustes &gt; Hogar.</string>
     <string name="household_create_back_warning_title">¿Código aún no guardado?</string>
     <string name="household_create_back_warning_text">Asegúrate de haber copiado el código del hogar antes de volver — después no podrás encontrarlo de nuevo.</string>
     <string name="household_create_back_warning_confirm">Volver de todos modos</string>
@@ -164,9 +163,6 @@
     </plurals>
     <string name="more_household_members_title">Miembros</string>
     <string name="household_members_title_with_limit_format">Miembros (%1$d/%2$d)</string>
-    <string name="household_unlimited_members_nudge_title">Casi lleno</string>
-    <string name="household_unlimited_members_nudge_subtitle">Compra \'Convivientes ilimitados\' para añadir más personas a este hogar.</string>
-    <string name="household_unlimited_members_nudge_action">Comprar convivientes ilimitados</string>
     <string name="more_household_member_unnamed">Miembro sin nombre</string>
     <string name="more_household_member_you">Tú</string>
     <string name="household_allergens_menu_cd">Mis alérgenos y preferencias alimentarias</string>
@@ -203,7 +199,17 @@
     <string name="account_link_google_button">Continuar con Google</string>
     <string name="account_link_linked_title">Cuenta vinculada</string>
     <string name="account_link_linked_subtitle_format">Vinculada con %1$s. Tu acceso a este hogar se conserva, incluso después de reinstalar.</string>
-    <string name="account_link_error_collision">Esta cuenta de Google ya está vinculada a otro hogar. Elige otra cuenta, o únete con esa cuenta usando el código del hogar.</string>
+    <string name="account_link_error_collision">Esta cuenta de Google ya está vinculada a otro hogar.</string>
+    <string name="account_link_recover_button">Cambiar a esa cuenta</string>
+    <string name="account_link_recover_dialog_title">¿Cambiar a la cuenta existente?</string>
+    <string name="account_link_recover_dialog_text">Este dispositivo cambiará a la cuenta ya vinculada a esta cuenta de Google. Lo que hayas creado en este dispositivo desde la reinstalación (como un nuevo hogar) se conserva, pero este dispositivo perderá el acceso a ello; podrás volver a unirte más tarde con su código de hogar.</string>
+    <string name="account_link_recover_confirm">Cambiar</string>
+    <string name="account_link_recover_error">No se pudo cambiar de cuenta. Inténtalo de nuevo.</string>
+    <string name="account_link_recover_none_found">Has cambiado de cuenta, pero no se encontró ningún hogar para esta cuenta.</string>
+    <string name="account_link_recover_picker_title">¿Qué hogar quieres volver a abrir?</string>
+    <string name="account_link_recover_picker_text">Esta cuenta está vinculada al siguiente hogar. Elígelo para reconectar este dispositivo.</string>
+    <string name="account_link_recover_retry">Intentar de nuevo</string>
+    <string name="account_link_recover_switching">Cambiando…</string>
     <string name="account_link_error_generic">No se pudo vincular la cuenta. Inténtalo de nuevo.</string>
     <string name="account_link_prompt_title">Vincula tu cuenta</string>
     <string name="account_link_prompt_message">Evita perder el acceso a este hogar si desinstalas la app o cambias de dispositivo. Solo lleva un par de toques, y también puedes hacerlo más tarde desde Más.</string>
@@ -712,15 +718,11 @@
     <string name="premium_price_per_month_format">%1$s al mes</string>
     <string name="premium_plan_monthly">Mensual</string>
     <string name="premium_plan_yearly">Anual</string>
-    <string name="premium_plan_lifetime">Pago único (de por vida)</string>
     <string name="premium_plan_trial_badge_format">Primeros %1$d días gratis</string>
     <string name="premium_plan_savings_badge_format">Ahorra %1$d %%</string>
-    <string name="premium_plan_lifetime_badge">Sin suscripción</string>
     <string name="premium_subscribe_button">Suscribirse</string>
     <string name="premium_subscribe_trial_button">Iniciar prueba gratuita (%1$d días)</string>
-    <string name="premium_buy_lifetime_button">Comprar una vez</string>
     <string name="premium_terms_notice">Se renueva automáticamente. Cancélala cuando quieras en Google Play.</string>
-    <string name="premium_terms_notice_lifetime">Pago único. Sin suscripción, sin renovación automática.</string>
     <string name="premium_restore_action">Restaurar una compra anterior</string>
     <string name="premium_restore_done">Compras comprobadas</string>
 </resources>

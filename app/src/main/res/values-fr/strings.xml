@@ -114,7 +114,6 @@
     <string name="household_generic_error">Une erreur s\'est produite. Réessayez.</string>
     <string name="household_join_code_length_hint">Un code de foyer comporte %1$d caractères</string>
     <string name="household_join_full_error">Ce foyer compte déjà 2 membres dans la formule gratuite. Demandez à quelqu\'un du foyer de passer à Premium, ou de le quitter pour vous faire de la place.</string>
-    <string name="household_join_premium_cap_error">Ce foyer a atteint son nombre maximal de membres Premium. Demandez à un colocataire d\'acheter \'Colocataires illimités\' via Paramètres &gt; Foyer.</string>
     <string name="household_create_back_warning_title">Code pas encore enregistré ?</string>
     <string name="household_create_back_warning_text">Assurez-vous d\'avoir copié le code du foyer avant de revenir en arrière — vous ne pourrez plus le retrouver ensuite.</string>
     <string name="household_create_back_warning_confirm">Revenir quand même</string>
@@ -164,9 +163,6 @@
     </plurals>
     <string name="more_household_members_title">Membres</string>
     <string name="household_members_title_with_limit_format">Membres (%1$d/%2$d)</string>
-    <string name="household_unlimited_members_nudge_title">Presque complet</string>
-    <string name="household_unlimited_members_nudge_subtitle">Achetez \'Colocataires illimités\' pour ajouter plus de personnes à ce foyer.</string>
-    <string name="household_unlimited_members_nudge_action">Acheter colocataires illimités</string>
     <string name="more_household_member_unnamed">Membre sans nom</string>
     <string name="more_household_member_you">Toi</string>
     <string name="household_allergens_menu_cd">Mes allergènes et préférences alimentaires</string>
@@ -203,7 +199,17 @@
     <string name="account_link_google_button">Continuer avec Google</string>
     <string name="account_link_linked_title">Compte lié</string>
     <string name="account_link_linked_subtitle_format">Lié à %1$s. Votre accès à ce foyer est conservé, même après une réinstallation.</string>
-    <string name="account_link_error_collision">Ce compte Google est déjà lié à un autre foyer. Choisissez un autre compte, ou rejoignez avec ce compte via le code du foyer.</string>
+    <string name="account_link_error_collision">Ce compte Google est déjà lié à un autre foyer.</string>
+    <string name="account_link_recover_button">Basculer vers ce compte</string>
+    <string name="account_link_recover_dialog_title">Basculer vers le compte existant ?</string>
+    <string name="account_link_recover_dialog_text">Cet appareil basculera vers le compte déjà lié à ce compte Google. Tout ce que vous avez créé sur cet appareil depuis la réinstallation (comme un nouveau foyer) reste intact, mais cet appareil en perdra l'accès — vous pourrez le rejoindre plus tard avec son code de foyer.</string>
+    <string name="account_link_recover_confirm">Basculer</string>
+    <string name="account_link_recover_error">Le basculement a échoué. Veuillez réessayer.</string>
+    <string name="account_link_recover_none_found">Vous avez basculé de compte, mais aucun foyer n'a été trouvé pour ce compte.</string>
+    <string name="account_link_recover_picker_title">Quel foyer voulez-vous rouvrir ?</string>
+    <string name="account_link_recover_picker_text">Ce compte est lié au foyer ci-dessous. Choisissez-le pour reconnecter cet appareil.</string>
+    <string name="account_link_recover_retry">Réessayer</string>
+    <string name="account_link_recover_switching">Basculement…</string>
     <string name="account_link_error_generic">Impossible de lier le compte. Réessayez.</string>
     <string name="account_link_prompt_title">Liez votre compte</string>
     <string name="account_link_prompt_message">Évitez de perdre l\'accès à ce foyer si vous désinstallez l\'application ou changez d\'appareil. Cela ne prend que quelques instants, et vous pouvez aussi le faire plus tard via Plus.</string>
@@ -712,15 +718,11 @@
     <string name="premium_price_per_month_format">%1$s par mois</string>
     <string name="premium_plan_monthly">Mensuel</string>
     <string name="premium_plan_yearly">Annuel</string>
-    <string name="premium_plan_lifetime">Paiement unique (à vie)</string>
     <string name="premium_plan_trial_badge_format">%1$d premiers jours gratuits</string>
     <string name="premium_plan_savings_badge_format">Économisez %1$d %%</string>
-    <string name="premium_plan_lifetime_badge">Sans abonnement</string>
     <string name="premium_subscribe_button">S\'abonner</string>
     <string name="premium_subscribe_trial_button">Démarrer l\'essai gratuit (%1$d jours)</string>
-    <string name="premium_buy_lifetime_button">Acheter une fois</string>
     <string name="premium_terms_notice">Renouvelé automatiquement. Résiliable à tout moment via Google Play.</string>
-    <string name="premium_terms_notice_lifetime">Paiement unique. Sans abonnement, sans renouvellement automatique.</string>
     <string name="premium_restore_action">Restaurer un achat précédent</string>
     <string name="premium_restore_done">Achats vérifiés</string>
 </resources>
