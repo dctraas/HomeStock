@@ -477,6 +477,7 @@
     <string name="shopping_list_note_placeholder">E.g. brand or size</string>
     <string name="shopping_list_price_label">Price</string>
     <string name="shopping_list_price_placeholder">0.00</string>
+    <string name="shopping_list_more_options">More options</string>
     <string name="shopping_list_switch_list_cd">Switch list</string>
     <string name="shopping_list_total_format">Total: %1$s</string>
     <string name="shopping_list_list_options_cd">List options</string>

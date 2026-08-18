@@ -113,6 +113,14 @@ class ProductDetailViewModel(
         viewModelScope.launch { productRepository.updateLocation(barcode, location) }
     }
 
+    /** Manually records a new price for this product, typed in directly from Voorraad — the
+     *  same [ProductRepository.addPricePoint] that checking off a priced shopping list item or a
+     *  receipt scan feeds, so this becomes part of the same price history either way. No store is
+     *  attached, unlike the shopping list's price entry, since this field doesn't ask which one. */
+    fun setPrice(price: Double) {
+        viewModelScope.launch { productRepository.addPricePoint(barcode, price, store = null) }
+    }
+
     /** Premium feature — the caller (ProductDetailScreen) checks isPremium before ever letting
      *  the picker that produces [uri] be launched, so this itself doesn't re-check. */
     fun uploadCustomPhoto(uri: Uri) {

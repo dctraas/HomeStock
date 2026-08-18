@@ -88,6 +88,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
@@ -1253,6 +1254,10 @@ private fun ItemFormDialog(
     // numeric field in this app, lets the household type "1," mid-entry without it snapping back.
     // Accepts both "1.89" and "1,89": whichever decimal separator this locale's keyboard produces.
     var priceText by remember { mutableStateOf(initialPrice?.let { formatPrice(it).removePrefix("€") } ?: "") }
+    // Collapsed by default so the everyday add-item flow stays to the fields most items need —
+    // starts open when editing an item that already has a note or price, so existing data never
+    // disappears behind a toggle the household would have to know to click.
+    var showMoreOptions by remember { mutableStateOf(initialNote.isNotBlank() || initialPrice != null) }
 
     // Pre-fills the name field with the transcription — never auto-submits, same reasoning as
     // the AI product-recognition camera: speech recognition can mishear, so the household still
@@ -1339,23 +1344,48 @@ private fun ItemFormDialog(
                             displayText = formatQuantityWithUnit(quantity, unit),
                         )
                     }
-                    OutlinedTextField(
-                        value = note,
-                        onValueChange = { note = it },
-                        label = { Text(stringResource(R.string.shopping_list_note_label)) },
-                        placeholder = { Text(stringResource(R.string.shopping_list_note_placeholder)) },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    OutlinedTextField(
-                        value = priceText,
-                        onValueChange = { priceText = it },
-                        label = { Text(stringResource(R.string.shopping_list_price_label)) },
-                        placeholder = { Text(stringResource(R.string.shopping_list_price_placeholder)) },
-                        leadingIcon = { Text("€", style = MaterialTheme.typography.bodyLarge) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
+                    // Opmerking en Prijs are the exception in this form — most items need neither,
+                    // so they sit behind this toggle instead of always taking up space right under
+                    // Aantal. The chevron rotates to show state; the label itself stays put so this
+                    // doesn't need a second "minder opties" string just for the collapsed direction.
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showMoreOptions = !showMoreOptions },
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = stringResource(R.string.shopping_list_more_options),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Icon(
+                            Icons.Filled.ArrowDropDown,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.rotate(if (showMoreOptions) 180f else 0f),
+                        )
+                    }
+                    if (showMoreOptions) {
+                        OutlinedTextField(
+                            value = note,
+                            onValueChange = { note = it },
+                            label = { Text(stringResource(R.string.shopping_list_note_label)) },
+                            placeholder = { Text(stringResource(R.string.shopping_list_note_placeholder)) },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = priceText,
+                            onValueChange = { priceText = it },
+                            label = { Text(stringResource(R.string.shopping_list_price_label)) },
+                            placeholder = { Text(stringResource(R.string.shopping_list_price_placeholder)) },
+                            leadingIcon = { Text("€", style = MaterialTheme.typography.bodyLarge) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
                 }
             }
         },

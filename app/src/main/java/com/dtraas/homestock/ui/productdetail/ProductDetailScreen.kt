@@ -6,6 +6,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -79,6 +80,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -383,31 +385,33 @@ fun ProductDetailScreen(
                             onChange = viewModel::setMinQuantity,
                         )
 
-                        // Read-only, like every field derived from the catalog product rather than
-                        // this inventory entry — a price only ever gets here two ways: checking off
-                        // a priced shopping list item (ShoppingListRepository.setChecked) or a
-                        // receipt scan, both via ProductRepository.addPricePoint. Lives here in the
-                        // always-visible Voorraad card (not the collapsed Productdetails section
-                        // below) since it's information about what's in stock, same as quantity and
-                        // houdbaarheid — [product.priceHistory] is the same data, newest-first, with
-                        // per-store context where known, for comparing what different stores charged.
-                        product?.lastPrice?.let { lastPrice ->
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween,
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.product_detail_field_last_price),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                Text(
-                                    text = formatPrice(lastPrice),
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                )
-                            }
+                        // Editable, unlike every other field in this card being read from the
+                        // inventory entry — this one lets a household type in a price directly,
+                        // on top of the two ways a price otherwise gets here: checking off a
+                        // priced shopping list item (ShoppingListRepository.setChecked) or a
+                        // receipt scan. All three go through ProductRepository.addPricePoint, so
+                        // they build one continuous history regardless of path. Debounced like
+                        // the fields in ProductDetailsCard below: writes shortly after typing
+                        // pauses, not on every keystroke. [product.priceHistory] (shown further
+                        // down) is the same data, newest-first, with per-store context where known.
+                        var priceText by remember(product?.barcode) {
+                            mutableStateOf(product?.lastPrice?.let { formatPrice(it).removePrefix("€") } ?: "")
                         }
+                        LaunchedEffect(priceText) {
+                            delay(600)
+                            val parsed = priceText.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it >= 0 }
+                            if (parsed != null && parsed != product?.lastPrice) viewModel.setPrice(parsed)
+                        }
+                        OutlinedTextField(
+                            value = priceText,
+                            onValueChange = { priceText = it },
+                            label = { Text(stringResource(R.string.product_detail_field_last_price)) },
+                            placeholder = { Text(stringResource(R.string.shopping_list_price_placeholder)) },
+                            leadingIcon = { Text("€", style = MaterialTheme.typography.bodyLarge) },
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                        )
                         if ((product?.priceHistory?.size ?: 0) > 1) {
                             Column(
                                 verticalArrangement = Arrangement.spacedBy(2.dp),
