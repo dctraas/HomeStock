@@ -382,6 +382,63 @@ fun ProductDetailScreen(
                             minQuantity = uiState.minQuantity,
                             onChange = viewModel::setMinQuantity,
                         )
+
+                        // Read-only, like every field derived from the catalog product rather than
+                        // this inventory entry — a price only ever gets here two ways: checking off
+                        // a priced shopping list item (ShoppingListRepository.setChecked) or a
+                        // receipt scan, both via ProductRepository.addPricePoint. Lives here in the
+                        // always-visible Voorraad card (not the collapsed Productdetails section
+                        // below) since it's information about what's in stock, same as quantity and
+                        // houdbaarheid — [product.priceHistory] is the same data, newest-first, with
+                        // per-store context where known, for comparing what different stores charged.
+                        product?.lastPrice?.let { lastPrice ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.product_detail_field_last_price),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    text = formatPrice(lastPrice),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                )
+                            }
+                        }
+                        if ((product?.priceHistory?.size ?: 0) > 1) {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(2.dp),
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.product_detail_price_history_title),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                // The first entry is already shown above as "Laatste prijs" — this is
+                                // the rest of the trend, oldest of the kept window last.
+                                product?.priceHistory?.drop(1)?.forEach { point ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                    ) {
+                                        Text(
+                                            text = listOfNotNull(formatPriceDate(point.date), point.store).joinToString(" · "),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        Text(
+                                            text = formatPrice(point.price),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -886,56 +943,6 @@ private fun ProductDetailsCard(
                 onSelected = onLocationChange,
                 modifier = Modifier.fillMaxWidth(),
             )
-            // Read-only, like every field in this section — a price only ever gets here two
-            // ways: checking off a priced shopping list item (ShoppingListRepository.setChecked)
-            // or a receipt scan, both via ProductRepository.addPricePoint. [product.priceHistory]
-            // below is the same data, newest-first, with per-store context where known — lets a
-            // household compare what different stores charged the last few times they bought this.
-            product.lastPrice?.let { lastPrice ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(
-                        text = stringResource(R.string.product_detail_field_last_price),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Text(
-                        text = formatPrice(lastPrice),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                }
-            }
-            if (product.priceHistory.size > 1) {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.fillMaxWidth()) {
-                    Text(
-                        text = stringResource(R.string.product_detail_price_history_title),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    // The first entry is already shown above as "Laatste prijs" — this is the
-                    // rest of the trend, oldest of the kept window last.
-                    product.priceHistory.drop(1).forEach { point ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Text(
-                                text = listOfNotNull(formatPriceDate(point.date), point.store).joinToString(" · "),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                            Text(
-                                text = formatPrice(point.price),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                    }
-                }
-            }
             // Note is a field on the inventory entry, not the catalog product — nothing to
             // save it against for a product that isn't (or no longer) in stock.
             //
