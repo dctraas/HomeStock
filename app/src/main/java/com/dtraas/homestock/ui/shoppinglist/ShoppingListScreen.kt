@@ -1255,9 +1255,9 @@ private fun ItemFormDialog(
     // Accepts both "1.89" and "1,89": whichever decimal separator this locale's keyboard produces.
     var priceText by remember { mutableStateOf(initialPrice?.let { formatPrice(it).removePrefix("€") } ?: "") }
     // Collapsed by default so the everyday add-item flow stays to the fields most items need —
-    // starts open when editing an item that already has a note or price, so existing data never
-    // disappears behind a toggle the household would have to know to click.
-    var showMoreOptions by remember { mutableStateOf(initialNote.isNotBlank() || initialPrice != null) }
+    // starts open when editing an item that already has a price, so that doesn't disappear
+    // behind a toggle the household would have to know to click.
+    var showMoreOptions by remember { mutableStateOf(initialPrice != null) }
 
     // Pre-fills the name field with the transcription — never auto-submits, same reasoning as
     // the AI product-recognition camera: speech recognition can mishear, so the household still
@@ -1344,10 +1344,13 @@ private fun ItemFormDialog(
                             displayText = formatQuantityWithUnit(quantity, unit),
                         )
                     }
-                    // Opmerking en Prijs are the exception in this form — most items need neither,
-                    // so they sit behind this toggle instead of always taking up space right under
-                    // Aantal. The chevron rotates to show state; the label itself stays put so this
-                    // doesn't need a second "minder opties" string just for the collapsed direction.
+                    // Prijs is the exception in this form — most items don't need one, so it sits
+                    // behind this toggle instead of always taking up space right under Aantal. The
+                    // chevron rotates to show state; the label itself stays put so this doesn't
+                    // need a second "minder opties" string just for the collapsed direction.
+                    // (Opmerking used to live here too — removed from this form on request; the
+                    // field on ShoppingListItemEntity itself stays, so an item that already has a
+                    // note from before keeps showing it, it just can't be set or edited here anymore.)
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -1368,13 +1371,6 @@ private fun ItemFormDialog(
                         )
                     }
                     if (showMoreOptions) {
-                        OutlinedTextField(
-                            value = note,
-                            onValueChange = { note = it },
-                            label = { Text(stringResource(R.string.shopping_list_note_label)) },
-                            placeholder = { Text(stringResource(R.string.shopping_list_note_placeholder)) },
-                            modifier = Modifier.fillMaxWidth(),
-                        )
                         OutlinedTextField(
                             value = priceText,
                             onValueChange = { priceText = it },
