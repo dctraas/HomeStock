@@ -202,10 +202,10 @@
     <string name="account_link_error_collision">Ce compte Google est déjà lié à un autre foyer.</string>
     <string name="account_link_recover_button">Basculer vers ce compte</string>
     <string name="account_link_recover_dialog_title">Basculer vers le compte existant ?</string>
-    <string name="account_link_recover_dialog_text">Cet appareil basculera vers le compte déjà lié à ce compte Google. Tout ce que vous avez créé sur cet appareil depuis la réinstallation (comme un nouveau foyer) reste intact, mais cet appareil en perdra l'accès — vous pourrez le rejoindre plus tard avec son code de foyer.</string>
+    <string name="account_link_recover_dialog_text">Cet appareil basculera vers le compte déjà lié à ce compte Google. Tout ce que vous avez créé sur cet appareil depuis la réinstallation (comme un nouveau foyer) reste intact, mais cet appareil en perdra l\'accès — vous pourrez le rejoindre plus tard avec son code de foyer.</string>
     <string name="account_link_recover_confirm">Basculer</string>
     <string name="account_link_recover_error">Le basculement a échoué. Veuillez réessayer.</string>
-    <string name="account_link_recover_none_found">Vous avez basculé de compte, mais aucun foyer n'a été trouvé pour ce compte.</string>
+    <string name="account_link_recover_none_found">Vous avez basculé de compte, mais aucun foyer n\'a été trouvé pour ce compte.</string>
     <string name="account_link_recover_picker_title">Quel foyer voulez-vous rouvrir ?</string>
     <string name="account_link_recover_picker_text">Ce compte est lié au foyer ci-dessous. Choisissez-le pour reconnecter cet appareil.</string>
     <string name="account_link_recover_retry">Réessayer</string>
