@@ -476,9 +476,7 @@
     <string name="shopping_list_save_confirm">Opslaan</string>
     <string name="shopping_list_note_label">Opmerking</string>
     <string name="shopping_list_note_placeholder">Bijv. merk of maat</string>
-    <string name="shopping_list_price_label">Prijs</string>
     <string name="shopping_list_price_placeholder">0,00</string>
-    <string name="shopping_list_more_options">Meer opties</string>
     <string name="shopping_list_switch_list_cd">Wissel van lijst</string>
     <string name="shopping_list_total_format">Totaal: %1$s</string>
     <string name="shopping_list_list_options_cd">Lijstopties</string>

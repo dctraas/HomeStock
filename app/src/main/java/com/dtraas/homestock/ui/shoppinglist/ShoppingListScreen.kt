@@ -10,7 +10,6 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -88,14 +87,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -1250,14 +1247,11 @@ private fun ItemFormDialog(
     var quantity by remember { mutableIntStateOf(initialQuantity) }
     var note by remember { mutableStateOf(initialNote) }
     var unit by remember { mutableStateOf(initialUnit) }
-    // Plain text rather than a parsed Double while typing — same reasoning as any other free-text
-    // numeric field in this app, lets the household type "1," mid-entry without it snapping back.
-    // Accepts both "1.89" and "1,89": whichever decimal separator this locale's keyboard produces.
-    var priceText by remember { mutableStateOf(initialPrice?.let { formatPrice(it).removePrefix("€") } ?: "") }
-    // Collapsed by default so the everyday add-item flow stays to the fields most items need —
-    // starts open when editing an item that already has a price, so that doesn't disappear
-    // behind a toggle the household would have to know to click.
-    var showMoreOptions by remember { mutableStateOf(initialPrice != null) }
+    // Neither Opmerking nor Prijs have an input in this form anymore (removed on request) — this
+    // just carries whatever an item already had straight through to onConfirm unchanged, so
+    // editing an item that has one from before (e.g. from a receipt scan) doesn't silently wipe
+    // it. Formatted the same way the field itself used to parse it, so that round-trip is exact.
+    val priceText = initialPrice?.let { formatPrice(it).removePrefix("€") } ?: ""
 
     // Pre-fills the name field with the transcription — never auto-submits, same reasoning as
     // the AI product-recognition camera: speech recognition can mishear, so the household still
@@ -1344,44 +1338,9 @@ private fun ItemFormDialog(
                             displayText = formatQuantityWithUnit(quantity, unit),
                         )
                     }
-                    // Prijs is the exception in this form — most items don't need one, so it sits
-                    // behind this toggle instead of always taking up space right under Aantal. The
-                    // chevron rotates to show state; the label itself stays put so this doesn't
-                    // need a second "minder opties" string just for the collapsed direction.
-                    // (Opmerking used to live here too — removed from this form on request; the
-                    // field on ShoppingListItemEntity itself stays, so an item that already has a
-                    // note from before keeps showing it, it just can't be set or edited here anymore.)
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { showMoreOptions = !showMoreOptions },
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.shopping_list_more_options),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        Icon(
-                            Icons.Filled.ArrowDropDown,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.rotate(if (showMoreOptions) 180f else 0f),
-                        )
-                    }
-                    if (showMoreOptions) {
-                        OutlinedTextField(
-                            value = priceText,
-                            onValueChange = { priceText = it },
-                            label = { Text(stringResource(R.string.shopping_list_price_label)) },
-                            placeholder = { Text(stringResource(R.string.shopping_list_price_placeholder)) },
-                            leadingIcon = { Text("€", style = MaterialTheme.typography.bodyLarge) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
-                    }
+                    // Opmerking and Prijs (and the "Meer opties" toggle that used to hold them)
+                    // are gone from this form on request — see the priceText comment above for
+                    // what still happens to an item that already has one of these set.
                 }
             }
         },
