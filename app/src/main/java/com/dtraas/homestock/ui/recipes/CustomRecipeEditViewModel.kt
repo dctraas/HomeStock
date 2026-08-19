@@ -39,14 +39,19 @@ data class CustomRecipeEditUiState(
 )
 
 /**
- * Backs both the "new custom recipe" and "edit custom recipe" flows — [recipeId] null means the
- * former (form starts empty), non-null means the latter (form is pre-filled by [load], and
- * delete becomes available). Either way [save] calls the same
- * [RecipeRepository.saveCustomRecipe], which creates or overwrites based on whether an id is
- * passed through.
+ * Backs three flows: "new custom recipe" ([recipeId] and [importId] both null, form starts
+ * empty), "edit custom recipe" ([recipeId] non-null, form pre-filled by [load], delete becomes
+ * available), and "review an imported recipe" ([importId] non-null — see
+ * [RecipeRepository.importRecipeFromUrl] — form pre-filled from the already-cached detail
+ * [load] fetches by that id, same as the edit flow, but [save] still creates a brand-new recipe
+ * rather than overwriting anything, since [recipeId] stays null in this case; the temporary
+ * "ai-..." id [importId] points at is only ever a [RecipeRepository] cache key, never persisted
+ * itself). Either way [save] calls the same [RecipeRepository.saveCustomRecipe], which creates
+ * or overwrites based on whether [recipeId] is passed through.
  */
 class CustomRecipeEditViewModel(
     private val recipeId: String?,
+    private val importId: String?,
     private val recipeRepository: RecipeRepository,
 ) : ViewModel() {
 
@@ -54,11 +59,10 @@ class CustomRecipeEditViewModel(
     val uiState: StateFlow<CustomRecipeEditUiState> = _uiState
 
     init {
-        if (recipeId != null) load()
+        (recipeId ?: importId)?.let(::load)
     }
 
-    private fun load() {
-        val id = recipeId ?: return
+    private fun load(id: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, hasLoadError = false) }
             recipeRepository.getRecipeDetail(id)

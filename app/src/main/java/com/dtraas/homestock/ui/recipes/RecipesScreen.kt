@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -27,6 +28,7 @@ import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Search
@@ -69,6 +71,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -97,6 +100,7 @@ import com.dtraas.homestock.ui.theme.SoftImageShape
 fun RecipesScreen(
     onRecipeClick: (String) -> Unit,
     onAddCustomRecipe: () -> Unit = {},
+    onImportedRecipe: (String) -> Unit = {},
 ) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: RecipesViewModel = viewModel(
@@ -108,6 +112,8 @@ fun RecipesScreen(
     val languageTag = LocalConfiguration.current.locales[0].language
     var showGenerateDialog by remember { mutableStateOf(false) }
     var generateWish by remember { mutableStateOf("") }
+    var showImportDialog by remember { mutableStateOf(false) }
+    var importUrl by remember { mutableStateOf("") }
     var viewMode by remember { mutableStateOf(RecipesViewMode.GRID) }
 
     // languageTag as the key rather than Unit: an in-app language switch (Instellingen >
@@ -121,6 +127,14 @@ fun RecipesScreen(
             showGenerateDialog = false
             generateWish = ""
             onRecipeClick(id)
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        viewModel.importedRecipeId.collect { id ->
+            showImportDialog = false
+            importUrl = ""
+            onImportedRecipe(id)
         }
     }
 
@@ -193,12 +207,15 @@ fun RecipesScreen(
                     )
                 }
             } else if (uiState.tab == RecipesTab.CUSTOM) {
-                TextButton(
-                    onClick = onAddCustomRecipe,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                ) {
-                    Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Text(stringResource(R.string.recipes_add_custom_button), modifier = Modifier.padding(start = 8.dp))
+                Row(modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)) {
+                    TextButton(onClick = onAddCustomRecipe, modifier = Modifier.padding(horizontal = 8.dp)) {
+                        Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Text(stringResource(R.string.recipes_add_custom_button), modifier = Modifier.padding(start = 8.dp))
+                    }
+                    TextButton(onClick = { showImportDialog = true }, modifier = Modifier.padding(horizontal = 8.dp)) {
+                        Icon(Icons.Filled.Link, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Text(stringResource(R.string.recipes_import_url_button), modifier = Modifier.padding(start = 8.dp))
+                    }
                 }
             }
 
@@ -321,6 +338,22 @@ fun RecipesScreen(
             },
         )
     }
+
+    if (showImportDialog) {
+        ImportRecipeDialog(
+            url = importUrl,
+            onUrlChange = { importUrl = it },
+            isImporting = uiState.isImporting,
+            error = uiState.importError,
+            onImport = { viewModel.importRecipeFromUrl(importUrl) },
+            onDismiss = {
+                if (!uiState.isImporting) {
+                    showImportDialog = false
+                    viewModel.dismissImportError()
+                }
+            },
+        )
+    }
 }
 
 /** List/grid toggle for the recipe results — same idea as Voorraad's, purely a display choice, not persisted. */
@@ -401,6 +434,86 @@ private fun GenerateRecipeDialog(
         },
         dismissButton = {
             TextButton(onClick = onDismiss, enabled = !isGenerating) {
+                Text(stringResource(R.string.common_cancel))
+            }
+        },
+    )
+}
+
+/** Lets the user paste a recipe page's URL for [RecipesViewModel.importRecipeFromUrl] to parse —
+ *  same loading/error-inline pattern as [GenerateRecipeDialog]. Confirming navigates to
+ *  CustomRecipeEditScreen's import-prefill flow (not straight to RecipeDetailScreen the way
+ *  AI-generation does) so the household reviews the scraped/AI-extracted result before it's
+ *  actually saved — see [RecipeRepository.importRecipeFromUrl]'s doc for why. */
+@Composable
+private fun ImportRecipeDialog(
+    url: String,
+    onUrlChange: (String) -> Unit,
+    isImporting: Boolean,
+    error: ImportRecipeError?,
+    onImport: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.recipes_import_url_title)) },
+        text = {
+            Column {
+                Text(
+                    text = stringResource(R.string.recipes_import_url_hint),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                OutlinedTextField(
+                    value = url,
+                    onValueChange = onUrlChange,
+                    placeholder = { Text(stringResource(R.string.recipes_import_url_placeholder)) },
+                    singleLine = true,
+                    enabled = !isImporting,
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                )
+                if (isImporting) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 16.dp),
+                    ) {
+                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        Text(
+                            text = stringResource(R.string.recipes_import_url_loading),
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(start = 12.dp),
+                        )
+                    }
+                }
+                if (error != null) {
+                    val (icon, messageRes) = when (error) {
+                        ImportRecipeError.PREMIUM_REQUIRED -> Icons.Filled.WorkspacePremium to R.string.recipes_import_url_failed_premium
+                        ImportRecipeError.NO_CONNECTION -> Icons.Filled.CloudOff to R.string.recipes_import_url_failed_no_connection
+                        ImportRecipeError.UNKNOWN -> Icons.Filled.WifiOff to R.string.recipes_import_url_failed_unknown
+                    }
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 16.dp),
+                    ) {
+                        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                        Text(
+                            text = stringResource(messageRes),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(start = 12.dp),
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(onClick = onImport, enabled = !isImporting && url.isNotBlank()) {
+                Text(stringResource(R.string.recipes_import_url_action))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss, enabled = !isImporting) {
                 Text(stringResource(R.string.common_cancel))
             }
         },

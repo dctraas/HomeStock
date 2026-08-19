@@ -3,11 +3,14 @@ import { HttpsError } from "firebase-functions/v2/https";
 import {
   browseCacheKey,
   cleanInstructions,
+  extractJsonLdRecipe,
   findNutrientAmount,
   instructionsFromAnalyzed,
   isCacheableRecipeId,
+  isDisallowedImportHost,
   isValidIsoDate,
   languageNameForLocale,
+  parseImportUrl,
   parseReceiptPrice,
   requireUid,
   translationDocId,
@@ -184,5 +187,167 @@ describe("translationDocId", () => {
 describe("languageNameForLocale", () => {
   it("falls back to the raw locale code for an unmapped locale", () => {
     expect(languageNameForLocale("xx")).toBe("xx");
+  });
+});
+
+describe("isDisallowedImportHost", () => {
+  it("rejects localhost and its subdomains", () => {
+    expect(isDisallowedImportHost("localhost")).toBe(true);
+    expect(isDisallowedImportHost("app.localhost")).toBe(true);
+  });
+
+  it("rejects loopback and private IPv4 ranges", () => {
+    expect(isDisallowedImportHost("127.0.0.1")).toBe(true);
+    expect(isDisallowedImportHost("10.1.2.3")).toBe(true);
+    expect(isDisallowedImportHost("172.16.0.5")).toBe(true);
+    expect(isDisallowedImportHost("172.31.255.255")).toBe(true);
+    expect(isDisallowedImportHost("192.168.1.1")).toBe(true);
+  });
+
+  it("rejects the cloud metadata IP and link-local range", () => {
+    expect(isDisallowedImportHost("169.254.169.254")).toBe(true);
+    expect(isDisallowedImportHost("169.254.1.1")).toBe(true);
+  });
+
+  it("does not reject a 172.x address outside the private /12 block", () => {
+    expect(isDisallowedImportHost("172.32.0.1")).toBe(false);
+    expect(isDisallowedImportHost("172.15.0.1")).toBe(false);
+  });
+
+  it("allows an ordinary public host", () => {
+    expect(isDisallowedImportHost("example.com")).toBe(false);
+    expect(isDisallowedImportHost("www.allrecipes.com")).toBe(false);
+  });
+});
+
+describe("parseImportUrl", () => {
+  it("accepts an ordinary https URL", () => {
+    expect(parseImportUrl("https://example.com/recipe/123").hostname).toBe("example.com");
+  });
+
+  it("rejects a non-http(s) scheme", () => {
+    expect(() => parseImportUrl("file:///etc/passwd")).toThrow(HttpsError);
+    expect(() => parseImportUrl("ftp://example.com")).toThrow(HttpsError);
+  });
+
+  it("rejects an unparseable string", () => {
+    expect(() => parseImportUrl("not a url")).toThrow(HttpsError);
+  });
+
+  it("rejects a private/loopback host", () => {
+    expect(() => parseImportUrl("http://localhost:3000/recipe")).toThrow(HttpsError);
+    expect(() => parseImportUrl("http://169.254.169.254/latest/meta-data")).toThrow(HttpsError);
+  });
+});
+
+describe("extractJsonLdRecipe", () => {
+  it("parses a plain schema.org Recipe block", () => {
+    const html = `<html><head><script type="application/ld+json">${JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Recipe",
+      name: "Tomatensoep",
+      recipeCuisine: "Nederlands",
+      recipeYield: "4 servings",
+      totalTime: "PT45M",
+      recipeIngredient: ["500 g tomaten", "1 ui", "zout naar smaak"],
+      recipeInstructions: ["Snijd de ui.", "Kook de tomaten."],
+    })}</script></head><body></body></html>`;
+    const recipe = extractJsonLdRecipe(html);
+    expect(recipe).not.toBeNull();
+    expect(recipe?.title).toBe("Tomatensoep");
+    expect(recipe?.cuisine).toBe("Nederlands");
+    expect(recipe?.servings).toBe(4);
+    expect(recipe?.estimatedMinutes).toBe(45);
+    expect(recipe?.ingredients).toEqual([
+      { name: "tomaten", amount: "500 g" },
+      { name: "ui", amount: "1" },
+      { name: "zout naar smaak", amount: "" },
+    ]);
+    expect(recipe?.instructions).toEqual(["Snijd de ui.", "Kook de tomaten."]);
+  });
+
+  it("finds a Recipe node nested inside an @graph array", () => {
+    const html = `<script type="application/ld+json">${JSON.stringify({
+      "@context": "https://schema.org",
+      "@graph": [
+        { "@type": "WebSite", name: "Some Blog" },
+        {
+          "@type": ["Recipe"],
+          name: "Pasta Carbonara",
+          recipeIngredient: ["200 g pasta", "2 eieren"],
+          recipeInstructions: [{ "@type": "HowToStep", text: "Kook de pasta." }],
+        },
+      ],
+    })}</script>`;
+    const recipe = extractJsonLdRecipe(html);
+    expect(recipe?.title).toBe("Pasta Carbonara");
+    expect(recipe?.instructions).toEqual(["Kook de pasta."]);
+  });
+
+  it("flattens HowToSection steps nested under itemListElement", () => {
+    const html = `<script type="application/ld+json">${JSON.stringify({
+      "@type": "Recipe",
+      name: "Lasagne",
+      recipeIngredient: ["1 pak lasagnebladen"],
+      recipeInstructions: [
+        {
+          "@type": "HowToSection",
+          name: "Saus",
+          itemListElement: [
+            { "@type": "HowToStep", text: "Maak de saus." },
+            { "@type": "HowToStep", text: "Laat sudderen." },
+          ],
+        },
+      ],
+    })}</script>`;
+    const recipe = extractJsonLdRecipe(html);
+    expect(recipe?.instructions).toEqual(["Maak de saus.", "Laat sudderen."]);
+  });
+
+  it("returns null when no script block contains a Recipe node", () => {
+    const html = `<script type="application/ld+json">${JSON.stringify({ "@type": "WebSite", name: "Some Blog" })}</script>`;
+    expect(extractJsonLdRecipe(html)).toBeNull();
+  });
+
+  it("returns null when the Recipe node has no name or no ingredients", () => {
+    const missingName = `<script type="application/ld+json">${JSON.stringify({
+      "@type": "Recipe",
+      recipeIngredient: ["1 ui"],
+    })}</script>`;
+    expect(extractJsonLdRecipe(missingName)).toBeNull();
+
+    const missingIngredients = `<script type="application/ld+json">${JSON.stringify({
+      "@type": "Recipe",
+      name: "Iets",
+      recipeIngredient: [],
+    })}</script>`;
+    expect(extractJsonLdRecipe(missingIngredients)).toBeNull();
+  });
+
+  it("omits cuisine/estimatedMinutes/servings entirely when the page doesn't state them, rather than defaulting to \"\"/0", () => {
+    const html = `<script type="application/ld+json">${JSON.stringify({
+      "@type": "Recipe",
+      name: "Simpel gerecht",
+      recipeIngredient: ["1 ui"],
+      recipeInstructions: "Snijd de ui.",
+    })}</script>`;
+    const recipe = extractJsonLdRecipe(html);
+    expect(recipe?.title).toBe("Simpel gerecht");
+    expect("cuisine" in (recipe ?? {})).toBe(false);
+    expect("estimatedMinutes" in (recipe ?? {})).toBe(false);
+    expect("servings" in (recipe ?? {})).toBe(false);
+  });
+
+  it("tolerates malformed JSON in one block by skipping to the next", () => {
+    const html =
+      `<script type="application/ld+json">{ not valid json </script>` +
+      `<script type="application/ld+json">${JSON.stringify({
+        "@type": "Recipe",
+        name: "Salade",
+        recipeIngredient: ["1 krop sla"],
+        recipeInstructions: "Meng alles.",
+      })}</script>`;
+    const recipe = extractJsonLdRecipe(html);
+    expect(recipe?.title).toBe("Salade");
   });
 });

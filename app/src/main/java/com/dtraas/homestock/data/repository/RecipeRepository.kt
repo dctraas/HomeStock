@@ -434,6 +434,51 @@ class RecipeRepository(
         }
     }
 
+    /**
+     * Imports one recipe from a household-pasted [url] (via the `importRecipeFromUrl` Cloud
+     * Function — see its doc comment in `functions/src/index.ts` for the schema.org-JSON-LD-
+     * first, Claude-fallback strategy). Reuses [GenerateRecipeResult]/[mapGeneratedRecipeToDetail]
+     * unchanged: the function returns the exact same `{recipe}` shape as `generateRecipe`, and
+     * an invalid URL or "no recipe found on that page" both simply surface as [GenerateRecipeResult.Failed]
+     * here rather than needing their own result cases.
+     *
+     * Unlike [generateRecipe], the caller is expected to route the returned [RecipeDetail]
+     * straight into [CustomRecipeEditViewModel]'s prefill flow rather than the household's own
+     * "eigen recept" — a scraped/AI-extracted result can misparse a step or drop an ingredient in
+     * a way an AI recipe generated fresh from a known ingredient list doesn't, so this is never
+     * saved on its own; the household reviews/fixes it in the editor before it becomes a real
+     * custom recipe.
+     */
+    suspend fun importRecipeFromUrl(url: String, languageTag: String?): GenerateRecipeResult {
+        val householdId = householdSession.householdId.value ?: return GenerateRecipeResult.Failed
+        val requestData = hashMapOf(
+            "householdId" to householdId,
+            "url" to url,
+            "locale" to (languageTag ?: Locale.getDefault().language),
+        )
+
+        return try {
+            val result = functions.getHttpsCallable("importRecipeFromUrl").call(requestData).await()
+            val response = result.getData() as? Map<*, *> ?: return GenerateRecipeResult.Failed
+            val recipe = response["recipe"] as? Map<*, *> ?: return GenerateRecipeResult.Failed
+            val detail = mapGeneratedRecipeToDetail(recipe) ?: return GenerateRecipeResult.Failed
+            cacheDetail(detail)
+            GenerateRecipeResult.Success(detail)
+        } catch (e: FirebaseFunctionsException) {
+            when (e.code) {
+                FirebaseFunctionsException.Code.PERMISSION_DENIED -> GenerateRecipeResult.PremiumRequired
+                FirebaseFunctionsException.Code.UNAVAILABLE,
+                FirebaseFunctionsException.Code.DEADLINE_EXCEEDED,
+                -> GenerateRecipeResult.NoConnection
+                else -> GenerateRecipeResult.Failed
+            }
+        } catch (e: IOException) {
+            GenerateRecipeResult.NoConnection
+        } catch (e: Exception) {
+            GenerateRecipeResult.Failed
+        }
+    }
+
     /** Which of [detail]'s ingredients look like they're already in inventory, by name. */
     suspend fun matchedIngredients(detail: RecipeDetail): Set<String> {
         val inventoryNames = inventoryRepository.observeInventoryWithProduct().first().map { it.name }

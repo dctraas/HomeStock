@@ -36,10 +36,20 @@ sealed class Destination(val route: String) {
     data object CookMode : Destination("cook_mode/{mealId}") {
         fun createRoute(mealId: String) = "cook_mode/$mealId"
     }
-    data object CustomRecipeEdit : Destination("custom_recipe_edit?recipeId={recipeId}") {
-        /** [recipeId] null creates a new recipe; non-null edits an existing one. */
-        fun createRoute(recipeId: String? = null) =
-            if (recipeId != null) "custom_recipe_edit?recipeId=$recipeId" else "custom_recipe_edit"
+    data object CustomRecipeEdit : Destination("custom_recipe_edit?recipeId={recipeId}&importId={importId}") {
+        /**
+         * [recipeId] null creates a new recipe; non-null edits an existing one. [importId] is a
+         * third, mutually-exclusive case: also creates a new recipe, but pre-filled from an
+         * already-imported draft (see [com.dtraas.homestock.data.repository.RecipeRepository.importRecipeFromUrl])
+         * instead of starting empty.
+         */
+        fun createRoute(recipeId: String? = null, importId: String? = null): String {
+            val params = listOfNotNull(
+                recipeId?.let { "recipeId=$it" },
+                importId?.let { "importId=$it" },
+            )
+            return if (params.isEmpty()) "custom_recipe_edit" else "custom_recipe_edit?${params.joinToString("&")}"
+        }
     }
     data object ReceiptScan : Destination("receipt_scan")
     data object AiRecognize : Destination("ai_recognize")

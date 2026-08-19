@@ -602,6 +602,15 @@
     <string name="recipes_generate_ai_failed_no_connection">Keine Verbindung. Überprüfe deine Internetverbindung und versuche es erneut.</string>
     <string name="recipes_generate_ai_failed_premium">Diese Funktion ist nur mit Premium verfügbar.</string>
     <string name="recipes_generate_ai_failed_unknown">Rezept konnte nicht erstellt werden. Bitte versuche es erneut.</string>
+    <string name="recipes_import_url_button">Von URL importieren</string>
+    <string name="recipes_import_url_title">Rezept von URL importieren</string>
+    <string name="recipes_import_url_hint">Füge den Link zu einer Rezeptseite ein — wir extrahieren die Zutaten und die Zubereitung. Du kannst vor dem Speichern noch alles anpassen.</string>
+    <string name="recipes_import_url_placeholder">https://…</string>
+    <string name="recipes_import_url_action">Importieren</string>
+    <string name="recipes_import_url_loading">Rezept wird abgerufen…</string>
+    <string name="recipes_import_url_failed_no_connection">Keine Verbindung. Überprüfe deine Internetverbindung und versuche es erneut.</string>
+    <string name="recipes_import_url_failed_premium">Diese Funktion ist nur mit Premium verfügbar.</string>
+    <string name="recipes_import_url_failed_unknown">Konnte kein Rezept von dieser Seite importieren. Überprüfe den Link und versuche es erneut.</string>
     <string name="recipes_favorite_add_cd">Zu Favoriten hinzufügen</string>
     <string name="recipes_favorite_remove_cd">Aus Favoriten entfernen</string>
     <string name="recipes_edit_custom_cd">Rezept bearbeiten</string>

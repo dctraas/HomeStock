@@ -59,11 +59,15 @@ import com.dtraas.homestock.ui.components.HomeStockTopAppBar
  * Create/edit form for a hand-entered recipe (see [RecipeRepository.saveCustomRecipe]) —
  * [recipeId] null means "new recipe" (form starts empty, no delete action); non-null means
  * "edit" (form is pre-filled from [CustomRecipeEditViewModel.load], delete becomes available).
+ * [importId] is the third case: also a "new recipe" as far as saving/delete are concerned, but
+ * pre-filled from an already-imported draft (see [RecipeRepository.importRecipeFromUrl]) instead
+ * of starting empty — see [CustomRecipeEditViewModel]'s doc for how the two non-null cases differ.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomRecipeEditScreen(
     recipeId: String?,
+    importId: String? = null,
     onBack: () -> Unit,
     onSaved: (String) -> Unit,
     onDeleted: () -> Unit,
@@ -71,7 +75,7 @@ fun CustomRecipeEditScreen(
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: CustomRecipeEditViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { CustomRecipeEditViewModel(recipeId, application.container.recipeRepository) }
+            initializer { CustomRecipeEditViewModel(recipeId, importId, application.container.recipeRepository) }
         },
     )
     val uiState by viewModel.uiState.collectAsState()

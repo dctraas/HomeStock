@@ -11,6 +11,7 @@ the app UI):
 | `generateRecipe` | Recepten → "Genereer met AI" | Claude API (Anthropic) |
 | `searchRecipes` / `getRecipeInformation` | Recepten (browse/zoek/detail) | Spoonacular API |
 | `translateRecipe` | Recepten (titels + detail, wanneer app-taal ≠ Engels) | Claude API (Anthropic) |
+| `importRecipeFromUrl` | Recepten → "Importeer van URL" | schema.org JSON-LD (page fetch, no API cost) when present, Claude API (Anthropic) as fallback |
 
 Two external API keys are involved, and **neither ever reaches the Android app** — they live
 only in this project's Secret Manager config, which is the whole reason these go through a
@@ -100,6 +101,13 @@ this directory — see the
     so only your real, unmodified app can call these functions at all — currently **not**
     configured here.
   - A simple per-household daily counter in Firestore, checked before the external API call.
+- **`importRecipeFromUrl`'s outbound fetch (SSRF)**: this is the one function that fetches a URL
+  the client supplies, so `isDisallowedImportHost` rejects the obvious cases (localhost, private
+  IPv4 ranges, the cloud metadata IP) by hostname text before fetching. That's a text check, not
+  network-level egress control — a DNS-rebinding attack could still slip a private address past
+  it. Fine for this app's threat model (a private household tool, not a public multi-tenant
+  target), but worth hardening further (e.g. resolve-then-check-IP, or route through an egress
+  proxy) if this ever needs to withstand a more adversarial audience.
 
 ## Caching
 
@@ -138,6 +146,11 @@ no secret key and is already called directly from the app.
   **all** households, not once per household — the more overlap in what people browse (likely
   high, since "browse" itself is now also cached and shared), the closer actual spend gets to
   that one-time cost regardless of user count.
+- `importRecipeFromUrl`: **free** (no Anthropic call at all) whenever the page already carries
+  schema.org Recipe JSON-LD — true for most recipe sites, which embed it for Google's own recipe
+  rich-results. Only falls back to Claude (full page text in, one recipe out — similar token
+  cost to `generateRecipe`, roughly **$0.001–0.002 per import**) when a page has no usable
+  JSON-LD.
 
 **Spoonacular**: free tier is 150 points/day. `complexSearch`/`findByIngredients` cost a handful
 of points per call (more with `addRecipeInformation=true`, used for browse/search so opening a

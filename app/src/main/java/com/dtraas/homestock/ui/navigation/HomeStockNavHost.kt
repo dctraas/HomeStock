@@ -239,6 +239,9 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                         navController.navigate(Destination.RecipeDetail.createRoute(mealId))
                     },
                     onAddCustomRecipe = { navController.navigate(Destination.CustomRecipeEdit.createRoute()) },
+                    onImportedRecipe = { importId ->
+                        navController.navigate(Destination.CustomRecipeEdit.createRoute(importId = importId))
+                    },
                 )
             }
             composable(
@@ -265,11 +268,16 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
             }
             composable(
                 route = Destination.CustomRecipeEdit.route,
-                arguments = listOf(navArgument("recipeId") { type = NavType.StringType; nullable = true; defaultValue = null }),
+                arguments = listOf(
+                    navArgument("recipeId") { type = NavType.StringType; nullable = true; defaultValue = null },
+                    navArgument("importId") { type = NavType.StringType; nullable = true; defaultValue = null },
+                ),
             ) { entry ->
                 val recipeId = entry.arguments?.getString("recipeId")
+                val importId = entry.arguments?.getString("importId")
                 CustomRecipeEditScreen(
                     recipeId = recipeId,
+                    importId = importId,
                     onBack = { navController.popBackStack() },
                     onSaved = { savedId ->
                         // Always a fresh navigate rather than popping back to an existing

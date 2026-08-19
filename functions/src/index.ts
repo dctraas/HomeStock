@@ -634,6 +634,346 @@ export const generateRecipe = onCall(
 );
 
 // ---------------------------------------------------------------------------
+// importRecipeFromUrl — parses a recipe out of an arbitrary web page a household pastes in.
+// Tries schema.org "Recipe" JSON-LD first (most recipe sites already embed this for Google's
+// own recipe rich-results, so this is usually free and exact); falls back to asking Claude to
+// extract one from the page's own text when that's missing or incomplete. Either way this
+// returns the same {recipe} shape as generateRecipe above, so the client reuses the same
+// mapGeneratedRecipeToDetail mapper — the result is never saved automatically, it only
+// pre-fills the "eigen recept" editor (see CustomRecipeEditScreen) for the household to review
+// and fix before keeping it, since a scraped/AI-extracted result can be wrong in ways a
+// generated-from-inventory recipe never is (mis-parsed step order, an ingredient the page
+// buried in a sidebar, a JS-only page with no server-rendered recipe at all).
+// ---------------------------------------------------------------------------
+
+const MAX_IMPORT_HTML_LENGTH = 1_500_000; // ~1.5 MB of markup — generous for a recipe page, bounded against a pathological response.
+const IMPORT_FETCH_TIMEOUT_MS = 15_000;
+const MAX_IMPORT_PAGE_TEXT_LENGTH = 12_000; // Bounds the Claude-fallback prompt's token cost.
+
+interface ImportRecipeFromUrlRequest {
+  householdId: string;
+  url: string;
+  locale?: string;
+}
+
+/**
+ * Best-effort SSRF guard: rejects loopback/private/link-local hostnames and the cloud
+ * metadata IP by hostname text alone. Not a substitute for network-level egress control (a
+ * DNS-rebinding attack could still slip a private address past a text check like this), but it
+ * stops the obvious case — someone pasting "http://localhost/..." or
+ * "http://169.254.169.254/..." — for a feature that otherwise has this Cloud Function fetch
+ * whatever URL a household types in.
+ */
+export function isDisallowedImportHost(hostname: string): boolean {
+  const host = hostname.toLowerCase();
+  if (host === "localhost" || host.endsWith(".localhost") || host === "::1") return true;
+  if (host === "169.254.169.254") return true; // cloud metadata service
+  const ipv4 = host.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+  if (ipv4) {
+    const a = Number(ipv4[1]);
+    const b = Number(ipv4[2]);
+    if (a === 127) return true; // loopback
+    if (a === 10) return true; // 10.0.0.0/8
+    if (a === 172 && b >= 16 && b <= 31) return true; // 172.16.0.0/12
+    if (a === 192 && b === 168) return true; // 192.168.0.0/16
+    if (a === 169 && b === 254) return true; // link-local
+    if (a === 0) return true;
+  }
+  return false;
+}
+
+/** Validates and parses a household-supplied recipe URL — http(s) only, no private/loopback host. */
+export function parseImportUrl(raw: string): URL {
+  let url: URL;
+  try {
+    url = new URL(raw);
+  } catch {
+    throw new HttpsError("invalid-argument", "invalid_url");
+  }
+  if (url.protocol !== "http:" && url.protocol !== "https:") {
+    throw new HttpsError("invalid-argument", "invalid_url");
+  }
+  if (isDisallowedImportHost(url.hostname)) {
+    throw new HttpsError("invalid-argument", "invalid_url");
+  }
+  return url;
+}
+
+async function fetchImportPage(url: URL): Promise<string> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), IMPORT_FETCH_TIMEOUT_MS);
+  try {
+    const response = await fetch(url.toString(), {
+      redirect: "follow",
+      signal: controller.signal,
+      headers: {
+        // A plain browser-like UA — some recipe sites block requests with no/empty UA outright.
+        "user-agent": "Mozilla/5.0 (compatible; HomeStockRecipeImport/1.0)",
+        accept: "text/html,application/xhtml+xml",
+      },
+    });
+    if (!response.ok) {
+      throw new HttpsError("unavailable", "import_fetch_failed");
+    }
+    const text = await response.text();
+    return text.slice(0, MAX_IMPORT_HTML_LENGTH);
+  } catch (error) {
+    if (error instanceof HttpsError) throw error;
+    logger.warn("importRecipeFromUrl: fetch failed", { url: url.toString(), error });
+    throw new HttpsError("unavailable", "import_fetch_failed");
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+/** Strips a whole HTML page down to plain, line-broken text for the Claude-fallback prompt —
+ *  unlike [cleanInstructions] (which only ever sees an already-isolated instructions fragment
+ *  from Spoonacular), this also drops <script>/<style> blocks, since a raw page includes both. */
+function stripHtml(html: string): string {
+  return html
+    .replace(/<script[\s\S]*?<\/script>/gi, " ")
+    .replace(/<style[\s\S]*?<\/style>/gi, " ")
+    .replace(/<li[^>]*>/gi, "\n- ")
+    .replace(/<\/?(p|ol|ul|br|div|h[1-6])[^>]*>/gi, "\n")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&amp;/g, "&")
+    .replace(/&nbsp;/g, " ")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;/g, "'")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n{2,}/g, "\n")
+    .trim();
+}
+
+/** Walks a parsed JSON-LD value looking for a node whose "@type" (a string or string[]) includes
+ *  "Recipe" — schema.org allows a lone top-level object, an array of them, or an object with an
+ *  "@graph" wrapping several (the common WordPress-recipe-plugin shape). */
+function findRecipeNode(value: unknown): Record<string, unknown> | null {
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      const found = findRecipeNode(entry);
+      if (found) return found;
+    }
+    return null;
+  }
+  if (value && typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    const type = obj["@type"];
+    const types = Array.isArray(type) ? type : typeof type === "string" ? [type] : [];
+    if (types.some((t) => typeof t === "string" && t.toLowerCase() === "recipe")) return obj;
+    if (obj["@graph"]) {
+      const found = findRecipeNode(obj["@graph"]);
+      if (found) return found;
+    }
+  }
+  return null;
+}
+
+function jsonLdText(value: unknown): string | undefined {
+  if (typeof value === "string") return value.trim() || undefined;
+  if (value && typeof value === "object" && "text" in (value as Record<string, unknown>)) {
+    return jsonLdText((value as Record<string, unknown>).text);
+  }
+  return undefined;
+}
+
+/** schema.org's `recipeInstructions` is wildly inconsistent across sites: a single (sometimes
+ *  HTML) string, an array of strings, or an array of HowToStep/HowToSection objects (a
+ *  HowToSection nests further steps under `itemListElement`). Flattens every shape into a
+ *  plain ordered list of step strings. */
+function jsonLdInstructionSteps(value: unknown): string[] {
+  if (typeof value === "string") {
+    return stripHtml(value)
+      .split(/\n+/)
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap((entry) => jsonLdInstructionSteps(entry));
+  }
+  if (value && typeof value === "object") {
+    const obj = value as Record<string, unknown>;
+    if (obj.itemListElement) return jsonLdInstructionSteps(obj.itemListElement);
+    const text = jsonLdText(obj);
+    return text ? [text] : [];
+  }
+  return [];
+}
+
+/** ISO 8601 duration ("PT30M", "PT1H15M") -> whole minutes, undefined if unparseable/zero. */
+function parseIsoDurationMinutes(value: unknown): number | undefined {
+  if (typeof value !== "string") return undefined;
+  const match = value.match(/^PT(?:(\d+)H)?(?:(\d+)M)?/);
+  if (!match) return undefined;
+  const hours = Number(match[1] ?? 0);
+  const minutes = Number(match[2] ?? 0);
+  const total = hours * 60 + minutes;
+  return total > 0 ? total : undefined;
+}
+
+function jsonLdYieldServings(value: unknown): number | undefined {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (typeof raw === "number") return Math.round(raw);
+  if (typeof raw === "string") {
+    const match = raw.match(/\d+/);
+    return match ? Number(match[0]) : undefined;
+  }
+  return undefined;
+}
+
+/** schema.org's `recipeIngredient` is one free-text line per ingredient ("300 g bloem", "2
+ *  eieren") rather than separate name/amount fields — splits off a leading quantity so this
+ *  still lands in the same {name, amount} shape [buildRecipeGenerationPrompt]'s AI output
+ *  already uses, instead of dumping the whole line into `name`. Best-effort only: a line with
+ *  no leading quantity ("zout naar smaak") just gets an empty `amount`. */
+function splitIngredientLine(line: string): { name: string; amount: string } {
+  const match = line.match(
+    /^([\d½¼¾⅓⅔.,/\s]+(?:g|gram|kg|ml|l|el|tl|stuks?|stuk|cup|cups|oz|lb|teaspoons?|tablespoons?)?\.?)\s+(.+)$/i,
+  );
+  if (match && match[2].trim().length > 0) {
+    return { name: match[2].trim(), amount: match[1].trim() };
+  }
+  return { name: line, amount: "" };
+}
+
+/**
+ * [GeneratedRecipe] minus the three fields JSON-LD often doesn't carry (cuisine, total time,
+ * serving count) — those become optional here rather than defaulted to ""/0, so a JSON-LD site
+ * that simply never stated a serving count doesn't seed CustomRecipeEditScreen's review form
+ * with a bogus "0" the household then has to notice and clear. `mapGeneratedRecipeToDetail` on
+ * the client already reads a missing key as "no value" (not 0/""), so omitting the key entirely
+ * — rather than sending an empty/zero placeholder — is what actually gets that behavior.
+ */
+type ExtractedRecipe = Pick<GeneratedRecipe, "title" | "ingredients" | "instructions"> &
+  Partial<Pick<GeneratedRecipe, "cuisine" | "estimatedMinutes" | "servings">>;
+
+/**
+ * Parses schema.org Recipe JSON-LD out of a page's `<script type="application/ld+json">`
+ * blocks. Null when the page has none, or the one found lacks the minimum a usable recipe
+ * needs (a name plus at least one ingredient) — [importRecipeFromUrl] falls back to the
+ * Claude-extraction path in that case rather than returning a half-empty result.
+ */
+export function extractJsonLdRecipe(html: string): ExtractedRecipe | null {
+  const blocks = html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi);
+  for (const block of blocks) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(block[1].trim());
+    } catch {
+      continue;
+    }
+    const node = findRecipeNode(parsed);
+    if (!node) continue;
+
+    const title = (typeof node.name === "string" ? node.name : "").trim();
+    const rawIngredients = Array.isArray(node.recipeIngredient) ? node.recipeIngredient : [];
+    const ingredients = rawIngredients
+      .filter((entry): entry is string => typeof entry === "string" && entry.trim().length > 0)
+      .map((entry) => splitIngredientLine(entry.trim()));
+    const instructions = jsonLdInstructionSteps(node.recipeInstructions);
+    if (!title || ingredients.length === 0) continue;
+
+    const cuisine = typeof node.recipeCuisine === "string" ? node.recipeCuisine.trim() : "";
+    const estimatedMinutes =
+      parseIsoDurationMinutes(node.totalTime) ??
+      parseIsoDurationMinutes(node.cookTime) ??
+      parseIsoDurationMinutes(node.prepTime);
+    const servings = jsonLdYieldServings(node.recipeYield);
+
+    return {
+      title,
+      ...(cuisine ? { cuisine } : {}),
+      ...(estimatedMinutes !== undefined ? { estimatedMinutes } : {}),
+      ...(servings !== undefined ? { servings } : {}),
+      ingredients,
+      instructions,
+    };
+  }
+  return null;
+}
+
+function buildRecipeImportPrompt(pageText: string, sourceUrl: string, locale: string): string {
+  return (
+    "You are extracting a recipe from a webpage's text content for a home cooking app. The " +
+    `page was fetched from ${sourceUrl}. Below is that page's visible text — navigation, ads, ` +
+    "comments, and other clutter may still be mixed in; ignore anything that isn't part of " +
+    "the recipe itself (title, ingredient list, step-by-step instructions).\n\n" +
+    `Write your answer in this language: ${locale}, translating the recipe if the source page ` +
+    "is in a different language.\n\n" +
+    "- title: the recipe's name as given on the page.\n" +
+    "- cuisine: a short cuisine/style label if inferable, otherwise a reasonable guess from the dish itself.\n" +
+    "- estimatedMinutes: the page's stated total time if given, otherwise a realistic estimate.\n" +
+    "- servings: the page's stated serving count if given, otherwise a realistic estimate (typically 2-6).\n" +
+    "- ingredients: name + amount (e.g. \"300 g\", \"2 stuks\") per line, exactly as listed on the page.\n" +
+    "- instructions: one string per step, in order, no numbering prefix (the app adds that) — " +
+    "reproduce the page's own steps rather than inventing new ones.\n\n" +
+    "If the page text below doesn't actually contain a recognizable recipe, still return your " +
+    "best-effort guess rather than refusing — the app will let the user review and fix it " +
+    "before saving.\n\n" +
+    `Page text:\n${pageText}`
+  );
+}
+
+/**
+ * Callable Cloud Function that imports one recipe from a household-supplied URL (premium-only
+ * — see MoreScreen/RecipesScreen). See this section's top comment for the JSON-LD-first,
+ * Claude-fallback strategy.
+ */
+export const importRecipeFromUrl = onCall(
+  // 45s: a cache-cold Claude-fallback path chains a page fetch and an Anthropic call, neither
+  // of which is as fast as the other functions' single-purpose calls above.
+  { secrets: [anthropicApiKey], cors: false, timeoutSeconds: 45, invoker: "public" },
+  async (request) => {
+    const uid = requireUid(request.auth);
+    const data = request.data as Partial<ImportRecipeFromUrlRequest> | undefined;
+    const householdId = data?.householdId;
+    const rawUrl = typeof data?.url === "string" ? data.url.trim() : "";
+    const locale = typeof data?.locale === "string" && data.locale.trim().length > 0 ? data.locale : "nl";
+
+    if (!householdId || typeof householdId !== "string") {
+      throw new HttpsError("invalid-argument", "householdId is required.");
+    }
+    if (!rawUrl) {
+      throw new HttpsError("invalid-argument", "url is required.");
+    }
+    const url = parseImportUrl(rawUrl);
+
+    await requirePremiumHousehold(uid, householdId);
+
+    const html = await fetchImportPage(url);
+
+    const jsonLdRecipe = extractJsonLdRecipe(html);
+    if (jsonLdRecipe) {
+      return { recipe: jsonLdRecipe };
+    }
+
+    const pageText = stripHtml(html).slice(0, MAX_IMPORT_PAGE_TEXT_LENGTH);
+    if (pageText.length < 200) {
+      // Too little text to plausibly contain a recipe — fail clearly instead of spending an
+      // Anthropic call on a near-empty page (a JS-only site with no server-rendered content, a
+      // login wall, etc.).
+      throw new HttpsError("not-found", "no_recipe_found");
+    }
+
+    const responseText = await callAnthropicTextOnly(
+      anthropicApiKey.value(),
+      buildRecipeImportPrompt(pageText, url.toString(), locale),
+      RECIPE_RESPONSE_SCHEMA,
+    );
+
+    let recipe: GeneratedRecipe;
+    try {
+      recipe = JSON.parse(responseText) as GeneratedRecipe;
+    } catch (error) {
+      logger.error("importRecipeFromUrl: could not parse model output as JSON", { responseText, error });
+      throw new HttpsError("internal", "invalid_model_response");
+    }
+
+    return { recipe };
+  },
+);
+
+// ---------------------------------------------------------------------------
 // searchRecipes / getRecipeInformation — Spoonacular-backed recipe database.
 // ---------------------------------------------------------------------------
 

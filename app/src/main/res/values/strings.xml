@@ -603,6 +603,15 @@
     <string name="recipes_generate_ai_failed_no_connection">Geen verbinding. Controleer je internetverbinding en probeer het opnieuw.</string>
     <string name="recipes_generate_ai_failed_premium">Deze functie is alleen beschikbaar met Premium.</string>
     <string name="recipes_generate_ai_failed_unknown">Kon geen recept genereren. Probeer het opnieuw.</string>
+    <string name="recipes_import_url_button">Importeer van URL</string>
+    <string name="recipes_import_url_title">Recept importeren van URL</string>
+    <string name="recipes_import_url_hint">Plak de link naar een receptenpagina — wij halen de ingrediënten en bereidingswijze eruit. Je kunt alles nog aanpassen voordat je het opslaat.</string>
+    <string name="recipes_import_url_placeholder">https://…</string>
+    <string name="recipes_import_url_action">Importeren</string>
+    <string name="recipes_import_url_loading">Recept ophalen…</string>
+    <string name="recipes_import_url_failed_no_connection">Geen verbinding. Controleer je internetverbinding en probeer het opnieuw.</string>
+    <string name="recipes_import_url_failed_premium">Deze functie is alleen beschikbaar met Premium.</string>
+    <string name="recipes_import_url_failed_unknown">Kon geen recept van deze pagina importeren. Controleer de link en probeer het opnieuw.</string>
     <string name="recipes_favorite_add_cd">Toevoegen aan favorieten</string>
     <string name="recipes_favorite_remove_cd">Verwijderen uit favorieten</string>
     <string name="recipes_edit_custom_cd">Recept bewerken</string>

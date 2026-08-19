@@ -24,6 +24,13 @@ import kotlinx.coroutines.launch
 
 enum class GenerateRecipeError { NO_CONNECTION, PREMIUM_REQUIRED, UNKNOWN }
 
+/** Kept separate from [GenerateRecipeError] (structurally identical) rather than reused — the
+ *  two dialogs read different copy ("kon geen recept genereren" vs. "kon geen recept
+ *  importeren"), and this way each can evolve its own cases independently later (e.g. a
+ *  distinct "geen recept gevonden op deze pagina" case for import, which generation has no
+ *  equivalent of). */
+enum class ImportRecipeError { NO_CONNECTION, PREMIUM_REQUIRED, UNKNOWN }
+
 /** Which recipe source RecipesScreen is currently showing — see [RecipesViewModel.selectTab]. */
 enum class RecipesTab { BROWSE, FAVORITES, CUSTOM }
 
@@ -51,6 +58,8 @@ data class RecipesUiState(
     val searchQuery: String = "",
     val isGenerating: Boolean = false,
     val generateError: GenerateRecipeError? = null,
+    val isImporting: Boolean = false,
+    val importError: ImportRecipeError? = null,
     /** Whether a further [RecipesViewModel.loadMore] call would return anything — mirrors Spoonacular's own `totalResults` for the current browse/search query (see [RecipeRepository.browseAllRecipes]). Only ever true for [RecipesTab.BROWSE]: Favorites/Custom are short, fully-loaded live lists. */
     val hasMore: Boolean = false,
     /** True only while a "load more" page is in flight — distinct from [isLoading], which covers the *first* page of a fresh browse/search so the existing list can stay visible (with a small footer spinner) while more loads. */
@@ -91,6 +100,13 @@ class RecipesViewModel(
     /** Emits the newly generated recipe's id once [generateRecipe] succeeds — the screen navigates to RecipeDetailScreen with it. */
     private val _generatedRecipeId = MutableSharedFlow<String>()
     val generatedRecipeId: SharedFlow<String> = _generatedRecipeId
+
+    /** Emits the imported draft's (temporary, cache-only) id once [importRecipeFromUrl]
+     *  succeeds — the screen navigates to CustomRecipeEditScreen's importId flow with it,
+     *  unlike [generatedRecipeId] which goes straight to RecipeDetailScreen (see
+     *  [RecipeRepository.importRecipeFromUrl]'s doc for why an import needs review first). */
+    private val _importedRecipeId = MutableSharedFlow<String>()
+    val importedRecipeId: SharedFlow<String> = _importedRecipeId
 
     // Remembered from the last load() call so search()/toggleAllergen()/generateRecipe() don't
     // need the caller (RecipesScreen) to keep threading the current app language through every action.
@@ -290,5 +306,28 @@ class RecipesViewModel(
 
     fun dismissGenerateError() {
         _uiState.update { it.copy(generateError = null) }
+    }
+
+    /** Imports one recipe from a household-pasted [url] — see [RecipeRepository.importRecipeFromUrl]. */
+    fun importRecipeFromUrl(url: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isImporting = true, importError = null) }
+            when (val result = recipeRepository.importRecipeFromUrl(url, languageTag)) {
+                is GenerateRecipeResult.Success -> {
+                    _uiState.update { it.copy(isImporting = false) }
+                    _importedRecipeId.emit(result.detail.id)
+                }
+                GenerateRecipeResult.PremiumRequired ->
+                    _uiState.update { it.copy(isImporting = false, importError = ImportRecipeError.PREMIUM_REQUIRED) }
+                GenerateRecipeResult.NoConnection ->
+                    _uiState.update { it.copy(isImporting = false, importError = ImportRecipeError.NO_CONNECTION) }
+                GenerateRecipeResult.Failed ->
+                    _uiState.update { it.copy(isImporting = false, importError = ImportRecipeError.UNKNOWN) }
+            }
+        }
+    }
+
+    fun dismissImportError() {
+        _uiState.update { it.copy(importError = null) }
     }
 }
