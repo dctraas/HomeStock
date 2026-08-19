@@ -39,13 +39,23 @@ enum class InventoryStockStatus {
          */
         fun isExpiringSoon(expirationDate: Long?): Boolean {
             if (expirationDate == null) return false
-            val date = Instant.ofEpochMilli(expirationDate).atZone(ZoneOffset.UTC).toLocalDate()
-            val daysUntilExpiry = ChronoUnit.DAYS.between(LocalDate.now(ZoneOffset.UTC), date)
-            return daysUntilExpiry <= EXPIRING_SOON_THRESHOLD_DAYS
+            return daysUntilExpiry(expirationDate) <= EXPIRING_SOON_THRESHOLD_DAYS
         }
 
         /** Standalone version of the "low stock" check — see [isExpiringSoon]'s doc for why. */
         fun isLowStock(quantity: Int, minQuantity: Int?): Boolean =
             quantity > 0 && minQuantity != null && quantity < minQuantity
+
+        /**
+         * Days between today and [expirationDate] (negative once it's past) — the number
+         * behind [isExpiringSoon]'s threshold check, exposed on its own for UI that shows the
+         * count itself (e.g. a "3 dagen"/"morgen" badge) rather than just the pass/fail.
+         * Computed in UTC to match how expiration dates are stored (see [ExpirationRow] in
+         * ProductDetailScreen for the encoding this decodes).
+         */
+        fun daysUntilExpiry(expirationDate: Long): Long {
+            val date = Instant.ofEpochMilli(expirationDate).atZone(ZoneOffset.UTC).toLocalDate()
+            return ChronoUnit.DAYS.between(LocalDate.now(ZoneOffset.UTC), date)
+        }
     }
 }

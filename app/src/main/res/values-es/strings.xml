@@ -316,6 +316,16 @@
     <string name="inventory_status_low">Pocas existencias</string>
     <string name="inventory_status_expiring_soon">A punto de caducar</string>
     <string name="inventory_status_out_of_stock">Sin existencias</string>
+    <string name="inventory_pill_out_of_stock">Agotado</string>
+    <string name="inventory_pill_low_stock">Poco</string>
+    <string name="inventory_pill_expiry_today">Hoy</string>
+    <string name="inventory_pill_expiry_tomorrow">Mañana</string>
+    <string name="inventory_pill_expiry_expired">Caducado</string>
+    <plurals name="inventory_pill_expiry_days">
+        <item quantity="one">%1$d día</item>
+        <item quantity="other">%1$d días</item>
+    </plurals>
+    <string name="inventory_row_menu_cd">Más opciones</string>
     <string name="inventory_group_by_cd">Agrupar por</string>
     <string name="inventory_group_by_active_cd_format">Agrupar por (activo: %1$s)</string>
     <string name="inventory_no_location_label">Sin ubicación</string>

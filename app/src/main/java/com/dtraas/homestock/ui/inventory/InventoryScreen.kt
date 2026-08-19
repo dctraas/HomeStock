@@ -11,10 +11,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -38,6 +42,7 @@ import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Receipt
@@ -84,12 +89,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -112,7 +117,7 @@ import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.components.color
 import com.dtraas.homestock.ui.components.icon
-import com.dtraas.homestock.ui.components.labelRes
+import com.dtraas.homestock.ui.components.onColor
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
@@ -1099,6 +1104,46 @@ private fun GroupHeader(
     }
 }
 
+/**
+ * Short badge text for the one thing about [item] that most needs attention right now —
+ * a day countdown when it has an expiration date set (mirroring [InventoryStockStatus.of]'s
+ * own priority: an expiring item is more urgent than a merely low one), otherwise a short
+ * label for out-of-stock/low-stock, or null for a well-stocked item with no known expiry —
+ * there's nothing worth calling out, so nothing is shown, rather than a status that's always
+ * present regardless of whether it says anything useful.
+ */
+@Composable
+private fun stockStatusPillText(stockStatus: InventoryStockStatus, expirationDate: Long?): String? = when {
+    expirationDate != null -> {
+        val days = InventoryStockStatus.daysUntilExpiry(expirationDate)
+        when {
+            days < 0 -> stringResource(R.string.inventory_pill_expiry_expired)
+            days == 0L -> stringResource(R.string.inventory_pill_expiry_today)
+            days == 1L -> stringResource(R.string.inventory_pill_expiry_tomorrow)
+            else -> pluralStringResource(R.plurals.inventory_pill_expiry_days, days.toInt(), days.toInt())
+        }
+    }
+    stockStatus == InventoryStockStatus.OUT_OF_STOCK -> stringResource(R.string.inventory_pill_out_of_stock)
+    stockStatus == InventoryStockStatus.LOW_STOCK -> stringResource(R.string.inventory_pill_low_stock)
+    else -> null
+}
+
+/**
+ * The single most useful secondary fact to show alongside [item]'s name — replaces the old
+ * three-way "merk · eenheid · locatie" join, which gave brand equal visual weight to the
+ * other two despite it already being one tap away on Productdetail. Unit and location (the
+ * two facts about the physical item in front of you, rather than which brand it happens to
+ * be) stay.
+ */
+@Composable
+private fun inventoryMetaText(item: InventoryItemWithProduct): String? {
+    val parts = listOfNotNull(
+        item.unit?.takeIf { it.isNotBlank() },
+        item.location?.let { locationDisplayLabel(it) },
+    )
+    return parts.takeIf { it.isNotEmpty() }?.joinToString(" · ")
+}
+
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun InventoryRow(
@@ -1164,79 +1209,129 @@ private fun InventoryRow(
             border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             shape = SoftCardShapeCompact,
         ) {
-            Row(
-                modifier = Modifier.padding(start = 10.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                if (selectionMode) {
-                    Icon(
-                        imageVector = if (selected) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
-                        contentDescription = null,
-                        tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(32.dp),
-                    )
-                } else {
-                    Box(modifier = Modifier.size(32.dp)) {
+            // The stripe (height-matched to the row via IntrinsicSize.Min) is the row's own
+            // status color when there's something worth flagging, transparent otherwise — a
+            // steady 3dp width either way so nothing shifts when it appears/disappears while
+            // scrolling. Lets you scan a long list for what needs attention without reading
+            // any text, on top of (not instead of) the status text in the subtitle below.
+            Row(modifier = Modifier.fillMaxWidth().height(IntrinsicSize.Min)) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(3.dp)
+                        .background(if (stockStatus == InventoryStockStatus.SUFFICIENT) Color.Transparent else stockStatus.color),
+                )
+                Row(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (selectionMode) {
+                        Icon(
+                            imageVector = if (selected) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
+                            contentDescription = null,
+                            tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(36.dp),
+                        )
+                    } else {
                         ProductImage(
                             imageUrl = item.imageUrl,
                             fallbackIcon = Category.fromStorageKey(item.category).icon,
-                            shape = RoundedCornerShape(8.dp),
-                            modifier = Modifier.fillMaxSize(),
+                            shape = RoundedCornerShape(10.dp),
+                            modifier = Modifier.size(36.dp),
                         )
-                        StockStatusDot(status = stockStatus, modifier = Modifier.align(Alignment.BottomEnd))
                     }
-                }
-                Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
-                    Text(
-                        text = item.name,
-                        style = MaterialTheme.typography.bodyMedium,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    val subtitle = listOfNotNull(item.brand, item.unit, item.location?.let { locationDisplayLabel(it) }).joinToString(" · ")
-                    if (subtitle.isNotEmpty()) {
+                    Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
                         Text(
-                            text = subtitle,
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = item.name,
+                            style = MaterialTheme.typography.bodyMedium,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier.padding(top = 1.dp),
                         )
+                        val statusText = stockStatusPillText(stockStatus, item.expirationDate)
+                        val meta = inventoryMetaText(item)
+                        if (statusText != null || meta != null) {
+                            Row(modifier = Modifier.padding(top = 1.dp)) {
+                                if (statusText != null) {
+                                    Text(
+                                        text = statusText,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = stockStatus.color,
+                                        maxLines = 1,
+                                    )
+                                    if (meta != null) {
+                                        Text(
+                                            text = " · ",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
+                                if (meta != null) {
+                                    Text(
+                                        text = meta,
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            }
+                        }
                     }
-                }
-                if (!selectionMode) {
-                    QuantityStepper(
-                        quantity = item.quantity,
-                        onDecrease = onDecrease,
-                        onIncrease = onIncrease,
-                        dense = true,
-                    )
-                    IconButton(onClick = onToggleFavorite, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            imageVector = if (item.isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                            contentDescription = stringResource(
-                                if (item.isFavorite) R.string.inventory_unmark_favorite_cd else R.string.inventory_mark_favorite_cd,
-                            ),
-                            tint = if (item.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.size(18.dp),
+                    if (!selectionMode) {
+                        QuantityStepper(
+                            quantity = item.quantity,
+                            onDecrease = onDecrease,
+                            onIncrease = onIncrease,
+                            dense = true,
                         )
-                    }
-                    IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            Icons.Filled.AddShoppingCart,
-                            contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(18.dp),
-                        )
-                    }
-                    IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            Icons.Filled.Delete,
-                            contentDescription = stringResource(R.string.inventory_remove_cd),
-                            tint = MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.size(18.dp),
-                        )
+                        // Favoriet/toevoegen-aan-lijst/verwijderen used to sit here as three
+                        // always-visible icon buttons of equal weight — collapsed into one menu
+                        // so the row's only always-visible action is the stepper. Verwijderen
+                        // stays reachable two ways (here and via swipe, see above) since swipe
+                        // isn't always discoverable.
+                        var showRowMenu by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(onClick = { showRowMenu = true }, modifier = Modifier.size(32.dp)) {
+                                Icon(
+                                    Icons.Filled.MoreVert,
+                                    contentDescription = stringResource(R.string.inventory_row_menu_cd),
+                                    tint = MaterialTheme.colorScheme.outline,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                            DropdownMenu(expanded = showRowMenu, onDismissRequest = { showRowMenu = false }) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            stringResource(
+                                                if (item.isFavorite) R.string.inventory_unmark_favorite_cd else R.string.inventory_mark_favorite_cd,
+                                            ),
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = if (item.isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                                            contentDescription = null,
+                                        )
+                                    },
+                                    onClick = { showRowMenu = false; onToggleFavorite() },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.inventory_add_to_shopping_list_cd)) },
+                                    leadingIcon = { Icon(Icons.Filled.AddShoppingCart, contentDescription = null) },
+                                    onClick = { showRowMenu = false; onAddToShoppingList() },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.inventory_remove_cd)) },
+                                    leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
+                                    onClick = { showRowMenu = false; onDelete() },
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -1273,16 +1368,35 @@ private fun InventoryGridTile(
                 shape = SoftImageShape,
                 modifier = Modifier.fillMaxSize(),
             )
-            StockStatusDot(
-                status = stockStatus,
-                modifier = Modifier.align(Alignment.TopStart).padding(8.dp),
-            )
+            // Replaces the old status dot — color and text both, right on the photo, so what
+            // needs attention (or how long something's still good for) reads without a tap.
+            // Null (no badge at all) for a well-stocked item with no known expiry: nothing
+            // here is worth flagging, so nothing is shown, rather than always occupying the
+            // spot regardless of whether it says anything useful.
+            val pillText = stockStatusPillText(stockStatus, item.expirationDate)
+            if (pillText != null) {
+                Surface(
+                    shape = SoftBadgeShape,
+                    color = stockStatus.color,
+                    modifier = Modifier.align(Alignment.BottomStart).padding(6.dp),
+                ) {
+                    Text(
+                        text = pillText,
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = stockStatus.onColor,
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
+                }
+            }
             // TopEnd hosts either the selection checkmark or the add-to-shopping-list badge —
             // never both, since they're mutually exclusive modes. The badge mirrors the
             // favorite badge on ProductDetailScreen's hero image (same Surface-circle pattern)
             // now that it's the only quick action left here — freed up by dropping the
             // favorite star from this tile and the stepper's own row from cramming a second
-            // icon button next to it.
+            // icon button next to it. Shown only when a restock might actually be relevant
+            // (low/out) rather than always, so a well-stocked shelf of tiles stays quiet.
+            val showCartBadge = stockStatus == InventoryStockStatus.LOW_STOCK || stockStatus == InventoryStockStatus.OUT_OF_STOCK
             if (selectionMode) {
                 Icon(
                     imageVector = if (selected) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
@@ -1293,7 +1407,7 @@ private fun InventoryGridTile(
                         .padding(8.dp)
                         .background(MaterialTheme.colorScheme.surface, CircleShape),
                 )
-            } else {
+            } else if (showCartBadge) {
                 Surface(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
@@ -1320,10 +1434,14 @@ private fun InventoryGridTile(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            val subtitle = listOfNotNull(item.brand, item.unit, item.location?.let { locationDisplayLabel(it) }).joinToString(" · ")
-            if (subtitle.isNotEmpty()) {
+            // Brand dropped from here — the badge above already carries the one thing this
+            // tile most needs to say, so this line goes to unit/locatie instead (see
+            // [inventoryMetaText]'s doc for why brand specifically is the one that moves to
+            // Productdetail rather than unit or locatie).
+            val meta = inventoryMetaText(item)
+            if (meta != null) {
                 Text(
-                    text = subtitle,
+                    text = meta,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
@@ -1343,22 +1461,6 @@ private fun InventoryGridTile(
             )
         }
     }
-}
-
-/** Small colored dot (🟢/🟡/🟠/🔴-style) showing an item's stock status at a glance. */
-@Composable
-private fun StockStatusDot(status: InventoryStockStatus, modifier: Modifier = Modifier) {
-    val label = stringResource(status.labelRes)
-    Box(
-        modifier = modifier
-            .size(14.dp)
-            .semantics { contentDescription = label }
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.surface)
-            .padding(2.dp)
-            .clip(CircleShape)
-            .background(status.color),
-    )
 }
 
 @Composable

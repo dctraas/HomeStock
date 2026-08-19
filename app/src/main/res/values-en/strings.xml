@@ -316,6 +316,16 @@
     <string name="inventory_status_low">Low stock</string>
     <string name="inventory_status_expiring_soon">Expiring soon</string>
     <string name="inventory_status_out_of_stock">Out of stock</string>
+    <string name="inventory_pill_out_of_stock">Out</string>
+    <string name="inventory_pill_low_stock">Low</string>
+    <string name="inventory_pill_expiry_today">Today</string>
+    <string name="inventory_pill_expiry_tomorrow">Tomorrow</string>
+    <string name="inventory_pill_expiry_expired">Expired</string>
+    <plurals name="inventory_pill_expiry_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+    <string name="inventory_row_menu_cd">More options</string>
     <string name="inventory_group_by_cd">Group by</string>
     <string name="inventory_group_by_active_cd_format">Group by (active: %1$s)</string>
     <string name="inventory_no_location_label">No location</string>

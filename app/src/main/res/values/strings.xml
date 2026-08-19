@@ -317,6 +317,16 @@
     <string name="inventory_status_low">Lage voorraad</string>
     <string name="inventory_status_expiring_soon">Houdbaarheid bijna verstreken</string>
     <string name="inventory_status_out_of_stock">Geen voorraad</string>
+    <string name="inventory_pill_out_of_stock">Op</string>
+    <string name="inventory_pill_low_stock">Laag</string>
+    <string name="inventory_pill_expiry_today">Vandaag</string>
+    <string name="inventory_pill_expiry_tomorrow">Morgen</string>
+    <string name="inventory_pill_expiry_expired">Verlopen</string>
+    <plurals name="inventory_pill_expiry_days">
+        <item quantity="one">%1$d dag</item>
+        <item quantity="other">%1$d dagen</item>
+    </plurals>
+    <string name="inventory_row_menu_cd">Meer opties</string>
     <string name="inventory_group_by_cd">Groeperen</string>
     <string name="inventory_group_by_active_cd_format">Groeperen (actief: %1$s)</string>
     <string name="inventory_no_location_label">Geen locatie</string>
