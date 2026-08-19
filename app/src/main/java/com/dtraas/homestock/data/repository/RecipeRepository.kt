@@ -100,6 +100,14 @@ class RecipeRepository(
     // reason a plain in-memory cache alone wouldn't survive a restart.
     private val detailCache = ConcurrentHashMap<String, RecipeDetail>()
 
+    // Spoonacular recipe ids for which [getRecipeDetail] has already tried a live
+    // recipes/{id}/information re-fetch to fill in a missing bereidingswijze this session — see
+    // [needsInstructionsRefetch]'s doc for why that retry exists at all. Without this, a recipe
+    // that genuinely has no instructions on Spoonacular's side would bypass the network-savings
+    // detailCache check forever, re-fetching from Cloud Functions/Spoonacular on every single
+    // reopen of that recipe's detail screen this session instead of just once.
+    private val instructionsRefetchAttempted = ConcurrentHashMap.newKeySet<String>()
+
     private fun customRecipesCollection(householdId: String) =
         firestore.collection("households").document(householdId).collection("customRecipes")
 
@@ -220,19 +228,33 @@ class RecipeRepository(
 
     /**
      * Fetches one recipe's full detail. Checked in order:
-     * 1. [detailCache] — a search/browse/generation already put it there.
+     * 1. [detailCache] — a search/browse/generation already put it there — *unless*
+     *    [needsInstructionsRefetch] flags it as worth a live re-fetch first (see that function's
+     *    doc: Spoonacular's bulk browse/search endpoint sometimes comes back without a
+     *    bereidingswijze that the dedicated per-recipe endpoint does have).
      * 2. [customRecipesCollection] when [mealId] is `custom-`-prefixed — the household's own
      *    recipe, source of truth regardless of favorite status.
      * 3. [favoriteRecipesCollection] — covers an AI-generated recipe that outlived the process
-     *    (see the class doc) and saves a network call for an already-favorited Spoonacular one.
-     * 4. `getRecipeInformation` (always English — see that Cloud Function), for everything else.
+     *    (see the class doc) and saves a network call for an already-favorited Spoonacular one —
+     *    same [needsInstructionsRefetch] check as step 1, since a favorite saved from an
+     *    instructions-less browse/search result would otherwise stay stuck that way forever too.
+     * 4. `getRecipeInformation` (always English — see that Cloud Function), for everything else,
+     *    and where both of the above fall through to when they hit an instructions gap. That
+     *    Cloud Function already re-fetches live from Spoonacular itself when *its own* server-
+     *    side cache has no instructions either (see its doc comment) — this is the same fix,
+     *    just needed again one layer up, since this client-side [detailCache]/Firestore check
+     *    happens before that function is ever called at all.
      *
      * If [languageTag] isn't English, also fetches/attaches a machine translation (see
      * [translatedDetailIfNeeded]) before returning, so RecipeDetailScreen never has to juggle a
      * separate translation call itself.
      */
     suspend fun getRecipeDetail(mealId: String, languageTag: String? = null): Result<RecipeDetail> {
-        detailCache[mealId]?.let { return Result.success(translatedDetailIfNeeded(it, languageTag)) }
+        detailCache[mealId]?.let { cached ->
+            if (!needsInstructionsRefetch(mealId, cached)) {
+                return Result.success(translatedDetailIfNeeded(cached, languageTag))
+            }
+        }
         val householdId = householdSession.householdId.value ?: return Result.failure(IllegalStateException("no_household"))
 
         if (mealId.startsWith(CUSTOM_ID_PREFIX)) {
@@ -250,8 +272,10 @@ class RecipeRepository(
         try {
             val favoriteSnapshot = favoriteRecipesCollection(householdId).document(mealId).get().await()
             mapFirestoreDocToDetail(favoriteSnapshot)?.let { detail ->
-                cacheDetail(detail)
-                return Result.success(translatedDetailIfNeeded(detail, languageTag))
+                if (!needsInstructionsRefetch(mealId, detail)) {
+                    cacheDetail(detail)
+                    return Result.success(translatedDetailIfNeeded(detail, languageTag))
+                }
             }
         } catch (e: Exception) {
             // Falls through to the normal Spoonacular fetch below — a favorites lookup hiccup
@@ -264,12 +288,41 @@ class RecipeRepository(
             val response = result.getData() as? Map<*, *> ?: return Result.failure(NoSuchElementException("Recipe $mealId not found"))
             val detail = (response["detail"] as? Map<*, *>)?.let(::mapToDetail)
                 ?: return Result.failure(NoSuchElementException("Recipe $mealId not found"))
+            instructionsRefetchAttempted.add(mealId)
             cacheDetail(detail)
             Result.success(translatedDetailIfNeeded(detail, languageTag))
         } catch (e: Exception) {
             Result.failure(e)
         }
     }
+
+    /**
+     * True when [detail] is a real Spoonacular recipe with no bereidingswijze that hasn't
+     * already had a live re-fetch attempted this session. Spoonacular's bulk "browse"/"search"
+     * endpoint (`complexSearch` with `addRecipeInformation=true`, what populates [detailCache]
+     * and Firestore favorites long before a recipe's own detail screen is ever opened) is known
+     * to sometimes come back with an empty `analyzedInstructions`/`instructions` for a recipe
+     * whose dedicated `recipes/{id}/information` endpoint (only queried when this returns true)
+     * actually has real steps — a genuine inconsistency between Spoonacular's two endpoints, not
+     * a bug in how this app parses either response (see `toRecipeDetail` in
+     * functions/src/index.ts, which already applies the same `cleanInstructions`/
+     * `instructionsFromAnalyzed` fallback to both). Without this check, [getRecipeDetail] would
+     * trust that first, possibly-incomplete browse/search snapshot forever and never call
+     * `getRecipeInformation` at all for a recipe already seen in a list — which is every recipe
+     * a household actually opens, since browsing/searching is how they get to it in the first
+     * place.
+     *
+     * AI-generated/custom recipes are exempt: an empty instructions field there is the
+     * household's own real content (or a deliberate lack of it), never something a Spoonacular
+     * lookup could fill in. [instructionsRefetchAttempted] caps this to one retry per recipe per
+     * session, so a recipe that genuinely has no instructions even after the live re-fetch
+     * doesn't keep re-fetching on every reopen.
+     */
+    private fun needsInstructionsRefetch(id: String, detail: RecipeDetail): Boolean =
+        detail.instructions.isNullOrBlank() &&
+            !detail.isAiGenerated &&
+            !detail.isCustom &&
+            id !in instructionsRefetchAttempted
 
     /** The household's own hand-entered recipes (see [saveCustomRecipe]), alphabetical by name. */
     fun observeCustomRecipes(): Flow<List<RecipeSuggestion>> =
