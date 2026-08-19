@@ -108,7 +108,7 @@ fun RecipesScreen(
     val languageTag = LocalConfiguration.current.locales[0].language
     var showGenerateDialog by remember { mutableStateOf(false) }
     var generateWish by remember { mutableStateOf("") }
-    var viewMode by remember { mutableStateOf(RecipesViewMode.LIST) }
+    var viewMode by remember { mutableStateOf(RecipesViewMode.GRID) }
 
     // languageTag as the key rather than Unit: an in-app language switch (Instellingen >
     // Algemeen > Taal) recreates the whole activity, but keying here means this also behaves

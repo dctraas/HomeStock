@@ -14,7 +14,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,7 +43,6 @@ import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -58,7 +56,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -72,7 +69,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -82,7 +78,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
-import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.BuildConfig
 import com.dtraas.homestock.R
@@ -95,10 +90,8 @@ import com.dtraas.homestock.data.model.MeasurementUnit
 import com.dtraas.homestock.data.repository.ThemeMode
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.ProfileEditDialog
-import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.work.ExpiryCheckWorker
-import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -314,13 +307,16 @@ fun MoreScreen(
             verticalArrangement = Arrangement.spacedBy(6.dp),
         ) {
             SectionHeader(stringResource(R.string.more_section_account))
-            AccountCard(
-                displayName = displayName,
-                photoPath = photoPath,
-                onClick = { showProfileDialog = true },
-            )
             SettingsGroup(
                 rows = listOf(
+                    {
+                        SettingsRow(
+                            icon = Icons.Filled.AccountCircle,
+                            title = stringResource(R.string.more_account_row_title),
+                            subtitle = displayName,
+                            onClick = { showProfileDialog = true },
+                        )
+                    },
                     {
                         SettingsRow(
                             icon = Icons.Filled.VerifiedUser,
@@ -333,9 +329,17 @@ fun MoreScreen(
                             onClick = onNavigateToAccountLink,
                         )
                     },
+                    {
+                        SettingsRow(
+                            icon = Icons.Filled.WorkspacePremium,
+                            title = stringResource(R.string.more_premium_title),
+                            subtitle = stringResource(if (isPremium) R.string.more_premium_active else R.string.more_premium_promo_subtitle),
+                            trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_upgrade_action),
+                            onClick = onNavigateToPremium,
+                        )
+                    },
                 ),
             )
-            PremiumPromoCard(isPremium = isPremium, onClick = onNavigateToPremium)
 
             // Huishouden, Winkels and Statistieken all concern the shared household rather
             // than this device's own account or app preferences, so they get their own section
@@ -460,46 +464,16 @@ fun MoreScreen(
 
             if (BuildConfig.DEBUG) {
                 SectionHeader(stringResource(R.string.more_section_debug))
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                    shape = SoftCardShape,
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp).fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Surface(
-                            shape = SoftBadgeShape,
-                            color = MaterialTheme.colorScheme.primaryContainer,
-                            modifier = Modifier.size(44.dp),
-                        ) {
-                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                                Icon(
-                                    imageVector = Icons.Filled.WorkspacePremium,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                )
-                            }
-                        }
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(horizontal = 12.dp),
-                        ) {
-                            Text(stringResource(R.string.more_debug_premium_title), style = MaterialTheme.typography.titleSmall)
-                            Text(
-                                text = stringResource(R.string.more_debug_premium_subtitle),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                SettingsGroup(
+                    rows = listOf(
+                        {
+                            DebugPremiumRow(
+                                checked = debugPremiumOverride,
+                                onCheckedChange = billingRepository::setDebugPremiumOverride,
                             )
-                        }
-                        Switch(
-                            checked = debugPremiumOverride,
-                            onCheckedChange = billingRepository::setDebugPremiumOverride,
-                        )
-                    }
-                }
+                        },
+                    ),
+                )
             }
 
             Text(
@@ -629,57 +603,6 @@ private fun SectionHeader(title: String) {
     )
 }
 
-@Composable
-private fun AccountCard(displayName: String?, photoPath: String?, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = SoftCardShape,
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Surface(
-                shape = SoftBadgeShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(44.dp),
-            ) {
-                if (photoPath != null) {
-                    AsyncImage(
-                        model = File(photoPath),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                } else {
-                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                        Icon(
-                            imageVector = Icons.Filled.AccountCircle,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        )
-                    }
-                }
-            }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 12.dp),
-            ) {
-                Text(stringResource(R.string.more_account_row_title), style = MaterialTheme.typography.titleSmall)
-                if (displayName != null) {
-                    Text(
-                        text = displayName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-        }
-    }
-}
-
 /**
  * Wraps a whole section's worth of [SettingsRow]s in one shared card with thin dividers
  * between them, instead of each row being its own separately-shadowed card — a long column of
@@ -768,58 +691,32 @@ private fun SettingsRow(
 }
 
 /**
- * Promo card for upgrading, sitting at the bottom of Slimme Tools rather than a plain row in
- * Account — the tools right above it are exactly what it's selling, so this reads as "here's
- * what unlocks all of that" rather than a generic account-settings entry. Already-premium
- * households still see it (as a quiet "Actief" confirmation, no Upgrade button) rather than
- * having it disappear, so there's still an obvious place to check subscription status.
+ * Debug-only row for [BillingRepository.setDebugPremiumOverride] — same visual weight as a
+ * plain [SettingsRow] (monochrome icon, title, no explanatory subtitle) but with a trailing
+ * [Switch] instead of a click-through, since flipping it is the entire action.
  */
 @Composable
-private fun PremiumPromoCard(isPremium: Boolean, onClick: () -> Unit) {
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
-        shape = SoftCardShape,
+private fun DebugPremiumRow(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Surface(
-                shape = SoftBadgeShape,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(44.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        imageVector = Icons.Filled.WorkspacePremium,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                    )
-                }
-            }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 12.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.more_premium_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-                Text(
-                    text = stringResource(if (isPremium) R.string.more_premium_active else R.string.more_premium_promo_subtitle),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
-            if (!isPremium) {
-                Button(onClick = onClick) {
-                    Text(stringResource(R.string.more_premium_upgrade_action))
-                }
-            }
-        }
+        Icon(
+            imageVector = Icons.Filled.WorkspacePremium,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(22.dp),
+        )
+        Text(
+            text = stringResource(R.string.more_debug_premium_title),
+            style = MaterialTheme.typography.titleSmall,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 16.dp),
+        )
+        Switch(checked = checked, onCheckedChange = onCheckedChange)
     }
 }
 

@@ -271,7 +271,6 @@
     <string name="more_beta_receipt_scan">Bonnetje scannen</string>
     <string name="more_section_debug">Debug</string>
     <string name="more_debug_premium_title">Premium simuleren</string>
-    <string name="more_debug_premium_subtitle">Alleen in deze testversie — heeft geen effect op een echt abonnement.</string>
 
     <!-- Voorraad -->
     <string name="inventory_title">Voorraad</string>

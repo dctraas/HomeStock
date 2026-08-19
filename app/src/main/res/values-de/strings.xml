@@ -270,7 +270,6 @@
     <string name="more_beta_receipt_scan">Kassenbon scannen</string>
     <string name="more_section_debug">Debug</string>
     <string name="more_debug_premium_title">Premium simulieren</string>
-    <string name="more_debug_premium_subtitle">Nur in dieser Testversion — hat keine Auswirkung auf ein echtes Abo.</string>
 
     <!-- Vorrat -->
     <string name="inventory_title">Vorrat</string>
