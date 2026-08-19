@@ -1,6 +1,7 @@
 package com.dtraas.homestock.ui.mealplan
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -301,27 +302,63 @@ private fun SlotCard(
                         )
                     }
                 }
-            }
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                AddRow(
-                    label = stringResource(R.string.meal_plan_add_product),
-                    onClick = onAddProductClick,
-                    modifier = Modifier.weight(1f),
-                )
-                AddRow(
-                    label = stringResource(R.string.meal_plan_add_recipe),
-                    onClick = onAddMealClick,
-                    modifier = Modifier.weight(1f),
-                )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AddRow(
+                        label = stringResource(R.string.meal_plan_add_product),
+                        onClick = onAddProductClick,
+                        modifier = Modifier.weight(1f),
+                    )
+                    AddRow(
+                        label = stringResource(R.string.meal_plan_add_recipe),
+                        onClick = onAddMealClick,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            } else {
+                // A slot with nothing planned used to look the same as one that did, minus a
+                // thumbnail — both had the exact same "+ Product / + Recept" row, just with or
+                // without a PlannedMealRow above it, so an empty slot and a filled one only
+                // really differed if you read the card closely. This gives "nothing here yet"
+                // its own clearly different look instead, with the same two actions inside it.
+                EmptySlot(onAddProductClick = onAddProductClick, onAddMealClick = onAddMealClick)
             }
         }
     }
 }
 
+@Composable
+private fun EmptySlot(onAddProductClick: () -> Unit, onAddMealClick: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.5.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.meal_plan_empty_slot_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            AddRow(
+                label = stringResource(R.string.meal_plan_add_product),
+                onClick = onAddProductClick,
+                modifier = Modifier.weight(1f),
+            )
+            AddRow(
+                label = stringResource(R.string.meal_plan_add_recipe),
+                onClick = onAddMealClick,
+                modifier = Modifier.weight(1f),
+            )
+        }
+    }
+}
+
 /**
- * One of [SlotCard]'s two always-present "add" buttons, side by side — see its doc for why
- * there are two. Both share the same plain "+" icon — the label text ("Product" vs. "Recept")
- * is what tells them apart, not the icon.
+ * One of [SlotCard]'s two "add" buttons, side by side — inside [EmptySlot] when the slot has
+ * nothing planned yet, or directly below the planned meals otherwise. Both share the same plain
+ * "+" icon — the label text ("Product" vs. "Recept") is what tells them apart, not the icon.
  */
 @Composable
 private fun AddRow(label: String, onClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -369,9 +406,9 @@ private fun AddRow(label: String, onClick: () -> Unit, modifier: Modifier = Modi
  * Sits on its own subtly-tinted background (rather than plain text on the card, separated only
  * by a divider) so each meal reads as one clearly bounded item — this is what keeps a slot with
  * several meals looking like a tidy little stack instead of a run-on list (see [SlotCard]).
- * Image and delete-icon sizing here deliberately match ShoppingListRow's (32dp rounded-rect
- * thumbnail, 32dp/18dp icon button) so an added meal reads as the same kind of list row as a
- * boodschappenlijst item, rather than the larger, looser spacing this used to have.
+ * The thumbnail matches RecipeRow's own size (56dp) rather than ShoppingListRow's smaller 32dp —
+ * a planned meal's photo is the whole reason to recognize it at a glance, the same reasoning
+ * that already applies to the recipe list this meal was very possibly picked from.
  *
  * Swipeable end-to-start (left, in LTR) to remove, same direction/trash-can treatment as
  * Boodschappenlijst/Voorraad's rows — on top of, not instead of, the explicit "X" button above,
@@ -421,20 +458,20 @@ private fun PlannedMealRow(meal: PlannedMeal, onClick: () -> Unit, onRemove: () 
                     model = meal.thumbnailUrl,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.size(32.dp).clip(RoundedCornerShape(8.dp)),
+                    modifier = Modifier.size(56.dp).clip(RoundedCornerShape(12.dp)),
                 )
             } else {
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.tertiaryContainer,
-                    modifier = Modifier.size(32.dp),
+                    modifier = Modifier.size(56.dp),
                 ) {
                     Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
                         Icon(
                             imageVector = if (meal.isProduct) Icons.Filled.Inventory2 else Icons.Filled.Restaurant,
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                            modifier = Modifier.size(16.dp),
+                            modifier = Modifier.size(26.dp),
                         )
                     }
                 }

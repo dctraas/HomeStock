@@ -6,13 +6,19 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -20,10 +26,12 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FilterAlt
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Timer
+import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
@@ -42,6 +50,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -59,6 +68,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -98,6 +108,7 @@ fun RecipesScreen(
     val languageTag = LocalConfiguration.current.locales[0].language
     var showGenerateDialog by remember { mutableStateOf(false) }
     var generateWish by remember { mutableStateOf("") }
+    var viewMode by remember { mutableStateOf(RecipesViewMode.LIST) }
 
     // languageTag as the key rather than Unit: an in-app language switch (Instellingen >
     // Algemeen > Taal) recreates the whole activity, but keying here means this also behaves
@@ -120,6 +131,16 @@ fun RecipesScreen(
                 // Recepten is a bottom-nav tab, not a screen pushed onto the back stack — a
                 // "Terug" button here had nowhere meaningful to go.
                 actions = {
+                    // List/grid toggle — same pattern as Voorraad's. Available on all three tabs;
+                    // an image-forward grid is just as useful for Favorieten/Eigen recepten.
+                    IconButton(onClick = { viewMode = viewMode.toggled() }) {
+                        Icon(
+                            imageVector = if (viewMode == RecipesViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
+                            contentDescription = stringResource(
+                                if (viewMode == RecipesViewMode.LIST) R.string.recipes_show_as_grid_cd else R.string.recipes_show_as_list_cd,
+                            ),
+                        )
+                    }
                     // Only on BROWSE — Favorieten/Eigen recepten are the household's own short
                     // lists, nothing there to "genereer met AI" against. Moved off its own FAB
                     // (which sat on top of the list) into a top-bar action instead.
@@ -241,22 +262,42 @@ fun RecipesScreen(
                     )
                 }
                 else -> Column(modifier = Modifier.fillMaxSize()) {
-                    LazyColumn(
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        items(uiState.recipes, key = { it.meal.id }) { recipe ->
-                            RecipeRow(recipe = recipe, onClick = { onRecipeClick(recipe.meal.id) })
+                    val showLoadMore = uiState.tab == RecipesTab.BROWSE && (uiState.hasMore || uiState.isLoadingMore)
+                    if (viewMode == RecipesViewMode.LIST) {
+                        LazyColumn(
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            items(uiState.recipes, key = { it.meal.id }) { recipe ->
+                                RecipeRow(recipe = recipe, onClick = { onRecipeClick(recipe.meal.id) })
+                            }
+                            // Only BROWSE ever has more than one page — see RecipesViewModel.loadMore.
+                            // A tappable "load more" row rather than infinite-scroll-on-appear: this
+                            // list already renders full detail (image + name) per row, so scroll-
+                            // triggered loading would fire a Spoonacular call just from fast flinging
+                            // past the bottom, not necessarily genuine interest in more results.
+                            if (showLoadMore) {
+                                item(key = "load_more") {
+                                    LoadMoreRow(isLoading = uiState.isLoadingMore, onClick = viewModel::loadMore)
+                                }
+                            }
                         }
-                        // Only BROWSE ever has more than one page — see RecipesViewModel.loadMore.
-                        // A tappable "load more" row rather than infinite-scroll-on-appear: this
-                        // list already renders full detail (image + name) per row, so scroll-
-                        // triggered loading would fire a Spoonacular call just from fast flinging
-                        // past the bottom, not necessarily genuine interest in more results.
-                        if (uiState.tab == RecipesTab.BROWSE && (uiState.hasMore || uiState.isLoadingMore)) {
-                            item(key = "load_more") {
-                                LoadMoreRow(isLoading = uiState.isLoadingMore, onClick = viewModel::loadMore)
+                    } else {
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            gridItems(uiState.recipes, key = { it.meal.id }) { recipe ->
+                                RecipeGridTile(recipe = recipe, onClick = { onRecipeClick(recipe.meal.id) })
+                            }
+                            if (showLoadMore) {
+                                item(key = "load_more", span = { GridItemSpan(maxLineSpan) }) {
+                                    LoadMoreRow(isLoading = uiState.isLoadingMore, onClick = viewModel::loadMore)
+                                }
                             }
                         }
                     }
@@ -280,6 +321,15 @@ fun RecipesScreen(
             },
         )
     }
+}
+
+/** List/grid toggle for the recipe results — same idea as Voorraad's, purely a display choice, not persisted. */
+private enum class RecipesViewMode {
+    LIST,
+    GRID,
+    ;
+
+    fun toggled(): RecipesViewMode = if (this == LIST) GRID else LIST
 }
 
 /** Lets the user optionally steer [RecipesViewModel.generateRecipe] with a free-text wish (e.g. "iets met kip en rijst"), then shows its loading/error state inline instead of navigating away before it's done. */
@@ -569,6 +619,82 @@ private fun RecipeRow(recipe: RecipeSuggestion, onClick: () -> Unit) {
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * Image-forward alternative to [RecipeRow] for [RecipesViewMode.GRID] — same underlying data
+ * (matchCount/matchesArea badges), just laid over the photo instead of in a text row, since a
+ * 2-column grid tile doesn't have the width for a full detail row below the name.
+ */
+@Composable
+private fun RecipeGridTile(recipe: RecipeSuggestion, onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = SoftCardShapeCompact,
+    ) {
+        Column {
+            Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f)) {
+                if (recipe.meal.thumbnailUrl != null) {
+                    AsyncImage(
+                        model = recipe.meal.thumbnailUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(SoftImageShape),
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(SoftImageShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.RestaurantMenu,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(32.dp),
+                        )
+                    }
+                }
+                if (recipe.matchCount != null) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                        shape = CircleShape,
+                        modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.recipes_match_count_format, recipe.matchCount),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        )
+                    }
+                }
+                if (recipe.matchesArea) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.onSecondary,
+                        shape = CircleShape,
+                        modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Public,
+                            contentDescription = stringResource(R.string.recipes_area_match_cd),
+                            modifier = Modifier.padding(5.dp).size(12.dp),
+                        )
+                    }
+                }
+            }
+            Text(
+                text = recipe.meal.name,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(8.dp),
+            )
         }
     }
 }

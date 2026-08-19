@@ -566,6 +566,8 @@
     <string name="recipes_empty_subtitle">Essaie un autre terme de recherche ou ajuste tes filtres d\'allergènes.</string>
     <string name="recipes_search_placeholder">Rechercher des recettes par nom…</string>
     <string name="recipes_load_more">Charger plus</string>
+    <string name="recipes_show_as_grid_cd">Afficher en grille</string>
+    <string name="recipes_show_as_list_cd">Afficher en liste</string>
     <string name="recipes_match_count_format">%1$d ingrédients disponibles</string>
     <string name="recipes_allergen_filter_label">Exclure les allergènes</string>
     <string name="recipes_allergen_filter_active_cd_format">Exclure les allergènes (actif : %1$s)</string>
@@ -665,6 +667,7 @@
     <string name="meal_plan_previous_day_cd">Jour précédent</string>
     <string name="meal_plan_next_day_cd">Jour suivant</string>
     <string name="meal_plan_add_product">Produit</string>
+    <string name="meal_plan_empty_slot_hint">Rien de prévu pour l\'instant</string>
     <string name="meal_plan_product_picker_title_format">Ajouter un produit pour %1$s</string>
     <string name="meal_plan_product_entry_label">Saisir un nom de produit</string>
     <string name="meal_plan_product_entry_placeholder">Ex. Lait</string>

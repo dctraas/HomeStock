@@ -319,15 +319,21 @@ fun MoreScreen(
                 photoPath = photoPath,
                 onClick = { showProfileDialog = true },
             )
-            SettingsRow(
-                icon = Icons.Filled.VerifiedUser,
-                title = stringResource(R.string.account_link_row_title),
-                subtitle = if (isAccountLinked) {
-                    stringResource(R.string.account_link_row_subtitle_linked_format, accountLinkRepository.linkedEmail ?: "—")
-                } else {
-                    stringResource(R.string.account_link_row_subtitle_unlinked)
-                },
-                onClick = onNavigateToAccountLink,
+            SettingsGroup(
+                rows = listOf(
+                    {
+                        SettingsRow(
+                            icon = Icons.Filled.VerifiedUser,
+                            title = stringResource(R.string.account_link_row_title),
+                            subtitle = if (isAccountLinked) {
+                                stringResource(R.string.account_link_row_subtitle_linked_format, accountLinkRepository.linkedEmail ?: "—")
+                            } else {
+                                stringResource(R.string.account_link_row_subtitle_unlinked)
+                            },
+                            onClick = onNavigateToAccountLink,
+                        )
+                    },
+                ),
             )
             PremiumPromoCard(isPremium = isPremium, onClick = onNavigateToPremium)
 
@@ -335,84 +341,121 @@ fun MoreScreen(
             // than this device's own account or app preferences, so they get their own section
             // between Account and App-instellingen.
             SectionHeader(stringResource(R.string.more_section_household))
-            SettingsRow(
-                icon = Icons.Filled.Home,
-                title = stringResource(R.string.more_household_title),
-                // Plural-aware: "1 lid" vs. "2 leden" (and the equivalent in every other
-                // locale) — a plain %d format string can't express that agreement on its own.
-                subtitle = pluralStringResource(
-                    R.plurals.more_household_subtitle_format,
-                    memberCount,
-                    memberCount,
-                    householdId ?: "—",
+            SettingsGroup(
+                rows = listOf(
+                    {
+                        SettingsRow(
+                            icon = Icons.Filled.Home,
+                            title = stringResource(R.string.more_household_title),
+                            // Plural-aware: "1 lid" vs. "2 leden" (and the equivalent in every
+                            // other locale) — a plain %d format string can't express that
+                            // agreement on its own.
+                            subtitle = pluralStringResource(
+                                R.plurals.more_household_subtitle_format,
+                                memberCount,
+                                memberCount,
+                                householdId ?: "—",
+                            ),
+                            onClick = onNavigateToHousehold,
+                        )
+                    },
+                    {
+                        SettingsRow(
+                            icon = Icons.Filled.Storefront,
+                            title = stringResource(R.string.more_stores_title),
+                            subtitle = stringResource(R.string.more_stores_count_format, stores.size),
+                            onClick = { showStoresDialog = true },
+                        )
+                    },
+                    {
+                        SettingsRow(
+                            icon = Icons.Filled.BarChart,
+                            title = stringResource(R.string.more_statistics_title),
+                            trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                            onClick = { if (isPremium) onNavigateToStatistics() else onNavigateToPremium() },
+                        )
+                    },
                 ),
-                onClick = onNavigateToHousehold,
-            )
-            SettingsRow(
-                icon = Icons.Filled.Storefront,
-                title = stringResource(R.string.more_stores_title),
-                subtitle = stringResource(R.string.more_stores_count_format, stores.size),
-                onClick = { showStoresDialog = true },
-            )
-            SettingsRow(
-                icon = Icons.Filled.BarChart,
-                title = stringResource(R.string.more_statistics_title),
-                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
-                onClick = { if (isPremium) onNavigateToStatistics() else onNavigateToPremium() },
             )
 
             SectionHeader(stringResource(R.string.more_section_preferences))
-            SettingsRow(
-                icon = Icons.Filled.Notifications,
-                title = stringResource(R.string.more_notifications_row_title),
-                subtitle = stringResource(if (notificationsEnabled) R.string.common_on else R.string.common_off),
-                onClick = { showNotificationsDialog = true },
-            )
-            SettingsRow(
-                icon = Icons.Filled.Language,
-                title = stringResource(R.string.more_language_title),
-                subtitle = stringResource(currentLanguage.labelRes),
-                onClick = { showLanguageDialog = true },
-            )
-            SettingsRow(
-                icon = Icons.Filled.DarkMode,
-                title = stringResource(R.string.more_theme_title),
-                subtitle = stringResource(themeMode.labelRes()),
-                onClick = { showThemeDialog = true },
-            )
-            SettingsRow(
-                icon = Icons.Filled.Accessibility,
-                title = stringResource(R.string.more_accessibility_title),
-                subtitle = accessibilitySubtitle(largeText, highContrast),
-                onClick = { showAccessibilityDialog = true },
-            )
-            SettingsRow(
-                icon = Icons.Filled.ImportExport,
-                title = stringResource(R.string.more_data_csv_title),
-                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
-                onClick = { if (isPremium) showImportExportDialog = true else onNavigateToPremium() },
+            SettingsGroup(
+                rows = listOf(
+                    {
+                        SettingsRow(
+                            icon = Icons.Filled.Notifications,
+                            title = stringResource(R.string.more_notifications_row_title),
+                            subtitle = stringResource(if (notificationsEnabled) R.string.common_on else R.string.common_off),
+                            onClick = { showNotificationsDialog = true },
+                        )
+                    },
+                    {
+                        SettingsRow(
+                            icon = Icons.Filled.Language,
+                            title = stringResource(R.string.more_language_title),
+                            subtitle = stringResource(currentLanguage.labelRes),
+                            onClick = { showLanguageDialog = true },
+                        )
+                    },
+                    {
+                        SettingsRow(
+                            icon = Icons.Filled.DarkMode,
+                            title = stringResource(R.string.more_theme_title),
+                            subtitle = stringResource(themeMode.labelRes()),
+                            onClick = { showThemeDialog = true },
+                        )
+                    },
+                    {
+                        SettingsRow(
+                            icon = Icons.Filled.Accessibility,
+                            title = stringResource(R.string.more_accessibility_title),
+                            subtitle = accessibilitySubtitle(largeText, highContrast),
+                            onClick = { showAccessibilityDialog = true },
+                        )
+                    },
+                    {
+                        SettingsRow(
+                            icon = Icons.Filled.ImportExport,
+                            title = stringResource(R.string.more_data_csv_title),
+                            trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                            onClick = { if (isPremium) showImportExportDialog = true else onNavigateToPremium() },
+                        )
+                    },
+                ),
             )
 
             SectionHeader(stringResource(R.string.more_section_about))
-            SettingsRow(
-                icon = Icons.Filled.Feedback,
-                title = stringResource(R.string.more_about_feedback),
-                onClick = { showFeedbackDialog = true },
-            )
-            SettingsRow(
-                icon = Icons.Filled.StarRate,
-                title = stringResource(R.string.more_about_rate_app),
-                onClick = { openPlayStoreListing(context) },
-            )
-            SettingsRow(
-                icon = Icons.Filled.PrivacyTip,
-                title = stringResource(R.string.more_about_privacy_policy),
-                onClick = onNavigateToPrivacyPolicy,
-            )
-            SettingsRow(
-                icon = Icons.Filled.Description,
-                title = stringResource(R.string.more_about_licenses),
-                onClick = onNavigateToLicenses,
+            SettingsGroup(
+                rows = listOf(
+                    {
+                        SettingsRow(
+                            icon = Icons.Filled.Feedback,
+                            title = stringResource(R.string.more_about_feedback),
+                            onClick = { showFeedbackDialog = true },
+                        )
+                    },
+                    {
+                        SettingsRow(
+                            icon = Icons.Filled.StarRate,
+                            title = stringResource(R.string.more_about_rate_app),
+                            onClick = { openPlayStoreListing(context) },
+                        )
+                    },
+                    {
+                        SettingsRow(
+                            icon = Icons.Filled.PrivacyTip,
+                            title = stringResource(R.string.more_about_privacy_policy),
+                            onClick = onNavigateToPrivacyPolicy,
+                        )
+                    },
+                    {
+                        SettingsRow(
+                            icon = Icons.Filled.Description,
+                            title = stringResource(R.string.more_about_licenses),
+                            onClick = onNavigateToLicenses,
+                        )
+                    },
+                ),
             )
 
             if (BuildConfig.DEBUG) {
@@ -638,9 +681,45 @@ private fun AccountCard(displayName: String?, photoPath: String?, onClick: () ->
 }
 
 /**
+ * Wraps a whole section's worth of [SettingsRow]s in one shared card with thin dividers
+ * between them, instead of each row being its own separately-shadowed card — a long column of
+ * near-identical floating cards read as visual noise the actual content (a handful of plain
+ * settings) didn't warrant. [rows] takes a list of composable lambdas rather than a list of
+ * plain data so each row can keep its own conditional subtitle/trailingLabel/onClick logic
+ * exactly as before — this only changes how they're laid out, not what any of them show.
+ */
+@Composable
+private fun SettingsGroup(rows: List<@Composable () -> Unit>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = SoftCardShape,
+    ) {
+        Column {
+            rows.forEachIndexed { index, row ->
+                row()
+                if (index != rows.lastIndex) {
+                    // Indented to align under the title/subtitle text, not under the icon —
+                    // matches where AccountCard/PremiumPromoCard's own content starts.
+                    HorizontalDivider(
+                        modifier = Modifier.padding(start = 54.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
  * Generic tappable settings row: icon, title, optional subtitle. Opens a dialog on tap.
  * [trailingLabel] is a short badge-like label at the far end of the row (e.g. "PREMIUM") —
  * separate from [subtitle] since a row only ever needs one or the other, not both stacked.
+ *
+ * No card of its own any more — see [SettingsGroup], which wraps a whole section's worth of
+ * these in one shared card instead. The icon lost its colored circular badge for the same
+ * reason: color on this screen is reserved for confirmed/active state (the Premium card, a
+ * linked account) rather than repeated on every plain row regardless of what it does.
  */
 @Composable
 private fun SettingsRow(
@@ -650,50 +729,40 @@ private fun SettingsRow(
     trailingLabel: String? = null,
     onClick: () -> Unit,
 ) {
-    Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = SoftCardShape,
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(22.dp),
+        )
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 16.dp),
         ) {
-            Surface(
-                shape = SoftBadgeShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                modifier = Modifier.size(44.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                }
-            }
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 12.dp),
-            ) {
-                Text(title, style = MaterialTheme.typography.titleSmall)
-                if (subtitle != null) {
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                }
-            }
-            if (trailingLabel != null) {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            if (subtitle != null) {
                 Text(
-                    text = trailingLabel,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+        }
+        if (trailingLabel != null) {
+            Text(
+                text = trailingLabel,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+                fontWeight = FontWeight.Bold,
+            )
         }
     }
 }

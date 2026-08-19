@@ -567,6 +567,8 @@
     <string name="recipes_empty_subtitle">Probeer een andere zoekterm of pas je allergeenfilters aan.</string>
     <string name="recipes_search_placeholder">Zoek recepten op naam…</string>
     <string name="recipes_load_more">Meer laden</string>
+    <string name="recipes_show_as_grid_cd">Toon als raster</string>
+    <string name="recipes_show_as_list_cd">Toon als lijst</string>
     <string name="recipes_match_count_format">%1$d ingrediënten in huis</string>
     <string name="recipes_allergen_filter_label">Allergenen uitsluiten</string>
     <string name="recipes_allergen_filter_active_cd_format">Allergenen uitsluiten (actief: %1$s)</string>
@@ -666,6 +668,7 @@
     <string name="meal_plan_previous_day_cd">Vorige dag</string>
     <string name="meal_plan_next_day_cd">Volgende dag</string>
     <string name="meal_plan_add_product">Product</string>
+    <string name="meal_plan_empty_slot_hint">Nog niets gepland</string>
     <string name="meal_plan_product_picker_title_format">Product toevoegen voor %1$s</string>
     <string name="meal_plan_product_entry_label">Zelf een product invoeren</string>
     <string name="meal_plan_product_entry_placeholder">Bijv. Melk</string>
