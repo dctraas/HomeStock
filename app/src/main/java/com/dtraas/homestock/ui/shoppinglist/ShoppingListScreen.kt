@@ -1014,14 +1014,12 @@ private fun ShoppingListRow(
                     dense = true,
                     displayText = formatQuantityWithUnit(item.quantity, MeasurementUnit.fromStorageKey(item.unit)),
                 )
-                IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                    Icon(
-                        Icons.Filled.Delete,
-                        contentDescription = stringResource(R.string.shopping_list_delete_cd),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
+                // No standalone delete icon here any more — unlike Voorraad's InventoryRow,
+                // this row never had more than this one trailing icon to begin with, and it
+                // was already fully redundant with the swipe-to-delete above (EndToStart, see
+                // dismissState). Removing it is the honest version of "declutter the trailing
+                // icons": wrapping a single icon in a "···" menu would only have added a tap
+                // for no benefit. onDelete stays as a parameter — swipe still calls it.
             }
         }
     }
@@ -1154,27 +1152,24 @@ private fun ShoppingListGridTile(
                         dense = true,
                         displayText = formatQuantityWithUnit(item.quantity, MeasurementUnit.fromStorageKey(item.unit)),
                     )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = { onCheckedChange(!item.isChecked) }, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                imageVector = if (item.isChecked) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
-                                contentDescription = if (item.isChecked) {
-                                    stringResource(R.string.shopping_list_mark_unchecked_cd)
-                                } else {
-                                    stringResource(R.string.shopping_list_mark_checked_cd)
-                                },
-                                tint = if (item.isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                                modifier = Modifier.size(16.dp),
-                            )
-                        }
-                        IconButton(onClick = onDelete, modifier = Modifier.size(32.dp)) {
-                            Icon(
-                                Icons.Filled.Delete,
-                                contentDescription = stringResource(R.string.shopping_list_delete_cd),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(16.dp),
-                            )
-                        }
+                    // Delete used to sit here too, next to the check-toggle — dropped as the
+                    // same redundant-with-swipe icon as ShoppingListRow's above (this tile's
+                    // own EndToStart swipe already deletes it). Check-toggle stays: unlike
+                    // delete, it's this whole screen's primary action, not a secondary one to
+                    // fold away — it's also swipeable (StartToEnd) but, being the thing you do
+                    // dozens of times per trip, keeping it as a direct tap target too matters
+                    // more here than it would for an occasional action.
+                    IconButton(onClick = { onCheckedChange(!item.isChecked) }, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            imageVector = if (item.isChecked) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
+                            contentDescription = if (item.isChecked) {
+                                stringResource(R.string.shopping_list_mark_unchecked_cd)
+                            } else {
+                                stringResource(R.string.shopping_list_mark_checked_cd)
+                            },
+                            tint = if (item.isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(16.dp),
+                        )
                     }
                 }
             }
