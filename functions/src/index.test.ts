@@ -13,6 +13,7 @@ import {
   parseImportUrl,
   parseReceiptPrice,
   requireUid,
+  resolveTranslatedInstructions,
   translationDocId,
 } from "./index";
 
@@ -187,6 +188,22 @@ describe("translationDocId", () => {
 describe("languageNameForLocale", () => {
   it("falls back to the raw locale code for an unmapped locale", () => {
     expect(languageNameForLocale("xx")).toBe("xx");
+  });
+});
+
+describe("resolveTranslatedInstructions", () => {
+  it("prefers the translated text when Claude actually returned something", () => {
+    expect(resolveTranslatedInstructions("Chop the onion.", "Snijd de ui.")).toBe("Snijd de ui.");
+  });
+
+  it("is null when the source recipe genuinely has no instructions — the expected, unremarkable case", () => {
+    expect(resolveTranslatedInstructions(null, "")).toBeNull();
+  });
+
+  it("falls back to the English original rather than losing it, when the model drops a real instructions field", () => {
+    // This is the bug this function exists to prevent: a source recipe with real instructions
+    // must never end up with none just because one translation call came back empty.
+    expect(resolveTranslatedInstructions("Chop the onion.", "")).toBe("Chop the onion.");
   });
 });
 

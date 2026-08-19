@@ -580,6 +580,7 @@
     <string name="recipes_added_to_shopping_list">Ontbrekende ingrediënten toegevoegd aan je boodschappenlijst</string>
     <string name="recipes_add_missing_to_shopping_list">Ontbrekende ingrediënten toevoegen aan boodschappenlijst</string>
     <string name="recipes_instructions_title">Instructies</string>
+    <string name="recipes_instructions_unavailable">Geen bereidingswijze beschikbaar voor dit recept.</string>
     <string name="recipes_ready_in_minutes_format">%1$d min</string>
 
     <!-- Kookmodus -->

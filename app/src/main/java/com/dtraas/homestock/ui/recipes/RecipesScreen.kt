@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,6 +23,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudOff
@@ -65,6 +67,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -145,24 +149,17 @@ fun RecipesScreen(
                 // Recepten is a bottom-nav tab, not a screen pushed onto the back stack — a
                 // "Terug" button here had nowhere meaningful to go.
                 actions = {
-                    // List/grid toggle — same pattern as Voorraad's. Available on all three tabs;
-                    // an image-forward grid is just as useful for Favorieten/Eigen recepten.
-                    IconButton(onClick = { viewMode = viewMode.toggled() }) {
-                        Icon(
-                            imageVector = if (viewMode == RecipesViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
-                            contentDescription = stringResource(
-                                if (viewMode == RecipesViewMode.LIST) R.string.recipes_show_as_grid_cd else R.string.recipes_show_as_list_cd,
-                            ),
-                        )
-                    }
-                    // Only on BROWSE — Favorieten/Eigen recepten are the household's own short
-                    // lists, nothing there to "genereer met AI" against. Moved off its own FAB
-                    // (which sat on top of the list) into a top-bar action instead.
-                    if (uiState.tab == RecipesTab.BROWSE) {
-                        IconButton(onClick = { showGenerateDialog = true }) {
+                    // List/grid toggle — same pattern as Voorraad's. On BROWSE this now lives in
+                    // the icon row below instead (alongside search/filter/AI-generate — see
+                    // that row's comment), so it's only shown up here for Favorieten/Eigen
+                    // recepten, which have no row of their own to put it in.
+                    if (uiState.tab != RecipesTab.BROWSE) {
+                        IconButton(onClick = { viewMode = viewMode.toggled() }) {
                             Icon(
-                                Icons.Filled.AutoAwesome,
-                                contentDescription = stringResource(R.string.recipes_generate_ai_button),
+                                imageVector = if (viewMode == RecipesViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
+                                contentDescription = stringResource(
+                                    if (viewMode == RecipesViewMode.LIST) R.string.recipes_show_as_grid_cd else R.string.recipes_show_as_list_cd,
+                                ),
                             )
                         }
                     }
@@ -174,37 +171,72 @@ fun RecipesScreen(
             RecipesTabRow(selected = uiState.tab, onSelect = viewModel::selectTab)
 
             if (uiState.tab == RecipesTab.BROWSE) {
+                // One consolidated icon row for everything that used to be split between the
+                // top bar (list/grid toggle, "genereer met AI") and its own row below the tabs
+                // (search field, allergenfilter) — collapsed to just their icons, right-aligned
+                // like a toolbar, so BROWSE's first screenful stays mostly recipes. Search
+                // itself only shows an icon here too (not a permanent bar) — tapping it expands
+                // this same row into a full-width field instead, closer to how Android's own
+                // search-in-app-bar pattern works, and collapses back to icons when dismissed.
+                var searchExpanded by remember { mutableStateOf(uiState.searchQuery.isNotBlank()) }
+                val searchFocusRequester = remember { FocusRequester() }
+                LaunchedEffect(searchExpanded) {
+                    if (searchExpanded) searchFocusRequester.requestFocus()
+                }
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
                 ) {
-                    SearchField(
-                        query = uiState.searchQuery,
-                        onQueryChange = { query ->
-                            viewModel.onSearchQueryChange(query)
-                            if (query.isEmpty()) viewModel.clearSearch()
-                        },
-                        placeholder = stringResource(R.string.recipes_search_placeholder),
-                        modifier = Modifier.weight(1f),
-                        dense = true,
-                    )
-                    // Icon-only rather than a labeled Button — this row already reads as
-                    // "search" from the field's own placeholder/icon, so a second "Zoeken"
-                    // label next to it was redundant weight.
-                    IconButton(
-                        onClick = viewModel::search,
-                        enabled = uiState.searchQuery.isNotBlank() && !uiState.isLoading,
-                        modifier = Modifier.padding(start = 4.dp),
-                    ) {
-                        Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.search_product_action))
+                    if (searchExpanded) {
+                        IconButton(onClick = {
+                            searchExpanded = false
+                            if (uiState.searchQuery.isNotEmpty()) viewModel.clearSearch()
+                        }) {
+                            Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
+                        }
+                        SearchField(
+                            query = uiState.searchQuery,
+                            onQueryChange = { query ->
+                                viewModel.onSearchQueryChange(query)
+                                if (query.isEmpty()) viewModel.clearSearch()
+                            },
+                            placeholder = stringResource(R.string.recipes_search_placeholder),
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(start = 4.dp)
+                                .focusRequester(searchFocusRequester),
+                            dense = true,
+                            onSearch = viewModel::search,
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.weight(1f))
+                        IconButton(onClick = { searchExpanded = true }) {
+                            Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.search_product_action))
+                        }
+                        // Used to be an always-visible chip row of its own between the search
+                        // bar and the list; folded into this dropdown instead so BROWSE's first
+                        // screenful is mostly recipes, not filter chrome.
+                        AllergenFilterMenuButton(
+                            excludedAllergens = uiState.excludedAllergens,
+                            onToggle = viewModel::toggleAllergen,
+                        )
+                        IconButton(onClick = { viewMode = viewMode.toggled() }) {
+                            Icon(
+                                imageVector = if (viewMode == RecipesViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
+                                contentDescription = stringResource(
+                                    if (viewMode == RecipesViewMode.LIST) R.string.recipes_show_as_grid_cd else R.string.recipes_show_as_list_cd,
+                                ),
+                            )
+                        }
+                        // Moved off its own FAB (which sat on top of the list) into this row.
+                        IconButton(onClick = { showGenerateDialog = true }) {
+                            Icon(
+                                Icons.Filled.AutoAwesome,
+                                contentDescription = stringResource(R.string.recipes_generate_ai_button),
+                            )
+                        }
                     }
-                    // Used to be an always-visible chip row of its own between the search bar
-                    // and the list; folded into this dropdown instead so BROWSE's first
-                    // screenful is mostly recipes, not filter chrome.
-                    AllergenFilterMenuButton(
-                        excludedAllergens = uiState.excludedAllergens,
-                        onToggle = viewModel::toggleAllergen,
-                    )
                 }
             } else if (uiState.tab == RecipesTab.CUSTOM) {
                 Row(modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)) {

@@ -1,6 +1,8 @@
 package com.dtraas.homestock.ui.components
 
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Search
@@ -15,6 +17,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dtraas.homestock.R
@@ -23,7 +26,10 @@ import com.dtraas.homestock.ui.theme.SoftCardShape
 /** [dense] shrinks the field a bit (smaller text/icons — [OutlinedTextField] otherwise has no
  *  direct "smaller" knob, it just sizes itself to whatever content/icons it's given) — opt-in
  *  per call site rather than the default, since every other screen's search field is sized fine
- *  as-is. */
+ *  as-is. [onSearch], when given, switches the keyboard's Enter key to a search action that
+ *  calls it — lets a call site skip a separate "confirm search" icon of its own (e.g. an
+ *  expand-on-tap search bar with nothing else next to the field to press). Left null (the
+ *  default) keeps every existing call site's plain Enter-key behavior unchanged. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchField(
@@ -32,6 +38,7 @@ fun SearchField(
     modifier: Modifier = Modifier,
     placeholder: String = stringResource(R.string.search_placeholder_default),
     dense: Boolean = false,
+    onSearch: (() -> Unit)? = null,
 ) {
     val textStyle: TextStyle? = if (dense) MaterialTheme.typography.bodyMedium else null
     val iconSize = if (dense) Modifier.size(20.dp) else Modifier
@@ -61,5 +68,7 @@ fun SearchField(
         singleLine = true,
         shape = SoftCardShape,
         textStyle = textStyle ?: LocalTextStyle.current,
+        keyboardOptions = if (onSearch != null) KeyboardOptions(imeAction = ImeAction.Search) else KeyboardOptions.Default,
+        keyboardActions = if (onSearch != null) KeyboardActions(onSearch = { onSearch() }) else KeyboardActions.Default,
     )
 }

@@ -367,37 +367,49 @@ fun RecipeDetailScreen(
                     }
                 }
 
-                detail.displayInstructions?.takeIf { it.isNotBlank() }?.let { instructions ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(
-                            text = stringResource(R.string.recipes_instructions_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        // Only worth its own mode once there's more than one step to walk
-                        // through — a single-paragraph recipe has nothing for "Volgende" to do.
-                        if (splitIntoSteps(instructions).size > 1) {
-                            TextButton(onClick = onStartCookMode) {
-                                Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                                Text(stringResource(R.string.cook_mode_start), modifier = Modifier.padding(start = 6.dp))
-                            }
+                val instructions = detail.displayInstructions?.trim()
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = stringResource(R.string.recipes_instructions_title),
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    // Only worth its own mode once there's more than one step to walk
+                    // through — a single-paragraph recipe has nothing for "Volgende" to do.
+                    if (!instructions.isNullOrBlank() && splitIntoSteps(instructions).size > 1) {
+                        TextButton(onClick = onStartCookMode) {
+                            Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text(stringResource(R.string.cook_mode_start), modifier = Modifier.padding(start = 6.dp))
                         }
                     }
+                }
+                if (!instructions.isNullOrBlank()) {
                     Surface(
                         modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                         color = MaterialTheme.colorScheme.surfaceContainerHigh,
                         shape = SoftCardShape,
                     ) {
                         Text(
-                            text = instructions.trim(),
+                            text = instructions,
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.padding(16.dp),
                         )
                     }
+                } else {
+                    // Explicit rather than just omitting the whole section — a recipe (usually
+                    // one sourced from Spoonacular) can genuinely have no instructions text in
+                    // its own data, and a silently missing section reads as "this app is
+                    // broken" rather than "this particular recipe's source has a gap".
+                    Text(
+                        text = stringResource(R.string.recipes_instructions_unavailable),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
                 }
             }
         }

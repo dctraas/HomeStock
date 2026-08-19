@@ -1470,6 +1470,19 @@ const TRANSLATE_DETAIL_SCHEMA = {
   additionalProperties: false,
 } as const;
 
+/**
+ * Picks what [translateDetailFields] actually stores as the translated instructions —
+ * [translated] (Claude's output) when it has something, [original] (the pre-translation
+ * English text) otherwise. Never null when [original] has real content: a genuinely
+ * instructions-less source recipe is the normal case the translation prompt's own "leave it
+ * empty" instruction covers, but a model hiccup that drops a real instructions field must never
+ * blank out an otherwise-working recipe — see [translateDetailFields]'s call site for why this
+ * also protects the 90-day cross-household translation cache.
+ */
+export function resolveTranslatedInstructions(original: string | null, translated: string): string | null {
+  return translated || original || null;
+}
+
 async function translateDetailFields(
   apiKey: string,
   locale: string,
@@ -1495,7 +1508,7 @@ async function translateDetailFields(
     name: parsed.name || fields.name,
     category: parsed.category || null,
     area: parsed.area || null,
-    instructions: parsed.instructions || null,
+    instructions: resolveTranslatedInstructions(fields.instructions, parsed.instructions),
     ingredients: parsed.ingredients?.length ? parsed.ingredients : fields.ingredients,
   };
 }

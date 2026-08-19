@@ -579,6 +579,7 @@
     <string name="recipes_added_to_shopping_list">Missing ingredients added to your shopping list</string>
     <string name="recipes_add_missing_to_shopping_list">Add missing ingredients to shopping list</string>
     <string name="recipes_instructions_title">Instructions</string>
+    <string name="recipes_instructions_unavailable">No instructions available for this recipe.</string>
     <string name="recipes_ready_in_minutes_format">%1$d min</string>
 
     <!-- Kookmodus -->
