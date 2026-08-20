@@ -4,6 +4,7 @@
     <!-- Common -->
     <string name="common_back">Retour</string>
     <string name="common_cancel">Annuler</string>
+    <string name="common_close">Fermer</string>
     <string name="common_name">Nom</string>
     <string name="common_ok">OK</string>
     <string name="common_on">Activé</string>
@@ -328,6 +329,18 @@
     <string name="inventory_group_by_cd">Grouper par</string>
     <string name="inventory_group_by_active_cd_format">Grouper par (actif : %1$s)</string>
     <string name="inventory_no_location_label">Aucun emplacement</string>
+    <!-- "Keuken" redesign (2026-08) -->
+    <string name="inventory_scan_button">Scanner</string>
+    <string name="inventory_more_options_cd">Plus d\'options</string>
+    <string name="inventory_more_options_title">Options</string>
+    <string name="inventory_keuken_stats_expiring_format">%1$d bientôt périmés</string>
+    <string name="inventory_keuken_stats_low_stock_format">%1$d bas</string>
+    <string name="inventory_expiring_soon_card_title">À consommer en premier</string>
+    <string name="inventory_expiring_soon_see_all">Tout voir →</string>
+    <plurals name="inventory_cook_with_these">
+        <item quantity="one">Cuisiner avec — %1$d recette</item>
+        <item quantity="other">Cuisiner avec — %1$d recettes</item>
+    </plurals>
 
     <!-- Stock sort options -->
     <string name="sort_option_name">Nom</string>

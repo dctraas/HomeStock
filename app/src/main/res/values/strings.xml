@@ -4,6 +4,7 @@
     <!-- Common -->
     <string name="common_back">Terug</string>
     <string name="common_cancel">Annuleren</string>
+    <string name="common_close">Sluiten</string>
     <string name="common_name">Naam</string>
     <string name="common_ok">OK</string>
     <string name="common_on">Aan</string>
@@ -329,6 +330,18 @@
     <string name="inventory_group_by_cd">Groeperen</string>
     <string name="inventory_group_by_active_cd_format">Groeperen (actief: %1$s)</string>
     <string name="inventory_no_location_label">Geen locatie</string>
+    <!-- "Keuken" redesign (2026-08) -->
+    <string name="inventory_scan_button">Scannen</string>
+    <string name="inventory_more_options_cd">Meer opties</string>
+    <string name="inventory_more_options_title">Opties</string>
+    <string name="inventory_keuken_stats_expiring_format">%1$d verlopen bijna</string>
+    <string name="inventory_keuken_stats_low_stock_format">%1$d laag</string>
+    <string name="inventory_expiring_soon_card_title">Eerst opmaken</string>
+    <string name="inventory_expiring_soon_see_all">Alles →</string>
+    <plurals name="inventory_cook_with_these">
+        <item quantity="one">Kook hiermee — %1$d recept</item>
+        <item quantity="other">Kook hiermee — %1$d recepten</item>
+    </plurals>
 
     <!-- Voorraad sort options -->
     <string name="sort_option_name">Naam</string>

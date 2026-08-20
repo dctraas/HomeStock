@@ -3,6 +3,7 @@ package com.dtraas.homestock.ui.inventory
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
@@ -10,7 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,8 +19,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -28,21 +32,25 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DinnerDining
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Kitchen
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Receipt
@@ -56,15 +64,21 @@ import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Badge
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -89,6 +103,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -118,9 +133,16 @@ import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.components.color
 import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.components.onColor
+import com.dtraas.homestock.ui.theme.GoldTertiaryContainerAccent
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
+import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
+import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
+import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
+import com.dtraas.homestock.ui.theme.UrgencyTileShape
 import java.io.File
 import kotlinx.coroutines.launch
 
@@ -136,6 +158,10 @@ fun InventoryScreen(
     onNavigateToAiRecognize: () -> Unit = {},
     onNavigateToPremium: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
+    // "Kook hiermee" on the "Eerst opmaken" card — a plain tab switch rather than actually
+    // filtering Recepten by these specific ingredients, which nothing in RecipesViewModel
+    // supports yet (see InventoryScreen's design-handoff commit for the full disclosure).
+    onNavigateToRecipes: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as HomeStockApplication
@@ -155,7 +181,7 @@ fun InventoryScreen(
     var viewMode by remember { mutableStateOf(InventoryViewMode.GRID) }
     var searchActive by remember { mutableStateOf(false) }
     var showProfileDialog by remember { mutableStateOf(false) }
-    var showAddMenu by remember { mutableStateOf(false) }
+    var showMoreOptions by remember { mutableStateOf(false) }
     var selectedBarcodes by remember { mutableStateOf(emptySet<String>()) }
     // Bonnetje scannen / AI-productherkenning in the "+" menu below are premium-only, same
     // gating as their entries in Instellingen/Meer and the (now-removed) Scannen tab.
@@ -269,59 +295,28 @@ fun InventoryScreen(
                     },
                 )
             } else {
-                HomeStockTopAppBar(
-                    title = {
-                        Text(
-                            text = uiState.householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.inventory_title),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    navigationIcon = {
-                        // Meldingen is no longer its own bottom-nav tab (see topLevelDestinations)
-                        // — this is now the way to reach it, at the far-left glance position. An
-                        // envelope icon rather than a bell — the bell reads as "push
-                        // notification", which this isn't; it's a list of past activity. The red
-                        // counter badge tracks unread developer notices specifically (not
-                        // Geschiedenis activity) — see DismissedNoticesStore.unreadCount.
-                        IconButton(onClick = onNavigateToNotifications) {
-                            if (unreadNoticeCount > 0) {
-                                BadgedBox(badge = { Badge { Text(unreadNoticeCount.toString()) } }) {
-                                    Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news))
-                                }
-                            } else {
-                                Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news))
-                            }
-                        }
-                    },
-                    actions = {
-                        // The app logo used to sit here; the profile photo takes its place now
-                        // (still opens the same ProfileEditDialog).
-                        IconButton(onClick = { showProfileDialog = true }) {
-                            if (photoPath != null) {
-                                AsyncImage(
-                                    model = File(photoPath),
-                                    contentDescription = stringResource(R.string.more_profile_title),
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .size(32.dp)
-                                        .clip(CircleShape),
-                                )
-                            } else {
-                                Icon(Icons.Filled.AccountCircle, contentDescription = stringResource(R.string.more_profile_title))
-                            }
-                        }
-                    },
+                KeukenHeader(
+                    householdName = uiState.householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.inventory_title),
+                    expiringSoonCount = uiState.expiringSoonCount,
+                    lowStockCount = uiState.lowStockCount,
+                    unreadNoticeCount = unreadNoticeCount,
+                    photoPath = photoPath,
+                    onNotificationsClick = onNavigateToNotifications,
+                    onProfileClick = { showProfileDialog = true },
+                    onStatsClick = { viewModel.onExpiringSoonFilterChange(true) },
                 )
             }
         },
         floatingActionButton = {
             if (!selectionMode) {
-                FloatingActionButton(onClick = { showAddMenu = true }) {
-                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.inventory_add_menu_cd))
-                }
+                FloatingActionBar(
+                    onScanClick = onNavigateToScan,
+                    onSearchClick = { searchActive = true },
+                    onMoreClick = { showMoreOptions = true },
+                )
             }
         },
+        floatingActionButtonPosition = FabPosition.Center,
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -352,78 +347,22 @@ fun InventoryScreen(
                         )
                     }
                 }
-            } else {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp),
-                ) {
-                    IconButton(onClick = { searchActive = true }, modifier = Modifier.size(48.dp)) {
-                        Icon(
-                            Icons.Filled.Search,
-                            contentDescription = stringResource(R.string.inventory_search_cd),
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-                    // Icons here were 56dp each with 28dp glyphs — comfortably tap-able but
-                    // visually heavy for a row that's just filters/view options, not primary
-                    // actions. Shrinking to a standard 48dp touch target tightens the gaps
-                    // between them without making them harder to tap.
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Favorieten used to be its own star icon here; it's now one of the
-                        // choices inside the filter dropdown instead (alongside category),
-                        // which both saves a slot in this row and keeps every way of
-                        // narrowing the list in one place.
-                        FilterMenuButton(
-                            selectedCategory = uiState.selectedCategory,
-                            favoritesOnly = uiState.favoritesOnly,
-                            lowStockOnly = uiState.lowStockOnly,
-                            expiringSoonOnly = uiState.expiringSoonOnly,
-                            availableLocations = uiState.availableLocations,
-                            selectedLocation = uiState.selectedLocation,
-                            onCategorySelected = viewModel::onCategoryFilterChange,
-                            onFavoritesToggle = viewModel::onFavoritesFilterChange,
-                            onLowStockToggle = viewModel::onLowStockFilterChange,
-                            onExpiringSoonToggle = viewModel::onExpiringSoonFilterChange,
-                            onLocationSelected = viewModel::onLocationFilterChange,
-                        )
-                        SortMenuButton(
-                            selected = uiState.sortOption,
-                            onSelected = viewModel::onSortOptionChange,
-                        )
-                        // Only worth offering once there's more than one location in use —
-                        // with zero or one, "group by location" would either be pointless
-                        // (nothing to group) or identical to the flat list.
-                        if (uiState.availableLocations.size > 1) {
-                            GroupByMenuButton(
-                                selected = uiState.groupBy,
-                                onSelected = viewModel::onGroupByChange,
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                viewMode = if (viewMode == InventoryViewMode.LIST) {
-                                    InventoryViewMode.GRID
-                                } else {
-                                    InventoryViewMode.LIST
-                                }
-                            },
-                            modifier = Modifier.size(48.dp),
-                        ) {
-                            Icon(
-                                imageVector = if (viewMode == InventoryViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
-                                contentDescription = if (viewMode == InventoryViewMode.LIST) {
-                                    stringResource(R.string.inventory_show_as_tiles_cd)
-                                } else {
-                                    stringResource(R.string.inventory_show_as_list_cd)
-                                },
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
-                    }
-                }
+            } else if (!selectionMode) {
+                // The "Eerst opmaken" nudge and location rail both read as clutter while
+                // actively narrowing the list by text — same reasoning the old code had for
+                // swapping the icon row out for the search field above.
+                ExpiringSoonCard(
+                    highlights = uiState.expiringSoon,
+                    onSeeAll = { viewModel.onExpiringSoonFilterChange(true) },
+                    onCookWithThese = onNavigateToRecipes,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                )
+                LocationRail(
+                    totalCount = uiState.totalCount,
+                    selectedLocation = uiState.selectedLocation,
+                    onLocationSelected = viewModel::onLocationFilterChange,
+                    modifier = Modifier.padding(bottom = 8.dp),
+                )
             }
 
             // Grouping by category loses the order between categories (each still shows in
@@ -516,11 +455,11 @@ fun InventoryScreen(
                 }
             } else {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(3),
+                    columns = GridCells.Fixed(2),
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
                     if (isFlatSort) {
                         items(uiState.flatInventory, key = { it.barcode }) { item ->
@@ -605,31 +544,385 @@ fun InventoryScreen(
         )
     }
 
-    if (showAddMenu) {
-        AddMenuDialog(
+    if (showMoreOptions) {
+        MoreOptionsDialog(
             isPremium = isPremium,
-            onBarcodeScan = onNavigateToScan,
+            viewMode = viewMode,
+            onViewModeChange = { viewMode = it },
+            sortSelected = uiState.sortOption,
+            onSortSelected = viewModel::onSortOptionChange,
+            groupBySelected = uiState.groupBy,
+            onGroupBySelected = viewModel::onGroupByChange,
+            showGroupBy = uiState.availableLocations.size > 1,
+            selectedCategory = uiState.selectedCategory,
+            favoritesOnly = uiState.favoritesOnly,
+            lowStockOnly = uiState.lowStockOnly,
+            expiringSoonOnly = uiState.expiringSoonOnly,
+            availableLocations = uiState.availableLocations,
+            selectedLocation = uiState.selectedLocation,
+            onCategorySelected = viewModel::onCategoryFilterChange,
+            onFavoritesToggle = viewModel::onFavoritesFilterChange,
+            onLowStockToggle = viewModel::onLowStockFilterChange,
+            onExpiringSoonToggle = viewModel::onExpiringSoonFilterChange,
+            onLocationSelected = viewModel::onLocationFilterChange,
             onSearchByName = onNavigateToSearch,
             onReceiptScan = onNavigateToReceiptScan,
             onAiRecognize = onNavigateToAiRecognize,
             onNavigateToPremium = onNavigateToPremium,
-            onDismiss = { showAddMenu = false },
+            onDismiss = { showMoreOptions = false },
         )
     }
 }
 
 /**
- * The "+" on Voorraad's four ways to add a product — barcode scannen and zoeken op naam are
- * free, bonnetje scannen and AI-productherkenning are premium (locked options still open the
- * paywall on tap rather than being disabled/hidden, so free users can see and go straight to
- * upgrading instead of wondering why an option is greyed out). A 2x2 grid of large icon tiles
- * rather than a single-column list of small icon+label rows — all four options are visible at
- * a glance this way instead of needing to be read top to bottom.
+ * The "Keuken" header — a saturated sage-to-forest gradient band (same base color as
+ * [HomeStockTopAppBar] everywhere else, see [LocalTopAppBarContainerColor]) replacing the plain
+ * title bar on this one screen: household name/avatar/meldingen up top, and a tappable
+ * stats line below it ("N verlopen bijna · N laag") that jumps straight to the matching
+ * quick filter — the same shortcut [ExpiringSoonCard]'s "Alles" link offers further down.
  */
 @Composable
-private fun AddMenuDialog(
+private fun KeukenHeader(
+    householdName: String,
+    expiringSoonCount: Int,
+    lowStockCount: Int,
+    unreadNoticeCount: Int,
+    photoPath: String?,
+    onNotificationsClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    onStatsClick: () -> Unit,
+) {
+    val contentColor = LocalTopAppBarContentColor.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Brush.verticalGradient(listOf(LocalTopAppBarContainerColor.current, TopAppBarContainerGradientEnd)))
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(start = 20.dp, end = 12.dp, top = 12.dp, bottom = 16.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = householdName,
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = contentColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onNotificationsClick) {
+                    if (unreadNoticeCount > 0) {
+                        BadgedBox(badge = { Badge { Text(unreadNoticeCount.toString()) } }) {
+                            Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news), tint = contentColor)
+                        }
+                    } else {
+                        Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news), tint = contentColor)
+                    }
+                }
+                IconButton(onClick = onProfileClick) {
+                    if (photoPath != null) {
+                        AsyncImage(
+                            model = File(photoPath),
+                            contentDescription = stringResource(R.string.more_profile_title),
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(32.dp).clip(CircleShape),
+                        )
+                    } else {
+                        Icon(Icons.Filled.AccountCircle, contentDescription = stringResource(R.string.more_profile_title), tint = contentColor)
+                    }
+                }
+            }
+        }
+        // Null (nothing shown) once both counts are zero — an always-present "0 verlopen bijna"
+        // line would read as a status update when there's nothing to report.
+        if (expiringSoonCount > 0 || lowStockCount > 0) {
+            val expiringFormat = stringResource(R.string.inventory_keuken_stats_expiring_format)
+            val lowStockFormat = stringResource(R.string.inventory_keuken_stats_low_stock_format)
+            val statsText = listOfNotNull(
+                expiringFormat.format(expiringSoonCount).takeIf { expiringSoonCount > 0 },
+                lowStockFormat.format(lowStockCount).takeIf { lowStockCount > 0 },
+            ).joinToString("  ·  ")
+            Text(
+                text = statsText,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = OnTopAppBarContainerAccent,
+                modifier = Modifier
+                    .padding(top = 4.dp, start = 4.dp)
+                    .clickable(onClick = onStatsClick),
+            )
+        }
+    }
+}
+
+/**
+ * "Eerst opmaken" — a week-ahead nudge for what's soonest to expire (see
+ * [InventoryUiState.expiringSoon]), not shown at all once nothing qualifies. "Kook hiermee"
+ * is a plain jump to Recepten rather than an ingredient-filtered recipe search — nothing in
+ * RecipesViewModel supports filtering by a specific ingredient set yet, so this is a
+ * deliberate scope simplification versus the mockup's literal copy.
+ */
+@Composable
+private fun ExpiringSoonCard(
+    highlights: List<ExpiringSoonHighlight>,
+    onSeeAll: () -> Unit,
+    onCookWithThese: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    if (highlights.isEmpty()) return
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = SoftCardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+    ) {
+        Column(Modifier.padding(16.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.inventory_expiring_soon_card_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = stringResource(R.string.inventory_expiring_soon_see_all),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.clickable(onClick = onSeeAll).padding(4.dp),
+                )
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                highlights.forEach { highlight ->
+                    UrgencyTile(highlight = highlight, modifier = Modifier.weight(1f))
+                }
+            }
+            Button(
+                onClick = onCookWithThese,
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                shape = SoftCardShapeCompact,
+            ) {
+                Icon(Icons.Filled.DinnerDining, contentDescription = null, modifier = Modifier.size(18.dp))
+                Text(
+                    text = pluralStringResource(R.plurals.inventory_cook_with_these, highlights.size, highlights.size),
+                    modifier = Modifier.padding(start = 8.dp),
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+        }
+    }
+}
+
+/** One tile in [ExpiringSoonCard] — [ExpiringSoonHighlight.urgencyLevel] 1 (due within a day)
+ *  reads as coral/urgent, 2 (2-3 days) as amber/caution, 3 (4-7 days) as a calm neutral tone. */
+@Composable
+private fun UrgencyTile(highlight: ExpiringSoonHighlight, modifier: Modifier = Modifier) {
+    val (background, foreground, deadlineColor) = when (highlight.urgencyLevel) {
+        1 -> Triple(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer, MaterialTheme.colorScheme.secondary)
+        2 -> Triple(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiaryContainer, GoldTertiaryContainerAccent)
+        else -> Triple(MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.colorScheme.onSurface, MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+    Column(
+        modifier = modifier
+            .clip(UrgencyTileShape)
+            .background(background)
+            .padding(10.dp),
+    ) {
+        ProductImage(
+            imageUrl = highlight.item.imageUrl,
+            fallbackIcon = Category.fromStorageKey(highlight.item.category).icon,
+            shape = SoftImageShape,
+            modifier = Modifier.size(40.dp),
+        )
+        Text(
+            text = highlight.item.name,
+            style = MaterialTheme.typography.titleSmall,
+            color = foreground,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+        Text(
+            text = expiryDeadlineLabel(highlight.daysUntilExpiry),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = deadlineColor,
+        )
+    }
+}
+
+/** Same day-countdown wording as [stockStatusPillText] uses for the grid badge, just spelled
+ *  out on its own rather than folded into a status/pill decision — every [ExpiringSoonHighlight]
+ *  has an expiration date by construction (see its filter in InventoryViewModel), so there's no
+ *  "no date known" branch to handle here. */
+@Composable
+private fun expiryDeadlineLabel(days: Long): String = when {
+    days < 0 -> stringResource(R.string.inventory_pill_expiry_expired)
+    days == 0L -> stringResource(R.string.inventory_pill_expiry_today)
+    days == 1L -> stringResource(R.string.inventory_pill_expiry_tomorrow)
+    else -> pluralStringResource(R.plurals.inventory_pill_expiry_days, days.toInt(), days.toInt())
+}
+
+/** Local icon per [Location] — kept here rather than on the enum itself since it's purely a
+ *  presentation detail of this one rail, not part of Location's data-model role. */
+private val Location.railIcon: ImageVector
+    get() = when (this) {
+        Location.PANTRY -> Icons.Filled.Kitchen
+        Location.CELLAR -> Icons.Filled.Inventory2
+        Location.FREEZER -> Icons.Filled.AcUnit
+    }
+
+/**
+ * Horizontal chip row for jumping straight to one storage location — bound to the real,
+ * fixed [Location] enum (not illustrative mockup labels like "Koelkast", which isn't one of
+ * this app's three actual storage options). "Alles" is just [selectedLocation] cleared, with
+ * [totalCount] so it reads as a real count rather than a bare "Alles" label.
+ */
+@Composable
+private fun LocationRail(
+    totalCount: Int,
+    selectedLocation: String?,
+    onLocationSelected: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp),
+    ) {
+        item {
+            LocationChip(
+                label = "${stringResource(R.string.inventory_filter_all)} $totalCount",
+                icon = Icons.Filled.Inventory2,
+                selected = selectedLocation == null,
+                onClick = { onLocationSelected(null) },
+            )
+        }
+        items(Location.entries) { location ->
+            LocationChip(
+                label = stringResource(location.labelRes),
+                icon = location.railIcon,
+                selected = selectedLocation == location.storageKey,
+                onClick = { onLocationSelected(if (selectedLocation == location.storageKey) null else location.storageKey) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun LocationChip(
+    label: String,
+    icon: ImageVector,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        leadingIcon = { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
+        shape = SoftCardShapeCompact,
+        colors = FilterChipDefaults.filterChipColors(
+            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ),
+    )
+}
+
+/**
+ * Replaces the old single "+" FAB: barcode scannen (the most common way to add a product) as
+ * a wide primary pill, with zoeken-in-voorraad and "meer" (sorteren/groeperen/filteren, plus
+ * the less-common ways to add a product) as two secondary squares beside it.
+ */
+@Composable
+private fun FloatingActionBar(
+    onScanClick: () -> Unit,
+    onSearchClick: () -> Unit,
+    onMoreClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Button(
+            onClick = onScanClick,
+            modifier = Modifier.weight(1f).height(52.dp),
+            shape = SoftCardShapeCompact,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary,
+            ),
+        ) {
+            Icon(Icons.Filled.QrCodeScanner, contentDescription = null, modifier = Modifier.size(20.dp))
+            Text(
+                text = stringResource(R.string.inventory_scan_button),
+                modifier = Modifier.padding(start = 8.dp),
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        FilledIconButton(
+            onClick = onSearchClick,
+            modifier = Modifier.size(52.dp),
+            shape = SoftCardShapeCompact,
+            colors = IconButtonDefaults.filledIconButtonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            ),
+        ) {
+            Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.inventory_search_cd))
+        }
+        FilledIconButton(
+            onClick = onMoreClick,
+            modifier = Modifier.size(52.dp),
+            shape = SoftCardShapeCompact,
+            colors = IconButtonDefaults.filledIconButtonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                contentColor = MaterialTheme.colorScheme.onSurface,
+            ),
+        ) {
+            Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.inventory_more_options_cd))
+        }
+    }
+}
+
+/**
+ * Everything that used to live in the always-visible icon row (sorteren/groeperen/filteren/
+ * weergave) plus the "+" menu's two premium-gated add options (barcode scannen and zoeken op
+ * naam moved to the floating action bar and here respectively — zoeken op naam stays here since
+ * it's a less common path than a direct barcode scan) — folded into one overflow sheet, each
+ * existing dropdown button reused as-is (see [SortMenuButton]/[GroupByMenuButton]/
+ * [FilterMenuButton]) rather than reimplemented.
+ */
+@Composable
+private fun MoreOptionsDialog(
     isPremium: Boolean,
-    onBarcodeScan: () -> Unit,
+    viewMode: InventoryViewMode,
+    onViewModeChange: (InventoryViewMode) -> Unit,
+    sortSelected: InventorySortOption,
+    onSortSelected: (InventorySortOption) -> Unit,
+    groupBySelected: InventoryGroupBy,
+    onGroupBySelected: (InventoryGroupBy) -> Unit,
+    showGroupBy: Boolean,
+    selectedCategory: Category?,
+    favoritesOnly: Boolean,
+    lowStockOnly: Boolean,
+    expiringSoonOnly: Boolean,
+    availableLocations: List<String>,
+    selectedLocation: String?,
+    onCategorySelected: (Category?) -> Unit,
+    onFavoritesToggle: (Boolean) -> Unit,
+    onLowStockToggle: (Boolean) -> Unit,
+    onExpiringSoonToggle: (Boolean) -> Unit,
+    onLocationSelected: (String?) -> Unit,
     onSearchByName: () -> Unit,
     onReceiptScan: () -> Unit,
     onAiRecognize: () -> Unit,
@@ -638,36 +931,54 @@ private fun AddMenuDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = stringResource(R.string.inventory_add_menu_title),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
-            )
-        },
+        title = { Text(stringResource(R.string.inventory_more_options_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    AddMenuTile(
-                        icon = Icons.Filled.QrCodeScanner,
-                        label = stringResource(R.string.inventory_add_menu_barcode),
-                        onClick = { onDismiss(); onBarcodeScan() },
-                        modifier = Modifier.weight(1f),
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                OptionRow(label = stringResource(R.string.inventory_sort_cd)) {
+                    SortMenuButton(selected = sortSelected, onSelected = onSortSelected)
+                }
+                if (showGroupBy) {
+                    OptionRow(label = stringResource(R.string.inventory_group_by_cd)) {
+                        GroupByMenuButton(selected = groupBySelected, onSelected = onGroupBySelected)
+                    }
+                }
+                OptionRow(label = stringResource(R.string.inventory_filter_cd)) {
+                    FilterMenuButton(
+                        selectedCategory = selectedCategory,
+                        favoritesOnly = favoritesOnly,
+                        lowStockOnly = lowStockOnly,
+                        expiringSoonOnly = expiringSoonOnly,
+                        availableLocations = availableLocations,
+                        selectedLocation = selectedLocation,
+                        onCategorySelected = onCategorySelected,
+                        onFavoritesToggle = onFavoritesToggle,
+                        onLowStockToggle = onLowStockToggle,
+                        onExpiringSoonToggle = onExpiringSoonToggle,
+                        onLocationSelected = onLocationSelected,
                     )
+                }
+                OptionRow(label = stringResource(R.string.inventory_show_as_tiles_cd)) {
+                    IconButton(
+                        onClick = {
+                            onViewModeChange(if (viewMode == InventoryViewMode.LIST) InventoryViewMode.GRID else InventoryViewMode.LIST)
+                        },
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Icon(
+                            imageVector = if (viewMode == InventoryViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                }
+                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                     AddMenuTile(
                         icon = Icons.Filled.Search,
                         label = stringResource(R.string.inventory_add_menu_search),
                         onClick = { onDismiss(); onSearchByName() },
                         modifier = Modifier.weight(1f),
                     )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
                     AddMenuTile(
                         icon = Icons.Filled.Receipt,
                         label = stringResource(R.string.more_beta_receipt_scan),
@@ -686,18 +997,31 @@ private fun AddMenuDialog(
             }
         },
         confirmButton = {
-            // AlertDialog right-aligns its button row by default (fine when there's a
-            // confirm+dismiss pair, but reads oddly for this dialog's single "Annuleren"
-            // button, tucked in a corner under a centered title/grid) — filling the row's
-            // width here and centering within it overrides that default placement.
             Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_close)) }
             }
         },
     )
 }
 
-/** One tile of the "+" menu's 2x2 grid — a large icon with its description underneath (see [AddMenuDialog]). */
+/** One row of [MoreOptionsDialog]: a label on the left, the existing control (unchanged) on the right. */
+@Composable
+private fun OptionRow(label: String, trailing: @Composable () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyMedium)
+        trailing()
+    }
+}
+
+/** One tile of [MoreOptionsDialog]'s add-a-product row — a large icon with its description
+ *  underneath. Used to be one of four equal tiles in a dedicated 2x2 "+" dialog; barcode
+ *  scannen moved to the floating action bar as the primary action, so only the three
+ *  less-common ways to add a product (zoeken op naam, bonnetje scannen, AI-herkenning) still
+ *  use this tile, folded into the overflow dialog instead of a dialog of their own. */
 @Composable
 private fun AddMenuTile(
     icon: ImageVector,
@@ -1356,18 +1680,36 @@ private fun InventoryGridTile(
         modifier = Modifier
             .fillMaxWidth()
             .clip(SoftCardShapeCompact)
-            .background(
-                if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+            .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
+            .border(
+                width = 1.dp,
+                color = if (selected) Color.Transparent else MaterialTheme.colorScheme.outlineVariant,
+                shape = SoftCardShapeCompact,
             )
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
-        Box(modifier = Modifier.fillMaxWidth().aspectRatio(1.1f)) {
+        // A fixed height rather than the old aspectRatio(1.1f) — with two columns instead of
+        // three (see the grid's GridCells.Fixed(2) below) an aspect-ratio photo grew
+        // noticeably taller, throwing the card's proportions off; a fixed height keeps every
+        // tile's photo band the same size regardless of column count.
+        Box(modifier = Modifier.fillMaxWidth().height(96.dp)) {
             ProductImage(
                 imageUrl = item.imageUrl,
                 fallbackIcon = Category.fromStorageKey(item.category).icon,
                 shape = SoftImageShape,
                 modifier = Modifier.fillMaxSize(),
             )
+            // A small camera hint on the fallback (no real photo yet) — an unobtrusive nudge
+            // that a product photo would help this tile stand out, without a tap target of
+            // its own (ProductDetail, one tap away via onClick, is where photos are managed).
+            if (item.imageUrl.isNullOrBlank()) {
+                Icon(
+                    imageVector = Icons.Filled.PhotoCamera,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.55f),
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp).size(16.dp),
+                )
+            }
             // Replaces the old status dot — color and text both, right on the photo, so what
             // needs attention (or how long something's still good for) reads without a tap.
             // Null (no badge at all) for a well-stocked item with no known expiry: nothing
@@ -1389,14 +1731,6 @@ private fun InventoryGridTile(
                     )
                 }
             }
-            // TopEnd hosts either the selection checkmark or the add-to-shopping-list badge —
-            // never both, since they're mutually exclusive modes. The badge mirrors the
-            // favorite badge on ProductDetailScreen's hero image (same Surface-circle pattern)
-            // now that it's the only quick action left here — freed up by dropping the
-            // favorite star from this tile and the stepper's own row from cramming a second
-            // icon button next to it. Shown only when a restock might actually be relevant
-            // (low/out) rather than always, so a well-stocked shelf of tiles stays quiet.
-            val showCartBadge = stockStatus == InventoryStockStatus.LOW_STOCK || stockStatus == InventoryStockStatus.OUT_OF_STOCK
             if (selectionMode) {
                 Icon(
                     imageVector = if (selected) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
@@ -1407,30 +1741,12 @@ private fun InventoryGridTile(
                         .padding(8.dp)
                         .background(MaterialTheme.colorScheme.surface, CircleShape),
                 )
-            } else if (showCartBadge) {
-                Surface(
-                    shape = CircleShape,
-                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                    modifier = Modifier
-                        .align(Alignment.TopEnd)
-                        .padding(6.dp)
-                        .size(20.dp),
-                ) {
-                    IconButton(onClick = onAddToShoppingList, modifier = Modifier.fillMaxSize()) {
-                        Icon(
-                            Icons.Filled.AddShoppingCart,
-                            contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(12.dp),
-                        )
-                    }
-                }
             }
         }
         Column(modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 8.dp)) {
             Text(
                 text = item.name,
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.titleSmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
@@ -1449,16 +1765,32 @@ private fun InventoryGridTile(
                     modifier = Modifier.padding(top = 1.dp),
                 )
             }
-            // Just the stepper now — dropping the favorite star and moving add-to-shopping-list
-            // up onto the image (see above) means this no longer needs to share its row with
-            // any other controls, so minus/count/plus finally sit cleanly on one line.
-            QuantityStepper(
-                quantity = item.quantity,
-                onDecrease = onDecrease,
-                onIncrease = onIncrease,
-                dense = true,
-                modifier = Modifier.padding(top = 4.dp),
-            )
+            // Add-to-shopping-list moves off the photo and down here, beside the stepper,
+            // rather than a small circular badge overlapping the image corner — shown only
+            // when a restock might actually be relevant (low/out), same condition as before.
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                QuantityStepper(
+                    quantity = item.quantity,
+                    onDecrease = onDecrease,
+                    onIncrease = onIncrease,
+                    dense = true,
+                )
+                val showCartBadge = stockStatus == InventoryStockStatus.LOW_STOCK || stockStatus == InventoryStockStatus.OUT_OF_STOCK
+                if (!selectionMode && showCartBadge) {
+                    IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(28.dp)) {
+                        Icon(
+                            Icons.Filled.AddShoppingCart,
+                            contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
+            }
         }
     }
 }

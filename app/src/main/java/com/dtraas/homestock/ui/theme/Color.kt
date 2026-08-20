@@ -70,6 +70,10 @@ val OnTopAppBarContainerAccent = Color(0xFFF0A88F)
 /** Deadline label ("2 dagen") inside the amber "Eerst opmaken" urgency tile — distinct from
  *  [OnGoldTertiaryContainer], which is reserved for that tile's product-name text. */
 val GoldTertiaryContainerAccent = Color(0xFF8A5F16)
+/** Bottom stop of the "Keuken" header's gradient (top stop is [TopAppBarContainer] itself) — a
+ *  touch darker so the band reads as a deliberate gradient rather than a flat fill, same
+ *  fixed-regardless-of-theme reasoning as the two accents above. */
+val TopAppBarContainerGradientEnd = Color(0xFF35583E)
 
 val SageGreenPrimaryDark = Color(0xFF9BC79E)
 val OnSageGreenPrimaryDark = Color(0xFF12321B)

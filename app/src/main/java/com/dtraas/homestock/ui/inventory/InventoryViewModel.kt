@@ -35,6 +35,15 @@ enum class InventoryGroupBy(@StringRes val labelRes: Int) {
     LOCATION(R.string.group_by_location),
 }
 
+/** One entry in the "Eerst opmaken" card — see [InventoryUiState.expiringSoon]. [urgencyLevel]
+ *  1 = due within a day, 2 = 2-3 days, 3 = 4-7 days — matches the three urgency-tile colors in
+ *  the "Keuken" redesign (coral/amber/neutral). */
+data class ExpiringSoonHighlight(
+    val item: InventoryItemWithProduct,
+    val daysUntilExpiry: Long,
+    val urgencyLevel: Int,
+)
+
 data class InventoryUiState(
     val searchQuery: String = "",
     val selectedCategory: Category? = null,
@@ -65,6 +74,18 @@ data class InventoryUiState(
     // unfiltered inventory (not `filtered`) so picking one location doesn't make the others
     // disappear from the list of choices.
     val availableLocations: List<String> = emptyList(),
+    // "Keuken" header stats + "Eerst opmaken" card — all derived from the *unfiltered* household
+    // inventory (not `filtered`/`flatInventory` above), same reasoning as availableLocations:
+    // these give an at-a-glance picture of the whole voorraad, which shouldn't shrink just
+    // because a search/category filter happens to be active.
+    val totalCount: Int = 0,
+    val expiringSoonCount: Int = 0,
+    val lowStockCount: Int = 0,
+    /** Top 3 soonest-expiring in-stock items within a week, soonest first — see
+     *  [ExpiringSoonHighlight]. A wider window (7 days) than [expiringSoonCount]'s 3-day
+     *  [InventoryStockStatus.isExpiringSoon] threshold on purpose: this card is meant to help
+     *  plan meals for the week ahead, not just flag what's already urgent today. */
+    val expiringSoon: List<ExpiringSoonHighlight> = emptyList(),
 )
 
 class InventoryViewModel(
@@ -175,6 +196,23 @@ class InventoryViewModel(
                 .mapNotNull { it.location.normalizedLocation() }
                 .distinct()
                 .sortedBy { it.lowercase() },
+            totalCount = items.size,
+            expiringSoonCount = items.count { InventoryStockStatus.isExpiringSoon(it.expirationDate) },
+            lowStockCount = items.count { InventoryStockStatus.isLowStock(it.quantity, it.minQuantity) },
+            expiringSoon = items
+                .filter { it.quantity > 0 && it.expirationDate != null }
+                .map { it to InventoryStockStatus.daysUntilExpiry(it.expirationDate!!) }
+                .filter { (_, days) -> days <= EXPIRING_SOON_HIGHLIGHT_WINDOW_DAYS }
+                .sortedBy { (_, days) -> days }
+                .take(3)
+                .map { (item, days) ->
+                    val level = when {
+                        days <= 1 -> 1
+                        days <= 3 -> 2
+                        else -> 3
+                    }
+                    ExpiringSoonHighlight(item, days, level)
+                },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InventoryUiState())
 
@@ -250,5 +288,12 @@ class InventoryViewModel(
             )
             activityLogRepository.logAddedToShoppingList(item.barcode)
         }
+    }
+
+    private companion object {
+        /** How far ahead "Eerst opmaken" looks — wider than [InventoryStockStatus]'s own 3-day
+         *  "expiring soon" threshold, since this card is a week-ahead meal-planning nudge, not
+         *  an urgent-today alert (see [InventoryUiState.expiringSoon]'s doc). */
+        const val EXPIRING_SOON_HIGHLIGHT_WINDOW_DAYS = 7L
     }
 }
