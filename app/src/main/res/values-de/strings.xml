@@ -617,6 +617,11 @@
     <string name="recipes_ai_generated_badge">KI-generiertes Rezept</string>
     <string name="recipes_translated_badge">Mit KI übersetzt</string>
     <string name="recipes_generate_ai_button">Rezept mit KI generieren</string>
+    <!-- "Keuken" redesign (2026-08) -->
+    <string name="recipes_generate_ai_chip">KI</string>
+    <string name="recipes_cook_what_you_have_title">Koche, was du hast</string>
+    <string name="recipes_cook_what_you_have_subtitle">Rezepte auf Basis deines Vorrats</string>
+    <string name="recipes_cook_what_you_have_active">Basierend auf deinem Vorrat — tippe auf Entdecken, um zurückzugehen</string>
     <string name="recipes_generate_ai_title">Rezept mit KI generieren</string>
     <string name="recipes_generate_ai_hint">Wir erstellen ein Rezept basierend auf deinem aktuellen Vorrat. Ein bestimmter Wunsch?</string>
     <string name="recipes_generate_ai_placeholder">z. B. \'etwas mit Hähnchen und Reis\' (optional)</string>

@@ -618,6 +618,11 @@
     <string name="recipes_ai_generated_badge">AI-gegenereerd recept</string>
     <string name="recipes_translated_badge">Vertaald met AI</string>
     <string name="recipes_generate_ai_button">Genereer recept met AI</string>
+    <!-- "Keuken" redesign (2026-08) -->
+    <string name="recipes_generate_ai_chip">AI</string>
+    <string name="recipes_cook_what_you_have_title">Kook wat je hebt</string>
+    <string name="recipes_cook_what_you_have_subtitle">Recepten op basis van je voorraad</string>
+    <string name="recipes_cook_what_you_have_active">Op basis van je voorraad — tik op Ontdekken om terug te gaan</string>
     <string name="recipes_generate_ai_title">Recept genereren met AI</string>
     <string name="recipes_generate_ai_hint">Wij bedenken een recept op basis van je huidige voorraad. Heb je nog een specifieke wens?</string>
     <string name="recipes_generate_ai_placeholder">Bijv. \'iets met kip en rijst\' (optioneel)</string>

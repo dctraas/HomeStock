@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudOff
@@ -90,6 +91,8 @@ import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.SearchField
+import com.dtraas.homestock.ui.theme.SoftBadgeShape
+import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
 
@@ -168,9 +171,46 @@ fun RecipesScreen(
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            RecipesTabRow(selected = uiState.tab, onSelect = viewModel::selectTab)
+            RecipesTabRow(
+                selected = uiState.tab,
+                onSelect = { tab ->
+                    // Tapping "Ontdekken" while already on it (the tab itself never actually
+                    // changes) is how the household leaves "Kook wat je hebt" mode again — see
+                    // showWhatYouHave's doc. selectTab's own no-op-if-unchanged guard means it
+                    // wouldn't otherwise notice this tap at all.
+                    if (tab == RecipesTab.BROWSE && uiState.isInventoryMode) viewModel.exitInventoryMode() else viewModel.selectTab(tab)
+                },
+                onGenerateAiClick = { showGenerateDialog = true },
+            )
 
             if (uiState.tab == RecipesTab.BROWSE) {
+                if (uiState.isInventoryMode) {
+                    // Tapping "Ontdekken" again (already selected — see RecipesTabRow's
+                    // onSelect wrapper above) is how this mode is left; this banner just makes
+                    // that clear rather than leaving the switch silent.
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.RestaurantMenu,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                        Text(
+                            text = stringResource(R.string.recipes_cook_what_you_have_active),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 6.dp),
+                        )
+                    }
+                } else if (uiState.searchQuery.isBlank()) {
+                    CookWhatYouHaveCard(
+                        onClick = viewModel::showWhatYouHave,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
                 // One consolidated icon row for everything that used to be split between the
                 // top bar (list/grid toggle, "genereer met AI") and its own row below the tabs
                 // (search field, allergenfilter) — collapsed to just their icons, right-aligned
@@ -229,13 +269,8 @@ fun RecipesScreen(
                                 ),
                             )
                         }
-                        // Moved off its own FAB (which sat on top of the list) into this row.
-                        IconButton(onClick = { showGenerateDialog = true }) {
-                            Icon(
-                                Icons.Filled.AutoAwesome,
-                                contentDescription = stringResource(R.string.recipes_generate_ai_button),
-                            )
-                        }
+                        // "Genereer met AI" moved into RecipesTabRow's own AI chip — no longer
+                        // its own icon here.
                     }
                 }
             } else if (uiState.tab == RecipesTab.CUSTOM) {
@@ -555,7 +590,7 @@ private fun ImportRecipeDialog(
 /** Switches between browsing Spoonacular, the household's favorites, and its own custom recipes — see [RecipesTab]. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun RecipesTabRow(selected: RecipesTab, onSelect: (RecipesTab) -> Unit) {
+private fun RecipesTabRow(selected: RecipesTab, onSelect: (RecipesTab) -> Unit, onGenerateAiClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -574,6 +609,66 @@ private fun RecipesTabRow(selected: RecipesTab, onSelect: (RecipesTab) -> Unit) 
                 onClick = { onSelect(tab) },
                 label = { Text(stringResource(labelRes)) },
             )
+        }
+        // "Genereer met AI" as a chip in the same row rather than its own icon elsewhere —
+        // never "selected" (it opens a dialog, it isn't a source tab like the three above).
+        FilterChip(
+            selected = false,
+            onClick = onGenerateAiClick,
+            leadingIcon = { Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp)) },
+            label = { Text(stringResource(R.string.recipes_generate_ai_chip)) },
+        )
+    }
+}
+
+/**
+ * "Kook wat je hebt" hero card at the top of Ontdekken — a shortcut into
+ * [RecipesViewModel.showWhatYouHave]'s inventory-matched suggestions, front and center rather
+ * than buried as one more filter option. Hidden once already showing those results or while
+ * actively searching (see its call site) — redundant with what's already on screen either way.
+ */
+@Composable
+private fun CookWhatYouHaveCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+        ),
+        shape = SoftCardShape,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                shape = SoftBadgeShape,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(44.dp),
+            ) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = Icons.Filled.RestaurantMenu,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+            }
+            Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+                Text(
+                    text = stringResource(R.string.recipes_cook_what_you_have_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = stringResource(R.string.recipes_cook_what_you_have_subtitle),
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+            Icon(Icons.Filled.ArrowForward, contentDescription = null, modifier = Modifier.padding(start = 8.dp))
         }
     }
 }

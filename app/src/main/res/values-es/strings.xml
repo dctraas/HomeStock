@@ -617,6 +617,11 @@
     <string name="recipes_ai_generated_badge">Receta generada por IA</string>
     <string name="recipes_translated_badge">Traducido con IA</string>
     <string name="recipes_generate_ai_button">Generar receta con IA</string>
+    <!-- "Keuken" redesign (2026-08) -->
+    <string name="recipes_generate_ai_chip">IA</string>
+    <string name="recipes_cook_what_you_have_title">Cocina con lo que tienes</string>
+    <string name="recipes_cook_what_you_have_subtitle">Recetas basadas en tu despensa</string>
+    <string name="recipes_cook_what_you_have_active">Basado en tu despensa — toca Descubrir para volver</string>
     <string name="recipes_generate_ai_title">Generar una receta con IA</string>
     <string name="recipes_generate_ai_hint">Inventamos una receta según tu inventario actual. ¿Algún deseo específico?</string>
     <string name="recipes_generate_ai_placeholder">Ej. \'algo con pollo y arroz\' (opcional)</string>

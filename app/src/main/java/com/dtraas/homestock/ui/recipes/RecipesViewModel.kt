@@ -64,6 +64,11 @@ data class RecipesUiState(
     val hasMore: Boolean = false,
     /** True only while a "load more" page is in flight — distinct from [isLoading], which covers the *first* page of a fresh browse/search so the existing list can stay visible (with a small footer spinner) while more loads. */
     val isLoadingMore: Boolean = false,
+    // "Kook wat je hebt" hero card (see showWhatYouHave) — true while BROWSE is showing
+    // [RecipeRepository.suggestRecipes]'s inventory-matched results instead of the plain
+    // browse/search page. Only ever true on BROWSE; never paginated (hasMore stays false),
+    // unlike a normal browse/search page.
+    val isInventoryMode: Boolean = false,
 )
 
 /**
@@ -188,7 +193,7 @@ class RecipesViewModel(
 
     private fun launchBrowseOrSearch(): Job = viewModelScope.launch {
         nextOffset = 0
-        _uiState.update { it.copy(isLoading = true, loadError = null, hasMore = false, isLoadingMore = false) }
+        _uiState.update { it.copy(isLoading = true, loadError = null, hasMore = false, isLoadingMore = false, isInventoryMode = false) }
         fetchPage(_uiState.value, offset = 0)
             .onSuccess { page ->
                 nextOffset = RecipeRepository.PAGE_SIZE
@@ -255,6 +260,39 @@ class RecipesViewModel(
     /** Clears the search field and immediately goes back to browsing everything. */
     fun clearSearch() {
         _uiState.update { it.copy(searchQuery = "") }
+        search()
+    }
+
+    /**
+     * "Kook wat je hebt" hero card — switches BROWSE over to [RecipeRepository.suggestRecipes]'s
+     * inventory-matched results instead of the plain browse/search page. Not paginated (unlike a
+     * normal browse/search page, see [RecipesUiState.isInventoryMode]'s doc) — Spoonacular's own
+     * ingredient-match ranking already returns its best matches in one page, and "load more"
+     * would just ask it for the same handful of inventory-seeded suggestions again.
+     */
+    fun showWhatYouHave() {
+        listJob?.cancel()
+        listJob = viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    tab = RecipesTab.BROWSE,
+                    isLoading = true,
+                    loadError = null,
+                    isInventoryMode = true,
+                    hasMore = false,
+                    isLoadingMore = false,
+                )
+            }
+            recipeRepository.suggestRecipes(excludedAllergens = _uiState.value.excludedAllergens, languageTag = languageTag)
+                .onSuccess { list -> _uiState.update { it.copy(isLoading = false, recipes = list, loadError = null) } }
+                .onFailure { e -> _uiState.update { it.copy(isLoading = false, recipes = emptyList(), loadError = classifyLoadError(e)) } }
+        }
+    }
+
+    /** Leaves [RecipesUiState.isInventoryMode] and goes back to a plain browse/search — called
+     *  when the household taps "Ontdek" again while already showing inventory matches. */
+    fun exitInventoryMode() {
+        if (!_uiState.value.isInventoryMode) return
         search()
     }
 
