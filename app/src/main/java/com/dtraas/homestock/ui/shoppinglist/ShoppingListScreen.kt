@@ -6,6 +6,7 @@ import android.content.Intent
 import android.speech.RecognizerIntent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,15 +19,18 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
@@ -38,8 +42,11 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.DoneAll
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
@@ -51,15 +58,22 @@ import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -87,12 +101,12 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -117,8 +131,8 @@ import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.components.StoreDropdown
 import com.dtraas.homestock.ui.components.formatQuantityWithUnit
 import com.dtraas.homestock.ui.components.icon
-import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
+import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
 import kotlinx.coroutines.launch
@@ -183,10 +197,21 @@ fun ShoppingListScreen() {
     val lists by viewModel.lists.collectAsState()
     val activeList by viewModel.activeList.collectAsState()
     val totalPrice by viewModel.totalPrice.collectAsState()
-    val hasCheckedItems = groupedByStore.values.flatten().any { it.isChecked }
-    val hasUncheckedItems = groupedByStore.values.flatten().any { !it.isChecked }
+    val allItems = groupedByStore.values.flatten()
+    val hasCheckedItems = allItems.any { it.isChecked }
+    val hasUncheckedItems = allItems.any { !it.isChecked }
     var viewMode by remember { mutableStateOf(ShoppingListViewMode.LIST) }
-    var searchActive by remember { mutableStateOf(false) }
+    var showMoreOptions by remember { mutableStateOf(false) }
+    // Local, UI-only narrowing by store — ShoppingListViewModel's own groupedByStore always
+    // returns every store's group; tapping a chip in StoreChipsRow just hides the other
+    // groups here rather than round-tripping through a repository-level filter.
+    var selectedStoreFilter by remember { mutableStateOf<String?>(null) }
+    // Whether each store's "In de wagen" (already-checked) section is expanded — keyed by
+    // store name so multiple stores can be open independently. Deliberately not applied to
+    // ReorderableShoppingList's manual drag-order view (see its call site below): hiding
+    // items out from under an active drag-to-reorder session would be far more disruptive
+    // than the decluttering this is meant to buy while just browsing/shopping.
+    val expandedCheckedStores = remember { mutableStateListOf<String>() }
 
     var showAddDialog by remember { mutableStateOf(false) }
     var editingItem by remember { mutableStateOf<ShoppingListItemEntity?>(null) }
@@ -261,13 +286,9 @@ fun ShoppingListScreen() {
                                 contentDescription = stringResource(R.string.shopping_list_switch_list_cd),
                             )
                         }
-                        if (totalPrice != null) {
-                            Text(
-                                text = stringResource(R.string.shopping_list_total_format, formatPrice(totalPrice!!)),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = LocalTopAppBarContentColor.current.copy(alpha = 0.8f),
-                            )
-                        }
+                        // The running total used to repeat here as a topBar subtitle — dropped
+                        // now that ShoppingProgressBar shows it right below, more prominently
+                        // and right next to the checked/total count it's most useful beside.
                         ShoppingListSwitcherMenu(
                             expanded = showListMenu,
                             lists = lists,
@@ -283,112 +304,79 @@ fun ShoppingListScreen() {
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showAddDialog = true }) {
-                Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.shopping_list_add_item_cd))
-            }
+            ShoppingFloatingActionBar(
+                shoppingModeActive = sortMode == ShoppingListSortMode.AISLE,
+                onToggleShoppingMode = {
+                    viewModel.onSortModeChange(
+                        if (sortMode == ShoppingListSortMode.AISLE) ShoppingListSortMode.MANUAL else ShoppingListSortMode.AISLE,
+                    )
+                },
+                onAddClick = { showAddDialog = true },
+            )
         },
+        floatingActionButtonPosition = FabPosition.Center,
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (searchActive) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
-                ) {
-                    SearchField(
-                        query = searchQuery,
-                        onQueryChange = viewModel::onSearchQueryChange,
-                        placeholder = stringResource(R.string.shopping_list_search_placeholder),
-                        modifier = Modifier.weight(1f),
-                    )
+            // Single search/add field, always visible — typing narrows the list below as
+            // before, and the "+" that appears beside it (only once there's text, so it
+            // can't be tapped by accident) quick-adds a new item with that exact name and
+            // sensible defaults (Overig/geen winkel/1 stuk) rather than opening the full
+            // ItemFormDialog — that dialog is still one tap away via the floating "+" button
+            // below for anyone who wants to set a category/winkel/eenheid up front.
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
+            ) {
+                SearchField(
+                    query = searchQuery,
+                    onQueryChange = viewModel::onSearchQueryChange,
+                    placeholder = stringResource(R.string.shopping_list_search_add_placeholder),
+                    onSearch = {
+                        if (searchQuery.isNotBlank()) {
+                            viewModel.addItem(searchQuery.trim(), Category.OVERIG, "", 1)
+                            viewModel.onSearchQueryChange("")
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                )
+                if (searchQuery.isNotBlank()) {
                     IconButton(
                         onClick = {
-                            searchActive = false
+                            viewModel.addItem(searchQuery.trim(), Category.OVERIG, "", 1)
                             viewModel.onSearchQueryChange("")
                         },
-                        modifier = Modifier.size(56.dp),
+                        modifier = Modifier.size(48.dp),
                     ) {
-                        Icon(
-                            Icons.Filled.Close,
-                            contentDescription = stringResource(R.string.inventory_search_close_cd),
-                            modifier = Modifier.size(28.dp),
-                        )
+                        Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.shopping_list_quick_add_cd))
                     }
                 }
-            } else {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp),
-                ) {
-                    IconButton(onClick = { searchActive = true }, modifier = Modifier.size(56.dp)) {
-                        Icon(
-                            Icons.Filled.Search,
-                            contentDescription = stringResource(R.string.inventory_search_cd),
-                            modifier = Modifier.size(28.dp),
-                        )
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        if (groupedByStore.isNotEmpty()) {
-                            IconButton(onClick = ::shareList, modifier = Modifier.size(56.dp)) {
-                                Icon(
-                                    Icons.Filled.Share,
-                                    contentDescription = stringResource(R.string.shopping_list_share_cd),
-                                    modifier = Modifier.size(28.dp),
-                                )
-                            }
-                        }
-                        if (hasUncheckedItems) {
-                            IconButton(onClick = viewModel::checkAll, modifier = Modifier.size(56.dp)) {
-                                Icon(
-                                    Icons.Filled.DoneAll,
-                                    contentDescription = stringResource(R.string.shopping_list_check_all_cd),
-                                    modifier = Modifier.size(28.dp),
-                                )
-                            }
-                        }
-                        if (hasCheckedItems) {
-                            IconButton(onClick = ::clearCheckedWithUndo, modifier = Modifier.size(56.dp)) {
-                                Icon(
-                                    Icons.Filled.DeleteSweep,
-                                    contentDescription = stringResource(R.string.shopping_list_clear_checked_cd),
-                                    modifier = Modifier.size(28.dp),
-                                )
-                            }
-                        }
-                        if (groupedByStore.isNotEmpty()) {
-                            ShoppingListSortMenuButton(
-                                selected = sortMode,
-                                onSelected = viewModel::onSortModeChange,
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                viewMode = if (viewMode == ShoppingListViewMode.LIST) {
-                                    ShoppingListViewMode.GRID
-                                } else {
-                                    ShoppingListViewMode.LIST
-                                }
-                            },
-                            modifier = Modifier.size(56.dp),
-                        ) {
-                            Icon(
-                                imageVector = if (viewMode == ShoppingListViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
-                                contentDescription = if (viewMode == ShoppingListViewMode.LIST) {
-                                    stringResource(R.string.inventory_show_as_tiles_cd)
-                                } else {
-                                    stringResource(R.string.inventory_show_as_list_cd)
-                                },
-                                modifier = Modifier.size(28.dp),
-                            )
-                        }
-                    }
+                IconButton(onClick = { showMoreOptions = true }, modifier = Modifier.size(48.dp)) {
+                    Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.shopping_list_more_options_cd))
                 }
             }
+
+            if (groupedByStore.isNotEmpty()) {
+                ShoppingProgressBar(
+                    checkedCount = allItems.count { it.isChecked },
+                    totalCount = allItems.size,
+                    totalPrice = totalPrice,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+                )
+                StoreChipsRow(
+                    stores = groupedByStore.keys.toList(),
+                    selectedStore = selectedStoreFilter,
+                    onStoreSelected = { selectedStoreFilter = it },
+                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
+                )
+            }
+
+            // The store chip row above narrows which groups render below — a local,
+            // UI-only filter (see selectedStoreFilter's doc), independent of the search
+            // query which ShoppingListViewModel.groupedByStore already applied.
+            val displayedGroups = selectedStoreFilter?.let { store ->
+                groupedByStore.filterKeys { it == store }
+            } ?: groupedByStore
 
             fun deleteWithUndo(item: ShoppingListItemEntity) {
                 viewModel.removeItem(item.id)
@@ -407,14 +395,14 @@ fun ShoppingListScreen() {
                 }
             }
 
-            if (groupedByStore.isEmpty()) {
+            if (displayedGroups.isEmpty()) {
                 EmptyShoppingList(
-                    isFiltered = searchQuery.isNotBlank(),
+                    isFiltered = searchQuery.isNotBlank() || selectedStoreFilter != null,
                     modifier = Modifier.fillMaxSize(),
                 )
             } else if (viewMode == ShoppingListViewMode.LIST && sortMode == ShoppingListSortMode.MANUAL) {
                 ReorderableShoppingList(
-                    groupedByStore = groupedByStore,
+                    groupedByStore = displayedGroups,
                     onCheckedChange = { item, checked -> viewModel.setChecked(item.id, checked) },
                     onItemClick = { editingItem = it },
                     onIncrease = {
@@ -434,7 +422,11 @@ fun ShoppingListScreen() {
                 // than something the household drags around — so this renders the same rows
                 // without ReorderableShoppingList's drag machinery, same as the grid view below.
                 AisleOrderedShoppingList(
-                    groupedByStore = groupedByStore,
+                    groupedByStore = displayedGroups,
+                    expandedCheckedStores = expandedCheckedStores,
+                    onToggleCheckedExpanded = { store ->
+                        if (store in expandedCheckedStores) expandedCheckedStores.remove(store) else expandedCheckedStores.add(store)
+                    },
                     onCheckedChange = { item, checked -> viewModel.setChecked(item.id, checked) },
                     onItemClick = { editingItem = it },
                     onIncrease = {
@@ -455,24 +447,66 @@ fun ShoppingListScreen() {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    groupedByStore.forEach { (storeName, itemsInStore) ->
+                    displayedGroups.forEach { (storeName, itemsInStore) ->
                         item(span = { GridItemSpan(maxLineSpan) }) {
                             StoreHeader(storeName, itemCount = itemsInStore.size)
                         }
-                        items(itemsInStore, key = { it.id }) { item ->
+                        val checkedExpanded = storeName in expandedCheckedStores
+                        val (unchecked, checked) = itemsInStore.partition { !it.isChecked }
+                        items(unchecked, key = { it.id }) { item ->
                             val step = MeasurementUnit.fromStorageKey(item.unit).step
                             ShoppingListGridTile(
                                 item = item,
-                                onCheckedChange = { checked -> viewModel.setChecked(item.id, checked) },
+                                onCheckedChange = { checkedValue -> viewModel.setChecked(item.id, checkedValue) },
                                 onClick = { editingItem = item },
                                 onIncrease = { viewModel.setQuantity(item.id, item.quantity + step) },
                                 onDecrease = { viewModel.setQuantity(item.id, (item.quantity - step).coerceAtLeast(1)) },
                                 onDelete = { deleteWithUndo(item) },
                             )
                         }
+                        if (checked.isNotEmpty()) {
+                            item(span = { GridItemSpan(maxLineSpan) }) {
+                                CheckedSectionToggle(
+                                    count = checked.size,
+                                    expanded = checkedExpanded,
+                                    onClick = {
+                                        if (checkedExpanded) expandedCheckedStores.remove(storeName) else expandedCheckedStores.add(storeName)
+                                    },
+                                )
+                            }
+                            if (checkedExpanded) {
+                                items(checked, key = { it.id }) { item ->
+                                    val step = MeasurementUnit.fromStorageKey(item.unit).step
+                                    ShoppingListGridTile(
+                                        item = item,
+                                        onCheckedChange = { checkedValue -> viewModel.setChecked(item.id, checkedValue) },
+                                        onClick = { editingItem = item },
+                                        onIncrease = { viewModel.setQuantity(item.id, item.quantity + step) },
+                                        onDecrease = { viewModel.setQuantity(item.id, (item.quantity - step).coerceAtLeast(1)) },
+                                        onDelete = { deleteWithUndo(item) },
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
+        }
+
+        if (showMoreOptions) {
+            ShoppingListMoreOptionsDialog(
+                viewMode = viewMode,
+                onViewModeChange = { viewMode = it },
+                sortMode = sortMode,
+                onSortModeChange = viewModel::onSortModeChange,
+                canShare = groupedByStore.isNotEmpty(),
+                hasUncheckedItems = hasUncheckedItems,
+                hasCheckedItems = hasCheckedItems,
+                onShare = ::shareList,
+                onCheckAll = viewModel::checkAll,
+                onClearChecked = ::clearCheckedWithUndo,
+                onDismiss = { showMoreOptions = false },
+            )
         }
 
         if (showAddDialog) {
@@ -802,11 +836,18 @@ private fun ReorderableShoppingList(
  * category rather than something the household drags around by hand (see
  * ShoppingListViewModel.groupedByStore). [ShoppingListRow] still requires drag callbacks, so
  * no-ops are passed through rather than reworking it to make them optional just for this.
+ *
+ * Each store's already-checked items collapse behind one "In de wagen (N)" toggle row rather
+ * than staying inline — [expandedCheckedStores] tracks which stores currently have that
+ * section expanded (by store name), so browsing a half-shopped list stays focused on what's
+ * still needed.
  */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun AisleOrderedShoppingList(
     groupedByStore: Map<String, List<ShoppingListItemEntity>>,
+    expandedCheckedStores: List<String>,
+    onToggleCheckedExpanded: (String) -> Unit,
     onCheckedChange: (ShoppingListItemEntity, Boolean) -> Unit,
     onItemClick: (ShoppingListItemEntity) -> Unit,
     onIncrease: (ShoppingListItemEntity) -> Unit,
@@ -821,10 +862,11 @@ private fun AisleOrderedShoppingList(
             stickyHeader(key = "header_$storeName") {
                 StoreHeader(storeName, itemCount = itemsInStore.size)
             }
-            items(itemsInStore, key = { it.id }) { item ->
+            val (unchecked, checked) = itemsInStore.partition { !it.isChecked }
+            items(unchecked, key = { it.id }) { item ->
                 ShoppingListRow(
                     item = item,
-                    onCheckedChange = { checked -> onCheckedChange(item, checked) },
+                    onCheckedChange = { checkedValue -> onCheckedChange(item, checkedValue) },
                     onClick = { onItemClick(item) },
                     onIncrease = { onIncrease(item) },
                     onDecrease = { onDecrease(item) },
@@ -835,7 +877,59 @@ private fun AisleOrderedShoppingList(
                     modifier = Modifier.animateItem(),
                 )
             }
+            if (checked.isNotEmpty()) {
+                val expanded = storeName in expandedCheckedStores
+                item(key = "checked_toggle_$storeName") {
+                    CheckedSectionToggle(
+                        count = checked.size,
+                        expanded = expanded,
+                        onClick = { onToggleCheckedExpanded(storeName) },
+                        modifier = Modifier.animateItem(),
+                    )
+                }
+                if (expanded) {
+                    items(checked, key = { it.id }) { item ->
+                        ShoppingListRow(
+                            item = item,
+                            onCheckedChange = { checkedValue -> onCheckedChange(item, checkedValue) },
+                            onClick = { onItemClick(item) },
+                            onIncrease = { onIncrease(item) },
+                            onDecrease = { onDecrease(item) },
+                            onDelete = { onDelete(item) },
+                            onDragStart = {},
+                            onDrag = {},
+                            onDragEnd = {},
+                            modifier = Modifier.animateItem(),
+                        )
+                    }
+                }
+            }
         }
+    }
+}
+
+/** The "In de wagen (N)" collapsed-section row — used by both [AisleOrderedShoppingList] and
+ *  the grid view's per-store checked section. */
+@Composable
+private fun CheckedSectionToggle(count: Int, expanded: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 10.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.shopping_list_in_cart_format, count),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Icon(
+            imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 
@@ -964,20 +1058,15 @@ private fun ShoppingListRow(
                 modifier = Modifier.padding(start = 12.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // Material3's Checkbox draws its glyph at a fixed intrinsic size no matter what
-                // Modifier.size() constrains its layout box to — a plain .size() only shrinks
-                // the surrounding space (which is why this previously only affected the gap to
-                // the image, not the checkbox itself). scale() is a render-layer transform and
-                // is what actually shrinks the drawn checkbox; .size() keeps its footprint in
-                // the row compact and proportional to the smaller visual. The leading
-                // `padding(end = ...)` has to be the OUTERMOST modifier (i.e. applied before
-                // .size()) to actually add extra space after the checkbox's fixed 20dp box,
-                // rather than just eating into that box's own content area — it's the gap to
-                // the product image right after it, previously 0dp (the two sat flush together).
-                Checkbox(
+                // A custom circle rather than Material3's Checkbox — that drew its glyph at a
+                // fixed intrinsic size no matter what Modifier.size() constrained its layout
+                // box to, so shrinking it to fit this row's compact height also shrank its tap
+                // target down to something fiddly to hit accurately. This circle's whole 26dp
+                // footprint is the tap target, no separate glyph size to fight.
+                ShoppingCheckCircle(
                     checked = item.isChecked,
                     onCheckedChange = onCheckedChange,
-                    modifier = Modifier.padding(end = 10.dp).size(20.dp).scale(0.7f),
+                    modifier = Modifier.padding(end = 10.dp),
                 )
                 // No explicit containerColor/iconTint here any more — the coral secondaryContainer
                 // this used to pass showed up as an orange-ish tint/ring around every item without
@@ -1159,21 +1248,267 @@ private fun ShoppingListGridTile(
                     // fold away — it's also swipeable (StartToEnd) but, being the thing you do
                     // dozens of times per trip, keeping it as a direct tap target too matters
                     // more here than it would for an occasional action.
-                    IconButton(onClick = { onCheckedChange(!item.isChecked) }, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            imageVector = if (item.isChecked) Icons.Filled.CheckCircle else Icons.Filled.RadioButtonUnchecked,
-                            contentDescription = if (item.isChecked) {
-                                stringResource(R.string.shopping_list_mark_unchecked_cd)
-                            } else {
-                                stringResource(R.string.shopping_list_mark_checked_cd)
-                            },
-                            tint = if (item.isChecked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
+                    ShoppingCheckCircle(checked = item.isChecked, onCheckedChange = onCheckedChange)
                 }
             }
         }
+    }
+}
+
+/** A 26dp circular check control — the tap target *is* the visible circle, unlike the old
+ *  scaled-down Material [androidx.compose.material3.Checkbox] this replaces (see call sites'
+ *  comments). Filled sage-green with a white check glyph when checked; a bare outline otherwise. */
+@Composable
+private fun ShoppingCheckCircle(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = CircleShape,
+        color = if (checked) MaterialTheme.colorScheme.primary else Color.Transparent,
+        border = BorderStroke(2.dp, if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
+        modifier = modifier.size(26.dp).clickable { onCheckedChange(!checked) },
+    ) {
+        if (checked) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * How far through the list the household is — checked/total items, plus the running total
+ * (see [ShoppingListViewModel.totalPrice]) when at least one item has a price set. Sits right
+ * under the search/add field, above the store chips.
+ */
+@Composable
+private fun ShoppingProgressBar(
+    checkedCount: Int,
+    totalCount: Int,
+    totalPrice: Double?,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = stringResource(R.string.shopping_list_progress_format, checkedCount, totalCount),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            if (totalPrice != null) {
+                Text(
+                    text = formatPrice(totalPrice),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+        LinearProgressIndicator(
+            progress = { if (totalCount > 0) checkedCount.toFloat() / totalCount else 0f },
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp).height(6.dp).clip(CircleShape),
+            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+        )
+    }
+}
+
+/** Horizontal "Alle winkels" + one chip per store present on the (search-filtered) list —
+ *  see [ShoppingListScreen]'s `selectedStoreFilter` for what selecting one does. */
+@Composable
+private fun StoreChipsRow(
+    stores: List<String>,
+    selectedStore: String?,
+    onStoreSelected: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // A single store (or none at all) makes the "alle winkels" vs. "dat ene winkel" choice
+    // meaningless — same reasoning as InventoryScreen only offering "group by locatie" once
+    // there's more than one location in use.
+    if (stores.size <= 1) return
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        contentPadding = PaddingValues(horizontal = 20.dp),
+    ) {
+        item {
+            FilterChip(
+                selected = selectedStore == null,
+                onClick = { onStoreSelected(null) },
+                label = { Text(stringResource(R.string.shopping_list_all_stores)) },
+                shape = SoftCardShapeCompact,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
+            )
+        }
+        items(stores) { store ->
+            FilterChip(
+                selected = selectedStore == store,
+                onClick = { onStoreSelected(if (selectedStore == store) null else store) },
+                label = { Text(store.ifBlank { stringResource(R.string.store_geen) }) },
+                leadingIcon = { Icon(Icons.Filled.Storefront, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                shape = SoftCardShapeCompact,
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
+                    selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                ),
+            )
+        }
+    }
+}
+
+/**
+ * Replaces the old single "+" FAB: "Winkelmodus" (a shortcut into Winkelindeling-sort, see its
+ * call site) as a wide pill, with the coral "+" — still opening the full [ItemFormDialog] with
+ * category/winkel/eenheid fields, unlike the quick-add field above — beside it.
+ */
+@Composable
+private fun ShoppingFloatingActionBar(
+    shoppingModeActive: Boolean,
+    onToggleShoppingMode: () -> Unit,
+    onAddClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Button(
+            onClick = onToggleShoppingMode,
+            modifier = Modifier.weight(1f).height(52.dp),
+            shape = SoftCardShapeCompact,
+            colors = if (shoppingModeActive) {
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                )
+            } else {
+                ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                )
+            },
+        ) {
+            Icon(Icons.Filled.ShoppingCart, contentDescription = null, modifier = Modifier.size(20.dp))
+            Text(
+                text = stringResource(R.string.shopping_list_shopping_mode),
+                modifier = Modifier.padding(start = 8.dp),
+                fontWeight = FontWeight.Bold,
+            )
+        }
+        FilledIconButton(
+            onClick = onAddClick,
+            modifier = Modifier.size(52.dp),
+            shape = SoftCardShapeCompact,
+            colors = IconButtonDefaults.filledIconButtonColors(
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary,
+            ),
+        ) {
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.shopping_list_add_item_cd))
+        }
+    }
+}
+
+/**
+ * Everything that used to live in the always-visible icon row (delen/alles afvinken/
+ * afgevinkte wissen/sorteren/weergave) — folded into one overflow sheet, same pattern as
+ * InventoryScreen's MoreOptionsDialog. [ShoppingListSortMenuButton] is reused as-is.
+ */
+@Composable
+private fun ShoppingListMoreOptionsDialog(
+    viewMode: ShoppingListViewMode,
+    onViewModeChange: (ShoppingListViewMode) -> Unit,
+    sortMode: ShoppingListSortMode,
+    onSortModeChange: (ShoppingListSortMode) -> Unit,
+    canShare: Boolean,
+    hasUncheckedItems: Boolean,
+    hasCheckedItems: Boolean,
+    onShare: () -> Unit,
+    onCheckAll: () -> Unit,
+    onClearChecked: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.shopping_list_more_options_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                ShoppingOptionRow(label = stringResource(R.string.shopping_list_sort_cd)) {
+                    ShoppingListSortMenuButton(selected = sortMode, onSelected = onSortModeChange)
+                }
+                ShoppingOptionRow(label = stringResource(R.string.inventory_show_as_tiles_cd)) {
+                    IconButton(
+                        onClick = {
+                            onViewModeChange(if (viewMode == ShoppingListViewMode.LIST) ShoppingListViewMode.GRID else ShoppingListViewMode.LIST)
+                        },
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Icon(
+                            imageVector = if (viewMode == ShoppingListViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
+                            contentDescription = null,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                }
+                if (canShare || hasUncheckedItems || hasCheckedItems) {
+                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
+                }
+                if (canShare) {
+                    ShoppingOptionRow(label = stringResource(R.string.shopping_list_share_cd)) {
+                        IconButton(onClick = { onDismiss(); onShare() }, modifier = Modifier.size(48.dp)) {
+                            Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(24.dp))
+                        }
+                    }
+                }
+                if (hasUncheckedItems) {
+                    ShoppingOptionRow(label = stringResource(R.string.shopping_list_check_all_cd)) {
+                        IconButton(onClick = { onDismiss(); onCheckAll() }, modifier = Modifier.size(48.dp)) {
+                            Icon(Icons.Filled.DoneAll, contentDescription = null, modifier = Modifier.size(24.dp))
+                        }
+                    }
+                }
+                if (hasCheckedItems) {
+                    ShoppingOptionRow(label = stringResource(R.string.shopping_list_clear_checked_cd)) {
+                        IconButton(onClick = { onDismiss(); onClearChecked() }, modifier = Modifier.size(48.dp)) {
+                            Icon(Icons.Filled.DeleteSweep, contentDescription = null, modifier = Modifier.size(24.dp))
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_close)) }
+            }
+        },
+    )
+}
+
+/** One row of [ShoppingListMoreOptionsDialog]: a label on the left, the control on the right. */
+@Composable
+private fun ShoppingOptionRow(label: String, trailing: @Composable () -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyMedium)
+        trailing()
     }
 }
 

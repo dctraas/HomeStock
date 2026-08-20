@@ -481,6 +481,15 @@
     <string name="shopping_list_voice_input_unavailable">Speech recognition isn\'t available on this device</string>
     <string name="shopping_list_add_item_cd">Add item</string>
     <string name="shopping_list_search_placeholder">Search shopping list…</string>
+    <!-- "Keuken" redesign (2026-08) -->
+    <string name="shopping_list_search_add_placeholder">Search or add…</string>
+    <string name="shopping_list_quick_add_cd">Quick add</string>
+    <string name="shopping_list_more_options_cd">More options</string>
+    <string name="shopping_list_more_options_title">Options</string>
+    <string name="shopping_list_progress_format">%1$d/%2$d checked</string>
+    <string name="shopping_list_all_stores">All stores</string>
+    <string name="shopping_list_shopping_mode">Shopping mode</string>
+    <string name="shopping_list_in_cart_format">In the cart (%1$d)</string>
     <string name="shopping_list_removed_format">%1$s removed</string>
     <plurals name="shopping_list_cleared_snackbar_format">
         <item quantity="one">%1$d item removed</item>
