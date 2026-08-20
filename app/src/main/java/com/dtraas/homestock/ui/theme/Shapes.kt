@@ -25,6 +25,19 @@ val SoftBadgeShape = RoundedCornerShape(
     bottomStartPercent = 20,
 )
 
+/**
+ * The urgency tiles in "Eerst opmaken" (see InventoryScreen's `ExpiringSoonCard`) — the same
+ * droplet idea as [SoftBadgeShape], just squared off into a card instead of a badge: three
+ * generous corners and one pinched corner (bottom-start), so the tile still reads as
+ * deliberately shaped rather than a plain rounded rect.
+ */
+val UrgencyTileShape = RoundedCornerShape(
+    topStart = 16.dp,
+    topEnd = 16.dp,
+    bottomEnd = 16.dp,
+    bottomStart = 6.dp,
+)
+
 val HomeStockShapes = Shapes(
     extraSmall = RoundedCornerShape(10.dp),
     small = RoundedCornerShape(14.dp),

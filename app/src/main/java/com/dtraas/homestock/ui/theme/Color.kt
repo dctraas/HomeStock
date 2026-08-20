@@ -62,6 +62,15 @@ val OnLinenError = Color(0xFFFFFFFF)
 val LinenErrorContainer = Color(0xFFF6D3CC)
 val OnLinenErrorContainer = Color(0xFF410E06)
 
+// One-off accents from the 2026-08 "Keuken" redesign — a fixed value in both themes (like
+// TopAppBarContainer below), since both only ever sit on that same always-dark-green header,
+// never on a themed surface that would need them to invert for dark mode.
+/** Soft coral meta-text on the dark green Keuken/Maaltijden/Recepten headers — e.g. "7 verlopen bijna". */
+val OnTopAppBarContainerAccent = Color(0xFFF0A88F)
+/** Deadline label ("2 dagen") inside the amber "Eerst opmaken" urgency tile — distinct from
+ *  [OnGoldTertiaryContainer], which is reserved for that tile's product-name text. */
+val GoldTertiaryContainerAccent = Color(0xFF8A5F16)
+
 val SageGreenPrimaryDark = Color(0xFF9BC79E)
 val OnSageGreenPrimaryDark = Color(0xFF12321B)
 val SageGreenPrimaryContainerDark = Color(0xFF2C4A34)

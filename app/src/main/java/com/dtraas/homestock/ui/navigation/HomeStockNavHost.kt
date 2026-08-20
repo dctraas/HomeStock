@@ -1,20 +1,29 @@
 package com.dtraas.homestock.ui.navigation
 
+import androidx.compose.foundation.draw.drawBehind
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -362,12 +371,32 @@ private fun HomeStockBottomBar(navController: NavHostController, currentRoute: S
         .observeHouseholdIsPremium()
         .collectAsState(initial = false)
 
-    NavigationBar {
+    val borderColor = MaterialTheme.colorScheme.surfaceContainerHighest
+    val borderWidthPx = with(LocalDensity.current) { 1.dp.toPx() }
+
+    // "Keuken" redesign: a plain surfaceContainer bar (not the coral-tinted indicator Material3
+    // defaults to) with a hairline top border, since coral is the app's CTA color from here on
+    // and shouldn't double as nav-selection state too (see the 2026-08 handoff doc). The active
+    // item's own sage pill + dark ink (rather than the primary-tinted default) does the same job
+    // without that clash.
+    NavigationBar(
+        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 0.dp,
+        modifier = Modifier.drawBehind {
+            drawLine(
+                color = borderColor,
+                start = Offset.Zero,
+                end = Offset(size.width, 0f),
+                strokeWidth = borderWidthPx,
+            )
+        },
+    ) {
         topLevelDestinations.forEach { destination ->
             val label = stringResource(destination.labelRes)
             val isLockedRecipes = destination.destination == Destination.Recipes && !isPremium
+            val selected = currentRoute == destination.destination.route
             NavigationBarItem(
-                selected = currentRoute == destination.destination.route,
+                selected = selected,
                 onClick = {
                     if (isLockedRecipes) {
                         navController.navigate(Destination.Premium.route)
@@ -393,8 +422,23 @@ private fun HomeStockBottomBar(navController: NavHostController, currentRoute: S
                         }
                     }
                 },
-                icon = { Icon(destination.icon, contentDescription = label) },
-                label = { Text(label) },
+                icon = { Icon(destination.icon, contentDescription = label, modifier = Modifier.size(22.dp)) },
+                label = {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 10.sp,
+                            fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
+                        ),
+                    )
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    selectedTextColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                    indicatorColor = MaterialTheme.colorScheme.primaryContainer,
+                    unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
             )
         }
     }
