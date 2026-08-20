@@ -687,6 +687,10 @@
     <!-- Weekmenu -->
     <string name="meal_plan_title">Essensplaner</string>
     <string name="meal_plan_add_recipe">Rezept</string>
+    <!-- "Keuken" redesign (2026-08) -->
+    <string name="meal_plan_start_cook_mode">Kochmodus</string>
+    <string name="meal_plan_fill_week_title">Fülle die Woche aus deinem Vorrat</string>
+    <string name="meal_plan_fill_week_subtitle">Rezeptvorschläge auf Basis dessen, was du zu Hause hast</string>
     <string name="meal_plan_clear_cd">Mahlzeit entfernen</string>
     <string name="meal_plan_delete_cd">Löschen</string>
     <string name="meal_plan_removed_format">%1$s entfernt</string>

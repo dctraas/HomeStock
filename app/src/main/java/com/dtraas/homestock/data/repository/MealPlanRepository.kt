@@ -72,6 +72,25 @@ class MealPlanRepository(
         }.await()
     }
 
+    /**
+     * One-time (not live) read of whether each day in the 7 days starting [weekStart] has at
+     * least one planned meal in any slot — feeds the "Keuken" redesign's week-status strip. A
+     * plain `get()` per day rather than 7 permanent snapshot listeners: this is a coarse "any
+     * dot at all" indicator, not something that needs to react the instant a housemate on
+     * another device edits a day currently visible only as a small dot in the strip — re-fetched
+     * fresh every time the visible week changes (see MealPlanViewModel.loadWeekStatus), which is
+     * as live as it needs to be.
+     */
+    suspend fun fetchWeekHasPlans(weekStart: LocalDate): Map<LocalDate, Boolean> {
+        val householdId = householdSession.householdId.value ?: return emptyMap()
+        return (0..6).associate { offset ->
+            val date = weekStart.plusDays(offset.toLong())
+            val snapshot = dayDoc(householdId, date).get().await()
+            val hasPlan = MealSlot.ORDERED.any { slot -> (snapshot.get(slot.storageKey) as? List<*>)?.isNotEmpty() == true }
+            date to hasPlan
+        }
+    }
+
     private companion object {
         val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
     }

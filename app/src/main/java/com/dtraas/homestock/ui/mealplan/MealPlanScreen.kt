@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -60,11 +61,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -80,6 +83,8 @@ import com.dtraas.homestock.data.model.MealSlot
 import com.dtraas.homestock.data.repository.RecipeSuggestion
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftImageShape
+import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
@@ -97,7 +102,11 @@ import kotlinx.coroutines.launch
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MealPlanScreen(onRecipeClick: (String) -> Unit, onProductClick: (String) -> Unit) {
+fun MealPlanScreen(
+    onRecipeClick: (String) -> Unit,
+    onProductClick: (String) -> Unit,
+    onNavigateToCookMode: (String) -> Unit = {},
+) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: MealPlanViewModel = viewModel(
         factory = viewModelFactory {
@@ -185,7 +194,41 @@ fun MealPlanScreen(onRecipeClick: (String) -> Unit, onProductClick: (String) -> 
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            MealSlot.ORDERED.forEach { slot ->
+            WeekStatusStrip(
+                selectedDate = uiState.date,
+                weekStatus = uiState.weekStatus,
+                onSelectDate = viewModel::selectDate,
+            )
+
+            // A slot with a planned recipe already has "Kookmodus" via each meal's own row
+            // (tap through to RecipeDetailScreen, which already offers it) — this card is only
+            // useful while the day still has an empty slot to fill, so it hides itself once
+            // every slot has at least one meal.
+            val firstEmptySlot = MealSlot.ORDERED.firstOrNull { uiState.plan[it].orEmpty().isEmpty() }
+            if (firstEmptySlot != null) {
+                WeekFillSuggestionCard(onClick = { viewModel.openPicker(firstEmptySlot) })
+            }
+
+            // Avondeten first and visually featured — the one meal of the day a household most
+            // reliably plans ahead for — with the other three slots stacked below it in their
+            // usual order. Still full-width stacked cards rather than a side-by-side compact
+            // grid for those three (as the mockup shows): three cards holding a variable number
+            // of planned meals each would size a LazyVerticalGrid row to its tallest cell,
+            // which reads worse than just stacking them — a deliberate simplification.
+            SlotCard(
+                slot = MealSlot.DINNER,
+                label = stringResource(MealSlot.DINNER.labelRes),
+                planned = uiState.plan[MealSlot.DINNER].orEmpty(),
+                isFeatured = true,
+                onAddProductClick = { viewModel.openProductPicker(MealSlot.DINNER) },
+                onAddMealClick = { viewModel.openPicker(MealSlot.DINNER) },
+                onOpenRecipe = onRecipeClick,
+                onOpenProduct = onProductClick,
+                onRemove = { meal -> removeWithUndo(MealSlot.DINNER, meal) },
+                onAddToShoppingList = { meal -> viewModel.addProductToShoppingList(meal.name) },
+                onStartCookMode = onNavigateToCookMode,
+            )
+            MealSlot.ORDERED.filter { it != MealSlot.DINNER }.forEach { slot ->
                 SlotCard(
                     slot = slot,
                     label = stringResource(slot.labelRes),
@@ -230,6 +273,98 @@ fun MealPlanScreen(onRecipeClick: (String) -> Unit, onProductClick: (String) -> 
     }
 }
 
+/**
+ * Monday-start 7-day strip for jumping straight to any day in the current week, rather than
+ * only stepping one day at a time via the top bar's chevrons — the selected day gets a filled
+ * circle, and any day [MealPlanUiState.weekStatus] reports as having at least one planned meal
+ * gets a small dot underneath (see [MealPlanViewModel.loadWeekStatus] for what that status
+ * actually reflects and how fresh it is).
+ */
+@Composable
+private fun WeekStatusStrip(selectedDate: LocalDate, weekStatus: Map<LocalDate, Boolean>, onSelectDate: (LocalDate) -> Unit) {
+    val locale = LocalConfiguration.current.locales[0]
+    val weekStart = remember(selectedDate) { selectedDate.with(DayOfWeek.MONDAY) }
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+        for (offset in 0..6) {
+            val date = weekStart.plusDays(offset.toLong())
+            val isSelected = date == selectedDate
+            val hasPlan = weekStatus[date] == true
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable { onSelectDate(date) }
+                    .padding(vertical = 4.dp, horizontal = 2.dp),
+            ) {
+                Text(
+                    text = date.dayOfWeek.getDisplayName(TextStyle.NARROW, locale).uppercase(locale),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Surface(
+                    shape = CircleShape,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    modifier = Modifier.size(32.dp).padding(top = 2.dp),
+                ) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                        Text(
+                            text = date.dayOfMonth.toString(),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                }
+                Box(
+                    modifier = Modifier
+                        .padding(top = 3.dp)
+                        .size(5.dp)
+                        .clip(CircleShape)
+                        .background(if (hasPlan) MaterialTheme.colorScheme.primary else Color.Transparent),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * "Vul de week uit je voorraad" — a shortcut into the same inventory-matched recipe suggestions
+ * [MealPlanViewModel.openPicker] already offers, for the first slot the currently viewed day
+ * still has nothing planned in. Hidden once every slot has at least one meal (see its call
+ * site) rather than a literal whole-week auto-fill, which nothing in MealPlanRepository builds
+ * yet — a deliberate scope simplification of the mockup's copy.
+ */
+@Composable
+private fun WeekFillSuggestionCard(onClick: () -> Unit) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
+        ),
+        shape = SoftCardShape,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Filled.Restaurant, contentDescription = null, modifier = Modifier.size(22.dp))
+            Column(modifier = Modifier.padding(start = 12.dp)) {
+                Text(
+                    text = stringResource(R.string.meal_plan_fill_week_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                )
+                Text(
+                    text = stringResource(R.string.meal_plan_fill_week_subtitle),
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+        }
+    }
+}
+
 /** Recognizable icon per meal slot, shown in the card header next to its label. */
 private val MealSlot.icon: ImageVector
     get() = when (this) {
@@ -262,29 +397,53 @@ private fun SlotCard(
     onOpenProduct: (String) -> Unit,
     onRemove: (PlannedMeal) -> Unit,
     onAddToShoppingList: (PlannedMeal) -> Unit,
+    // Avondeten's own card (see MealPlanScreen's call site) — a bolder tinted header and
+    // larger label/icon than the other three slots get, plus a "Kookmodus" shortcut once a
+    // recipe is planned, since it's the one meal of the day households most reliably plan
+    // ahead for and cook from a recipe.
+    isFeatured: Boolean = false,
+    onStartCookMode: ((String) -> Unit)? = null,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isFeatured) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+        ),
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
             // Extra bottom padding on top of the Column's own 8dp spacedBy gap — just this one
             // gap, between the slot title (Ontbijt/Lunch/...) and whatever follows it, reads
             // tighter than the rest of the card's spacing otherwise.
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(bottom = 4.dp)) {
-                Icon(
-                    imageVector = slot.icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(20.dp),
-                )
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(start = 8.dp),
-                )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = slot.icon,
+                        contentDescription = null,
+                        tint = if (isFeatured) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(if (isFeatured) 26.dp else 20.dp),
+                    )
+                    Text(
+                        text = label,
+                        style = if (isFeatured) MaterialTheme.typography.titleMedium else MaterialTheme.typography.labelLarge,
+                        color = if (isFeatured) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 8.dp),
+                    )
+                }
+                // Only meaningful once a recipe (not a plain product/hand-typed name) is
+                // planned — the first one found, in the rare case a household stacks more than
+                // one recipe into avondeten.
+                val cookableRecipeId = planned.firstOrNull { it.recipeId != null }?.recipeId
+                if (isFeatured && onStartCookMode != null && cookableRecipeId != null) {
+                    TextButton(onClick = { onStartCookMode(cookableRecipeId) }) {
+                        Icon(Icons.Filled.Restaurant, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Text(stringResource(R.string.meal_plan_start_cook_mode), modifier = Modifier.padding(start = 4.dp))
+                    }
+                }
             }
             if (planned.isNotEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {

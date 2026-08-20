@@ -9,6 +9,7 @@ import com.dtraas.homestock.data.repository.InventoryRepository
 import com.dtraas.homestock.data.repository.MealPlanRepository
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
+import java.time.DayOfWeek
 import java.time.LocalDate
 import java.util.UUID
 import kotlinx.coroutines.Job
@@ -39,6 +40,10 @@ data class MealPlanUiState(
      *  the picker's live-filtered suggestion list narrows down and what [addManualProduct]
      *  checks a typed name against. */
     val inventoryItems: List<InventoryItemWithProduct> = emptyList(),
+    /** Which of the 7 days in [date]'s week (Monday-start) have at least one planned meal —
+     *  feeds the week-status strip's dots. See [MealPlanRepository.fetchWeekHasPlans] for why
+     *  this is a one-time fetch rather than a live listener. */
+    val weekStatus: Map<LocalDate, Boolean> = emptyMap(),
 )
 
 class MealPlanViewModel(
@@ -62,8 +67,13 @@ class MealPlanViewModel(
     // the same "only one day's snapshot listener open at a time" result.
     private var planObservationJob: Job? = null
 
+    // Re-fetched (not kept running) on every week change — see fetchWeekHasPlans's doc for why
+    // a fresh one-time read per visible week is enough for a status-dot strip.
+    private var weekStatusJob: Job? = null
+
     init {
         observeCurrentDate()
+        loadWeekStatus()
     }
 
     private fun observeCurrentDate() {
@@ -75,13 +85,31 @@ class MealPlanViewModel(
         }
     }
 
+    /** Monday-start week containing [MealPlanUiState.date] — re-fetches only when that week
+     *  actually changes (see [changeDate]'s call site), not on every single-day navigation
+     *  within the same week. */
+    private fun loadWeekStatus() {
+        weekStatusJob?.cancel()
+        val weekStart = _uiState.value.date.with(DayOfWeek.MONDAY)
+        weekStatusJob = viewModelScope.launch {
+            val status = mealPlanRepository.fetchWeekHasPlans(weekStart)
+            _uiState.update { it.copy(weekStatus = status) }
+        }
+    }
+
     fun goToPreviousDay() = changeDate(_uiState.value.date.minusDays(1))
 
     fun goToNextDay() = changeDate(_uiState.value.date.plusDays(1))
 
+    /** Jumps straight to [date] — called from the week-status strip's day chips. */
+    fun selectDate(date: LocalDate) = changeDate(date)
+
     private fun changeDate(date: LocalDate) {
+        val previousWeekStart = _uiState.value.date.with(DayOfWeek.MONDAY)
+        val newWeekStart = date.with(DayOfWeek.MONDAY)
         _uiState.update { it.copy(date = date, plan = emptyMap()) }
         observeCurrentDate()
+        if (newWeekStart != previousWeekStart) loadWeekStatus()
     }
 
     /** Opens the "add a meal" dialog for [slot] — recipe suggestions load fresh every time, inventory may have changed since it was last opened. */

@@ -325,6 +325,7 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                 MealPlanScreen(
                     onRecipeClick = { mealId -> navController.navigate(Destination.RecipeDetail.createRoute(mealId)) },
                     onProductClick = { barcode -> navController.navigate(Destination.ProductDetail.createRoute(barcode)) },
+                    onNavigateToCookMode = { mealId -> navController.navigate(Destination.CookMode.createRoute(mealId)) },
                 )
             }
             composable(Destination.Premium.route) {
