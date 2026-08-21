@@ -200,15 +200,6 @@ fun MealPlanScreen(
                 onSelectDate = viewModel::selectDate,
             )
 
-            // A slot with a planned recipe already has "Kookmodus" via each meal's own row
-            // (tap through to RecipeDetailScreen, which already offers it) — this card is only
-            // useful while the day still has an empty slot to fill, so it hides itself once
-            // every slot has at least one meal.
-            val firstEmptySlot = MealSlot.ORDERED.firstOrNull { uiState.plan[it].orEmpty().isEmpty() }
-            if (firstEmptySlot != null) {
-                WeekFillSuggestionCard(onClick = { viewModel.openPicker(firstEmptySlot) })
-            }
-
             // Avondeten first and visually featured — the one meal of the day a household most
             // reliably plans ahead for — with the other three slots stacked below it in their
             // usual order. Still full-width stacked cards rather than a side-by-side compact
@@ -320,45 +311,6 @@ private fun WeekStatusStrip(selectedDate: LocalDate, weekStatus: Map<LocalDate, 
                         .size(5.dp)
                         .clip(CircleShape)
                         .background(if (hasPlan) MaterialTheme.colorScheme.primary else Color.Transparent),
-                )
-            }
-        }
-    }
-}
-
-/**
- * "Vul de week uit je voorraad" — a shortcut into the same inventory-matched recipe suggestions
- * [MealPlanViewModel.openPicker] already offers, for the first slot the currently viewed day
- * still has nothing planned in. Hidden once every slot has at least one meal (see its call
- * site) rather than a literal whole-week auto-fill, which nothing in MealPlanRepository builds
- * yet — a deliberate scope simplification of the mockup's copy.
- */
-@Composable
-private fun WeekFillSuggestionCard(onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-        ),
-        shape = SoftCardShape,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(Icons.Filled.Restaurant, contentDescription = null, modifier = Modifier.size(22.dp))
-            Column(modifier = Modifier.padding(start = 12.dp)) {
-                Text(
-                    text = stringResource(R.string.meal_plan_fill_week_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = stringResource(R.string.meal_plan_fill_week_subtitle),
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(top = 2.dp),
                 )
             }
         }

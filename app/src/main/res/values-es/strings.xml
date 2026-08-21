@@ -681,8 +681,6 @@
     <string name="meal_plan_add_recipe">Receta</string>
     <!-- "Keuken" redesign (2026-08) -->
     <string name="meal_plan_start_cook_mode">Modo cocina</string>
-    <string name="meal_plan_fill_week_title">Completa la semana con tu despensa</string>
-    <string name="meal_plan_fill_week_subtitle">Sugerencias de recetas según lo que tienes en casa</string>
     <string name="meal_plan_clear_cd">Quitar comida</string>
     <string name="meal_plan_delete_cd">Eliminar</string>
     <string name="meal_plan_removed_format">%1$s eliminado</string>

@@ -439,7 +439,7 @@ fun InventoryScreen(
                 }
             } else {
                 LazyVerticalGrid(
-                    columns = GridCells.Fixed(2),
+                    columns = GridCells.Fixed(3),
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -711,7 +711,9 @@ private fun LocationChip(
  * squares; Scannen — tapping it now opens [AddMenuDialog], not the camera directly, since
  * bonnetje scannen/AI-herkenning/zoeken op naam moved back there — is the visually bigger,
  * centered circle between them, the same "camera-shutter" placement a scan action gets in
- * most photo/scanning apps.
+ * most photo/scanning apps. Zoeken/Meer align to the *bottom* of the row (not centered) so
+ * their bottom edges sit flush with the bigger Scannen circle's, instead of floating midway
+ * up its height.
  */
 @Composable
 private fun FloatingActionBar(
@@ -724,7 +726,7 @@ private fun FloatingActionBar(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Bottom,
         ) {
             FilledIconButton(
                 onClick = onSearchClick,
@@ -1594,10 +1596,9 @@ private fun InventoryGridTile(
             )
             .combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
-        // A fixed height rather than the old aspectRatio(1.1f) — with two columns instead of
-        // three (see the grid's GridCells.Fixed(2) below) an aspect-ratio photo grew
-        // noticeably taller, throwing the card's proportions off; a fixed height keeps every
-        // tile's photo band the same size regardless of column count.
+        // A fixed height rather than an aspectRatio — that let column count changes throw the
+        // photo band's proportions off; a fixed height keeps every tile's photo band the same
+        // size regardless of column count (see the grid's GridCells.Fixed(3) below).
         Box(modifier = Modifier.fillMaxWidth().height(96.dp)) {
             ProductImage(
                 imageUrl = item.imageUrl,
@@ -1674,20 +1675,23 @@ private fun InventoryGridTile(
             // Add-to-shopping-list moves off the photo and down here, beside the stepper,
             // rather than a small circular badge overlapping the image corner — shown only
             // when a restock might actually be relevant (low/out), same condition as before.
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
+            // The stepper is centered on the card regardless of whether the cart button is
+            // showing (a Box overlay, not a SpaceBetween Row, so it never shifts left when the
+            // cart button is hidden) — the cart button floats independently in the corner.
+            Box(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
                 QuantityStepper(
                     quantity = item.quantity,
                     onDecrease = onDecrease,
                     onIncrease = onIncrease,
                     dense = true,
+                    modifier = Modifier.align(Alignment.Center),
                 )
                 val showCartBadge = stockStatus == InventoryStockStatus.LOW_STOCK || stockStatus == InventoryStockStatus.OUT_OF_STOCK
                 if (!selectionMode && showCartBadge) {
-                    IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(28.dp)) {
+                    IconButton(
+                        onClick = onAddToShoppingList,
+                        modifier = Modifier.align(Alignment.CenterEnd).size(28.dp),
+                    ) {
                         Icon(
                             Icons.Filled.AddShoppingCart,
                             contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),

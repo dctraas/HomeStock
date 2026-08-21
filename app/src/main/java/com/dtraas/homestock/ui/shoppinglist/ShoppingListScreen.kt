@@ -304,7 +304,7 @@ fun ShoppingListScreen() {
         floatingActionButton = {
             ShoppingFloatingActionBar(onAddClick = { showAddDialog = true })
         },
-        floatingActionButtonPosition = FabPosition.Center,
+        floatingActionButtonPosition = FabPosition.End,
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -1364,28 +1364,24 @@ private fun StoreChipsRow(
  * The lone floating "+" — opens the full [ItemFormDialog] with category/winkel/eenheid fields,
  * unlike the quick-add field above. "Winkelmodus" used to sit beside it as a wide pill; now that
  * it's gone (removed on request, see suggestions elsewhere for where it could resurface) the "+"
- * stays exactly as it always was — a small round icon button, not stretched into a pill.
+ * stays exactly as it always was — a small round icon button — but sits in the bottom-right
+ * corner ([FabPosition.End] on the Scaffold above) rather than centered.
  */
 @Composable
 private fun ShoppingFloatingActionBar(
     onAddClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.Center,
+    FilledIconButton(
+        onClick = onAddClick,
+        modifier = modifier.size(52.dp),
+        shape = SoftCardShapeCompact,
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.secondary,
+            contentColor = MaterialTheme.colorScheme.onSecondary,
+        ),
     ) {
-        FilledIconButton(
-            onClick = onAddClick,
-            modifier = Modifier.size(52.dp),
-            shape = SoftCardShapeCompact,
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.secondary,
-                contentColor = MaterialTheme.colorScheme.onSecondary,
-            ),
-        ) {
-            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.shopping_list_add_item_cd))
-        }
+        Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.shopping_list_add_item_cd))
     }
 }
 
