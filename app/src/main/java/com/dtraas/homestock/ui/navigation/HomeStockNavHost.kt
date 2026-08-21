@@ -151,7 +151,6 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                     onNavigateToAiRecognize = { navController.navigate(Destination.AiRecognize.route) },
                     onNavigateToPremium = { navController.navigate(Destination.Premium.route) },
                     onNavigateToNotifications = { navController.navigate(Destination.Notifications.route) },
-                    onNavigateToRecipes = { navController.navigate(Destination.Recipes.route) },
                 )
             }
             composable(Destination.ShoppingList.route) {

@@ -63,8 +63,6 @@ import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Badge
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -174,6 +172,7 @@ fun InventoryScreen(
     var searchActive by remember { mutableStateOf(false) }
     var showProfileDialog by remember { mutableStateOf(false) }
     var showMoreOptions by remember { mutableStateOf(false) }
+    var showAddMenu by remember { mutableStateOf(false) }
     var selectedBarcodes by remember { mutableStateOf(emptySet<String>()) }
     // Bonnetje scannen / AI-productherkenning in the "+" menu below are premium-only, same
     // gating as their entries in Instellingen/Meer and the (now-removed) Scannen tab.
@@ -301,7 +300,7 @@ fun InventoryScreen(
         floatingActionButton = {
             if (!selectionMode) {
                 FloatingActionBar(
-                    onScanClick = onNavigateToScan,
+                    onScanClick = { showAddMenu = true },
                     onSearchClick = { searchActive = true },
                     onMoreClick = { showMoreOptions = true },
                 )
@@ -531,7 +530,6 @@ fun InventoryScreen(
 
     if (showMoreOptions) {
         MoreOptionsDialog(
-            isPremium = isPremium,
             viewMode = viewMode,
             onViewModeChange = { viewMode = it },
             sortSelected = uiState.sortOption,
@@ -550,11 +548,19 @@ fun InventoryScreen(
             onLowStockToggle = viewModel::onLowStockFilterChange,
             onExpiringSoonToggle = viewModel::onExpiringSoonFilterChange,
             onLocationSelected = viewModel::onLocationFilterChange,
+            onDismiss = { showMoreOptions = false },
+        )
+    }
+
+    if (showAddMenu) {
+        AddMenuDialog(
+            isPremium = isPremium,
+            onBarcodeScan = onNavigateToScan,
             onSearchByName = onNavigateToSearch,
             onReceiptScan = onNavigateToReceiptScan,
             onAiRecognize = onNavigateToAiRecognize,
             onNavigateToPremium = onNavigateToPremium,
-            onDismiss = { showMoreOptions = false },
+            onDismiss = { showAddMenu = false },
         )
     }
 }
@@ -701,9 +707,11 @@ private fun LocationChip(
 }
 
 /**
- * Replaces the old single "+" FAB: barcode scannen (the most common way to add a product) as
- * a wide primary pill, with zoeken-in-voorraad and "meer" (sorteren/groeperen/filteren, plus
- * the less-common ways to add a product) as two secondary squares beside it.
+ * Zoeken and "meer" (sorteren/groeperen/filteren/weergave) sit at either end as regular
+ * squares; Scannen — tapping it now opens [AddMenuDialog], not the camera directly, since
+ * bonnetje scannen/AI-herkenning/zoeken op naam moved back there — is the visually bigger,
+ * centered circle between them, the same "camera-shutter" placement a scan action gets in
+ * most photo/scanning apps.
  */
 @Composable
 private fun FloatingActionBar(
@@ -712,63 +720,61 @@ private fun FloatingActionBar(
     onMoreClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Button(
+    Box(modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            FilledIconButton(
+                onClick = onSearchClick,
+                modifier = Modifier.size(52.dp),
+                shape = SoftCardShapeCompact,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+            ) {
+                Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.inventory_search_cd))
+            }
+            FilledIconButton(
+                onClick = onMoreClick,
+                modifier = Modifier.size(52.dp),
+                shape = SoftCardShapeCompact,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                ),
+            ) {
+                Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.inventory_more_options_cd))
+            }
+        }
+        FilledIconButton(
             onClick = onScanClick,
-            modifier = Modifier.weight(1f).height(52.dp),
-            shape = SoftCardShapeCompact,
-            colors = ButtonDefaults.buttonColors(
+            modifier = Modifier.align(Alignment.Center).size(64.dp),
+            shape = CircleShape,
+            colors = IconButtonDefaults.filledIconButtonColors(
                 containerColor = MaterialTheme.colorScheme.secondary,
                 contentColor = MaterialTheme.colorScheme.onSecondary,
             ),
         ) {
-            Icon(Icons.Filled.QrCodeScanner, contentDescription = null, modifier = Modifier.size(20.dp))
-            Text(
-                text = stringResource(R.string.inventory_scan_button),
-                modifier = Modifier.padding(start = 8.dp),
-                fontWeight = FontWeight.Bold,
+            Icon(
+                Icons.Filled.QrCodeScanner,
+                contentDescription = stringResource(R.string.inventory_scan_button),
+                modifier = Modifier.size(28.dp),
             )
-        }
-        FilledIconButton(
-            onClick = onSearchClick,
-            modifier = Modifier.size(52.dp),
-            shape = SoftCardShapeCompact,
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-            ),
-        ) {
-            Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.inventory_search_cd))
-        }
-        FilledIconButton(
-            onClick = onMoreClick,
-            modifier = Modifier.size(52.dp),
-            shape = SoftCardShapeCompact,
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                contentColor = MaterialTheme.colorScheme.onSurface,
-            ),
-        ) {
-            Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.inventory_more_options_cd))
         }
     }
 }
 
 /**
  * Everything that used to live in the always-visible icon row (sorteren/groeperen/filteren/
- * weergave) plus the "+" menu's two premium-gated add options (barcode scannen and zoeken op
- * naam moved to the floating action bar and here respectively — zoeken op naam stays here since
- * it's a less common path than a direct barcode scan) — folded into one overflow sheet, each
- * existing dropdown button reused as-is (see [SortMenuButton]/[GroupByMenuButton]/
- * [FilterMenuButton]) rather than reimplemented.
+ * weergave) — folded into one overflow sheet, each existing dropdown button reused as-is (see
+ * [SortMenuButton]/[GroupByMenuButton]/[FilterMenuButton]) rather than reimplemented. The
+ * product-adding options live in [AddMenuDialog] instead, opened from "Scannen".
  */
 @Composable
 private fun MoreOptionsDialog(
-    isPremium: Boolean,
     viewMode: InventoryViewMode,
     onViewModeChange: (InventoryViewMode) -> Unit,
     sortSelected: InventorySortOption,
@@ -787,10 +793,6 @@ private fun MoreOptionsDialog(
     onLowStockToggle: (Boolean) -> Unit,
     onExpiringSoonToggle: (Boolean) -> Unit,
     onLocationSelected: (String?) -> Unit,
-    onSearchByName: () -> Unit,
-    onReceiptScan: () -> Unit,
-    onAiRecognize: () -> Unit,
-    onNavigateToPremium: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     AlertDialog(
@@ -835,29 +837,6 @@ private fun MoreOptionsDialog(
                         )
                     }
                 }
-                HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AddMenuTile(
-                        icon = Icons.Filled.Search,
-                        label = stringResource(R.string.inventory_add_menu_search),
-                        onClick = { onDismiss(); onSearchByName() },
-                        modifier = Modifier.weight(1f),
-                    )
-                    AddMenuTile(
-                        icon = Icons.Filled.Receipt,
-                        label = stringResource(R.string.more_beta_receipt_scan),
-                        premiumLocked = !isPremium,
-                        onClick = { onDismiss(); if (isPremium) onReceiptScan() else onNavigateToPremium() },
-                        modifier = Modifier.weight(1f),
-                    )
-                    AddMenuTile(
-                        icon = Icons.Filled.AutoAwesome,
-                        label = stringResource(R.string.ai_recognize_title),
-                        premiumLocked = !isPremium,
-                        onClick = { onDismiss(); if (isPremium) onAiRecognize() else onNavigateToPremium() },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
             }
         },
         confirmButton = {
@@ -881,11 +860,74 @@ private fun OptionRow(label: String, trailing: @Composable () -> Unit) {
     }
 }
 
-/** One tile of [MoreOptionsDialog]'s add-a-product row — a large icon with its description
- *  underneath. Used to be one of four equal tiles in a dedicated 2x2 "+" dialog; barcode
- *  scannen moved to the floating action bar as the primary action, so only the three
- *  less-common ways to add a product (zoeken op naam, bonnetje scannen, AI-herkenning) still
- *  use this tile, folded into the overflow dialog instead of a dialog of their own. */
+/**
+ * The four ways to add a product, opened by tapping "Scannen": barcode scannen and zoeken op
+ * naam are free, bonnetje scannen and AI-herkenning are premium-gated (falling back to
+ * [onNavigateToPremium] when not premium). A 2x2 grid of [AddMenuTile]s, same shape as before
+ * the redesign.
+ */
+@Composable
+private fun AddMenuDialog(
+    isPremium: Boolean,
+    onBarcodeScan: () -> Unit,
+    onSearchByName: () -> Unit,
+    onReceiptScan: () -> Unit,
+    onAiRecognize: () -> Unit,
+    onNavigateToPremium: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.inventory_add_menu_title),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    AddMenuTile(
+                        icon = Icons.Filled.QrCodeScanner,
+                        label = stringResource(R.string.inventory_add_menu_barcode),
+                        onClick = { onDismiss(); onBarcodeScan() },
+                        modifier = Modifier.weight(1f),
+                    )
+                    AddMenuTile(
+                        icon = Icons.Filled.Search,
+                        label = stringResource(R.string.inventory_add_menu_search),
+                        onClick = { onDismiss(); onSearchByName() },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    AddMenuTile(
+                        icon = Icons.Filled.Receipt,
+                        label = stringResource(R.string.more_beta_receipt_scan),
+                        premiumLocked = !isPremium,
+                        onClick = { onDismiss(); if (isPremium) onReceiptScan() else onNavigateToPremium() },
+                        modifier = Modifier.weight(1f),
+                    )
+                    AddMenuTile(
+                        icon = Icons.Filled.AutoAwesome,
+                        label = stringResource(R.string.ai_recognize_title),
+                        premiumLocked = !isPremium,
+                        onClick = { onDismiss(); if (isPremium) onAiRecognize() else onNavigateToPremium() },
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+            }
+        },
+    )
+}
+
+/** One tile of [AddMenuDialog] — a large icon with its description underneath. */
 @Composable
 private fun AddMenuTile(
     icon: ImageVector,

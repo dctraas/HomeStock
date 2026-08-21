@@ -58,19 +58,19 @@ import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -1361,35 +1361,30 @@ private fun StoreChipsRow(
 }
 
 /**
- * Replaces the old single "+" FAB: "Winkelmodus" (a shortcut into Winkelindeling-sort, see its
- * call site) as a wide pill, with the coral "+" — still opening the full [ItemFormDialog] with
- * category/winkel/eenheid fields, unlike the quick-add field above — beside it.
+ * The lone floating "+" — opens the full [ItemFormDialog] with category/winkel/eenheid fields,
+ * unlike the quick-add field above. "Winkelmodus" used to sit beside it as a wide pill; now that
+ * it's gone (removed on request, see suggestions elsewhere for where it could resurface) the "+"
+ * stays exactly as it always was — a small round icon button, not stretched into a pill.
  */
 @Composable
 private fun ShoppingFloatingActionBar(
     onAddClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    // "Winkelmodus" used to sit here too, as a second pill next to "+" — removed on request
-    // (see this commit's message for where it could go instead). The lone remaining action
-    // widens into the same full-width coral pill Voorraad's "Scannen" uses, rather than
-    // leaving a small square button floating off-center on its own.
-    Row(modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
-        Button(
+    Row(
+        modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        FilledIconButton(
             onClick = onAddClick,
-            modifier = Modifier.fillMaxWidth().height(52.dp),
+            modifier = Modifier.size(52.dp),
             shape = SoftCardShapeCompact,
-            colors = ButtonDefaults.buttonColors(
+            colors = IconButtonDefaults.filledIconButtonColors(
                 containerColor = MaterialTheme.colorScheme.secondary,
                 contentColor = MaterialTheme.colorScheme.onSecondary,
             ),
         ) {
-            Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(20.dp))
-            Text(
-                text = stringResource(R.string.shopping_list_add_item_cd),
-                modifier = Modifier.padding(start = 8.dp),
-                fontWeight = FontWeight.Bold,
-            )
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.shopping_list_add_item_cd))
         }
     }
 }
