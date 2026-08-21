@@ -40,7 +40,6 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.DinnerDining
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.FilterAlt
@@ -133,16 +132,13 @@ import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.components.color
 import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.components.onColor
-import com.dtraas.homestock.ui.theme.GoldTertiaryContainerAccent
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
-import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
 import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
-import com.dtraas.homestock.ui.theme.UrgencyTileShape
 import java.io.File
 import kotlinx.coroutines.launch
 
@@ -158,10 +154,6 @@ fun InventoryScreen(
     onNavigateToAiRecognize: () -> Unit = {},
     onNavigateToPremium: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
-    // "Kook hiermee" on the "Eerst opmaken" card — a plain tab switch rather than actually
-    // filtering Recepten by these specific ingredients, which nothing in RecipesViewModel
-    // supports yet (see InventoryScreen's design-handoff commit for the full disclosure).
-    onNavigateToRecipes: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as HomeStockApplication
@@ -297,13 +289,12 @@ fun InventoryScreen(
             } else {
                 KeukenHeader(
                     householdName = uiState.householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.inventory_title),
-                    expiringSoonCount = uiState.expiringSoonCount,
                     lowStockCount = uiState.lowStockCount,
                     unreadNoticeCount = unreadNoticeCount,
                     photoPath = photoPath,
                     onNotificationsClick = onNavigateToNotifications,
                     onProfileClick = { showProfileDialog = true },
-                    onStatsClick = { viewModel.onExpiringSoonFilterChange(true) },
+                    onStatsClick = { viewModel.onLowStockFilterChange(true) },
                 )
             }
         },
@@ -348,15 +339,9 @@ fun InventoryScreen(
                     }
                 }
             } else if (!selectionMode) {
-                // The "Eerst opmaken" nudge and location rail both read as clutter while
-                // actively narrowing the list by text — same reasoning the old code had for
-                // swapping the icon row out for the search field above.
-                ExpiringSoonCard(
-                    highlights = uiState.expiringSoon,
-                    onSeeAll = { viewModel.onExpiringSoonFilterChange(true) },
-                    onCookWithThese = onNavigateToRecipes,
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                )
+                // The location rail reads as clutter while actively narrowing the list by
+                // text — same reasoning the old code had for swapping the icon row out for the
+                // search field above.
                 LocationRail(
                     totalCount = uiState.totalCount,
                     selectedLocation = uiState.selectedLocation,
@@ -578,13 +563,11 @@ fun InventoryScreen(
  * The "Keuken" header — a saturated sage-to-forest gradient band (same base color as
  * [HomeStockTopAppBar] everywhere else, see [LocalTopAppBarContainerColor]) replacing the plain
  * title bar on this one screen: household name/avatar/meldingen up top, and a tappable
- * stats line below it ("N verlopen bijna · N laag") that jumps straight to the matching
- * quick filter — the same shortcut [ExpiringSoonCard]'s "Alles" link offers further down.
+ * stats line below it ("N laag") that jumps straight to the low-stock quick filter.
  */
 @Composable
 private fun KeukenHeader(
     householdName: String,
-    expiringSoonCount: Int,
     lowStockCount: Int,
     unreadNoticeCount: Int,
     photoPath: String?,
@@ -634,17 +617,11 @@ private fun KeukenHeader(
                 }
             }
         }
-        // Null (nothing shown) once both counts are zero — an always-present "0 verlopen bijna"
-        // line would read as a status update when there's nothing to report.
-        if (expiringSoonCount > 0 || lowStockCount > 0) {
-            val expiringFormat = stringResource(R.string.inventory_keuken_stats_expiring_format)
-            val lowStockFormat = stringResource(R.string.inventory_keuken_stats_low_stock_format)
-            val statsText = listOfNotNull(
-                expiringFormat.format(expiringSoonCount).takeIf { expiringSoonCount > 0 },
-                lowStockFormat.format(lowStockCount).takeIf { lowStockCount > 0 },
-            ).joinToString("  ·  ")
+        // Null (nothing shown) when there's nothing low — an always-present "0 laag" line would
+        // read as a status update when there's nothing to report.
+        if (lowStockCount > 0) {
             Text(
-                text = statsText,
+                text = stringResource(R.string.inventory_keuken_stats_low_stock_format).format(lowStockCount),
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.SemiBold,
                 color = OnTopAppBarContainerAccent,
@@ -654,119 +631,6 @@ private fun KeukenHeader(
             )
         }
     }
-}
-
-/**
- * "Eerst opmaken" — a week-ahead nudge for what's soonest to expire (see
- * [InventoryUiState.expiringSoon]), not shown at all once nothing qualifies. "Kook hiermee"
- * is a plain jump to Recepten rather than an ingredient-filtered recipe search — nothing in
- * RecipesViewModel supports filtering by a specific ingredient set yet, so this is a
- * deliberate scope simplification versus the mockup's literal copy.
- */
-@Composable
-private fun ExpiringSoonCard(
-    highlights: List<ExpiringSoonHighlight>,
-    onSeeAll: () -> Unit,
-    onCookWithThese: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    if (highlights.isEmpty()) return
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        shape = SoftCardShape,
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-    ) {
-        Column(Modifier.padding(16.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = stringResource(R.string.inventory_expiring_soon_card_title),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = stringResource(R.string.inventory_expiring_soon_see_all),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    fontWeight = FontWeight.Bold,
-                    modifier = Modifier.clickable(onClick = onSeeAll).padding(4.dp),
-                )
-            }
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-            ) {
-                highlights.forEach { highlight ->
-                    UrgencyTile(highlight = highlight, modifier = Modifier.weight(1f))
-                }
-            }
-            Button(
-                onClick = onCookWithThese,
-                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                shape = SoftCardShapeCompact,
-            ) {
-                Icon(Icons.Filled.DinnerDining, contentDescription = null, modifier = Modifier.size(18.dp))
-                Text(
-                    text = pluralStringResource(R.plurals.inventory_cook_with_these, highlights.size, highlights.size),
-                    modifier = Modifier.padding(start = 8.dp),
-                    fontWeight = FontWeight.Bold,
-                )
-            }
-        }
-    }
-}
-
-/** One tile in [ExpiringSoonCard] — [ExpiringSoonHighlight.urgencyLevel] 1 (due within a day)
- *  reads as coral/urgent, 2 (2-3 days) as amber/caution, 3 (4-7 days) as a calm neutral tone. */
-@Composable
-private fun UrgencyTile(highlight: ExpiringSoonHighlight, modifier: Modifier = Modifier) {
-    val (background, foreground, deadlineColor) = when (highlight.urgencyLevel) {
-        1 -> Triple(MaterialTheme.colorScheme.secondaryContainer, MaterialTheme.colorScheme.onSecondaryContainer, MaterialTheme.colorScheme.secondary)
-        2 -> Triple(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiaryContainer, GoldTertiaryContainerAccent)
-        else -> Triple(MaterialTheme.colorScheme.surfaceContainerHighest, MaterialTheme.colorScheme.onSurface, MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-    Column(
-        modifier = modifier
-            .clip(UrgencyTileShape)
-            .background(background)
-            .padding(10.dp),
-    ) {
-        ProductImage(
-            imageUrl = highlight.item.imageUrl,
-            fallbackIcon = Category.fromStorageKey(highlight.item.category).icon,
-            shape = SoftImageShape,
-            modifier = Modifier.size(40.dp),
-        )
-        Text(
-            text = highlight.item.name,
-            style = MaterialTheme.typography.titleSmall,
-            color = foreground,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(top = 6.dp),
-        )
-        Text(
-            text = expiryDeadlineLabel(highlight.daysUntilExpiry),
-            style = MaterialTheme.typography.labelSmall,
-            fontWeight = FontWeight.Bold,
-            color = deadlineColor,
-        )
-    }
-}
-
-/** Same day-countdown wording as [stockStatusPillText] uses for the grid badge, just spelled
- *  out on its own rather than folded into a status/pill decision — every [ExpiringSoonHighlight]
- *  has an expiration date by construction (see its filter in InventoryViewModel), so there's no
- *  "no date known" branch to handle here. */
-@Composable
-private fun expiryDeadlineLabel(days: Long): String = when {
-    days < 0 -> stringResource(R.string.inventory_pill_expiry_expired)
-    days == 0L -> stringResource(R.string.inventory_pill_expiry_today)
-    days == 1L -> stringResource(R.string.inventory_pill_expiry_tomorrow)
-    else -> pluralStringResource(R.plurals.inventory_pill_expiry_days, days.toInt(), days.toInt())
 }
 
 /** Local icon per [Location] — kept here rather than on the enum itself since it's purely a

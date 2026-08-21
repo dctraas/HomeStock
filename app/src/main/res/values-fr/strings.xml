@@ -333,14 +333,7 @@
     <string name="inventory_scan_button">Scanner</string>
     <string name="inventory_more_options_cd">Plus d\'options</string>
     <string name="inventory_more_options_title">Options</string>
-    <string name="inventory_keuken_stats_expiring_format">%1$d bientôt périmés</string>
     <string name="inventory_keuken_stats_low_stock_format">%1$d bas</string>
-    <string name="inventory_expiring_soon_card_title">À consommer en premier</string>
-    <string name="inventory_expiring_soon_see_all">Tout voir →</string>
-    <plurals name="inventory_cook_with_these">
-        <item quantity="one">Cuisiner avec — %1$d recette</item>
-        <item quantity="other">Cuisiner avec — %1$d recettes</item>
-    </plurals>
 
     <!-- Stock sort options -->
     <string name="sort_option_name">Nom</string>
@@ -488,7 +481,6 @@
     <string name="shopping_list_more_options_title">Options</string>
     <string name="shopping_list_progress_format">%1$d/%2$d cochés</string>
     <string name="shopping_list_all_stores">Tous les magasins</string>
-    <string name="shopping_list_shopping_mode">Mode courses</string>
     <string name="shopping_list_in_cart_format">Dans le chariot (%1$d)</string>
     <string name="shopping_list_removed_format">%1$s supprimé</string>
     <plurals name="shopping_list_cleared_snackbar_format">

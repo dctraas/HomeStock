@@ -66,13 +66,11 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -304,15 +302,7 @@ fun ShoppingListScreen() {
             )
         },
         floatingActionButton = {
-            ShoppingFloatingActionBar(
-                shoppingModeActive = sortMode == ShoppingListSortMode.AISLE,
-                onToggleShoppingMode = {
-                    viewModel.onSortModeChange(
-                        if (sortMode == ShoppingListSortMode.AISLE) ShoppingListSortMode.MANUAL else ShoppingListSortMode.AISLE,
-                    )
-                },
-                onAddClick = { showAddDialog = true },
-            )
+            ShoppingFloatingActionBar(onAddClick = { showAddDialog = true })
         },
         floatingActionButtonPosition = FabPosition.Center,
         snackbarHost = { SnackbarHost(snackbarHostState) },
@@ -1377,49 +1367,29 @@ private fun StoreChipsRow(
  */
 @Composable
 private fun ShoppingFloatingActionBar(
-    shoppingModeActive: Boolean,
-    onToggleShoppingMode: () -> Unit,
     onAddClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Row(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
+    // "Winkelmodus" used to sit here too, as a second pill next to "+" — removed on request
+    // (see this commit's message for where it could go instead). The lone remaining action
+    // widens into the same full-width coral pill Voorraad's "Scannen" uses, rather than
+    // leaving a small square button floating off-center on its own.
+    Row(modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
         Button(
-            onClick = onToggleShoppingMode,
-            modifier = Modifier.weight(1f).height(52.dp),
-            shape = SoftCardShapeCompact,
-            colors = if (shoppingModeActive) {
-                ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            } else {
-                ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                )
-            },
-        ) {
-            Icon(Icons.Filled.ShoppingCart, contentDescription = null, modifier = Modifier.size(20.dp))
-            Text(
-                text = stringResource(R.string.shopping_list_shopping_mode),
-                modifier = Modifier.padding(start = 8.dp),
-                fontWeight = FontWeight.Bold,
-            )
-        }
-        FilledIconButton(
             onClick = onAddClick,
-            modifier = Modifier.size(52.dp),
+            modifier = Modifier.fillMaxWidth().height(52.dp),
             shape = SoftCardShapeCompact,
-            colors = IconButtonDefaults.filledIconButtonColors(
+            colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.secondary,
                 contentColor = MaterialTheme.colorScheme.onSecondary,
             ),
         ) {
-            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.shopping_list_add_item_cd))
+            Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(20.dp))
+            Text(
+                text = stringResource(R.string.shopping_list_add_item_cd),
+                modifier = Modifier.padding(start = 8.dp),
+                fontWeight = FontWeight.Bold,
+            )
         }
     }
 }
