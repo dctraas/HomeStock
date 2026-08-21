@@ -331,9 +331,6 @@
     <string name="inventory_no_location_label">Sin ubicación</string>
     <!-- "Keuken" redesign (2026-08) -->
     <string name="inventory_scan_button">Escanear</string>
-    <string name="inventory_more_options_cd">Más opciones</string>
-    <string name="inventory_more_options_title">Opciones</string>
-    <string name="inventory_keuken_stats_low_stock_format">%1$d bajos</string>
 
     <!-- Inventario sort options -->
     <string name="sort_option_name">Nombre</string>

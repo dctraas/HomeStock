@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -19,9 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -47,7 +44,6 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Kitchen
 import androidx.compose.material.icons.filled.LocationOn
-import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.QrCodeScanner
@@ -100,7 +96,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -130,13 +125,9 @@ import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.components.color
 import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.components.onColor
-import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
-import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
-import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
-import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
 import java.io.File
 import kotlinx.coroutines.launch
 
@@ -171,7 +162,6 @@ fun InventoryScreen(
     var viewMode by remember { mutableStateOf(InventoryViewMode.GRID) }
     var searchActive by remember { mutableStateOf(false) }
     var showProfileDialog by remember { mutableStateOf(false) }
-    var showMoreOptions by remember { mutableStateOf(false) }
     var showAddMenu by remember { mutableStateOf(false) }
     var selectedBarcodes by remember { mutableStateOf(emptySet<String>()) }
     // Bonnetje scannen / AI-productherkenning in the "+" menu below are premium-only, same
@@ -286,24 +276,48 @@ fun InventoryScreen(
                     },
                 )
             } else {
-                KeukenHeader(
-                    householdName = uiState.householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.inventory_title),
-                    lowStockCount = uiState.lowStockCount,
-                    unreadNoticeCount = unreadNoticeCount,
-                    photoPath = photoPath,
-                    onNotificationsClick = onNavigateToNotifications,
-                    onProfileClick = { showProfileDialog = true },
-                    onStatsClick = { viewModel.onLowStockFilterChange(true) },
+                HomeStockTopAppBar(
+                    title = {
+                        Text(
+                            text = uiState.householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.inventory_title),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    },
+                    navigationIcon = {
+                        // Meldingen is no longer its own bottom-nav tab — this is the way to
+                        // reach it, at the far-left glance position. The red counter badge
+                        // tracks unread developer notices.
+                        IconButton(onClick = onNavigateToNotifications) {
+                            if (unreadNoticeCount > 0) {
+                                BadgedBox(badge = { Badge { Text(unreadNoticeCount.toString()) } }) {
+                                    Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news))
+                                }
+                            } else {
+                                Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news))
+                            }
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { showProfileDialog = true }) {
+                            if (photoPath != null) {
+                                AsyncImage(
+                                    model = File(photoPath),
+                                    contentDescription = stringResource(R.string.more_profile_title),
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.size(32.dp).clip(CircleShape),
+                                )
+                            } else {
+                                Icon(Icons.Filled.AccountCircle, contentDescription = stringResource(R.string.more_profile_title))
+                            }
+                        }
+                    },
                 )
             }
         },
         floatingActionButton = {
             if (!selectionMode) {
-                FloatingActionBar(
-                    onScanClick = { showAddMenu = true },
-                    onSearchClick = { searchActive = true },
-                    onMoreClick = { showMoreOptions = true },
-                )
+                FloatingActionBar(onScanClick = { showAddMenu = true })
             }
         },
         floatingActionButtonPosition = FabPosition.Center,
@@ -338,15 +352,74 @@ fun InventoryScreen(
                     }
                 }
             } else if (!selectionMode) {
-                // The location rail reads as clutter while actively narrowing the list by
-                // text — same reasoning the old code had for swapping the icon row out for the
-                // search field above.
+                // The location rail and the sorteren/filteren/weergave row both read as
+                // clutter while actively narrowing the list by text — same reasoning the old
+                // code had for swapping them out for the search field above.
                 LocationRail(
                     totalCount = uiState.totalCount,
                     selectedLocation = uiState.selectedLocation,
                     onLocationSelected = viewModel::onLocationFilterChange,
                     modifier = Modifier.padding(bottom = 8.dp),
                 )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                ) {
+                    IconButton(onClick = { searchActive = true }, modifier = Modifier.size(48.dp)) {
+                        Icon(
+                            Icons.Filled.Search,
+                            contentDescription = stringResource(R.string.inventory_search_cd),
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        FilterMenuButton(
+                            selectedCategory = uiState.selectedCategory,
+                            favoritesOnly = uiState.favoritesOnly,
+                            lowStockOnly = uiState.lowStockOnly,
+                            expiringSoonOnly = uiState.expiringSoonOnly,
+                            availableLocations = uiState.availableLocations,
+                            selectedLocation = uiState.selectedLocation,
+                            onCategorySelected = viewModel::onCategoryFilterChange,
+                            onFavoritesToggle = viewModel::onFavoritesFilterChange,
+                            onLowStockToggle = viewModel::onLowStockFilterChange,
+                            onExpiringSoonToggle = viewModel::onExpiringSoonFilterChange,
+                            onLocationSelected = viewModel::onLocationFilterChange,
+                        )
+                        SortMenuButton(
+                            selected = uiState.sortOption,
+                            onSelected = viewModel::onSortOptionChange,
+                        )
+                        // Only worth offering once there's more than one location in use —
+                        // with zero or one, "group by location" would either be pointless
+                        // (nothing to group) or identical to the flat list.
+                        if (uiState.availableLocations.size > 1) {
+                            GroupByMenuButton(
+                                selected = uiState.groupBy,
+                                onSelected = viewModel::onGroupByChange,
+                            )
+                        }
+                        IconButton(
+                            onClick = {
+                                viewMode = if (viewMode == InventoryViewMode.LIST) InventoryViewMode.GRID else InventoryViewMode.LIST
+                            },
+                            modifier = Modifier.size(48.dp),
+                        ) {
+                            Icon(
+                                imageVector = if (viewMode == InventoryViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
+                                contentDescription = if (viewMode == InventoryViewMode.LIST) {
+                                    stringResource(R.string.inventory_show_as_tiles_cd)
+                                } else {
+                                    stringResource(R.string.inventory_show_as_list_cd)
+                                },
+                                modifier = Modifier.size(24.dp),
+                            )
+                        }
+                    }
+                }
             }
 
             // Grouping by category loses the order between categories (each still shows in
@@ -528,30 +601,6 @@ fun InventoryScreen(
         )
     }
 
-    if (showMoreOptions) {
-        MoreOptionsDialog(
-            viewMode = viewMode,
-            onViewModeChange = { viewMode = it },
-            sortSelected = uiState.sortOption,
-            onSortSelected = viewModel::onSortOptionChange,
-            groupBySelected = uiState.groupBy,
-            onGroupBySelected = viewModel::onGroupByChange,
-            showGroupBy = uiState.availableLocations.size > 1,
-            selectedCategory = uiState.selectedCategory,
-            favoritesOnly = uiState.favoritesOnly,
-            lowStockOnly = uiState.lowStockOnly,
-            expiringSoonOnly = uiState.expiringSoonOnly,
-            availableLocations = uiState.availableLocations,
-            selectedLocation = uiState.selectedLocation,
-            onCategorySelected = viewModel::onCategoryFilterChange,
-            onFavoritesToggle = viewModel::onFavoritesFilterChange,
-            onLowStockToggle = viewModel::onLowStockFilterChange,
-            onExpiringSoonToggle = viewModel::onExpiringSoonFilterChange,
-            onLocationSelected = viewModel::onLocationFilterChange,
-            onDismiss = { showMoreOptions = false },
-        )
-    }
-
     if (showAddMenu) {
         AddMenuDialog(
             isPremium = isPremium,
@@ -562,80 +611,6 @@ fun InventoryScreen(
             onNavigateToPremium = onNavigateToPremium,
             onDismiss = { showAddMenu = false },
         )
-    }
-}
-
-/**
- * The "Keuken" header — a saturated sage-to-forest gradient band (same base color as
- * [HomeStockTopAppBar] everywhere else, see [LocalTopAppBarContainerColor]) replacing the plain
- * title bar on this one screen: household name/avatar/meldingen up top, and a tappable
- * stats line below it ("N laag") that jumps straight to the low-stock quick filter.
- */
-@Composable
-private fun KeukenHeader(
-    householdName: String,
-    lowStockCount: Int,
-    unreadNoticeCount: Int,
-    photoPath: String?,
-    onNotificationsClick: () -> Unit,
-    onProfileClick: () -> Unit,
-    onStatsClick: () -> Unit,
-) {
-    val contentColor = LocalTopAppBarContentColor.current
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(LocalTopAppBarContainerColor.current, TopAppBarContainerGradientEnd)))
-            .windowInsetsPadding(WindowInsets.statusBars)
-            .padding(start = 20.dp, end = 12.dp, top = 12.dp, bottom = 16.dp),
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = householdName,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = contentColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f),
-            )
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = onNotificationsClick) {
-                    if (unreadNoticeCount > 0) {
-                        BadgedBox(badge = { Badge { Text(unreadNoticeCount.toString()) } }) {
-                            Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news), tint = contentColor)
-                        }
-                    } else {
-                        Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news), tint = contentColor)
-                    }
-                }
-                IconButton(onClick = onProfileClick) {
-                    if (photoPath != null) {
-                        AsyncImage(
-                            model = File(photoPath),
-                            contentDescription = stringResource(R.string.more_profile_title),
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.size(32.dp).clip(CircleShape),
-                        )
-                    } else {
-                        Icon(Icons.Filled.AccountCircle, contentDescription = stringResource(R.string.more_profile_title), tint = contentColor)
-                    }
-                }
-            }
-        }
-        // Null (nothing shown) when there's nothing low — an always-present "0 laag" line would
-        // read as a status update when there's nothing to report.
-        if (lowStockCount > 0) {
-            Text(
-                text = stringResource(R.string.inventory_keuken_stats_low_stock_format).format(lowStockCount),
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = OnTopAppBarContainerAccent,
-                modifier = Modifier
-                    .padding(top = 4.dp, start = 4.dp)
-                    .clickable(onClick = onStatsClick),
-            )
-        }
     }
 }
 
@@ -707,158 +682,30 @@ private fun LocationChip(
 }
 
 /**
- * Zoeken and "meer" (sorteren/groeperen/filteren/weergave) sit at either end as regular
- * squares; Scannen — tapping it now opens [AddMenuDialog], not the camera directly, since
- * bonnetje scannen/AI-herkenning/zoeken op naam moved back there — is the visually bigger,
- * centered circle between them, the same "camera-shutter" placement a scan action gets in
- * most photo/scanning apps. Zoeken/Meer align to the *bottom* of the row (not centered) so
- * their bottom edges sit flush with the bigger Scannen circle's, instead of floating midway
- * up its height.
+ * Now just the "Scannen" trigger on its own — sorteren/filteren/weergave and zoeken moved back
+ * up into the always-visible row above the list (see InventoryScreen's content Column), so the
+ * floating bar no longer needs to carry them. Tapping it opens [AddMenuDialog], not the camera
+ * directly, since bonnetje scannen/AI-herkenning/zoeken op naam live there too.
  */
 @Composable
 private fun FloatingActionBar(
     onScanClick: () -> Unit,
-    onSearchClick: () -> Unit,
-    onMoreClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Box(modifier = modifier.fillMaxWidth().padding(horizontal = 20.dp)) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Bottom,
-        ) {
-            FilledIconButton(
-                onClick = onSearchClick,
-                modifier = Modifier.size(52.dp),
-                shape = SoftCardShapeCompact,
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                ),
-            ) {
-                Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.inventory_search_cd))
-            }
-            FilledIconButton(
-                onClick = onMoreClick,
-                modifier = Modifier.size(52.dp),
-                shape = SoftCardShapeCompact,
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    contentColor = MaterialTheme.colorScheme.onSurface,
-                ),
-            ) {
-                Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.inventory_more_options_cd))
-            }
-        }
-        FilledIconButton(
-            onClick = onScanClick,
-            modifier = Modifier.align(Alignment.Center).size(64.dp),
-            shape = CircleShape,
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = MaterialTheme.colorScheme.secondary,
-                contentColor = MaterialTheme.colorScheme.onSecondary,
-            ),
-        ) {
-            Icon(
-                Icons.Filled.QrCodeScanner,
-                contentDescription = stringResource(R.string.inventory_scan_button),
-                modifier = Modifier.size(28.dp),
-            )
-        }
-    }
-}
-
-/**
- * Everything that used to live in the always-visible icon row (sorteren/groeperen/filteren/
- * weergave) — folded into one overflow sheet, each existing dropdown button reused as-is (see
- * [SortMenuButton]/[GroupByMenuButton]/[FilterMenuButton]) rather than reimplemented. The
- * product-adding options live in [AddMenuDialog] instead, opened from "Scannen".
- */
-@Composable
-private fun MoreOptionsDialog(
-    viewMode: InventoryViewMode,
-    onViewModeChange: (InventoryViewMode) -> Unit,
-    sortSelected: InventorySortOption,
-    onSortSelected: (InventorySortOption) -> Unit,
-    groupBySelected: InventoryGroupBy,
-    onGroupBySelected: (InventoryGroupBy) -> Unit,
-    showGroupBy: Boolean,
-    selectedCategory: Category?,
-    favoritesOnly: Boolean,
-    lowStockOnly: Boolean,
-    expiringSoonOnly: Boolean,
-    availableLocations: List<String>,
-    selectedLocation: String?,
-    onCategorySelected: (Category?) -> Unit,
-    onFavoritesToggle: (Boolean) -> Unit,
-    onLowStockToggle: (Boolean) -> Unit,
-    onExpiringSoonToggle: (Boolean) -> Unit,
-    onLocationSelected: (String?) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.inventory_more_options_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                OptionRow(label = stringResource(R.string.inventory_sort_cd)) {
-                    SortMenuButton(selected = sortSelected, onSelected = onSortSelected)
-                }
-                if (showGroupBy) {
-                    OptionRow(label = stringResource(R.string.inventory_group_by_cd)) {
-                        GroupByMenuButton(selected = groupBySelected, onSelected = onGroupBySelected)
-                    }
-                }
-                OptionRow(label = stringResource(R.string.inventory_filter_cd)) {
-                    FilterMenuButton(
-                        selectedCategory = selectedCategory,
-                        favoritesOnly = favoritesOnly,
-                        lowStockOnly = lowStockOnly,
-                        expiringSoonOnly = expiringSoonOnly,
-                        availableLocations = availableLocations,
-                        selectedLocation = selectedLocation,
-                        onCategorySelected = onCategorySelected,
-                        onFavoritesToggle = onFavoritesToggle,
-                        onLowStockToggle = onLowStockToggle,
-                        onExpiringSoonToggle = onExpiringSoonToggle,
-                        onLocationSelected = onLocationSelected,
-                    )
-                }
-                OptionRow(label = stringResource(R.string.inventory_show_as_tiles_cd)) {
-                    IconButton(
-                        onClick = {
-                            onViewModeChange(if (viewMode == InventoryViewMode.LIST) InventoryViewMode.GRID else InventoryViewMode.LIST)
-                        },
-                        modifier = Modifier.size(48.dp),
-                    ) {
-                        Icon(
-                            imageVector = if (viewMode == InventoryViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_close)) }
-            }
-        },
-    )
-}
-
-/** One row of [MoreOptionsDialog]: a label on the left, the existing control (unchanged) on the right. */
-@Composable
-private fun OptionRow(label: String, trailing: @Composable () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
+    FilledIconButton(
+        onClick = onScanClick,
+        modifier = modifier.size(64.dp),
+        shape = CircleShape,
+        colors = IconButtonDefaults.filledIconButtonColors(
+            containerColor = MaterialTheme.colorScheme.secondary,
+            contentColor = MaterialTheme.colorScheme.onSecondary,
+        ),
     ) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium)
-        trailing()
+        Icon(
+            Icons.Filled.QrCodeScanner,
+            contentDescription = stringResource(R.string.inventory_scan_button),
+            modifier = Modifier.size(28.dp),
+        )
     }
 }
 

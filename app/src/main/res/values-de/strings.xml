@@ -331,9 +331,6 @@
     <string name="inventory_no_location_label">Kein Ort</string>
     <!-- "Keuken" redesign (2026-08) -->
     <string name="inventory_scan_button">Scannen</string>
-    <string name="inventory_more_options_cd">Weitere Optionen</string>
-    <string name="inventory_more_options_title">Optionen</string>
-    <string name="inventory_keuken_stats_low_stock_format">%1$d knapp</string>
 
     <!-- Vorrat sort options -->
     <string name="sort_option_name">Name</string>

@@ -332,9 +332,6 @@
     <string name="inventory_no_location_label">Geen locatie</string>
     <!-- "Keuken" redesign (2026-08) -->
     <string name="inventory_scan_button">Scannen</string>
-    <string name="inventory_more_options_cd">Meer opties</string>
-    <string name="inventory_more_options_title">Opties</string>
-    <string name="inventory_keuken_stats_low_stock_format">%1$d laag</string>
 
     <!-- Voorraad sort options -->
     <string name="sort_option_name">Naam</string>
