@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -29,7 +28,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -42,7 +40,6 @@ import androidx.compose.material.icons.filled.EventBusy
 import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.Kitchen
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhotoCamera
@@ -66,8 +63,6 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -320,7 +315,7 @@ fun InventoryScreen(
                 FloatingActionBar(onScanClick = { showAddMenu = true })
             }
         },
-        floatingActionButtonPosition = FabPosition.Center,
+        floatingActionButtonPosition = FabPosition.End,
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -352,15 +347,10 @@ fun InventoryScreen(
                     }
                 }
             } else if (!selectionMode) {
-                // The location rail and the sorteren/filteren/weergave row both read as
-                // clutter while actively narrowing the list by text — same reasoning the old
-                // code had for swapping them out for the search field above.
-                LocationRail(
-                    totalCount = uiState.totalCount,
-                    selectedLocation = uiState.selectedLocation,
-                    onLocationSelected = viewModel::onLocationFilterChange,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
+                // The sorteren/filteren/weergave row reads as clutter while actively narrowing
+                // the list by text — same reasoning the old code had for swapping it out for
+                // the search field above. Locatie is one of the choices inside FilterMenuButton
+                // rather than its own always-visible chip row — see that composable.
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -612,73 +602,6 @@ fun InventoryScreen(
             onDismiss = { showAddMenu = false },
         )
     }
-}
-
-/** Local icon per [Location] — kept here rather than on the enum itself since it's purely a
- *  presentation detail of this one rail, not part of Location's data-model role. */
-private val Location.railIcon: ImageVector
-    get() = when (this) {
-        Location.PANTRY -> Icons.Filled.Kitchen
-        Location.CELLAR -> Icons.Filled.Inventory2
-        Location.FREEZER -> Icons.Filled.AcUnit
-    }
-
-/**
- * Horizontal chip row for jumping straight to one storage location — bound to the real,
- * fixed [Location] enum (not illustrative mockup labels like "Koelkast", which isn't one of
- * this app's three actual storage options). "Alles" is just [selectedLocation] cleared, with
- * [totalCount] so it reads as a real count rather than a bare "Alles" label.
- */
-@Composable
-private fun LocationRail(
-    totalCount: Int,
-    selectedLocation: String?,
-    onLocationSelected: (String?) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    LazyRow(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        contentPadding = PaddingValues(horizontal = 20.dp),
-    ) {
-        item {
-            LocationChip(
-                label = "${stringResource(R.string.inventory_filter_all)} $totalCount",
-                icon = Icons.Filled.Inventory2,
-                selected = selectedLocation == null,
-                onClick = { onLocationSelected(null) },
-            )
-        }
-        items(Location.entries) { location ->
-            LocationChip(
-                label = stringResource(location.labelRes),
-                icon = location.railIcon,
-                selected = selectedLocation == location.storageKey,
-                onClick = { onLocationSelected(if (selectedLocation == location.storageKey) null else location.storageKey) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun LocationChip(
-    label: String,
-    icon: ImageVector,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    FilterChip(
-        selected = selected,
-        onClick = onClick,
-        label = { Text(label) },
-        leadingIcon = { Icon(icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
-        shape = SoftCardShapeCompact,
-        colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
-            selectedLabelColor = MaterialTheme.colorScheme.onPrimaryContainer,
-            selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        ),
-    )
 }
 
 /**
