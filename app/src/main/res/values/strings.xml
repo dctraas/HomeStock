@@ -590,7 +590,7 @@
     <string name="recipes_load_more">Meer laden</string>
     <string name="recipes_show_as_grid_cd">Toon als raster</string>
     <string name="recipes_show_as_list_cd">Toon als lijst</string>
-    <string name="recipes_match_count_format">%1$d ingrediënten in huis</string>
+    <string name="recipes_match_ratio_format">%1$d/%2$d in huis</string>
     <string name="recipes_allergen_filter_label">Allergenen uitsluiten</string>
     <string name="recipes_allergen_filter_active_cd_format">Allergenen uitsluiten (actief: %1$s)</string>
     <string name="recipes_area_match_cd">Sluit aan bij jouw taal/regio</string>
@@ -601,9 +601,15 @@
     <string name="recipes_ingredient_in_inventory_cd">Al in voorraad</string>
     <string name="recipes_added_to_shopping_list">Ontbrekende ingrediënten toegevoegd aan je boodschappenlijst</string>
     <string name="recipes_add_missing_to_shopping_list">Ontbrekende ingrediënten toevoegen aan boodschappenlijst</string>
+    <string name="recipes_add_missing_short">Op lijst</string>
+    <string name="recipes_hero_missing_format">Mist: %1$s</string>
     <string name="recipes_instructions_title">Instructies</string>
     <string name="recipes_instructions_unavailable">Geen bereidingswijze beschikbaar voor dit recept.</string>
     <string name="recipes_ready_in_minutes_format">%1$d min</string>
+    <plurals name="recipes_inventory_subtitle">
+        <item quantity="one">%1$d gerecht kun je nu koken</item>
+        <item quantity="other">%1$d gerechten kun je nu koken</item>
+    </plurals>
 
     <!-- Kookmodus -->
     <string name="cook_mode_start">Start koken</string>
@@ -618,11 +624,7 @@
     <string name="recipes_ai_generated_badge">AI-gegenereerd recept</string>
     <string name="recipes_translated_badge">Vertaald met AI</string>
     <string name="recipes_generate_ai_button">Genereer recept met AI</string>
-    <!-- "Keuken" redesign (2026-08) -->
-    <string name="recipes_generate_ai_chip">AI</string>
-    <string name="recipes_cook_what_you_have_title">Kook wat je hebt</string>
-    <string name="recipes_cook_what_you_have_subtitle">Recepten op basis van je voorraad</string>
-    <string name="recipes_cook_what_you_have_active">Op basis van je voorraad — tik op Ontdekken om terug te gaan</string>
+    <string name="recipes_generate_fab">AI-recept</string>
     <string name="recipes_generate_ai_title">Recept genereren met AI</string>
     <string name="recipes_generate_ai_hint">Wij bedenken een recept op basis van je huidige voorraad. Heb je nog een specifieke wens?</string>
     <string name="recipes_generate_ai_placeholder">Bijv. \'iets met kip en rijst\' (optioneel)</string>
@@ -652,10 +654,13 @@
     <string name="recipe_tag_add_dialog_title">Eigen label toevoegen</string>
     <string name="recipe_tag_add_dialog_label">Label</string>
     <string name="recipe_tag_add_dialog_confirm">Toevoegen</string>
+    <string name="recipes_tab_inventory">Uit je voorraad</string>
     <string name="recipes_tab_browse">Ontdekken</string>
     <string name="recipes_tab_favorites">Favorieten</string>
     <string name="recipes_tab_custom">Mijn recepten</string>
     <string name="recipes_add_custom_button">Eigen recept toevoegen</string>
+    <string name="recipes_inventory_empty_title">Nog geen match gevonden</string>
+    <string name="recipes_inventory_empty_subtitle">Vul je voorraad aan, of bekijk Ontdekken voor meer recepten.</string>
     <string name="recipes_favorites_empty_title">Nog geen favorieten</string>
     <string name="recipes_favorites_empty_subtitle">Tik op het hartje bij een recept om het hier te bewaren.</string>
     <string name="recipes_custom_empty_title">Nog geen eigen recepten</string>

@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -20,11 +21,11 @@ import androidx.compose.foundation.lazy.grid.items as gridItems
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudOff
@@ -49,12 +50,17 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -74,6 +80,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -91,7 +98,7 @@ import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.SearchField
-import com.dtraas.homestock.ui.theme.SoftBadgeShape
+import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
@@ -112,7 +119,13 @@ fun RecipesScreen(
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: RecipesViewModel = viewModel(
         factory = viewModelFactory {
-            initializer { RecipesViewModel(application.container.recipeRepository, application.container.householdMembersRepository) }
+            initializer {
+                RecipesViewModel(
+                    application.container.recipeRepository,
+                    application.container.householdMembersRepository,
+                    application.container.shoppingListRepository,
+                )
+            }
         },
     )
     val uiState by viewModel.uiState.collectAsState()
@@ -122,6 +135,9 @@ fun RecipesScreen(
     var showImportDialog by remember { mutableStateOf(false) }
     var importUrl by remember { mutableStateOf("") }
     var viewMode by remember { mutableStateOf(RecipesViewMode.GRID) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val addedToListMessage = stringResource(R.string.recipes_added_to_shopping_list)
+    val undoLabel = stringResource(R.string.common_undo)
 
     // languageTag as the key rather than Unit: an in-app language switch (Instellingen >
     // Algemeen > Taal) recreates the whole activity, but keying here means this also behaves
@@ -145,18 +161,47 @@ fun RecipesScreen(
         }
     }
 
+    // Hero card's "Op lijst" undo — same generic message every time (which recipe it came from
+    // doesn't change what got added), the item ids ride along for [RecipesViewModel.undoAddMissingIngredients].
+    LaunchedEffect(Unit) {
+        viewModel.missingIngredientsAdded.collect { event ->
+            val result = snackbarHostState.showSnackbar(
+                message = addedToListMessage,
+                actionLabel = undoLabel,
+                duration = SnackbarDuration.Long,
+            )
+            if (result == SnackbarResult.ActionPerformed) viewModel.undoAddMissingIngredients(event.itemIds)
+        }
+    }
+
     Scaffold(
         topBar = {
             HomeStockTopAppBar(
-                title = { Text(stringResource(R.string.recipes_title)) },
+                title = {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(stringResource(R.string.recipes_title))
+                        // Only on Uit je voorraad — the other tabs don't have a single natural
+                        // "N of something" count to summarize (Ontdekken's page size isn't
+                        // meaningful, Favorieten/Eigen already show their own count as the list
+                        // length at a glance).
+                        if (uiState.tab == RecipesTab.INVENTORY && !uiState.isLoading && uiState.recipes.isNotEmpty()) {
+                            Text(
+                                text = pluralStringResource(R.plurals.recipes_inventory_subtitle, uiState.recipes.size, uiState.recipes.size),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = OnTopAppBarContainerAccent,
+                            )
+                        }
+                    }
+                },
                 // Recepten is a bottom-nav tab, not a screen pushed onto the back stack — a
                 // "Terug" button here had nowhere meaningful to go.
                 actions = {
-                    // List/grid toggle — same pattern as Voorraad's. On BROWSE this now lives in
-                    // the icon row below instead (alongside search/filter/AI-generate — see
-                    // that row's comment), so it's only shown up here for Favorieten/Eigen
-                    // recepten, which have no row of their own to put it in.
-                    if (uiState.tab != RecipesTab.BROWSE) {
+                    // List/grid toggle — same pattern as Voorraad's. On BROWSE this lives in
+                    // the icon row below instead (alongside search/filter — see that row's
+                    // comment); on INVENTORY the hero + grid layout is fixed, no toggle to show.
+                    // Only Favorieten/Eigen recepten (plain lists with no row of their own) use
+                    // this top-bar one.
+                    if (uiState.tab == RecipesTab.FAVORITES || uiState.tab == RecipesTab.CUSTOM) {
                         IconButton(onClick = { viewMode = viewMode.toggled() }) {
                             Icon(
                                 imageVector = if (viewMode == RecipesViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
@@ -169,51 +214,24 @@ fun RecipesScreen(
                 },
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        floatingActionButton = {
+            ExtendedFloatingActionButton(
+                onClick = { showGenerateDialog = true },
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary,
+                icon = { Icon(Icons.Filled.AutoAwesome, contentDescription = null) },
+                text = { Text(stringResource(R.string.recipes_generate_fab)) },
+            )
+        },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            RecipesTabRow(
-                selected = uiState.tab,
-                onSelect = { tab ->
-                    // Tapping "Ontdekken" while already on it (the tab itself never actually
-                    // changes) is how the household leaves "Kook wat je hebt" mode again — see
-                    // showWhatYouHave's doc. selectTab's own no-op-if-unchanged guard means it
-                    // wouldn't otherwise notice this tap at all.
-                    if (tab == RecipesTab.BROWSE && uiState.isInventoryMode) viewModel.exitInventoryMode() else viewModel.selectTab(tab)
-                },
-                onGenerateAiClick = { showGenerateDialog = true },
-            )
+            RecipesTabRow(selected = uiState.tab, onSelect = viewModel::selectTab)
 
             if (uiState.tab == RecipesTab.BROWSE) {
-                if (uiState.isInventoryMode) {
-                    // Tapping "Ontdekken" again (already selected — see RecipesTabRow's
-                    // onSelect wrapper above) is how this mode is left; this banner just makes
-                    // that clear rather than leaving the switch silent.
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-                    ) {
-                        Icon(
-                            Icons.Filled.RestaurantMenu,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp),
-                        )
-                        Text(
-                            text = stringResource(R.string.recipes_cook_what_you_have_active),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.padding(start = 6.dp),
-                        )
-                    }
-                } else if (uiState.searchQuery.isBlank()) {
-                    CookWhatYouHaveCard(
-                        onClick = viewModel::showWhatYouHave,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    )
-                }
                 // One consolidated icon row for everything that used to be split between the
-                // top bar (list/grid toggle, "genereer met AI") and its own row below the tabs
-                // (search field, allergenfilter) — collapsed to just their icons, right-aligned
+                // top bar (list/grid toggle) and its own row below the tabs (search field,
+                // allergenfilter) — collapsed to just their icons, right-aligned
                 // like a toolbar, so BROWSE's first screenful stays mostly recipes. Search
                 // itself only shows an icon here too (not a permanent bar) — tapping it expands
                 // this same row into a full-width field instead, closer to how Android's own
@@ -269,8 +287,6 @@ fun RecipesScreen(
                                 ),
                             )
                         }
-                        // "Genereer met AI" moved into RecipesTabRow's own AI chip — no longer
-                        // its own icon here.
                     }
                 }
             } else if (uiState.tab == RecipesTab.CUSTOM) {
@@ -334,6 +350,7 @@ fun RecipesScreen(
                 }
                 uiState.recipes.isEmpty() -> {
                     val (emptyTitle, emptySubtitle) = when (uiState.tab) {
+                        RecipesTab.INVENTORY -> stringResource(R.string.recipes_inventory_empty_title) to stringResource(R.string.recipes_inventory_empty_subtitle)
                         RecipesTab.BROWSE -> stringResource(R.string.recipes_empty_title) to stringResource(R.string.recipes_empty_subtitle)
                         RecipesTab.FAVORITES -> stringResource(R.string.recipes_favorites_empty_title) to stringResource(R.string.recipes_favorites_empty_subtitle)
                         RecipesTab.CUSTOM -> stringResource(R.string.recipes_custom_empty_title) to stringResource(R.string.recipes_custom_empty_subtitle)
@@ -347,7 +364,32 @@ fun RecipesScreen(
                 }
                 else -> Column(modifier = Modifier.fillMaxSize()) {
                     val showLoadMore = uiState.tab == RecipesTab.BROWSE && (uiState.hasMore || uiState.isLoadingMore)
-                    if (viewMode == RecipesViewMode.LIST) {
+                    if (uiState.tab == RecipesTab.INVENTORY) {
+                        // Fixed hero + 2-column grid, not the plain list/grid toggle the other
+                        // tabs offer — the hero (spanning both columns) is what used to be the
+                        // separate "Kook wat je hebt" promo card's destination, now this tab's
+                        // own top result instead of a second tap away.
+                        val hero = uiState.recipes.first()
+                        val rest = uiState.recipes.drop(1)
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            item(key = hero.meal.id, span = { GridItemSpan(maxLineSpan) }) {
+                                HeroRecipeCard(
+                                    recipe = hero,
+                                    onClick = { onRecipeClick(hero.meal.id) },
+                                    onAddMissingToList = { viewModel.addMissingIngredientsToShoppingList(hero) },
+                                )
+                            }
+                            gridItems(rest, key = { it.meal.id }) { recipe ->
+                                RecipeGridTile(recipe = recipe, onClick = { onRecipeClick(recipe.meal.id) })
+                            }
+                        }
+                    } else if (viewMode == RecipesViewMode.LIST) {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
@@ -587,10 +629,10 @@ private fun ImportRecipeDialog(
     )
 }
 
-/** Switches between browsing Spoonacular, the household's favorites, and its own custom recipes — see [RecipesTab]. */
-@OptIn(ExperimentalMaterial3Api::class)
+/** Switches between the household's inventory-matched picks, browsing Spoonacular, its
+ *  favorites, and its own custom recipes — see [RecipesTab]. */
 @Composable
-private fun RecipesTabRow(selected: RecipesTab, onSelect: (RecipesTab) -> Unit, onGenerateAiClick: () -> Unit) {
+private fun RecipesTabRow(selected: RecipesTab, onSelect: (RecipesTab) -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -599,6 +641,7 @@ private fun RecipesTabRow(selected: RecipesTab, onSelect: (RecipesTab) -> Unit, 
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         val tabs = listOf(
+            RecipesTab.INVENTORY to R.string.recipes_tab_inventory,
             RecipesTab.BROWSE to R.string.recipes_tab_browse,
             RecipesTab.FAVORITES to R.string.recipes_tab_favorites,
             RecipesTab.CUSTOM to R.string.recipes_tab_custom,
@@ -610,65 +653,97 @@ private fun RecipesTabRow(selected: RecipesTab, onSelect: (RecipesTab) -> Unit, 
                 label = { Text(stringResource(labelRes)) },
             )
         }
-        // "Genereer met AI" as a chip in the same row rather than its own icon elsewhere —
-        // never "selected" (it opens a dialog, it isn't a source tab like the three above).
-        FilterChip(
-            selected = false,
-            onClick = onGenerateAiClick,
-            leadingIcon = { Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp)) },
-            label = { Text(stringResource(R.string.recipes_generate_ai_chip)) },
-        )
     }
 }
 
 /**
- * "Kook wat je hebt" hero card at the top of Ontdekken — a shortcut into
- * [RecipesViewModel.showWhatYouHave]'s inventory-matched suggestions, front and center rather
- * than buried as one more filter option. Hidden once already showing those results or while
- * actively searching (see its call site) — redundant with what's already on screen either way.
+ * The top pick on Uit je voorraad — spans both grid columns, photo-forward, with the same
+ * used/total ingredient ratio as [RecipeGridTile]'s pill (just spelled out inline here) plus,
+ * when something's missing, a chip naming it and a direct "Op lijst" shortcut so adding what's
+ * missing doesn't require opening the recipe first.
  */
 @Composable
-private fun CookWhatYouHaveCard(onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun HeroRecipeCard(
+    recipe: RecipeSuggestion,
+    onClick: () -> Unit,
+    onAddMissingToList: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Card(
         onClick = onClick,
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-            contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-        ),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
         shape = SoftCardShape,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Surface(
-                shape = SoftBadgeShape,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(44.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        imageVector = Icons.Filled.RestaurantMenu,
+        Column {
+            Box(modifier = Modifier.fillMaxWidth().height(150.dp)) {
+                if (recipe.meal.thumbnailUrl != null) {
+                    AsyncImage(
+                        model = recipe.meal.thumbnailUrl,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(22.dp),
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().clip(SoftImageShape),
                     )
+                } else {
+                    Box(
+                        modifier = Modifier.fillMaxSize().clip(SoftImageShape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.RestaurantMenu,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(40.dp),
+                        )
+                    }
+                }
+                if (recipe.matchCount != null && recipe.totalIngredientCount != null) {
+                    Surface(
+                        shape = RoundedCornerShape(percent = 50),
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        modifier = Modifier.align(Alignment.TopStart).padding(10.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.recipes_match_ratio_format, recipe.matchCount, recipe.totalIngredientCount),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        )
+                    }
                 }
             }
-            Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+            Column(modifier = Modifier.padding(16.dp)) {
                 Text(
-                    text = stringResource(R.string.recipes_cook_what_you_have_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
+                    text = recipe.meal.name,
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = stringResource(R.string.recipes_cook_what_you_have_subtitle),
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
+                if (recipe.missingIngredients.isNotEmpty()) {
+                    Surface(
+                        shape = SoftCardShapeCompact,
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        modifier = Modifier.padding(top = 10.dp),
+                    ) {
+                        Text(
+                            text = stringResource(R.string.recipes_hero_missing_format, recipe.missingIngredients.joinToString(", ")),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        )
+                    }
+                    Button(
+                        onClick = onAddMissingToList,
+                        modifier = Modifier.padding(top = 10.dp),
+                    ) {
+                        Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Text(stringResource(R.string.recipes_add_missing_short), modifier = Modifier.padding(start = 6.dp))
+                    }
+                }
             }
-            Icon(Icons.Filled.ArrowForward, contentDescription = null, modifier = Modifier.padding(start = 8.dp))
         }
     }
 }
@@ -834,16 +909,16 @@ private fun RecipeRow(recipe: RecipeSuggestion, onClick: () -> Unit) {
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
-                // matchCount is only non-null for inventory-based results (see
+                // matchCount/totalIngredientCount are only set for inventory-based results (see
                 // RecipeRepository.suggestRecipes) — browsing everything or searching by name
                 // doesn't have a per-recipe ingredient count to show without fetching full
                 // details for every result, so this row is skipped entirely there unless the
                 // recipe at least matches the household's language/cuisine.
                 if (recipe.matchCount != null || recipe.matchesArea) {
                     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                        if (recipe.matchCount != null) {
+                        if (recipe.matchCount != null && recipe.totalIngredientCount != null) {
                             Text(
-                                text = stringResource(R.string.recipes_match_count_format, recipe.matchCount),
+                                text = stringResource(R.string.recipes_match_ratio_format, recipe.matchCount, recipe.totalIngredientCount),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.primary,
                             )
@@ -898,15 +973,17 @@ private fun RecipeGridTile(recipe: RecipeSuggestion, onClick: () -> Unit) {
                         )
                     }
                 }
-                if (recipe.matchCount != null) {
+                if (recipe.matchCount != null && recipe.totalIngredientCount != null) {
+                    // Bottom-left of the image, per the design review — top-start is where the
+                    // "sluit aan bij jouw taal/regio" globe badge lives instead (see below).
                     Surface(
                         color = MaterialTheme.colorScheme.primary,
                         contentColor = MaterialTheme.colorScheme.onPrimary,
-                        shape = CircleShape,
-                        modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
+                        shape = RoundedCornerShape(percent = 50),
+                        modifier = Modifier.align(Alignment.BottomStart).padding(6.dp),
                     ) {
                         Text(
-                            text = stringResource(R.string.recipes_match_count_format, recipe.matchCount),
+                            text = stringResource(R.string.recipes_match_ratio_format, recipe.matchCount, recipe.totalIngredientCount),
                             style = MaterialTheme.typography.labelSmall,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),

@@ -1033,6 +1033,7 @@ interface SpoonacularFindByIngredientsResult {
   image?: string;
   usedIngredientCount: number;
   missedIngredientCount: number;
+  missedIngredients?: { name: string }[];
 }
 
 /** Strips Spoonacular's (usually HTML) instructions field down to plain, line-broken text. */
@@ -1288,6 +1289,11 @@ export const searchRecipes = onCall(
           name: r.title,
           thumbnailUrl: r.image ?? null,
           usedIngredientCount: r.usedIngredientCount,
+          missedIngredientCount: r.missedIngredientCount,
+          // Full list, not capped — RecipesScreen's "Op lijst" button adds every one of these
+          // to the shopping list, so trimming here would silently drop real ingredients from
+          // that add; the chip that *displays* them is what truncates, client-side.
+          missedIngredients: (r.missedIngredients ?? []).map((m) => m.name),
         })),
       };
     }

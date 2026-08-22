@@ -33,6 +33,13 @@ data class RecipeSuggestion(
     val matchCount: Int? = null,
     val matchesArea: Boolean = false,
     val tags: List<String> = emptyList(),
+    // Total ingredient count (used + missed) and the full list of missing ingredient names —
+    // only ever populated for [RecipeRepository.suggestRecipes]' inventory-matched results,
+    // same "null/empty means not applicable here" convention as [matchCount]. Spoonacular's
+    // findByIngredients endpoint (the "ingredients" mode of `searchRecipes` in Cloud Functions)
+    // is the only call that returns this used/missed breakdown at all.
+    val totalIngredientCount: Int? = null,
+    val missingIngredients: List<String> = emptyList(),
 )
 
 /** One page of [RecipeRepository.browseAllRecipes]/[RecipeRepository.searchRecipesByName] — [hasMore] mirrors Spoonacular's own `totalResults` for that exact query, so the caller knows whether a further [loadMore]-style call (same params, next `offset`) is worth making. */
@@ -132,8 +139,13 @@ class RecipeRepository(
 
         if (seedIngredients.isNotEmpty()) {
             val response = callSearchRecipes(mode = "ingredients", ingredients = seedIngredients.joinToString(","), number = 20)
-            parseIngredientSummaries(response).forEach { (summary, usedCount) ->
-                suggestions[summary.id] = RecipeSuggestion(summary, matchCount = usedCount)
+            parseIngredientSummaries(response).forEach { match ->
+                suggestions[match.summary.id] = RecipeSuggestion(
+                    meal = match.summary,
+                    matchCount = match.usedCount,
+                    totalIngredientCount = match.usedCount + match.missedCount,
+                    missingIngredients = match.missingNames,
+                )
             }
         }
 
@@ -151,6 +163,8 @@ class RecipeRepository(
                     meal = RecipeSummary(detail.id, detail.name, detail.thumbnailUrl),
                     matchCount = existing?.matchCount,
                     matchesArea = true,
+                    totalIngredientCount = existing?.totalIngredientCount,
+                    missingIngredients = existing?.missingIngredients ?: emptyList(),
                 )
             }
         }
@@ -566,20 +580,22 @@ class RecipeRepository(
      * Adds [ingredients] to the shopping list, skipping any that already have an open (unchecked)
      * line there by name — without this, re-running a weekmenu's "genereer boodschappenlijst"
      * after only changing one day would re-add every ingredient the unchanged days already put
-     * on the list. Returns how many were actually added.
+     * on the list. Returns the ids of the lines actually added (`.size` is how many, for callers
+     * that only need the count) — RecipesScreen's "Op lijst" hero-card action needs the ids
+     * themselves so its undo snackbar can remove exactly what it just added, nothing more.
      */
-    suspend fun addIngredientsToShoppingList(ingredients: List<String>): Int {
+    suspend fun addIngredientsToShoppingList(ingredients: List<String>): List<String> {
         val openNames = shoppingListRepository.observeShoppingList().first()
             .filterNot { it.isChecked }
             .map { it.name.lowercase() }
             .toSet()
-        var added = 0
+        val addedIds = mutableListOf<String>()
         for (ingredient in ingredients) {
             if (ingredient.lowercase() in openNames) continue
             shoppingListRepository.addItem(name = ingredient, category = Category.OVERIG, store = "", quantity = 1)
-            added++
+                ?.let { addedIds.add(it) }
         }
-        return added
+        return addedIds
     }
 
     private fun cacheDetail(detail: RecipeDetail) {
@@ -729,8 +745,18 @@ class RecipeRepository(
         return details to hasMore
     }
 
-    /** [Pair.second] is Spoonacular's `usedIngredientCount` for that summary — see the "ingredients" mode of `searchRecipes`. */
-    private fun parseIngredientSummaries(response: Map<*, *>): List<Pair<RecipeSummary, Int>> {
+    /** One row of the "ingredients" mode of `searchRecipes` — Spoonacular's used/missed
+     *  ingredient breakdown for one recipe against the seed ingredients queried. [missingNames]
+     *  is the full list (see functions/src/index.ts) — RecipesScreen's "Op lijst" action needs
+     *  every one of them, not just the few it displays inline. */
+    private data class IngredientMatch(
+        val summary: RecipeSummary,
+        val usedCount: Int,
+        val missedCount: Int,
+        val missingNames: List<String>,
+    )
+
+    private fun parseIngredientSummaries(response: Map<*, *>): List<IngredientMatch> {
         val rawSummaries = response["summaries"] as? List<*> ?: return emptyList()
         return rawSummaries.mapNotNull { entry ->
             val map = entry as? Map<*, *> ?: return@mapNotNull null
@@ -738,7 +764,9 @@ class RecipeRepository(
             val name = (map["name"] as? String)?.trim().orEmpty()
             if (name.isEmpty()) return@mapNotNull null
             val used = (map["usedIngredientCount"] as? Number)?.toInt() ?: 0
-            RecipeSummary(id, name, map["thumbnailUrl"] as? String) to used
+            val missed = (map["missedIngredientCount"] as? Number)?.toInt() ?: 0
+            val missingNames = (map["missedIngredients"] as? List<*>)?.mapNotNull { it as? String } ?: emptyList()
+            IngredientMatch(RecipeSummary(id, name, map["thumbnailUrl"] as? String), used, missed, missingNames)
         }
     }
 

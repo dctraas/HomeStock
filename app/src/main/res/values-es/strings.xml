@@ -589,7 +589,7 @@
     <string name="recipes_load_more">Cargar más</string>
     <string name="recipes_show_as_grid_cd">Mostrar como cuadrícula</string>
     <string name="recipes_show_as_list_cd">Mostrar como lista</string>
-    <string name="recipes_match_count_format">%1$d ingredientes que tienes</string>
+    <string name="recipes_match_ratio_format">%1$d/%2$d en casa</string>
     <string name="recipes_allergen_filter_label">Excluir alérgenos</string>
     <string name="recipes_allergen_filter_active_cd_format">Excluir alérgenos (activo: %1$s)</string>
     <string name="recipes_area_match_cd">Coincide con tu idioma/región</string>
@@ -600,9 +600,15 @@
     <string name="recipes_ingredient_in_inventory_cd">Ya en el inventario</string>
     <string name="recipes_added_to_shopping_list">Ingredientes que faltan añadidos a tu lista de la compra</string>
     <string name="recipes_add_missing_to_shopping_list">Añadir ingredientes que faltan a la lista de la compra</string>
+    <string name="recipes_add_missing_short">A la lista</string>
+    <string name="recipes_hero_missing_format">Falta: %1$s</string>
     <string name="recipes_instructions_title">Instrucciones</string>
     <string name="recipes_instructions_unavailable">No hay instrucciones disponibles para esta receta.</string>
     <string name="recipes_ready_in_minutes_format">%1$d min</string>
+    <plurals name="recipes_inventory_subtitle">
+        <item quantity="one">%1$d plato que puedes cocinar ahora</item>
+        <item quantity="other">%1$d platos que puedes cocinar ahora</item>
+    </plurals>
 
     <!-- Kookmodus -->
     <string name="cook_mode_start">Empezar a cocinar</string>
@@ -617,11 +623,7 @@
     <string name="recipes_ai_generated_badge">Receta generada por IA</string>
     <string name="recipes_translated_badge">Traducido con IA</string>
     <string name="recipes_generate_ai_button">Generar receta con IA</string>
-    <!-- "Keuken" redesign (2026-08) -->
-    <string name="recipes_generate_ai_chip">IA</string>
-    <string name="recipes_cook_what_you_have_title">Cocina con lo que tienes</string>
-    <string name="recipes_cook_what_you_have_subtitle">Recetas basadas en tu despensa</string>
-    <string name="recipes_cook_what_you_have_active">Basado en tu despensa — toca Descubrir para volver</string>
+    <string name="recipes_generate_fab">Receta IA</string>
     <string name="recipes_generate_ai_title">Generar una receta con IA</string>
     <string name="recipes_generate_ai_hint">Inventamos una receta según tu inventario actual. ¿Algún deseo específico?</string>
     <string name="recipes_generate_ai_placeholder">Ej. \'algo con pollo y arroz\' (opcional)</string>
@@ -651,10 +653,13 @@
     <string name="recipe_tag_add_dialog_title">Añadir etiqueta personalizada</string>
     <string name="recipe_tag_add_dialog_label">Etiqueta</string>
     <string name="recipe_tag_add_dialog_confirm">Añadir</string>
+    <string name="recipes_tab_inventory">De tu despensa</string>
     <string name="recipes_tab_browse">Descubrir</string>
     <string name="recipes_tab_favorites">Favoritos</string>
     <string name="recipes_tab_custom">Mis recetas</string>
     <string name="recipes_add_custom_button">Añadir receta propia</string>
+    <string name="recipes_inventory_empty_title">Aún no hay coincidencias</string>
+    <string name="recipes_inventory_empty_subtitle">Amplía tu despensa o mira Descubrir para más recetas.</string>
     <string name="recipes_favorites_empty_title">Aún no hay favoritos</string>
     <string name="recipes_favorites_empty_subtitle">Toca el corazón de una receta para guardarla aquí.</string>
     <string name="recipes_custom_empty_title">Aún no tienes recetas propias</string>

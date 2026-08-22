@@ -589,7 +589,7 @@
     <string name="recipes_load_more">Mehr laden</string>
     <string name="recipes_show_as_grid_cd">Als Raster anzeigen</string>
     <string name="recipes_show_as_list_cd">Als Liste anzeigen</string>
-    <string name="recipes_match_count_format">%1$d Zutaten vorhanden</string>
+    <string name="recipes_match_ratio_format">%1$d/%2$d vorhanden</string>
     <string name="recipes_allergen_filter_label">Allergene ausschließen</string>
     <string name="recipes_allergen_filter_active_cd_format">Allergene ausschließen (aktiv: %1$s)</string>
     <string name="recipes_area_match_cd">Passt zu deiner Sprache/Region</string>
@@ -600,9 +600,15 @@
     <string name="recipes_ingredient_in_inventory_cd">Bereits vorrätig</string>
     <string name="recipes_added_to_shopping_list">Fehlende Zutaten zu deiner Einkaufsliste hinzugefügt</string>
     <string name="recipes_add_missing_to_shopping_list">Fehlende Zutaten zur Einkaufsliste hinzufügen</string>
+    <string name="recipes_add_missing_short">Zur Liste</string>
+    <string name="recipes_hero_missing_format">Fehlt: %1$s</string>
     <string name="recipes_instructions_title">Zubereitung</string>
     <string name="recipes_instructions_unavailable">Für dieses Rezept ist keine Zubereitung verfügbar.</string>
     <string name="recipes_ready_in_minutes_format">%1$d Min.</string>
+    <plurals name="recipes_inventory_subtitle">
+        <item quantity="one">%1$d Gericht kannst du jetzt kochen</item>
+        <item quantity="other">%1$d Gerichte kannst du jetzt kochen</item>
+    </plurals>
 
     <!-- Kookmodus -->
     <string name="cook_mode_start">Kochen starten</string>
@@ -617,11 +623,7 @@
     <string name="recipes_ai_generated_badge">KI-generiertes Rezept</string>
     <string name="recipes_translated_badge">Mit KI übersetzt</string>
     <string name="recipes_generate_ai_button">Rezept mit KI generieren</string>
-    <!-- "Keuken" redesign (2026-08) -->
-    <string name="recipes_generate_ai_chip">KI</string>
-    <string name="recipes_cook_what_you_have_title">Koche, was du hast</string>
-    <string name="recipes_cook_what_you_have_subtitle">Rezepte auf Basis deines Vorrats</string>
-    <string name="recipes_cook_what_you_have_active">Basierend auf deinem Vorrat — tippe auf Entdecken, um zurückzugehen</string>
+    <string name="recipes_generate_fab">KI-Rezept</string>
     <string name="recipes_generate_ai_title">Rezept mit KI generieren</string>
     <string name="recipes_generate_ai_hint">Wir erstellen ein Rezept basierend auf deinem aktuellen Vorrat. Ein bestimmter Wunsch?</string>
     <string name="recipes_generate_ai_placeholder">z. B. \'etwas mit Hähnchen und Reis\' (optional)</string>
@@ -651,10 +653,13 @@
     <string name="recipe_tag_add_dialog_title">Eigenes Label hinzufügen</string>
     <string name="recipe_tag_add_dialog_label">Label</string>
     <string name="recipe_tag_add_dialog_confirm">Hinzufügen</string>
+    <string name="recipes_tab_inventory">Aus deinem Vorrat</string>
     <string name="recipes_tab_browse">Entdecken</string>
     <string name="recipes_tab_favorites">Favoriten</string>
     <string name="recipes_tab_custom">Meine Rezepte</string>
     <string name="recipes_add_custom_button">Eigenes Rezept hinzufügen</string>
+    <string name="recipes_inventory_empty_title">Noch keine Treffer</string>
+    <string name="recipes_inventory_empty_subtitle">Fülle deinen Vorrat auf oder schau bei Entdecken nach mehr Rezepten.</string>
     <string name="recipes_favorites_empty_title">Noch keine Favoriten</string>
     <string name="recipes_favorites_empty_subtitle">Tippe auf das Herz bei einem Rezept, um es hier zu speichern.</string>
     <string name="recipes_custom_empty_title">Noch keine eigenen Rezepte</string>

@@ -589,7 +589,7 @@
     <string name="recipes_load_more">Load more</string>
     <string name="recipes_show_as_grid_cd">Show as grid</string>
     <string name="recipes_show_as_list_cd">Show as list</string>
-    <string name="recipes_match_count_format">%1$d ingredients you have</string>
+    <string name="recipes_match_ratio_format">%1$d/%2$d in stock</string>
     <string name="recipes_allergen_filter_label">Exclude allergens</string>
     <string name="recipes_allergen_filter_active_cd_format">Exclude allergens (active: %1$s)</string>
     <string name="recipes_area_match_cd">Matches your language/region</string>
@@ -600,9 +600,15 @@
     <string name="recipes_ingredient_in_inventory_cd">Already in stock</string>
     <string name="recipes_added_to_shopping_list">Missing ingredients added to your shopping list</string>
     <string name="recipes_add_missing_to_shopping_list">Add missing ingredients to shopping list</string>
+    <string name="recipes_add_missing_short">Add to list</string>
+    <string name="recipes_hero_missing_format">Missing: %1$s</string>
     <string name="recipes_instructions_title">Instructions</string>
     <string name="recipes_instructions_unavailable">No instructions available for this recipe.</string>
     <string name="recipes_ready_in_minutes_format">%1$d min</string>
+    <plurals name="recipes_inventory_subtitle">
+        <item quantity="one">%1$d dish you can cook now</item>
+        <item quantity="other">%1$d dishes you can cook now</item>
+    </plurals>
 
     <!-- Kookmodus -->
     <string name="cook_mode_start">Start cooking</string>
@@ -617,11 +623,7 @@
     <string name="recipes_ai_generated_badge">AI-generated recipe</string>
     <string name="recipes_translated_badge">Translated with AI</string>
     <string name="recipes_generate_ai_button">Generate recipe with AI</string>
-    <!-- "Keuken" redesign (2026-08) -->
-    <string name="recipes_generate_ai_chip">AI</string>
-    <string name="recipes_cook_what_you_have_title">Cook what you have</string>
-    <string name="recipes_cook_what_you_have_subtitle">Recipes based on your inventory</string>
-    <string name="recipes_cook_what_you_have_active">Based on your inventory — tap Discover to go back</string>
+    <string name="recipes_generate_fab">AI recipe</string>
     <string name="recipes_generate_ai_title">Generate a recipe with AI</string>
     <string name="recipes_generate_ai_hint">We invent a recipe based on your current inventory. Any specific wish?</string>
     <string name="recipes_generate_ai_placeholder">E.g. \'something with chicken and rice\' (optional)</string>
@@ -651,10 +653,13 @@
     <string name="recipe_tag_add_dialog_title">Add custom label</string>
     <string name="recipe_tag_add_dialog_label">Label</string>
     <string name="recipe_tag_add_dialog_confirm">Add</string>
+    <string name="recipes_tab_inventory">From your stock</string>
     <string name="recipes_tab_browse">Discover</string>
     <string name="recipes_tab_favorites">Favorites</string>
     <string name="recipes_tab_custom">My recipes</string>
     <string name="recipes_add_custom_button">Add your own recipe</string>
+    <string name="recipes_inventory_empty_title">No match yet</string>
+    <string name="recipes_inventory_empty_subtitle">Stock up a bit more, or check Discover for more recipes.</string>
     <string name="recipes_favorites_empty_title">No favorites yet</string>
     <string name="recipes_favorites_empty_subtitle">Tap the heart on a recipe to save it here.</string>
     <string name="recipes_custom_empty_title">No recipes of your own yet</string>

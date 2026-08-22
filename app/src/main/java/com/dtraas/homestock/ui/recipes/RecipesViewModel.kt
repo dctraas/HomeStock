@@ -9,6 +9,7 @@ import com.dtraas.homestock.data.repository.HouseholdMembersRepository
 import com.dtraas.homestock.data.repository.RecipePage
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
+import com.dtraas.homestock.data.repository.ShoppingListRepository
 import com.google.firebase.functions.FirebaseFunctionsException
 import java.io.IOException
 import kotlinx.coroutines.Job
@@ -31,8 +32,11 @@ enum class GenerateRecipeError { NO_CONNECTION, PREMIUM_REQUIRED, UNKNOWN }
  *  equivalent of). */
 enum class ImportRecipeError { NO_CONNECTION, PREMIUM_REQUIRED, UNKNOWN }
 
-/** Which recipe source RecipesScreen is currently showing — see [RecipesViewModel.selectTab]. */
-enum class RecipesTab { BROWSE, FAVORITES, CUSTOM }
+/** Which recipe source RecipesScreen is currently showing — see [RecipesViewModel.selectTab].
+ *  [INVENTORY] ("Uit je voorraad") is the default tab per the design review — what used to be
+ *  the "Kook wat je hebt" promo card on [BROWSE] ("Ontdekken") is now this tab's own content
+ *  instead of an opt-in banner. */
+enum class RecipesTab { INVENTORY, BROWSE, FAVORITES, CUSTOM }
 
 /** Why a browse/search load failed — [QUOTA_EXCEEDED] gets its own, more accurate message
  *  instead of being lumped in with [NO_CONNECTION] (see `spoonacularGet` in
@@ -40,7 +44,7 @@ enum class RecipesTab { BROWSE, FAVORITES, CUSTOM }
 enum class RecipesLoadError { NO_CONNECTION, QUOTA_EXCEEDED, UNKNOWN }
 
 data class RecipesUiState(
-    val tab: RecipesTab = RecipesTab.BROWSE,
+    val tab: RecipesTab = RecipesTab.INVENTORY,
     val isLoading: Boolean = true,
     val recipes: List<RecipeSuggestion> = emptyList(),
     val loadError: RecipesLoadError? = null,
@@ -64,22 +68,18 @@ data class RecipesUiState(
     val hasMore: Boolean = false,
     /** True only while a "load more" page is in flight — distinct from [isLoading], which covers the *first* page of a fresh browse/search so the existing list can stay visible (with a small footer spinner) while more loads. */
     val isLoadingMore: Boolean = false,
-    // "Kook wat je hebt" hero card (see showWhatYouHave) — true while BROWSE is showing
-    // [RecipeRepository.suggestRecipes]'s inventory-matched results instead of the plain
-    // browse/search page. Only ever true on BROWSE; never paginated (hasMore stays false),
-    // unlike a normal browse/search page.
-    val isInventoryMode: Boolean = false,
 )
 
 /**
- * [RecipesTab.BROWSE] browses Spoonacular's recipe catalog by default (see
- * [RecipeRepository.browseAllRecipes]) rather than only recipes matching household inventory —
- * [search] switches to a name search instead (see [RecipeRepository.searchRecipesByName]) when
- * [RecipesUiState.searchQuery] is non-blank. Either way the result is paginated (see [loadMore]) —
- * a fresh browse/search always starts at page 1, "load more" fetches the next page and appends it.
- * The inventory-based [RecipeRepository.suggestRecipes] is still used elsewhere (the
- * maaltijdplanner's "kies een recept" picker), just not here. [generateRecipe] is a separate,
- * AI-authored alternative (see [RecipeRepository.generateRecipe]) rather than a search at all.
+ * [RecipesTab.INVENTORY] ("Uit je voorraad") is the default tab — [RecipeRepository.suggestRecipes]'s
+ * inventory-matched results, not paginated (Spoonacular's own ranking already returns its best
+ * matches in one page). [RecipesTab.BROWSE] ("Ontdekken") instead browses Spoonacular's catalog by
+ * default (see [RecipeRepository.browseAllRecipes]) — [search] switches it to a name search
+ * instead (see [RecipeRepository.searchRecipesByName]) when [RecipesUiState.searchQuery] is
+ * non-blank. Either way BROWSE's result is paginated (see [loadMore]) — a fresh browse/search
+ * always starts at page 1, "load more" fetches the next page and appends it. [generateRecipe] is
+ * a separate, AI-authored alternative (see [RecipeRepository.generateRecipe]) rather than a
+ * search at all.
  *
  * [RecipesTab.FAVORITES]/[RecipesTab.CUSTOM] are simple live Firestore lists (see
  * [RecipeRepository.observeFavoriteRecipes]/[RecipeRepository.observeCustomRecipes]) — no search,
@@ -89,6 +89,7 @@ data class RecipesUiState(
 class RecipesViewModel(
     private val recipeRepository: RecipeRepository,
     private val householdMembersRepository: HouseholdMembersRepository,
+    private val shoppingListRepository: ShoppingListRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RecipesUiState())
@@ -112,6 +113,14 @@ class RecipesViewModel(
      *  [RecipeRepository.importRecipeFromUrl]'s doc for why an import needs review first). */
     private val _importedRecipeId = MutableSharedFlow<String>()
     val importedRecipeId: SharedFlow<String> = _importedRecipeId
+
+    /** Emitted by [addMissingIngredientsToShoppingList] once it actually adds something — the
+     *  screen surfaces this as an undo snackbar naming the recipe, [itemIds] going straight to
+     *  [undoAddMissingIngredients] if tapped. */
+    data class MissingIngredientsAddedEvent(val recipeName: String, val itemIds: List<String>)
+
+    private val _missingIngredientsAdded = MutableSharedFlow<MissingIngredientsAddedEvent>()
+    val missingIngredientsAdded: SharedFlow<MissingIngredientsAddedEvent> = _missingIngredientsAdded
 
     // Remembered from the last load() call so search()/toggleAllergen()/generateRecipe() don't
     // need the caller (RecipesScreen) to keep threading the current app language through every action.
@@ -162,6 +171,7 @@ class RecipesViewModel(
     private fun refreshCurrentTab() {
         listJob?.cancel()
         listJob = when (_uiState.value.tab) {
+            RecipesTab.INVENTORY -> launchInventoryTab()
             RecipesTab.BROWSE -> launchBrowseOrSearch()
             RecipesTab.FAVORITES -> launchLiveList(recipeRepository::observeFavoriteRecipes)
             RecipesTab.CUSTOM -> launchLiveList(recipeRepository::observeCustomRecipes)
@@ -193,7 +203,7 @@ class RecipesViewModel(
 
     private fun launchBrowseOrSearch(): Job = viewModelScope.launch {
         nextOffset = 0
-        _uiState.update { it.copy(isLoading = true, loadError = null, hasMore = false, isLoadingMore = false, isInventoryMode = false) }
+        _uiState.update { it.copy(isLoading = true, loadError = null, hasMore = false, isLoadingMore = false) }
         fetchPage(_uiState.value, offset = 0)
             .onSuccess { page ->
                 nextOffset = RecipeRepository.PAGE_SIZE
@@ -264,36 +274,42 @@ class RecipesViewModel(
     }
 
     /**
-     * "Kook wat je hebt" hero card — switches BROWSE over to [RecipeRepository.suggestRecipes]'s
-     * inventory-matched results instead of the plain browse/search page. Not paginated (unlike a
-     * normal browse/search page, see [RecipesUiState.isInventoryMode]'s doc) — Spoonacular's own
-     * ingredient-match ranking already returns its best matches in one page, and "load more"
-     * would just ask it for the same handful of inventory-seeded suggestions again.
+     * [RecipesTab.INVENTORY]'s own load — [RecipeRepository.suggestRecipes]'s inventory-matched
+     * results. Not paginated: Spoonacular's own ingredient-match ranking already returns its
+     * best matches in one page, and "load more" would just ask it for the same handful of
+     * inventory-seeded suggestions again.
      */
-    fun showWhatYouHave() {
-        listJob?.cancel()
-        listJob = viewModelScope.launch {
-            _uiState.update {
-                it.copy(
-                    tab = RecipesTab.BROWSE,
-                    isLoading = true,
-                    loadError = null,
-                    isInventoryMode = true,
-                    hasMore = false,
-                    isLoadingMore = false,
-                )
+    private fun launchInventoryTab(): Job = viewModelScope.launch {
+        _uiState.update { it.copy(isLoading = true, loadError = null, hasMore = false, isLoadingMore = false) }
+        recipeRepository.suggestRecipes(excludedAllergens = _uiState.value.excludedAllergens, languageTag = languageTag)
+            .onSuccess { list -> _uiState.update { it.copy(isLoading = false, recipes = list, loadError = null) } }
+            .onFailure { e -> _uiState.update { it.copy(isLoading = false, recipes = emptyList(), loadError = classifyLoadError(e)) } }
+    }
+
+    /**
+     * The hero card's "Op lijst" action — adds [recipe]'s [RecipeSuggestion.missingIngredients]
+     * (already known from the ingredient-match search that produced it, no extra recipe-detail
+     * fetch needed) to the shopping list, then reports what happened via
+     * [missingIngredientsAdded] so the screen can show an undo snackbar. A no-op if the recipe
+     * has nothing missing to add — see [RecipeSuggestion.missingIngredients]'s doc for when it's
+     * populated at all.
+     */
+    fun addMissingIngredientsToShoppingList(recipe: RecipeSuggestion) {
+        if (recipe.missingIngredients.isEmpty()) return
+        viewModelScope.launch {
+            val addedIds = recipeRepository.addIngredientsToShoppingList(recipe.missingIngredients)
+            if (addedIds.isNotEmpty()) {
+                _missingIngredientsAdded.emit(MissingIngredientsAddedEvent(recipe.meal.name, addedIds))
             }
-            recipeRepository.suggestRecipes(excludedAllergens = _uiState.value.excludedAllergens, languageTag = languageTag)
-                .onSuccess { list -> _uiState.update { it.copy(isLoading = false, recipes = list, loadError = null) } }
-                .onFailure { e -> _uiState.update { it.copy(isLoading = false, recipes = emptyList(), loadError = classifyLoadError(e)) } }
         }
     }
 
-    /** Leaves [RecipesUiState.isInventoryMode] and goes back to a plain browse/search — called
-     *  when the household taps "Ontdek" again while already showing inventory matches. */
-    fun exitInventoryMode() {
-        if (!_uiState.value.isInventoryMode) return
-        search()
+    /** Reverts exactly the lines [addMissingIngredientsToShoppingList] just added — called from
+     *  the undo snackbar's action, using the ids [missingIngredientsAdded] emitted with. */
+    fun undoAddMissingIngredients(itemIds: List<String>) {
+        viewModelScope.launch {
+            itemIds.forEach { shoppingListRepository.removeItem(it) }
+        }
     }
 
     /** Toggles [tag] in/out of the Favorites/Custom tag filter (see [launchLiveList]) — an AND

@@ -79,8 +79,12 @@ class ShoppingListRepository(
         // ProductDetailScreen) omits this and keeps landing on the default list unchanged;
         // only ShoppingListScreen's own add-item flow ever passes a real one.
         listId: String? = null,
-    ) {
-        val householdId = householdSession.householdId.value ?: return
+        // Returns the new document's id (or null if there's no active household) — most
+        // callers ignore it, same as before this became non-Unit, but Recepten/Maaltijdplanner's
+        // "Op lijst" bulk-adds need it back to support their undo snackbar (see
+        // RecipesViewModel.addMissingIngredientsToShoppingList).
+    ): String? {
+        val householdId = householdSession.householdId.value ?: return null
         val entity = ShoppingListItemEntity(
             id = "",
             barcode = barcode,
@@ -96,8 +100,9 @@ class ShoppingListRepository(
             price = price,
             listId = listId,
         )
-        shoppingListCollection(householdId).add(entity.toMap()).await()
+        val ref = shoppingListCollection(householdId).add(entity.toMap()).await()
         refreshWidget()
+        return ref.id
     }
 
     /** True if there's already an unchecked shopping list line for [barcode]. */

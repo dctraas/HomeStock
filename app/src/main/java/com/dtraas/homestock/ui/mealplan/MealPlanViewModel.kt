@@ -240,8 +240,8 @@ class MealPlanViewModel(
      *  otherwise gives no feedback that anything happened. */
     fun addProductToShoppingList(name: String) {
         viewModelScope.launch {
-            val addedCount = recipeRepository.addIngredientsToShoppingList(listOf(name))
-            _shoppingListAddResult.emit(ShoppingListAddResult(name, alreadyOnList = addedCount == 0))
+            val addedIds = recipeRepository.addIngredientsToShoppingList(listOf(name))
+            _shoppingListAddResult.emit(ShoppingListAddResult(name, alreadyOnList = addedIds.isEmpty()))
         }
     }
 }
