@@ -5,6 +5,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -224,6 +225,7 @@ private fun OnboardingWelcomePage() {
 /** "Wat staat er nu in je keuken?" — tapping a chip seeds that staple straight into the
  *  inventory (see [OnboardingViewModel.toggleStaple]), so this step leaves a genuinely
  *  non-empty Voorraad behind rather than just explaining that one exists. */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun OnboardingStaplesPage(selectedStaples: Set<StapleId>, onToggle: (StapleId, String) -> Unit) {
     Column(modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp), verticalArrangement = Arrangement.Center) {
