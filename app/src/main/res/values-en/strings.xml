@@ -162,6 +162,12 @@
         <item quantity="one">%1$d member · Code: %2$s</item>
         <item quantity="other">%1$d members · Code: %2$s</item>
     </plurals>
+    <string name="more_household_row_title">Household members &amp; code</string>
+    <string name="more_household_default_name">My household</string>
+    <plurals name="more_header_subtitle_format">
+        <item quantity="one">%1$s · %2$d member · code %3$s</item>
+        <item quantity="other">%1$s · %2$d members · code %3$s</item>
+    </plurals>
     <string name="more_household_members_title">Members</string>
     <string name="household_members_title_with_limit_format">Members (%1$d/%2$d)</string>
     <string name="more_household_member_unnamed">Unnamed member</string>
@@ -173,8 +179,8 @@
     <string name="more_premium_active">Active</string>
     <string name="more_premium_inactive">Go Premium</string>
     <string name="more_premium_locked_subtitle">PREMIUM</string>
-    <string name="more_premium_promo_subtitle">Unlock recipes, meal planner and more</string>
-    <string name="more_premium_upgrade_action">Upgrade</string>
+    <string name="more_premium_promo_subtitle">Recipes, receipts, AI and statistics</string>
+    <string name="more_premium_upgrade_action">Try it</string>
     <string name="more_leave">Leave</string>
     <string name="more_leave_dialog_title">Leave household?</string>
     <string name="more_leave_dialog_text">You\'ll no longer see the shared inventory and shopping list on this device. You can rejoin at any time with the code.</string>
@@ -188,11 +194,8 @@
     <string name="more_profile_dialog_title">Set your name</string>
     <string name="more_profile_name_placeholder">E.g. Mom, Alex</string>
     <string name="more_profile_remove_photo_cd">Remove photo</string>
-    <string name="more_expiry_notifications_title">Expiry</string>
     <string name="more_expiry_notifications_description">Get notified when a product is about to expire</string>
     <string name="more_settings_title">Settings</string>
-    <string name="more_section_account">Account</string>
-    <string name="more_account_row_title">Profile</string>
     <string name="account_link_row_title">Link account</string>
     <string name="account_link_row_subtitle_linked_format">Linked with %1$s</string>
     <string name="account_link_row_subtitle_unlinked">Prevent data loss on a reinstall</string>
@@ -220,8 +223,8 @@
     <string name="account_link_unlink_dialog_title">Unlink account?</string>
     <string name="account_link_unlink_dialog_text">Your household access will no longer be protected — if you uninstall the app or switch devices, you could lose access to this household again.</string>
     <string name="account_link_unlink_error">Couldn\'t unlink your account. Please try again.</string>
-    <string name="more_section_preferences">App Settings</string>
-    <string name="more_theme_title">Theme</string>
+    <string name="more_section_preferences">App</string>
+    <string name="more_theme_title">Display</string>
     <string name="more_theme_option_system">System default</string>
     <string name="more_theme_option_light">Light</string>
     <string name="more_theme_option_dark">Dark</string>
@@ -231,7 +234,7 @@
     <string name="more_accessibility_high_contrast_title">High contrast</string>
     <string name="more_accessibility_high_contrast_description">Stronger contrast between text and background, for better readability.</string>
     <string name="more_auto_restock_title">Auto-restock shopping list</string>
-    <string name="more_auto_restock_subtitle">Automatically add a product to your shopping list once its stock drops below the set minimum.</string>
+    <string name="more_auto_restock_subtitle">when stock is below minimum</string>
     <string name="more_notifications_row_title">Notifications</string>
     <string name="more_language_title">Language</string>
     <string name="more_language_option_nl">Dutch</string>
@@ -246,6 +249,7 @@
     <string name="more_statistics_title">Statistics</string>
     <string name="more_section_household">Household</string>
     <string name="more_data_csv_title">Transfer data</string>
+    <string name="more_data_accessibility_support_title">Data, accessibility &amp; support</string>
     <string name="more_csv_import_action">Import (CSV)</string>
     <string name="more_csv_export_action">Export (CSV)</string>
     <string name="more_export_header_favorite">Favorite</string>
@@ -255,7 +259,6 @@
     <string name="more_import_skipped_format">%1$d rows skipped.</string>
     <string name="more_import_empty">No valid rows found in the file.</string>
     <string name="more_import_error">Import failed</string>
-    <string name="more_section_about">Support</string>
     <string name="more_about_version_format">App version %1$s</string>
     <string name="more_about_feedback">Give feedback</string>
     <string name="more_about_rate_app">Rate the app</string>

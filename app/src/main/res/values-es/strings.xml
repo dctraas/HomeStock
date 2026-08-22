@@ -162,6 +162,12 @@
         <item quantity="one">%1$d miembro · Código: %2$s</item>
         <item quantity="other">%1$d miembros · Código: %2$s</item>
     </plurals>
+    <string name="more_household_row_title">Miembros del hogar y código</string>
+    <string name="more_household_default_name">Mi hogar</string>
+    <plurals name="more_header_subtitle_format">
+        <item quantity="one">%1$s · %2$d miembro · código %3$s</item>
+        <item quantity="other">%1$s · %2$d miembros · código %3$s</item>
+    </plurals>
     <string name="more_household_members_title">Miembros</string>
     <string name="household_members_title_with_limit_format">Miembros (%1$d/%2$d)</string>
     <string name="more_household_member_unnamed">Miembro sin nombre</string>
@@ -173,8 +179,8 @@
     <string name="more_premium_active">Activo</string>
     <string name="more_premium_inactive">Hazte Premium</string>
     <string name="more_premium_locked_subtitle">PREMIUM</string>
-    <string name="more_premium_promo_subtitle">Desbloquea recetas, planificador de comidas y más</string>
-    <string name="more_premium_upgrade_action">Mejorar</string>
+    <string name="more_premium_promo_subtitle">Recetas, tickets, IA y estadísticas</string>
+    <string name="more_premium_upgrade_action">Probar</string>
     <string name="more_leave">Abandonar</string>
     <string name="more_leave_dialog_title">¿Abandonar el hogar?</string>
     <string name="more_leave_dialog_text">Dejarás de ver el inventario y la lista de la compra compartidos en este dispositivo. Puedes volver a unirte en cualquier momento con el código.</string>
@@ -188,11 +194,8 @@
     <string name="more_profile_dialog_title">Establecer tu nombre</string>
     <string name="more_profile_name_placeholder">P. ej. Mamá, Alex</string>
     <string name="more_profile_remove_photo_cd">Eliminar foto</string>
-    <string name="more_expiry_notifications_title">Caducidad</string>
     <string name="more_expiry_notifications_description">Recibe un aviso cuando un producto esté a punto de caducar</string>
     <string name="more_settings_title">Configuración</string>
-    <string name="more_section_account">Cuenta</string>
-    <string name="more_account_row_title">Perfil</string>
     <string name="account_link_row_title">Vincular cuenta</string>
     <string name="account_link_row_subtitle_linked_format">Vinculada con %1$s</string>
     <string name="account_link_row_subtitle_unlinked">Evita perder datos al reinstalar</string>
@@ -220,8 +223,8 @@
     <string name="account_link_unlink_dialog_title">¿Desvincular cuenta?</string>
     <string name="account_link_unlink_dialog_text">Tu acceso al hogar ya no estará protegido — si desinstalas la app o cambias de dispositivo, podrías perder el acceso a este hogar de nuevo.</string>
     <string name="account_link_unlink_error">No se pudo desvincular la cuenta. Inténtalo de nuevo.</string>
-    <string name="more_section_preferences">Ajustes de la App</string>
-    <string name="more_theme_title">Tema</string>
+    <string name="more_section_preferences">App</string>
+    <string name="more_theme_title">Apariencia</string>
     <string name="more_theme_option_system">Predeterminado del sistema</string>
     <string name="more_theme_option_light">Claro</string>
     <string name="more_theme_option_dark">Oscuro</string>
@@ -231,7 +234,7 @@
     <string name="more_accessibility_high_contrast_title">Alto contraste</string>
     <string name="more_accessibility_high_contrast_description">Mayor contraste entre el texto y el fondo, para una mejor legibilidad.</string>
     <string name="more_auto_restock_title">Reabastecer lista de la compra automáticamente</string>
-    <string name="more_auto_restock_subtitle">Añade un producto automáticamente a tu lista de la compra en cuanto su stock baje del mínimo establecido.</string>
+    <string name="more_auto_restock_subtitle">cuando el stock baja del mínimo</string>
     <string name="more_notifications_row_title">Notificaciones</string>
     <string name="more_language_title">Idioma</string>
     <string name="more_language_option_nl">Neerlandés</string>
@@ -246,6 +249,7 @@
     <string name="more_statistics_title">Estadísticas</string>
     <string name="more_section_household">Hogar</string>
     <string name="more_data_csv_title">Transferir datos</string>
+    <string name="more_data_accessibility_support_title">Datos, accesibilidad y soporte</string>
     <string name="more_csv_import_action">Importar (CSV)</string>
     <string name="more_csv_export_action">Exportar (CSV)</string>
     <string name="more_export_header_favorite">Favorito</string>
@@ -255,7 +259,6 @@
     <string name="more_import_skipped_format">%1$d filas omitidas.</string>
     <string name="more_import_empty">No se encontraron filas válidas en el archivo.</string>
     <string name="more_import_error">Error al importar</string>
-    <string name="more_section_about">Soporte</string>
     <string name="more_about_version_format">Versión de la app %1$s</string>
     <string name="more_about_feedback">Enviar comentarios</string>
     <string name="more_about_rate_app">Valorar la app</string>

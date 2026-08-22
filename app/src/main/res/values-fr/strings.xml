@@ -162,6 +162,12 @@
         <item quantity="one">%1$d membre · Code : %2$s</item>
         <item quantity="other">%1$d membres · Code : %2$s</item>
     </plurals>
+    <string name="more_household_row_title">Membres du foyer et code</string>
+    <string name="more_household_default_name">Mon foyer</string>
+    <plurals name="more_header_subtitle_format">
+        <item quantity="one">%1$s · %2$d membre · code %3$s</item>
+        <item quantity="other">%1$s · %2$d membres · code %3$s</item>
+    </plurals>
     <string name="more_household_members_title">Membres</string>
     <string name="household_members_title_with_limit_format">Membres (%1$d/%2$d)</string>
     <string name="more_household_member_unnamed">Membre sans nom</string>
@@ -173,8 +179,8 @@
     <string name="more_premium_active">Actif</string>
     <string name="more_premium_inactive">Passer à Premium</string>
     <string name="more_premium_locked_subtitle">PREMIUM</string>
-    <string name="more_premium_promo_subtitle">Débloquez recettes, planificateur de repas et plus</string>
-    <string name="more_premium_upgrade_action">Passer Premium</string>
+    <string name="more_premium_promo_subtitle">Recettes, tickets de caisse, IA et statistiques</string>
+    <string name="more_premium_upgrade_action">Essayer</string>
     <string name="more_leave">Quitter</string>
     <string name="more_leave_dialog_title">Quitter le foyer ?</string>
     <string name="more_leave_dialog_text">Vous ne verrez plus le stock et la liste de courses partagés sur cet appareil. Vous pouvez rejoindre le foyer à tout moment avec le code.</string>
@@ -188,11 +194,8 @@
     <string name="more_profile_dialog_title">Définir ton nom</string>
     <string name="more_profile_name_placeholder">P. ex. Maman, Alex</string>
     <string name="more_profile_remove_photo_cd">Supprimer la photo</string>
-    <string name="more_expiry_notifications_title">Péremption</string>
     <string name="more_expiry_notifications_description">Recevez une notification quand un produit est bientôt périmé</string>
     <string name="more_settings_title">Paramètres</string>
-    <string name="more_section_account">Compte</string>
-    <string name="more_account_row_title">Profil</string>
     <string name="account_link_row_title">Lier le compte</string>
     <string name="account_link_row_subtitle_linked_format">Lié à %1$s</string>
     <string name="account_link_row_subtitle_unlinked">Évitez de perdre vos données lors d\'une réinstallation</string>
@@ -220,8 +223,8 @@
     <string name="account_link_unlink_dialog_title">Dissocier le compte ?</string>
     <string name="account_link_unlink_dialog_text">Votre accès au foyer ne sera plus protégé — si vous désinstallez l\'application ou changez d\'appareil, vous pourriez de nouveau perdre l\'accès à ce foyer.</string>
     <string name="account_link_unlink_error">Impossible de dissocier le compte. Réessayez.</string>
-    <string name="more_section_preferences">Paramètres de l\'Application</string>
-    <string name="more_theme_title">Thème</string>
+    <string name="more_section_preferences">Application</string>
+    <string name="more_theme_title">Affichage</string>
     <string name="more_theme_option_system">Système par défaut</string>
     <string name="more_theme_option_light">Clair</string>
     <string name="more_theme_option_dark">Sombre</string>
@@ -231,7 +234,7 @@
     <string name="more_accessibility_high_contrast_title">Contraste élevé</string>
     <string name="more_accessibility_high_contrast_description">Contraste plus marqué entre le texte et l\'arrière-plan, pour une meilleure lisibilité.</string>
     <string name="more_auto_restock_title">Réapprovisionnement automatique de la liste de courses</string>
-    <string name="more_auto_restock_subtitle">Ajoute automatiquement un produit à votre liste de courses dès que son stock passe sous le minimum défini.</string>
+    <string name="more_auto_restock_subtitle">si le stock passe sous le minimum</string>
     <string name="more_notifications_row_title">Notifications</string>
     <string name="more_language_title">Langue</string>
     <string name="more_language_option_nl">Néerlandais</string>
@@ -246,6 +249,7 @@
     <string name="more_statistics_title">Statistiques</string>
     <string name="more_section_household">Foyer</string>
     <string name="more_data_csv_title">Transférer des données</string>
+    <string name="more_data_accessibility_support_title">Données, accessibilité et assistance</string>
     <string name="more_csv_import_action">Importer (CSV)</string>
     <string name="more_csv_export_action">Exporter (CSV)</string>
     <string name="more_export_header_favorite">Favori</string>
@@ -255,7 +259,6 @@
     <string name="more_import_skipped_format">%1$d lignes ignorées.</string>
     <string name="more_import_empty">Aucune ligne valide trouvée dans le fichier.</string>
     <string name="more_import_error">Échec de l\'importation</string>
-    <string name="more_section_about">Assistance</string>
     <string name="more_about_version_format">Version de l\'app %1$s</string>
     <string name="more_about_feedback">Donner mon avis</string>
     <string name="more_about_rate_app">Évaluer l\'application</string>

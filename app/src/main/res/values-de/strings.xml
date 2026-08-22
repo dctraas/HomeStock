@@ -162,6 +162,12 @@
         <item quantity="one">%1$d Mitglied · Code: %2$s</item>
         <item quantity="other">%1$d Mitglieder · Code: %2$s</item>
     </plurals>
+    <string name="more_household_row_title">Haushaltsmitglieder &amp; Code</string>
+    <string name="more_household_default_name">Mein Haushalt</string>
+    <plurals name="more_header_subtitle_format">
+        <item quantity="one">%1$s · %2$d Mitglied · Code %3$s</item>
+        <item quantity="other">%1$s · %2$d Mitglieder · Code %3$s</item>
+    </plurals>
     <string name="more_household_members_title">Mitglieder</string>
     <string name="household_members_title_with_limit_format">Mitglieder (%1$d/%2$d)</string>
     <string name="more_household_member_unnamed">Namenloses Mitglied</string>
@@ -173,8 +179,8 @@
     <string name="more_premium_active">Aktiv</string>
     <string name="more_premium_inactive">Premium holen</string>
     <string name="more_premium_locked_subtitle">PREMIUM</string>
-    <string name="more_premium_promo_subtitle">Schalte Rezepte, Essensplaner und mehr frei</string>
-    <string name="more_premium_upgrade_action">Upgrade</string>
+    <string name="more_premium_promo_subtitle">Rezepte, Kassenbons, KI und Statistiken</string>
+    <string name="more_premium_upgrade_action">Testen</string>
     <string name="more_leave">Verlassen</string>
     <string name="more_leave_dialog_title">Haushalt verlassen?</string>
     <string name="more_leave_dialog_text">Du siehst den geteilten Vorrat und die Einkaufsliste dann nicht mehr auf diesem Gerät. Du kannst jederzeit mit dem Code wieder beitreten.</string>
@@ -188,11 +194,8 @@
     <string name="more_profile_dialog_title">Namen einstellen</string>
     <string name="more_profile_name_placeholder">Z. B. Mama, Alex</string>
     <string name="more_profile_remove_photo_cd">Foto entfernen</string>
-    <string name="more_expiry_notifications_title">Haltbarkeit</string>
     <string name="more_expiry_notifications_description">Erhalte eine Benachrichtigung, wenn ein Produkt bald abläuft</string>
     <string name="more_settings_title">Einstellungen</string>
-    <string name="more_section_account">Konto</string>
-    <string name="more_account_row_title">Profil</string>
     <string name="account_link_row_title">Konto verknüpfen</string>
     <string name="account_link_row_subtitle_linked_format">Verknüpft mit %1$s</string>
     <string name="account_link_row_subtitle_unlinked">Verhindere Datenverlust bei einer Neuinstallation</string>
@@ -220,8 +223,8 @@
     <string name="account_link_unlink_dialog_title">Konto trennen?</string>
     <string name="account_link_unlink_dialog_text">Dein Haushaltszugriff ist dann nicht mehr geschützt — wenn du die App deinstallierst oder das Gerät wechselst, kannst du den Zugriff auf diesen Haushalt erneut verlieren.</string>
     <string name="account_link_unlink_error">Trennen ist fehlgeschlagen. Bitte versuche es erneut.</string>
-    <string name="more_section_preferences">App-Einstellungen</string>
-    <string name="more_theme_title">Design</string>
+    <string name="more_section_preferences">App</string>
+    <string name="more_theme_title">Anzeige</string>
     <string name="more_theme_option_system">Systemstandard</string>
     <string name="more_theme_option_light">Hell</string>
     <string name="more_theme_option_dark">Dunkel</string>
@@ -231,7 +234,7 @@
     <string name="more_accessibility_high_contrast_title">Hoher Kontrast</string>
     <string name="more_accessibility_high_contrast_description">Stärkerer Kontrast zwischen Text und Hintergrund für bessere Lesbarkeit.</string>
     <string name="more_auto_restock_title">Einkaufsliste automatisch auffüllen</string>
-    <string name="more_auto_restock_subtitle">Fügt ein Produkt automatisch zu deiner Einkaufsliste hinzu, sobald der Vorrat unter das eingestellte Minimum fällt.</string>
+    <string name="more_auto_restock_subtitle">bei Vorrat unter Minimum</string>
     <string name="more_notifications_row_title">Benachrichtigungen</string>
     <string name="more_language_title">Sprache</string>
     <string name="more_language_option_nl">Niederländisch</string>
@@ -246,6 +249,7 @@
     <string name="more_statistics_title">Statistiken</string>
     <string name="more_section_household">Haushalt</string>
     <string name="more_data_csv_title">Daten übertragen</string>
+    <string name="more_data_accessibility_support_title">Daten, Barrierefreiheit &amp; Support</string>
     <string name="more_csv_import_action">Importieren (CSV)</string>
     <string name="more_csv_export_action">Exportieren (CSV)</string>
     <string name="more_export_header_favorite">Favorit</string>
@@ -255,7 +259,6 @@
     <string name="more_import_skipped_format">%1$d Zeilen übersprungen.</string>
     <string name="more_import_empty">Keine gültigen Zeilen in der Datei gefunden.</string>
     <string name="more_import_error">Import fehlgeschlagen</string>
-    <string name="more_section_about">Support</string>
     <string name="more_about_version_format">App-Version %1$s</string>
     <string name="more_about_feedback">Feedback geben</string>
     <string name="more_about_rate_app">App bewerten</string>
