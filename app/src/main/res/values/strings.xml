@@ -611,6 +611,15 @@
         <item quantity="other">%1$d gerechten kun je nu koken</item>
     </plurals>
 
+    <plurals name="meal_plan_dinners_planned">
+        <item quantity="one">%1$d van 7 avonden gepland</item>
+        <item quantity="other">%1$d van 7 avonden gepland</item>
+    </plurals>
+    <plurals name="meal_plan_missing_ingredients_title">
+        <item quantity="one">%1$d ingrediënt ontbreekt</item>
+        <item quantity="other">%1$d ingrediënten ontbreken</item>
+    </plurals>
+
     <!-- Kookmodus -->
     <string name="cook_mode_start">Start koken</string>
     <string name="cook_mode_title">Kookmodus</string>
@@ -692,6 +701,17 @@
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Maaltijdplanner</string>
+    <string name="meal_plan_this_week_title">Deze week</string>
+    <string name="meal_plan_today_label">Vandaag</string>
+    <string name="meal_plan_all_in_stock">alles in huis</string>
+    <string name="meal_plan_swap_cd">Recept wisselen</string>
+    <string name="meal_plan_overflow_cd">Meer opties</string>
+    <string name="meal_plan_servings_format">%1$d porties</string>
+    <string name="meal_plan_add_cd">Maaltijd toevoegen</string>
+    <string name="meal_plan_add_chooser_title">Wat wil je toevoegen?</string>
+    <string name="meal_plan_previous_week_cd">Vorige week</string>
+    <string name="meal_plan_next_week_cd">Volgende week</string>
+    <string name="meal_plan_missing_ingredients_subtitle">Voeg ze in één tik toe aan je boodschappenlijst</string>
     <string name="meal_plan_add_recipe">Recept</string>
     <!-- "Keuken" redesign (2026-08) -->
     <string name="meal_plan_start_cook_mode">Kookmodus</string>
@@ -708,10 +728,7 @@
     <string name="meal_plan_slot_lunch">Lunch</string>
     <string name="meal_plan_slot_dinner">Avondeten</string>
     <string name="meal_plan_slot_snack">Tussendoor</string>
-    <string name="meal_plan_previous_day_cd">Vorige dag</string>
-    <string name="meal_plan_next_day_cd">Volgende dag</string>
     <string name="meal_plan_add_product">Product</string>
-    <string name="meal_plan_empty_slot_hint">Nog niets gepland</string>
     <string name="meal_plan_product_picker_title_format">Product toevoegen voor %1$s</string>
     <string name="meal_plan_product_entry_label">Zelf een product invoeren</string>
     <string name="meal_plan_product_entry_placeholder">Bijv. Melk</string>

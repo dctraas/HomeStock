@@ -610,6 +610,15 @@
         <item quantity="other">%1$d platos que puedes cocinar ahora</item>
     </plurals>
 
+    <plurals name="meal_plan_dinners_planned">
+        <item quantity="one">%1$d de 7 cenas planificadas</item>
+        <item quantity="other">%1$d de 7 cenas planificadas</item>
+    </plurals>
+    <plurals name="meal_plan_missing_ingredients_title">
+        <item quantity="one">Falta %1$d ingrediente</item>
+        <item quantity="other">Faltan %1$d ingredientes</item>
+    </plurals>
+
     <!-- Kookmodus -->
     <string name="cook_mode_start">Empezar a cocinar</string>
     <string name="cook_mode_title">Modo cocina</string>
@@ -691,6 +700,17 @@
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Planificador de comidas</string>
+    <string name="meal_plan_this_week_title">Esta semana</string>
+    <string name="meal_plan_today_label">Hoy</string>
+    <string name="meal_plan_all_in_stock">todo disponible</string>
+    <string name="meal_plan_swap_cd">Cambiar receta</string>
+    <string name="meal_plan_overflow_cd">Más opciones</string>
+    <string name="meal_plan_servings_format">%1$d porciones</string>
+    <string name="meal_plan_add_cd">Añadir comida</string>
+    <string name="meal_plan_add_chooser_title">¿Qué quieres añadir?</string>
+    <string name="meal_plan_previous_week_cd">Semana anterior</string>
+    <string name="meal_plan_next_week_cd">Semana siguiente</string>
+    <string name="meal_plan_missing_ingredients_subtitle">Añádelos a tu lista de la compra con un toque</string>
     <string name="meal_plan_add_recipe">Receta</string>
     <!-- "Keuken" redesign (2026-08) -->
     <string name="meal_plan_start_cook_mode">Modo cocina</string>
@@ -707,10 +727,7 @@
     <string name="meal_plan_slot_lunch">Comida</string>
     <string name="meal_plan_slot_dinner">Cena</string>
     <string name="meal_plan_slot_snack">Tentempié</string>
-    <string name="meal_plan_previous_day_cd">Día anterior</string>
-    <string name="meal_plan_next_day_cd">Día siguiente</string>
     <string name="meal_plan_add_product">Producto</string>
-    <string name="meal_plan_empty_slot_hint">Nada planeado todavía</string>
     <string name="meal_plan_product_picker_title_format">Añadir producto para %1$s</string>
     <string name="meal_plan_product_entry_label">Escribe un nombre de producto</string>
     <string name="meal_plan_product_entry_placeholder">P. ej. Leche</string>

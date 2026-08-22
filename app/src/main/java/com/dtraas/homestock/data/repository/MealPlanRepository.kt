@@ -73,21 +73,25 @@ class MealPlanRepository(
     }
 
     /**
-     * One-time (not live) read of whether each day in the 7 days starting [weekStart] has at
-     * least one planned meal in any slot — feeds the "Keuken" redesign's week-status strip. A
-     * plain `get()` per day rather than 7 permanent snapshot listeners: this is a coarse "any
-     * dot at all" indicator, not something that needs to react the instant a housemate on
-     * another device edits a day currently visible only as a small dot in the strip — re-fetched
-     * fresh every time the visible week changes (see MealPlanViewModel.loadWeekStatus), which is
-     * as live as it needs to be.
+     * One-time (not live) read of every planned meal, per slot, across the 7 days starting
+     * [weekStart] — feeds the week day-strip's "has a plan" dots, the header's "N van 7 avonden
+     * gepland" count, and (via [RecipeRepository.missingIngredients]) the bottom bar's week-wide
+     * shopping-list diff. A plain `get()` per day rather than 7 permanent snapshot listeners:
+     * this is a coarse weekly overview, not something that needs to react the instant a
+     * housemate on another device edits a day that isn't the one currently selected — re-fetched
+     * fresh every time the visible week changes (see MealPlanViewModel.loadWeekPlan), and the
+     * selected day's own entry is kept current from its live [observeMealPlan] listener instead
+     * (see MealPlanViewModel.observeCurrentDate), which is as live as either needs to be.
      */
-    suspend fun fetchWeekHasPlans(weekStart: LocalDate): Map<LocalDate, Boolean> {
+    suspend fun fetchWeekPlan(weekStart: LocalDate): Map<LocalDate, Map<MealSlot, List<PlannedMeal>>> {
         val householdId = householdSession.householdId.value ?: return emptyMap()
         return (0..6).associate { offset ->
             val date = weekStart.plusDays(offset.toLong())
             val snapshot = dayDoc(householdId, date).get().await()
-            val hasPlan = MealSlot.ORDERED.any { slot -> (snapshot.get(slot.storageKey) as? List<*>)?.isNotEmpty() == true }
-            date to hasPlan
+            val dayPlan = MealSlot.ORDERED.associateWith { slot ->
+                (snapshot.get(slot.storageKey) as? List<*>).orEmpty().mapNotNull { PlannedMeal.fromMap(it as? Map<*, *>) }
+            }
+            date to dayPlan
         }
     }
 

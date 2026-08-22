@@ -610,6 +610,15 @@
         <item quantity="other">%1$d Gerichte kannst du jetzt kochen</item>
     </plurals>
 
+    <plurals name="meal_plan_dinners_planned">
+        <item quantity="one">%1$d von 7 Abendessen geplant</item>
+        <item quantity="other">%1$d von 7 Abendessen geplant</item>
+    </plurals>
+    <plurals name="meal_plan_missing_ingredients_title">
+        <item quantity="one">%1$d Zutat fehlt</item>
+        <item quantity="other">%1$d Zutaten fehlen</item>
+    </plurals>
+
     <!-- Kookmodus -->
     <string name="cook_mode_start">Kochen starten</string>
     <string name="cook_mode_title">Kochmodus</string>
@@ -691,6 +700,17 @@
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Essensplaner</string>
+    <string name="meal_plan_this_week_title">Diese Woche</string>
+    <string name="meal_plan_today_label">Heute</string>
+    <string name="meal_plan_all_in_stock">alles vorrätig</string>
+    <string name="meal_plan_swap_cd">Rezept wechseln</string>
+    <string name="meal_plan_overflow_cd">Weitere Optionen</string>
+    <string name="meal_plan_servings_format">%1$d Portionen</string>
+    <string name="meal_plan_add_cd">Mahlzeit hinzufügen</string>
+    <string name="meal_plan_add_chooser_title">Was möchtest du hinzufügen?</string>
+    <string name="meal_plan_previous_week_cd">Vorherige Woche</string>
+    <string name="meal_plan_next_week_cd">Nächste Woche</string>
+    <string name="meal_plan_missing_ingredients_subtitle">Füge sie mit einem Tipp zu deiner Einkaufsliste hinzu</string>
     <string name="meal_plan_add_recipe">Rezept</string>
     <!-- "Keuken" redesign (2026-08) -->
     <string name="meal_plan_start_cook_mode">Kochmodus</string>
@@ -707,10 +727,7 @@
     <string name="meal_plan_slot_lunch">Mittagessen</string>
     <string name="meal_plan_slot_dinner">Abendessen</string>
     <string name="meal_plan_slot_snack">Snack</string>
-    <string name="meal_plan_previous_day_cd">Vorheriger Tag</string>
-    <string name="meal_plan_next_day_cd">Nächster Tag</string>
     <string name="meal_plan_add_product">Produkt</string>
-    <string name="meal_plan_empty_slot_hint">Noch nichts geplant</string>
     <string name="meal_plan_product_picker_title_format">Produkt hinzufügen für %1$s</string>
     <string name="meal_plan_product_entry_label">Selbst einen Produktnamen eingeben</string>
     <string name="meal_plan_product_entry_placeholder">Z. B. Milch</string>
