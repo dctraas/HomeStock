@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ScrollState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardOptions
@@ -14,10 +15,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -25,32 +26,36 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PlaylistAdd
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SelectableDates
@@ -72,17 +77,20 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -90,6 +98,7 @@ import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.entity.NutritionInfo
+import com.dtraas.homestock.data.local.entity.PricePoint
 import com.dtraas.homestock.data.local.entity.ProductEntity
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.model.Category
@@ -100,6 +109,8 @@ import com.dtraas.homestock.ui.components.LocationDropdown
 import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.theme.SoftCardShape
+import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
+import com.dtraas.homestock.ui.theme.UrgencyTileShape
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -110,6 +121,7 @@ import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -135,6 +147,16 @@ fun ProductDetailScreen(
     val uiState by viewModel.uiState.collectAsState()
     val isRetryingLookup by viewModel.isRetryingLookup.collectAsState()
     val stillInInventory = uiState.quantityInInventory != null
+    val product = uiState.product
+    val category = Category.fromStorageKey(product?.category)
+    val allergens = product?.allergens?.mapNotNull { name -> Allergen.entries.find { it.name == name } }.orEmpty()
+    val dietLabels = product?.dietLabels?.mapNotNull { name -> DietLabel.entries.find { it.name == name } }.orEmpty()
+    val hasNutritionInfo = product?.nutrition != null || product?.ingredients != null ||
+        allergens.isNotEmpty() || dietLabels.isNotEmpty()
+    // Products entered manually (barcode not found online) never get a photo or
+    // nutrition data — this is how we tell those apart from a genuine OFF match
+    // that simply doesn't have all fields, to offer a "look it up again" retry.
+    val looksManuallyEntered = product != null && product.imageUrl == null && !hasNutritionInfo
     // Custom product photos (see below) are a Premium feature, same gating pattern as
     // Statistieken/Recepten/etc — checked here rather than in the repository, since a photo
     // upload is a plain Firestore/Storage write with no server-side enforcement point.
@@ -148,24 +170,24 @@ fun ProductDetailScreen(
     val retryLookupFailureMessage = stringResource(R.string.product_detail_retry_lookup_failure)
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showPhotoDialog by remember { mutableStateOf(false) }
+    var showOverflowMenu by remember { mutableStateOf(false) }
     val pickPhoto = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
     ) { uri: Uri? -> uri?.let(viewModel::uploadCustomPhoto) }
 
     // Collapsed by default — the plus icon on each header expands it. Product details also
-    // starts collapsed; the edit button in the top app bar (see below) expands it and scrolls
+    // starts collapsed; the edit button in the overflow menu (see below) expands it and scrolls
     // it into view, which doubles as this screen's "product details page". Every section uses
-    // the same [ExpandableSection] helper so expanding *any* of them (not just Product
-    // details, which used to be the only one that did this) scrolls its newly-revealed bottom
-    // into view — a long card like Voedingswaarden or Ingrediënten no longer gets left cut off
-    // below the fold after tapping its "+".
+    // the same [ExpandableSection] helper so expanding *any* of them scrolls its newly-revealed
+    // bottom into view — a long card never gets left cut off below the fold after tapping it.
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
-    val productDetailsSection = remember { ExpandableSection(scrollState, coroutineScope) }
+    // Nutrition + ingredients now share one detail row/section (see [DetailRow] below), as do
+    // allergens + diet labels — the design review's "three chevron rows" replaces what used to
+    // be four separate accordions.
     val nutritionSection = remember { ExpandableSection(scrollState, coroutineScope) }
-    val ingredientsSection = remember { ExpandableSection(scrollState, coroutineScope) }
     val allergensSection = remember { ExpandableSection(scrollState, coroutineScope) }
-    val dietLabelsSection = remember { ExpandableSection(scrollState, coroutineScope) }
+    val productDetailsSection = remember { ExpandableSection(scrollState, coroutineScope) }
 
     LaunchedEffect(Unit) {
         viewModel.restockEvents.collect { name ->
@@ -182,8 +204,8 @@ fun ProductDetailScreen(
     Scaffold(
         topBar = {
             HomeStockTopAppBar(
-                // The product's own name is already shown prominently below the hero image
-                // right under it — repeating it as the title bar text was redundant, so this
+                // The product's own name is already shown prominently in the header row right
+                // below this bar — repeating it as the title bar text was redundant, so this
                 // stays a generic label instead.
                 title = { Text(stringResource(R.string.product_detail_default_title)) },
                 navigationIcon = {
@@ -192,14 +214,63 @@ fun ProductDetailScreen(
                     }
                 },
                 actions = {
-                    // Toevoegen aan boodschappenlijst / Verwijderen / Bewerken now sit together
-                    // on the "Voorraad" heading row below instead (right-aligned, equal sizing)
-                    // so they're grouped with the stock controls they act on. This top-bar slot
-                    // stays only as a fallback for products no longer in inventory, where there
-                    // is no Voorraad row to anchor them to.
-                    if (!stillInInventory && uiState.product != null) {
-                        IconButton(onClick = { productDetailsSection.expand() }) {
-                            Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.product_detail_edit_cd))
+                    // Favorite + overflow, per the design review — every other action (edit,
+                    // change photo, retry lookup, delete) now lives behind the overflow menu
+                    // instead of its own top-bar icon.
+                    if (stillInInventory && product != null) {
+                        IconButton(onClick = viewModel::toggleFavorite) {
+                            Icon(
+                                imageVector = if (uiState.isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                                contentDescription = stringResource(
+                                    if (uiState.isFavorite) R.string.inventory_unmark_favorite_cd else R.string.inventory_mark_favorite_cd,
+                                ),
+                                tint = if (uiState.isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    }
+                    if (product != null) {
+                        Box {
+                            IconButton(onClick = { showOverflowMenu = true }) {
+                                Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.product_detail_overflow_cd))
+                            }
+                            DropdownMenu(expanded = showOverflowMenu, onDismissRequest = { showOverflowMenu = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.product_detail_edit_cd)) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        productDetailsSection.expand()
+                                    },
+                                )
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.product_detail_edit_photo_title)) },
+                                    onClick = {
+                                        showOverflowMenu = false
+                                        if (isPremium) showPhotoDialog = true else onNavigateToPremium()
+                                    },
+                                )
+                                if (looksManuallyEntered) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.product_detail_retry_lookup)) },
+                                        enabled = !isRetryingLookup,
+                                        onClick = {
+                                            showOverflowMenu = false
+                                            viewModel.retryLookup()
+                                        },
+                                    )
+                                }
+                                // Delete moved off the primary-actions row (it must not sit next
+                                // to "Op de lijst") and into here — "Opgemaakt" below covers the
+                                // same everyday case, this is the explicit fallback entry point.
+                                if (stillInInventory) {
+                                    DropdownMenuItem(
+                                        text = { Text(stringResource(R.string.product_detail_remove), color = MaterialTheme.colorScheme.error) },
+                                        onClick = {
+                                            showOverflowMenu = false
+                                            showDeleteConfirm = true
+                                        },
+                                    )
+                                }
+                            }
                         }
                     }
                 },
@@ -218,21 +289,8 @@ fun ProductDetailScreen(
             return@Scaffold
         }
 
-        val product = uiState.product
-        val category = Category.fromStorageKey(product?.category)
-        val allergens = product?.allergens?.mapNotNull { name -> Allergen.entries.find { it.name == name } }.orEmpty()
-        val dietLabels = product?.dietLabels?.mapNotNull { name -> DietLabel.entries.find { it.name == name } }.orEmpty()
-        val hasNutritionInfo = product?.nutrition != null || product?.ingredients != null ||
-            allergens.isNotEmpty() || dietLabels.isNotEmpty()
-        // Products entered manually (barcode not found online) never get a photo or
-        // nutrition data — this is how we tell those apart from a genuine OFF match
-        // that simply doesn't have all fields, to offer a "look it up again" retry.
-        val looksManuallyEntered = product != null && product.imageUrl == null && !hasNutritionInfo
-
-        // Gap before each section header (Voorraad, Voedingswaarden, Ingrediënten, ...) and
-        // between a header and its own card below it — shared so e.g. "Voorraad" -> its card
-        // and "Ingrediënten" -> its card line up at the same distance.
-        val sectionGap = 24.dp
+        // Gap before each detail row and between a header and the card/content below it.
+        val sectionGap = 20.dp
         val headerToCardGap = 12.dp
 
         Column(
@@ -241,218 +299,177 @@ fun ProductDetailScreen(
                 .padding(padding)
                 .verticalScroll(scrollState)
                 .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            // Header
-            ProductHero(
-                product = product,
-                category = category,
-                showFavorite = stillInInventory,
-                isFavorite = uiState.isFavorite,
-                onToggleFavorite = viewModel::toggleFavorite,
-                showEditPhoto = product != null,
-                onEditPhotoClick = { if (isPremium) showPhotoDialog = true else onNavigateToPremium() },
-            )
-            Text(
-                text = product?.name ?: stringResource(R.string.product_detail_default_title),
-                style = MaterialTheme.typography.titleLarge,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 12.dp),
-            )
-            product?.brand?.let {
+            // Header: 96dp product image + title/subtitle/status pill, replacing the old
+            // centered 160dp image block.
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
+                ProductImage(
+                    product = product,
+                    category = category,
+                    showEditPhoto = product != null,
+                    onEditPhotoClick = { if (isPremium) showPhotoDialog = true else onNavigateToPremium() },
+                )
+                Column(modifier = Modifier.weight(1f).padding(start = 14.dp)) {
+                    Text(
+                        text = product?.name ?: stringResource(R.string.product_detail_default_title),
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                    if (product != null) {
+                        val nutriScoreText = product.nutriScoreGrade
+                            ?.let { stringResource(R.string.product_detail_nutriscore_format, it.uppercase(Locale.ROOT)) }
+                            ?: stringResource(R.string.product_detail_nutriscore_unavailable)
+                        val subtitle = listOfNotNull(product.brand, stringResource(category.displayNameRes), nutriScoreText)
+                            .joinToString(" · ")
+                        Text(
+                            text = subtitle,
+                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 4.dp),
+                        )
+                    }
+                    if (stillInInventory) {
+                        StatusPill(
+                            label = expirationStatusLabel(uiState.expirationDate),
+                            modifier = Modifier.padding(top = 8.dp),
+                        )
+                    }
+                }
+            }
+
+            if (stillInInventory) {
+                // Overlaps the header row by design — a bit of visual overlap between the hero
+                // area and the stock card, per the review.
+                StockCard(
+                    quantity = uiState.quantityInInventory ?: 0,
+                    unit = product?.unit,
+                    minQuantity = uiState.minQuantity,
+                    onDecrease = { viewModel.setQuantity((uiState.quantityInInventory ?: 1) - 1) },
+                    onIncrease = { viewModel.setQuantity((uiState.quantityInInventory ?: 0) + 1) },
+                    modifier = Modifier.padding(top = (-14).dp),
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    Button(
+                        onClick = viewModel::addToShoppingList,
+                        shape = RoundedCornerShape(18.dp),
+                        modifier = Modifier.weight(1f).height(52.dp),
+                    ) {
+                        Icon(Icons.Filled.PlaylistAdd, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.product_detail_add_to_list_button))
+                    }
+                    OutlinedButton(
+                        onClick = { showDeleteConfirm = true },
+                        shape = RoundedCornerShape(18.dp),
+                        modifier = Modifier.weight(1f).height(52.dp),
+                    ) {
+                        Icon(Icons.Filled.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.product_detail_mark_used_up))
+                    }
+                }
+
                 Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 2.dp),
+                    text = stringResource(R.string.product_detail_expiration_section_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(top = sectionGap),
+                )
+                ExpirationSection(
+                    expirationDate = uiState.expirationDate,
+                    category = category,
+                    onDateChange = viewModel::setExpirationDate,
+                    isPremium = isPremium,
+                    onNavigateToPremium = onNavigateToPremium,
+                    modifier = Modifier.padding(top = headerToCardGap),
                 )
             }
-            Row(
-                modifier = Modifier.padding(top = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                CategoryChip(category)
-                val nutriScoreGrade = product?.nutriScoreGrade
-                if (nutriScoreGrade != null) {
-                    GradeBadge(
-                        nutriScoreGrade,
-                        stringResource(R.string.product_detail_nutriscore_format, nutriScoreGrade.uppercase(Locale.ROOT)),
-                    )
-                } else if (product != null) {
-                    // No Nutri-Score data for this product — show an explicit "unknown" badge
-                    // instead of silently omitting it, so it's clear this isn't a loading gap.
-                    NutriScoreUnavailableBadge(stringResource(R.string.product_detail_nutriscore_unavailable))
-                }
-            }
 
-            if (looksManuallyEntered) {
-                TextButton(
-                    onClick = viewModel::retryLookup,
-                    enabled = !isRetryingLookup,
-                    modifier = Modifier.padding(top = 4.dp),
-                ) {
-                    if (isRetryingLookup) {
-                        CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                    } else {
-                        Icon(Icons.Filled.Refresh, contentDescription = null, modifier = Modifier.size(18.dp))
-                    }
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.product_detail_retry_lookup))
-                }
+            // Stat tiles — independent of whether the product is still in the current
+            // inventory, since both price history and scan history outlive a removal.
+            val priceDeltaCaption = product?.priceHistory?.takeIf { it.size > 1 }?.let { history ->
+                val delta = history[0].price - history[1].price
+                val sign = if (delta >= 0) "+" else "-"
+                val monthName = Instant.ofEpochMilli(history[1].date).atZone(ZoneId.systemDefault()).toLocalDate()
+                    .format(DateTimeFormatter.ofPattern("MMMM", Locale.getDefault()))
+                stringResource(R.string.product_detail_stat_price_delta_format, "$sign${formatPrice(abs(delta))}", monthName)
             }
-
-            // Voorraad — a bit more breathing room than the other section headers get,
-            // specifically because it sits right under the category/Nutri-Score icon row
-            // rather than under a card like the rest do.
-            if (stillInInventory) {
-                // Toevoegen aan boodschappenlijst / Bewerken / Verwijderen live here, right-
-                // aligned against the "Voorraad" heading — they all act on this product's stock,
-                // so this groups them with the section they belong to instead of the generic top
-                // bar. All three share the same 36dp footprint / 20dp glyph so none reads heavier
-                // than the others.
+            val scanFrequencyCaption = uiState.avgDaysBetweenScans?.let {
+                pluralStringResource(R.plurals.product_detail_stat_scan_frequency_days, it, it)
+            }
+            val showLastPaidTile = product?.lastPrice != null
+            val showScannedTile = uiState.scanCount > 0
+            if (showLastPaidTile || showScannedTile) {
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = sectionGap + 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth().padding(top = sectionGap),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    Text(
-                        text = stringResource(R.string.section_stock),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        IconButton(onClick = viewModel::addToShoppingList, modifier = Modifier.size(40.dp)) {
-                            Icon(
-                                Icons.Filled.PlaylistAdd,
-                                contentDescription = stringResource(R.string.product_detail_add_to_shopping_list),
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
-                        if (uiState.product != null) {
-                            IconButton(
-                                onClick = { productDetailsSection.expand() },
-                                modifier = Modifier.size(40.dp),
-                            ) {
-                                Icon(
-                                    Icons.Filled.Edit,
-                                    contentDescription = stringResource(R.string.product_detail_edit_cd),
-                                    modifier = Modifier.size(24.dp),
-                                )
-                            }
-                        }
-                        IconButton(onClick = { showDeleteConfirm = true }, modifier = Modifier.size(40.dp)) {
-                            Icon(
-                                Icons.Filled.Delete,
-                                contentDescription = stringResource(R.string.product_detail_remove),
-                                modifier = Modifier.size(24.dp),
-                            )
-                        }
+                    if (showLastPaidTile) {
+                        StatTile(
+                            eyebrow = stringResource(R.string.product_detail_field_last_price),
+                            value = formatPrice(product?.lastPrice ?: 0.0),
+                            caption = priceDeltaCaption,
+                            modifier = Modifier.weight(1f),
+                        )
                     }
-                }
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(top = headerToCardGap),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                    shape = SoftCardShape,
-                ) {
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Text(stringResource(R.string.product_detail_in_stock), style = MaterialTheme.typography.bodyLarge)
-                            QuantityStepper(
-                                quantity = uiState.quantityInInventory ?: 0,
-                                onDecrease = { viewModel.setQuantity((uiState.quantityInInventory ?: 1) - 1) },
-                                onIncrease = { viewModel.setQuantity((uiState.quantityInInventory ?: 0) + 1) },
-                                dense = true,
-                            )
-                        }
-
-                        ExpirationStatusRow(expirationDate = uiState.expirationDate)
-
-                        ExpirationRow(
-                            expirationDate = uiState.expirationDate,
-                            category = category,
-                            onDateChange = viewModel::setExpirationDate,
-                            isPremium = isPremium,
-                            onNavigateToPremium = onNavigateToPremium,
+                    if (showScannedTile) {
+                        StatTile(
+                            eyebrow = stringResource(R.string.product_detail_stat_scanned_label),
+                            value = stringResource(R.string.product_detail_stat_scan_count_format, uiState.scanCount),
+                            caption = scanFrequencyCaption,
+                            modifier = Modifier.weight(1f),
                         )
-
-                        MinQuantityRow(
-                            minQuantity = uiState.minQuantity,
-                            onChange = viewModel::setMinQuantity,
-                        )
-
-                        // Editable, unlike every other field in this card being read from the
-                        // inventory entry — this one lets a household type in a price directly,
-                        // on top of the two ways a price otherwise gets here: checking off a
-                        // priced shopping list item (ShoppingListRepository.setChecked) or a
-                        // receipt scan. All three go through ProductRepository.addPricePoint, so
-                        // they build one continuous history regardless of path. Debounced like
-                        // the fields in ProductDetailsCard below: writes shortly after typing
-                        // pauses, not on every keystroke. [product.priceHistory] (shown further
-                        // down) is the same data, newest-first, with per-store context where known.
-                        var priceText by remember(product?.barcode) {
-                            mutableStateOf(product?.lastPrice?.let { formatPrice(it).removePrefix("€") } ?: "")
-                        }
-                        LaunchedEffect(priceText) {
-                            delay(600)
-                            val parsed = priceText.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it >= 0 }
-                            if (parsed != null && parsed != product?.lastPrice) viewModel.setPrice(parsed)
-                        }
-                        OutlinedTextField(
-                            value = priceText,
-                            onValueChange = { priceText = it },
-                            label = { Text(stringResource(R.string.product_detail_field_last_price)) },
-                            placeholder = { Text(stringResource(R.string.shopping_list_price_placeholder)) },
-                            leadingIcon = { Text("€", style = MaterialTheme.typography.bodyLarge) },
-                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        )
-                        if ((product?.priceHistory?.size ?: 0) > 1) {
-                            Column(
-                                verticalArrangement = Arrangement.spacedBy(2.dp),
-                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.product_detail_price_history_title),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
-                                // The first entry is already shown above as "Laatste prijs" — this is
-                                // the rest of the trend, oldest of the kept window last.
-                                product?.priceHistory?.drop(1)?.forEach { point ->
-                                    Row(
-                                        modifier = Modifier.fillMaxWidth(),
-                                        horizontalArrangement = Arrangement.SpaceBetween,
-                                    ) {
-                                        Text(
-                                            text = listOfNotNull(formatPriceDate(point.date), point.store).joinToString(" · "),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                        Text(
-                                            text = formatPrice(point.price),
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                }
-                            }
-                        }
                     }
                 }
             }
 
-            // Product details — editable name/brand/category/unit, collapsed by default. The
-            // edit button in the top app bar (where the favorite star used to be) expands this
-            // and scrolls all the way to its bottom rather than navigating to a separate
-            // screen, since it already lives right here.
+            // Detail rows — three chevron rows with dividers, replacing what used to be up to
+            // four separate expand/collapse accordions.
+            val hasNutritionOrIngredients = product?.nutrition != null || product?.ingredients != null
+            if (hasNutritionOrIngredients) {
+                DetailRow(
+                    title = stringResource(R.string.product_detail_nutrition_ingredients_title),
+                    expanded = nutritionSection.expanded,
+                    onToggle = nutritionSection::toggle,
+                    modifier = Modifier.padding(top = sectionGap),
+                )
+                if (nutritionSection.expanded) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(top = headerToCardGap),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        product?.nutrition?.let { NutritionCard(it) }
+                        product?.ingredients?.let { IngredientsCard(it) }
+                    }
+                }
+                Spacer(modifier = Modifier.onGloballyPositioned { nutritionSection.bottomOffset = it.positionInParent().y.roundToInt() })
+            }
+
+            val hasAllergensOrDiet = allergens.isNotEmpty() || dietLabels.isNotEmpty()
+            if (hasAllergensOrDiet) {
+                DetailRow(
+                    title = stringResource(R.string.product_detail_allergens_diet_title),
+                    expanded = allergensSection.expanded,
+                    onToggle = allergensSection::toggle,
+                    modifier = Modifier.padding(top = sectionGap),
+                )
+                if (allergensSection.expanded) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth().padding(top = headerToCardGap),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        if (allergens.isNotEmpty()) AllergensCard(allergens)
+                        if (dietLabels.isNotEmpty()) DietLabelsCard(dietLabels)
+                    }
+                }
+                Spacer(modifier = Modifier.onGloballyPositioned { allergensSection.bottomOffset = it.positionInParent().y.roundToInt() })
+            }
+
             product?.let { p ->
-                CollapsibleSectionHeader(
+                DetailRow(
                     title = stringResource(R.string.product_detail_editable_title),
                     expanded = productDetailsSection.expanded,
                     onToggle = productDetailsSection::toggle,
@@ -467,9 +484,14 @@ fun ProductDetailScreen(
                         onCategoryChange = viewModel::updateCategory,
                         onUnitChange = viewModel::updateUnit,
                         onLocationChange = viewModel::updateLocation,
-                        showNote = stillInInventory,
+                        showInventoryFields = stillInInventory,
                         note = uiState.note,
                         onNoteChange = viewModel::setNote,
+                        minQuantity = uiState.minQuantity,
+                        onMinQuantityChange = viewModel::setMinQuantity,
+                        lastPrice = p.lastPrice,
+                        priceHistory = p.priceHistory,
+                        onPriceChange = viewModel::setPrice,
                         modifier = Modifier.padding(top = headerToCardGap),
                     )
                 }
@@ -478,64 +500,12 @@ fun ProductDetailScreen(
                 // scrolls to, so this needs to sit past the card's very last field.
                 Spacer(modifier = Modifier.onGloballyPositioned { productDetailsSection.bottomOffset = it.positionInParent().y.roundToInt() })
             }
-
-            // Voedingsinformatie — no overarching group header; each card is its own
-            // section with its own header, same treatment as Voorraad above. Collapsed by
-            // default, uitklappen via het plusje.
-            product?.nutrition?.let { nutrition ->
-                CollapsibleSectionHeader(
-                    title = stringResource(R.string.product_detail_nutrition_title),
-                    expanded = nutritionSection.expanded,
-                    onToggle = nutritionSection::toggle,
-                    modifier = Modifier.padding(top = sectionGap),
-                )
-                if (nutritionSection.expanded) {
-                    NutritionCard(nutrition, modifier = Modifier.padding(top = headerToCardGap))
-                }
-                Spacer(modifier = Modifier.onGloballyPositioned { nutritionSection.bottomOffset = it.positionInParent().y.roundToInt() })
-            }
-            product?.ingredients?.let { ingredients ->
-                CollapsibleSectionHeader(
-                    title = stringResource(R.string.product_detail_ingredients_title),
-                    expanded = ingredientsSection.expanded,
-                    onToggle = ingredientsSection::toggle,
-                    modifier = Modifier.padding(top = sectionGap),
-                )
-                if (ingredientsSection.expanded) {
-                    IngredientsCard(ingredients, modifier = Modifier.padding(top = headerToCardGap))
-                }
-                Spacer(modifier = Modifier.onGloballyPositioned { ingredientsSection.bottomOffset = it.positionInParent().y.roundToInt() })
-            }
-            if (allergens.isNotEmpty()) {
-                CollapsibleSectionHeader(
-                    title = stringResource(R.string.product_detail_allergens_title),
-                    expanded = allergensSection.expanded,
-                    onToggle = allergensSection::toggle,
-                    modifier = Modifier.padding(top = sectionGap),
-                )
-                if (allergensSection.expanded) {
-                    AllergensCard(allergens, modifier = Modifier.padding(top = headerToCardGap))
-                }
-                Spacer(modifier = Modifier.onGloballyPositioned { allergensSection.bottomOffset = it.positionInParent().y.roundToInt() })
-            }
-            if (dietLabels.isNotEmpty()) {
-                CollapsibleSectionHeader(
-                    title = stringResource(R.string.product_detail_diet_labels_title),
-                    expanded = dietLabelsSection.expanded,
-                    onToggle = dietLabelsSection::toggle,
-                    modifier = Modifier.padding(top = sectionGap),
-                )
-                if (dietLabelsSection.expanded) {
-                    DietLabelsCard(dietLabels, modifier = Modifier.padding(top = headerToCardGap))
-                }
-                Spacer(modifier = Modifier.onGloballyPositioned { dietLabelsSection.bottomOffset = it.positionInParent().y.roundToInt() })
-            }
         }
 
         if (showDeleteConfirm) {
             // Only near/past its expiration date is a removal ambiguous enough to ask about —
             // otherwise it's almost certainly ordinary consumption, so don't add a question
-            // nobody needs. Same <= 3 days threshold ExpirationRow already uses for isNearExpiry.
+            // nobody needs. Same <= 3 days threshold used for isNearExpiry elsewhere.
             val isNearExpiry = uiState.expirationDate?.let { daysUntilExpiration(it) <= 3 } ?: false
             AlertDialog(
                 onDismissRequest = { showDeleteConfirm = false },
@@ -599,7 +569,7 @@ fun ProductDetailScreen(
     }
 }
 
-/** Choice dialog opened by [ProductHero]'s camera badge — mirrors MoreScreen's
+/** Choice dialog opened by the photo badge / overflow menu — mirrors MoreScreen's
  *  Importeren/Exporteren dialog shape (two labeled, icon-led rows) for a consistent
  *  "tap an icon, get a small menu of actions" pattern across the app. */
 @Composable
@@ -652,11 +622,10 @@ private fun PhotoDialog(
  * Tracks one collapsible section's expand state and where its bottom sits within the
  * scrollable Column (via a zero-height marker `Spacer`/`onGloballyPositioned` placed right
  * after the section, see the call sites above) — [toggle]/[expand] flip it on, and expanding
- * also scrolls the section's newly-revealed bottom into view so a long card (Voedingswaarden,
- * Ingrediënten, ...) never gets left cut off below the fold after tapping its "+". The
- * two-frame delay before scrolling lets the expand's own recomposition/layout pass actually
- * update [bottomOffset] first — scrolling synchronously from the click handler would still see
- * the section's old (collapsed) position.
+ * also scrolls the section's newly-revealed bottom into view so a long card never gets left cut
+ * off below the fold after tapping its row. The two-frame delay before scrolling lets the
+ * expand's own recomposition/layout pass actually update [bottomOffset] first — scrolling
+ * synchronously from the click handler would still see the section's old (collapsed) position.
  */
 private class ExpandableSection(private val scrollState: ScrollState, private val coroutineScope: CoroutineScope) {
     var expanded by mutableStateOf(false)
@@ -681,52 +650,53 @@ private class ExpandableSection(private val scrollState: ScrollState, private va
     }
 }
 
-/** A plain section title, with a plus/minus toggle to expand or collapse the section below it. */
+/** One of the three flat "chevron rows" that replace the old plus/minus accordion headers —
+ *  label left, a chevron that rotates 90° open on the right, divider underneath. */
 @Composable
-private fun CollapsibleSectionHeader(title: String, expanded: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onToggle),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Icon(
-            imageVector = if (expanded) Icons.Filled.Remove else Icons.Filled.Add,
-            contentDescription = stringResource(
-                if (expanded) R.string.product_detail_collapse_cd else R.string.product_detail_expand_cd,
-            ),
-            tint = MaterialTheme.colorScheme.primary,
-        )
+private fun DetailRow(title: String, expanded: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onToggle)
+                .padding(vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(text = title, style = MaterialTheme.typography.bodyLarge)
+            Icon(
+                imageVector = Icons.Filled.ChevronRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.rotate(if (expanded) 90f else 0f),
+            )
+        }
+        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
     }
 }
 
+/** The 96dp header product image (radius 24dp) with a small photo-edit badge overlaid at its
+ *  bottom-end corner — replaces the old centered 160dp hero image block. The favorite toggle
+ *  that used to live here moved to the top app bar instead, see [ProductDetailScreen]. */
 @Composable
-private fun ProductHero(
+private fun ProductImage(
     product: ProductEntity?,
     category: Category,
-    showFavorite: Boolean,
-    isFavorite: Boolean,
-    onToggleFavorite: () -> Unit,
     showEditPhoto: Boolean,
     onEditPhotoClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    val imageUrl = product?.imageUrl
-    Box(modifier = Modifier.size(160.dp)) {
+    Box(modifier = modifier.size(96.dp)) {
         Surface(
-            shape = RoundedCornerShape(28.dp),
+            shape = RoundedCornerShape(24.dp),
             color = MaterialTheme.colorScheme.primaryContainer,
             modifier = Modifier.fillMaxSize(),
         ) {
+            val imageUrl = product?.imageUrl
             if (imageUrl != null) {
                 AsyncImage(
                     model = imageUrl,
-                    contentDescription = product?.name,
+                    contentDescription = product.name,
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -735,53 +705,27 @@ private fun ProductHero(
                     Icon(
                         imageVector = category.icon,
                         contentDescription = null,
-                        modifier = Modifier.size(64.dp),
+                        modifier = Modifier.size(40.dp),
                         tint = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                 }
             }
         }
-        // The favorite toggle used to sit in the top app bar; that slot now hosts the edit
-        // button, so favorite moved to a badge on the hero image instead — a common spot for
-        // a "favorite this" affordance, and it stays close to the product it applies to.
-        if (showFavorite) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(6.dp)
-                    .size(32.dp),
-            ) {
-                IconButton(onClick = onToggleFavorite, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                        contentDescription = stringResource(
-                            if (isFavorite) R.string.inventory_unmark_favorite_cd else R.string.inventory_mark_favorite_cd,
-                        ),
-                        tint = if (isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp),
-                    )
-                }
-            }
-        }
-        // Custom photo upload (Premium) — bottom-end, opposite the favorite badge, so both
-        // read as distinct "overlay actions" on the hero image rather than crowding one corner.
         if (showEditPhoto) {
             Surface(
                 shape = CircleShape,
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(6.dp)
-                    .size(32.dp),
+                    .padding(4.dp)
+                    .size(26.dp),
             ) {
                 IconButton(onClick = onEditPhotoClick, modifier = Modifier.fillMaxSize()) {
                     Icon(
                         imageVector = Icons.Filled.PhotoCamera,
                         contentDescription = stringResource(R.string.product_detail_edit_photo_cd),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(18.dp),
+                        modifier = Modifier.size(14.dp),
                     )
                 }
             }
@@ -789,79 +733,116 @@ private fun ProductHero(
     }
 }
 
+/** A small rounded coral pill — the header's at-a-glance freshness signal ("Nog 2 dagen"),
+ *  reusing the same wording [expirationStatusLabel] also puts on the Houdbaar-tot card below. */
 @Composable
-private fun CategoryChip(category: Category) {
+private fun StatusPill(label: String, modifier: Modifier = Modifier) {
     Surface(
-        shape = RoundedCornerShape(50),
+        shape = RoundedCornerShape(percent = 50),
         color = MaterialTheme.colorScheme.secondaryContainer,
+        modifier = modifier,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+        )
+    }
+}
+
+/** The stock card — overlaps the header above it, eyebrow "IN HUIS" + a large quantity number
+ *  on the left, a pill-shaped stepper on the right. */
+@Composable
+private fun StockCard(
+    quantity: Int,
+    unit: String?,
+    minQuantity: Int?,
+    onDecrease: () -> Unit,
+    onIncrease: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = SoftCardShape,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp),
     ) {
         Row(
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Icon(
-                imageVector = category.icon,
-                contentDescription = null,
-                modifier = Modifier.size(16.dp),
-                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-            )
-            Text(
-                text = stringResource(category.displayNameRes),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.padding(start = 6.dp),
-            )
+            Column {
+                Text(
+                    text = stringResource(R.string.product_detail_in_huis_label).uppercase(Locale.getDefault()),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                Row(verticalAlignment = Alignment.Bottom, modifier = Modifier.padding(top = 2.dp)) {
+                    Text(
+                        text = quantity.toString(),
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.ExtraBold,
+                    )
+                    val metaParts = listOfNotNull(
+                        unit?.takeIf { it.isNotBlank() },
+                        minQuantity?.let { stringResource(R.string.product_detail_stat_min_format, it) },
+                    )
+                    if (metaParts.isNotEmpty()) {
+                        Text(
+                            text = metaParts.joinToString(" · "),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(start = 8.dp, bottom = 4.dp),
+                        )
+                    }
+                }
+            }
+            Surface(
+                shape = RoundedCornerShape(percent = 50),
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            ) {
+                QuantityStepper(
+                    quantity = quantity,
+                    onDecrease = onDecrease,
+                    onIncrease = onIncrease,
+                    modifier = Modifier.padding(horizontal = 4.dp),
+                )
+            }
         }
     }
 }
 
-/** Nutri-Score uses an A (best) to E (worst) grading scale. */
-private fun gradeColor(grade: String): Color = when (grade.uppercase(Locale.ROOT)) {
-    "A" -> Color(0xFF038141)
-    "B" -> Color(0xFF85BB2F)
-    "C" -> Color(0xFFFECB02)
-    "D" -> Color(0xFFEE8100)
-    "E" -> Color(0xFFE63E11)
-    else -> Color.Gray
-}
-
+/** A compact neutral stat card — "LAATST BETAALD"/"GESCAND" and similar — eyebrow, big value,
+ *  optional muted caption underneath. */
 @Composable
-private fun GradeBadge(grade: String, contentDescription: String) {
-    Surface(
-        shape = CircleShape,
-        color = gradeColor(grade),
-        modifier = Modifier
-            .size(32.dp)
-            .semantics { this.contentDescription = contentDescription },
+private fun StatTile(eyebrow: String, value: String, caption: String?, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = SoftCardShapeCompact,
     ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.padding(14.dp)) {
             Text(
-                text = grade.uppercase(Locale.ROOT),
-                style = MaterialTheme.typography.titleSmall,
-                color = Color.White,
+                text = eyebrow.uppercase(Locale.getDefault()),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        }
-    }
-}
-
-/** Shown in place of [GradeBadge] when a product has no known Nutri-Score, so the absence of
- *  data reads as an explicit "unknown" state rather than a blank gap next to the category chip. */
-@Composable
-private fun NutriScoreUnavailableBadge(contentDescription: String) {
-    Surface(
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceVariant,
-        modifier = Modifier
-            .size(32.dp)
-            .semantics { this.contentDescription = contentDescription },
-    ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-            Icon(
-                Icons.Filled.HelpOutline,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            Text(
+                text = value,
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(top = 2.dp),
             )
+            if (caption != null) {
+                Text(
+                    text = caption,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
         }
     }
 }
@@ -875,9 +856,14 @@ private fun ProductDetailsCard(
     onCategoryChange: (Category) -> Unit,
     onUnitChange: (String?) -> Unit,
     onLocationChange: (String?) -> Unit,
-    showNote: Boolean,
+    showInventoryFields: Boolean,
     note: String?,
     onNoteChange: (String?) -> Unit,
+    minQuantity: Int?,
+    onMinQuantityChange: (Int?) -> Unit,
+    lastPrice: Double?,
+    priceHistory: List<PricePoint>,
+    onPriceChange: (Double) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var name by remember(product.barcode) { mutableStateOf(product.name) }
@@ -887,6 +873,14 @@ private fun ProductDetailsCard(
     // lives on the inventory entry rather than the catalog product, so it can legitimately
     // change from outside this card (e.g. removed from inventory) while it stays mounted.
     var noteText by remember(note) { mutableStateOf(note ?: "") }
+    // Editable, unlike every other field in this card being read straight from the inventory
+    // entry — this one lets a household type in a price directly, on top of the two ways a
+    // price otherwise gets here: checking off a priced shopping list item
+    // (ShoppingListRepository.setChecked) or a receipt scan. All three go through
+    // ProductRepository.addPricePoint, so they build one continuous history regardless of path.
+    var priceText by remember(product.barcode) {
+        mutableStateOf(lastPrice?.let { formatPrice(it).removePrefix("€") } ?: "")
+    }
 
     // Debounced autosave per field: writes shortly after typing pauses instead of on every
     // keystroke or only once the field loses focus (which back-navigation can't reliably catch).
@@ -905,6 +899,11 @@ private fun ProductDetailsCard(
     LaunchedEffect(noteText) {
         delay(600)
         if (noteText != (note ?: "")) onNoteChange(noteText.trim().ifBlank { null })
+    }
+    LaunchedEffect(priceText) {
+        delay(600)
+        val parsed = priceText.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it >= 0 }
+        if (parsed != null && parsed != lastPrice) onPriceChange(parsed)
     }
 
     Card(
@@ -947,16 +946,67 @@ private fun ProductDetailsCard(
                 onSelected = onLocationChange,
                 modifier = Modifier.fillMaxWidth(),
             )
-            // Note is a field on the inventory entry, not the catalog product — nothing to
-            // save it against for a product that isn't (or no longer) in stock.
-            //
-            // Deliberately NOT using OutlinedTextField's own floating `label` here like the
-            // fields above do: with both `label` and `placeholder` set, Material3 only shows
-            // the placeholder once the field is focused (the unfocused, empty label sits
-            // exactly where the placeholder would go) — so the title would only sometimes be
-            // the small floated label, and the example text would stay hidden until tapped.
-            // A persistent title above the field keeps both visible at all times instead.
-            if (showNote) {
+            // Minimum, price and note are fields on the inventory entry, not the catalog
+            // product — nothing to save them against for a product that isn't (or no longer)
+            // in stock. The minimum stepper and the price field used to live inline in the
+            // header stock card / a top-bar field; this "Gegevens bewerken" section is now
+            // their one home, alongside the fields above.
+            if (showInventoryFields) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(stringResource(R.string.product_detail_min_quantity_label), style = MaterialTheme.typography.bodyMedium)
+                    QuantityStepper(
+                        quantity = minQuantity ?: 0,
+                        onDecrease = {
+                            val next = (minQuantity ?: 0) - 1
+                            onMinQuantityChange(if (next <= 0) null else next)
+                        },
+                        onIncrease = { onMinQuantityChange((minQuantity ?: 0) + 1) },
+                        minQuantity = 0,
+                        dense = true,
+                    )
+                }
+                OutlinedTextField(
+                    value = priceText,
+                    onValueChange = { priceText = it },
+                    label = { Text(stringResource(R.string.product_detail_field_last_price)) },
+                    placeholder = { Text(stringResource(R.string.shopping_list_price_placeholder)) },
+                    leadingIcon = { Text("€", style = MaterialTheme.typography.bodyLarge) },
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (priceHistory.size > 1) {
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.fillMaxWidth()) {
+                        Text(
+                            text = stringResource(R.string.product_detail_price_history_title),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        // The first entry is already shown above as "Laatste prijs" — this is
+                        // the rest of the trend, oldest of the kept window last.
+                        priceHistory.drop(1).forEach { point ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                            ) {
+                                Text(
+                                    text = listOfNotNull(formatPriceDate(point.date), point.store).joinToString(" · "),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                                Text(
+                                    text = formatPrice(point.price),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    }
+                }
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     Text(
                         text = stringResource(R.string.product_detail_note_title),
@@ -988,10 +1038,12 @@ private fun AllergensCard(allergens: List<Allergen>, modifier: Modifier = Modifi
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 items(allergens) { allergen ->
+                    // Amber, per the design review — distinguishes an allergen tag from a diet
+                    // label at a glance instead of both reading as the same generic chip.
                     TagChip(
                         label = stringResource(allergen.labelRes),
-                        color = MaterialTheme.colorScheme.errorContainer,
-                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        color = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                     )
                 }
             }
@@ -1137,121 +1189,120 @@ private fun daysUntilExpiration(millis: Long): Long {
     return ChronoUnit.DAYS.between(LocalDate.now(), date)
 }
 
+/** Shared compact wording for "how urgent is this expiration" — drives both the header's
+ *  [StatusPill] and the secondary line on [ExpirationSection]'s Houdbaar-tot card, so the two
+ *  surfaces never say something different about the same product. */
 @Composable
-private fun ExpirationStatusRow(expirationDate: Long?) {
+private fun expirationStatusLabel(expirationDate: Long?): String {
     val days = expirationDate?.let { daysUntilExpiration(it) }
-    val (label, isWarning) = when {
-        days == null -> stringResource(R.string.product_detail_status_not_set) to false
-        days < 0 -> stringResource(R.string.product_detail_status_expired) to true
-        days == 0L -> stringResource(R.string.product_detail_status_today) to true
-        days == 1L -> stringResource(R.string.product_detail_status_one_day) to true
-        days <= 3 -> stringResource(R.string.product_detail_status_days_format, days) to true
-        else -> stringResource(R.string.product_detail_status_fresh) to false
-    }
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(stringResource(R.string.product_detail_status_label), style = MaterialTheme.typography.bodyLarge)
-        // Right-aligned, flush with the card's edge — same as every other row's value in this
-        // section. The shared min-width with ExpirationRow's value box below just keeps this
-        // column from visibly jumping width as its content changes (e.g. clearing a date).
-        Box(modifier = Modifier.widthIn(min = statusValueMinWidth), contentAlignment = Alignment.CenterEnd) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyMedium,
-                color = if (isWarning) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-            )
-        }
+    return when {
+        days == null -> stringResource(R.string.product_detail_status_not_set)
+        days < 0 -> stringResource(R.string.product_detail_status_expired)
+        days == 0L -> stringResource(R.string.product_detail_status_today)
+        days == 1L -> stringResource(R.string.product_detail_status_one_day)
+        days <= 3 -> stringResource(R.string.product_detail_status_days_format, days)
+        else -> stringResource(R.string.product_detail_status_fresh)
     }
 }
 
-/** Shared min-width for [ExpirationStatusRow]'s and [ExpirationRow]'s value slot, so the
- *  column doesn't visibly resize when its content changes between "Niet ingesteld"/"Instellen"
- *  and an actual formatted date. Both are right-aligned within it, flush with the card's edge. */
-private val statusValueMinWidth = 130.dp
-
+/** Houdbaar tot — a coral-container card (one pinched corner, see [UrgencyTileShape]) with the
+ *  date and its status, plus two 52dp square action buttons: scan the date off a photo, or pick
+ *  it manually. A small corner badge on the card itself covers "clear the date" (when set) or
+ *  "suggest a date from the category" (when not) — kept off the two main buttons so their count
+ *  stays exactly what the design review specifies. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ExpirationRow(
+private fun ExpirationSection(
     expirationDate: Long?,
     category: Category,
     onDateChange: (Long?) -> Unit,
     isPremium: Boolean,
     onNavigateToPremium: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     var showPicker by remember { mutableStateOf(false) }
     var showAiScan by remember { mutableStateOf(false) }
-    val isNearExpiry = expirationDate != null && daysUntilExpiration(expirationDate) <= 3
-
     // A one-tap estimate based on the product's category (see Category.defaultShelfLifeDays'
     // doc) — only offered while nothing's set yet, so it reads as "no idea? here's a guess"
     // rather than second-guessing a date the household already entered themselves.
     val suggestedDays = category.defaultShelfLifeDays
 
     Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+        modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
-        Text(stringResource(R.string.product_detail_expiration_label), style = MaterialTheme.typography.bodyLarge)
-        Box(modifier = Modifier.widthIn(min = statusValueMinWidth), contentAlignment = Alignment.CenterEnd) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                // AI-productherkenning is already premium-only elsewhere in the app (see
-                // ScanScreen/AiRecognizeScreen) since the photo leaves the device — this THT-
-                // datum scan is the same real per-scan cost, so it follows the same gate:
-                // premium households open the camera dialog directly, everyone else goes
-                // straight to the paywall instead of a dead-end "premium required" screen.
-                IconButton(
-                    onClick = { if (isPremium) showAiScan = true else onNavigateToPremium() },
-                    modifier = Modifier.size(32.dp),
-                ) {
-                    Icon(
-                        Icons.Filled.PhotoCamera,
-                        contentDescription = stringResource(R.string.expiration_scan_entry_cd),
-                        modifier = Modifier.size(18.dp),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        Box(modifier = Modifier.weight(1f)) {
+            Surface(
+                shape = UrgencyTileShape,
+                color = MaterialTheme.colorScheme.secondaryContainer,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(modifier = Modifier.padding(14.dp)) {
+                    Text(
+                        text = expirationDate?.let { formatExpirationDate(it) }
+                            ?: stringResource(R.string.product_detail_status_not_set),
+                        style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
-                }
-                Text(
-                    text = expirationDate?.let { formatExpirationDate(it) }
-                        ?: stringResource(R.string.product_detail_expiration_set),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (isNearExpiry) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.clickable { showPicker = true },
-                )
-                if (expirationDate == null && suggestedDays != null) {
-                    // Icon-only — same 32dp footprint as the camera/clear icons either side of it,
-                    // so it reads as a real button (filled, tappable) without crowding this row the
-                    // way a labeled button did. The full explanation lives in the content
-                    // description instead of on-screen text.
-                    FilledIconButton(
-                        onClick = {
-                            val suggestedMillis = LocalDate.now().plusDays(suggestedDays.toLong())
-                                .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
-                            onDateChange(suggestedMillis)
-                        },
-                        modifier = Modifier.size(32.dp).padding(start = 4.dp),
-                    ) {
-                        Icon(
-                            Icons.Filled.AutoAwesome,
-                            contentDescription = stringResource(R.string.product_detail_expiration_suggest_format, suggestedDays),
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
-                }
-                if (expirationDate != null) {
-                    IconButton(onClick = { onDateChange(null) }, modifier = Modifier.size(32.dp)) {
-                        Icon(
-                            Icons.Filled.Close,
-                            contentDescription = stringResource(R.string.product_detail_expiration_clear_cd),
-                            modifier = Modifier.size(18.dp),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    if (expirationDate != null) {
+                        Text(
+                            text = expirationStatusLabel(expirationDate),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.75f),
+                            modifier = Modifier.padding(top = 2.dp),
                         )
                     }
                 }
             }
+            if (expirationDate != null) {
+                IconButton(
+                    onClick = { onDateChange(null) },
+                    modifier = Modifier.align(Alignment.TopEnd).size(28.dp),
+                ) {
+                    Icon(
+                        Icons.Filled.Close,
+                        contentDescription = stringResource(R.string.product_detail_expiration_clear_cd),
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                }
+            } else if (suggestedDays != null) {
+                IconButton(
+                    onClick = {
+                        val suggestedMillis = LocalDate.now().plusDays(suggestedDays.toLong())
+                            .atStartOfDay(ZoneOffset.UTC).toInstant().toEpochMilli()
+                        onDateChange(suggestedMillis)
+                    },
+                    modifier = Modifier.align(Alignment.TopEnd).size(28.dp),
+                ) {
+                    Icon(
+                        Icons.Filled.AutoAwesome,
+                        contentDescription = stringResource(R.string.product_detail_expiration_suggest_format, suggestedDays),
+                        modifier = Modifier.size(14.dp),
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
+                }
+            }
+        }
+        // AI-productherkenning is already premium-only elsewhere in the app (see
+        // ScanScreen/AiRecognizeScreen) since the photo leaves the device — this THT-datum scan
+        // is the same real per-scan cost, so it follows the same gate: premium households open
+        // the camera dialog directly, everyone else goes straight to the paywall.
+        FilledIconButton(
+            onClick = { if (isPremium) showAiScan = true else onNavigateToPremium() },
+            shape = RoundedCornerShape(18.dp),
+            modifier = Modifier.size(52.dp),
+        ) {
+            Icon(Icons.Filled.PhotoCamera, contentDescription = stringResource(R.string.expiration_scan_entry_cd), modifier = Modifier.size(22.dp))
+        }
+        OutlinedIconButton(
+            onClick = { showPicker = true },
+            shape = RoundedCornerShape(18.dp),
+            modifier = Modifier.size(52.dp),
+        ) {
+            Icon(Icons.Filled.CalendarMonth, contentDescription = stringResource(R.string.product_detail_pick_date_cd), modifier = Modifier.size(22.dp))
         }
     }
 
@@ -1290,25 +1341,3 @@ private fun ExpirationRow(
         }
     }
 }
-
-@Composable
-private fun MinQuantityRow(minQuantity: Int?, onChange: (Int?) -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.SpaceBetween,
-    ) {
-        Text(stringResource(R.string.product_detail_min_quantity_label), style = MaterialTheme.typography.bodyLarge)
-        QuantityStepper(
-            quantity = minQuantity ?: 0,
-            onDecrease = {
-                val next = (minQuantity ?: 0) - 1
-                onChange(if (next <= 0) null else next)
-            },
-            onIncrease = { onChange((minQuantity ?: 0) + 1) },
-            minQuantity = 0,
-            dense = true,
-        )
-    }
-}
-

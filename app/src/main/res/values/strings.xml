@@ -347,10 +347,10 @@
 
     <!-- Productdetail -->
     <string name="product_detail_default_title">Product</string>
-    <string name="section_stock">Voorraad</string>
-    <string name="product_detail_in_stock">Aantal</string>
     <string name="product_detail_remove">Verwijderen</string>
     <string name="product_detail_add_to_shopping_list">Toevoegen aan lijstje</string>
+    <string name="product_detail_add_to_list_button">Op de lijst</string>
+    <string name="product_detail_mark_used_up">Opgemaakt</string>
     <string name="product_detail_retry_lookup">Opnieuw opzoeken</string>
     <string name="product_detail_retry_lookup_success">Productgegevens bijgewerkt</string>
     <string name="product_detail_retry_lookup_failure">Opzoeken mislukt. Probeer het later opnieuw.</string>
@@ -363,9 +363,10 @@
     <string name="product_detail_edit_photo_title">Eigen foto</string>
     <string name="product_detail_choose_photo_action">Foto kiezen</string>
     <string name="product_detail_remove_photo_action">Foto verwijderen</string>
+    <string name="product_detail_overflow_cd">Meer opties</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_nutriscore_unavailable">Nutri-Score niet beschikbaar</string>
-    <string name="product_detail_ingredients_title">Ingrediënten</string>
+    <string name="product_detail_nutrition_ingredients_title">Voedingswaarden &amp; ingrediënten</string>
     <string name="product_detail_nutrition_title">Voedingswaarden</string>
     <string name="product_detail_nutrition_energy">Energie</string>
     <string name="product_detail_nutrition_fat">Vet</string>
@@ -376,10 +377,11 @@
     <string name="product_detail_nutrition_proteins">Eiwitten</string>
     <string name="product_detail_nutrition_salt">Zout</string>
     <string name="product_detail_expiration_label">Houdbaarheidsdatum</string>
+    <string name="product_detail_expiration_section_title">Houdbaar tot</string>
     <string name="product_detail_expiration_set">Instellen</string>
     <string name="product_detail_expiration_clear_cd">Houdbaarheidsdatum wissen</string>
     <string name="product_detail_expiration_suggest_format">Schat in op basis van categorie (%1$d dagen)</string>
-    <string name="product_detail_status_label">Status</string>
+    <string name="product_detail_pick_date_cd">Datum kiezen</string>
     <string name="product_detail_status_not_set">Niet ingesteld</string>
     <string name="product_detail_status_expired">Verlopen</string>
     <string name="product_detail_status_today">Vandaag over datum</string>
@@ -387,10 +389,13 @@
     <string name="product_detail_status_days_format">Nog %1$d dagen houdbaar</string>
     <string name="product_detail_status_fresh">Vers</string>
     <string name="product_detail_min_quantity_label">Minimum</string>
+    <string name="product_detail_in_huis_label">In huis</string>
+    <string name="product_detail_stat_min_format">min. %1$d</string>
+    <string name="product_detail_stat_scanned_label">Gescand</string>
+    <string name="product_detail_stat_scan_count_format">%1$d×</string>
+    <string name="product_detail_stat_price_delta_format">%1$s t.o.v. %2$s</string>
     <string name="product_detail_edit_cd">Bewerken</string>
-    <string name="product_detail_expand_cd">Uitklappen</string>
-    <string name="product_detail_collapse_cd">Inklappen</string>
-    <string name="product_detail_editable_title">Product details</string>
+    <string name="product_detail_editable_title">Gegevens bewerken</string>
     <string name="product_detail_field_brand">Merk</string>
     <string name="product_detail_field_unit">Eenheid</string>
     <string name="product_detail_field_location">Locatie in huis</string>
@@ -399,10 +404,13 @@
     <string name="location_freezer">Vriezer</string>
     <string name="product_detail_field_last_price">Laatst betaald</string>
     <string name="product_detail_price_history_title">Prijsgeschiedenis</string>
-    <string name="product_detail_allergens_title">Allergenen</string>
-    <string name="product_detail_diet_labels_title">Dieetlabels</string>
+    <string name="product_detail_allergens_diet_title">Allergenen &amp; dieetlabels</string>
     <string name="product_detail_note_title">Persoonlijke notitie</string>
     <string name="product_detail_note_placeholder">Bijv. een recept-idee, favoriete bereidingswijze of waar je dit hebt gekocht</string>
+    <plurals name="product_detail_stat_scan_frequency_days">
+        <item quantity="one">≈ elke dag</item>
+        <item quantity="other">≈ elke %1$d dagen</item>
+    </plurals>
 
     <!-- Allergenen (EU-lijst van 14) -->
     <string name="allergen_gluten">Gluten</string>

@@ -25,6 +25,8 @@ data class ProductDetailUiState(
     val minQuantity: Int? = null,
     val note: String? = null,
     val isFavorite: Boolean = false,
+    val scanCount: Int = 0,
+    val avgDaysBetweenScans: Int? = null,
     val isLoading: Boolean = true,
 )
 
@@ -38,7 +40,18 @@ class ProductDetailViewModel(
     val uiState: StateFlow<ProductDetailUiState> = combine(
         productRepository.observeProduct(barcode),
         inventoryRepository.observeInventoryItem(barcode),
-    ) { product, inventoryItem ->
+        inventoryRepository.observeScanHistoryForBarcode(barcode),
+    ) { product, inventoryItem, scanHistory ->
+        // Average interval between scans, spanning the oldest to the newest recorded scan —
+        // needs at least two scans to mean anything; one scan alone has no interval to show.
+        val avgDaysBetweenScans = if (scanHistory.size >= 2) {
+            val oldest = scanHistory.minOf { it.scannedAt }
+            val newest = scanHistory.maxOf { it.scannedAt }
+            val spanDays = (newest - oldest) / (24 * 60 * 60 * 1000L)
+            (spanDays / (scanHistory.size - 1)).toInt().coerceAtLeast(1)
+        } else {
+            null
+        }
         ProductDetailUiState(
             product = product,
             quantityInInventory = inventoryItem?.quantity,
@@ -46,6 +59,8 @@ class ProductDetailViewModel(
             minQuantity = inventoryItem?.minQuantity,
             note = inventoryItem?.note,
             isFavorite = inventoryItem?.isFavorite ?: false,
+            scanCount = scanHistory.size,
+            avgDaysBetweenScans = avgDaysBetweenScans,
             isLoading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProductDetailUiState())

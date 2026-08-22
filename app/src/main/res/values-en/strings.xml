@@ -346,10 +346,10 @@
 
     <!-- Product detail -->
     <string name="product_detail_default_title">Product</string>
-    <string name="section_stock">Stock</string>
-    <string name="product_detail_in_stock">Amount</string>
     <string name="product_detail_remove">Remove</string>
     <string name="product_detail_add_to_shopping_list">Add to list</string>
+    <string name="product_detail_add_to_list_button">Add to list</string>
+    <string name="product_detail_mark_used_up">Used up</string>
     <string name="product_detail_retry_lookup">Look up again</string>
     <string name="product_detail_retry_lookup_success">Product details updated</string>
     <string name="product_detail_retry_lookup_failure">Lookup failed. Please try again later.</string>
@@ -362,9 +362,10 @@
     <string name="product_detail_edit_photo_title">Custom photo</string>
     <string name="product_detail_choose_photo_action">Choose photo</string>
     <string name="product_detail_remove_photo_action">Remove photo</string>
+    <string name="product_detail_overflow_cd">More options</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_nutriscore_unavailable">Nutri-Score not available</string>
-    <string name="product_detail_ingredients_title">Ingredients</string>
+    <string name="product_detail_nutrition_ingredients_title">Nutrition &amp; ingredients</string>
     <string name="product_detail_nutrition_title">Nutrition</string>
     <string name="product_detail_nutrition_energy">Energy</string>
     <string name="product_detail_nutrition_fat">Fat</string>
@@ -375,10 +376,11 @@
     <string name="product_detail_nutrition_proteins">Protein</string>
     <string name="product_detail_nutrition_salt">Salt</string>
     <string name="product_detail_expiration_label">Best-before date</string>
+    <string name="product_detail_expiration_section_title">Best before</string>
     <string name="product_detail_expiration_set">Set</string>
     <string name="product_detail_expiration_clear_cd">Clear expiration date</string>
     <string name="product_detail_expiration_suggest_format">Estimate based on category (%1$d days)</string>
-    <string name="product_detail_status_label">Status</string>
+    <string name="product_detail_pick_date_cd">Pick a date</string>
     <string name="product_detail_status_not_set">Not set</string>
     <string name="product_detail_status_expired">Expired</string>
     <string name="product_detail_status_today">Expires today</string>
@@ -386,10 +388,13 @@
     <string name="product_detail_status_days_format">%1$d days left</string>
     <string name="product_detail_status_fresh">Fresh</string>
     <string name="product_detail_min_quantity_label">Minimum</string>
+    <string name="product_detail_in_huis_label">In stock</string>
+    <string name="product_detail_stat_min_format">min. %1$d</string>
+    <string name="product_detail_stat_scanned_label">Scanned</string>
+    <string name="product_detail_stat_scan_count_format">%1$d×</string>
+    <string name="product_detail_stat_price_delta_format">%1$s vs. %2$s</string>
     <string name="product_detail_edit_cd">Edit</string>
-    <string name="product_detail_expand_cd">Expand</string>
-    <string name="product_detail_collapse_cd">Collapse</string>
-    <string name="product_detail_editable_title">Product details</string>
+    <string name="product_detail_editable_title">Edit details</string>
     <string name="product_detail_field_brand">Brand</string>
     <string name="product_detail_field_unit">Unit</string>
     <string name="product_detail_field_location">Location in the house</string>
@@ -398,10 +403,13 @@
     <string name="location_freezer">Freezer</string>
     <string name="product_detail_field_last_price">Last paid</string>
     <string name="product_detail_price_history_title">Price history</string>
-    <string name="product_detail_allergens_title">Allergens</string>
-    <string name="product_detail_diet_labels_title">Diet labels</string>
+    <string name="product_detail_allergens_diet_title">Allergens &amp; diet labels</string>
     <string name="product_detail_note_title">Personal note</string>
     <string name="product_detail_note_placeholder">E.g. a recipe idea, favorite way to prepare it, or where you bought it</string>
+    <plurals name="product_detail_stat_scan_frequency_days">
+        <item quantity="one">≈ every day</item>
+        <item quantity="other">≈ every %1$d days</item>
+    </plurals>
 
     <!-- Allergens (EU list of 14) -->
     <string name="allergen_gluten">Gluten</string>

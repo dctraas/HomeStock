@@ -3,6 +3,7 @@ package com.dtraas.homestock.data.repository
 import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.local.entity.InventoryItemEntity
 import com.dtraas.homestock.data.local.entity.ProductEntity
+import com.dtraas.homestock.data.local.entity.ScanHistoryEntity
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.ExpiryEstimator
 import com.dtraas.homestock.data.remote.observeSnapshot
@@ -142,6 +143,24 @@ class InventoryRepository(
         val householdId = householdSession.householdId.value ?: return
         inventoryCollection(householdId).document(barcode).update("isFavorite", isFavorite).await()
     }
+
+    /** All scan-history entries for one barcode, newest first — powers Productdetail's
+     *  "Gescand N× / ≈ elke X dagen" stat tile. [scanHistoryCollection] already keeps a record
+     *  per scan across the whole household; this just narrows it to one product. */
+    fun observeScanHistoryForBarcode(barcode: String): Flow<List<ScanHistoryEntity>> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(emptyList())
+            } else {
+                scanHistoryCollection(householdId)
+                    .whereEqualTo("barcode", barcode)
+                    .observeSnapshots()
+                    .map { snapshot ->
+                        snapshot.documents.mapNotNull { ScanHistoryEntity.fromDocument(it) }
+                            .sortedByDescending { it.scannedAt }
+                    }
+            }
+        }
 
     /**
      * Auto re-adds [item]'s product to the shopping list once its quantity drops below its

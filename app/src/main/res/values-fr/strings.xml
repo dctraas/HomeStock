@@ -346,10 +346,10 @@
 
     <!-- Détail du produit -->
     <string name="product_detail_default_title">Produit</string>
-    <string name="section_stock">Stock</string>
-    <string name="product_detail_in_stock">Quantité</string>
     <string name="product_detail_remove">Retirer</string>
     <string name="product_detail_add_to_shopping_list">Ajouter à la liste</string>
+    <string name="product_detail_add_to_list_button">À la liste</string>
+    <string name="product_detail_mark_used_up">Consommé</string>
     <string name="product_detail_retry_lookup">Rechercher à nouveau</string>
     <string name="product_detail_retry_lookup_success">Informations du produit mises à jour</string>
     <string name="product_detail_retry_lookup_failure">Échec de la recherche. Réessayez plus tard.</string>
@@ -362,9 +362,10 @@
     <string name="product_detail_edit_photo_title">Photo personnalisée</string>
     <string name="product_detail_choose_photo_action">Choisir une photo</string>
     <string name="product_detail_remove_photo_action">Supprimer la photo</string>
+    <string name="product_detail_overflow_cd">Plus d\'options</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_nutriscore_unavailable">Nutri-Score non disponible</string>
-    <string name="product_detail_ingredients_title">Ingrédients</string>
+    <string name="product_detail_nutrition_ingredients_title">Valeurs nutritionnelles et ingrédients</string>
     <string name="product_detail_nutrition_title">Valeurs nutritionnelles</string>
     <string name="product_detail_nutrition_energy">Énergie</string>
     <string name="product_detail_nutrition_fat">Matières grasses</string>
@@ -375,10 +376,11 @@
     <string name="product_detail_nutrition_proteins">Protéines</string>
     <string name="product_detail_nutrition_salt">Sel</string>
     <string name="product_detail_expiration_label">Date de péremption</string>
+    <string name="product_detail_expiration_section_title">À consommer avant</string>
     <string name="product_detail_expiration_set">Définir</string>
     <string name="product_detail_expiration_clear_cd">Effacer la date de péremption</string>
     <string name="product_detail_expiration_suggest_format">Estimer selon la catégorie (%1$d jours)</string>
-    <string name="product_detail_status_label">Statut</string>
+    <string name="product_detail_pick_date_cd">Choisir une date</string>
     <string name="product_detail_status_not_set">Non défini</string>
     <string name="product_detail_status_expired">Périmé</string>
     <string name="product_detail_status_today">Périme aujourd\'hui</string>
@@ -386,10 +388,13 @@
     <string name="product_detail_status_days_format">Encore %1$d jours</string>
     <string name="product_detail_status_fresh">Frais</string>
     <string name="product_detail_min_quantity_label">Minimum</string>
+    <string name="product_detail_in_huis_label">En stock</string>
+    <string name="product_detail_stat_min_format">min. %1$d</string>
+    <string name="product_detail_stat_scanned_label">Scanné</string>
+    <string name="product_detail_stat_scan_count_format">%1$d×</string>
+    <string name="product_detail_stat_price_delta_format">%1$s p/r à %2$s</string>
     <string name="product_detail_edit_cd">Modifier</string>
-    <string name="product_detail_expand_cd">Développer</string>
-    <string name="product_detail_collapse_cd">Réduire</string>
-    <string name="product_detail_editable_title">Détails du produit</string>
+    <string name="product_detail_editable_title">Modifier les informations</string>
     <string name="product_detail_field_brand">Marque</string>
     <string name="product_detail_field_unit">Unité</string>
     <string name="product_detail_field_location">Emplacement dans la maison</string>
@@ -398,10 +403,13 @@
     <string name="location_freezer">Congélateur</string>
     <string name="product_detail_field_last_price">Dernier prix payé</string>
     <string name="product_detail_price_history_title">Historique des prix</string>
-    <string name="product_detail_allergens_title">Allergènes</string>
-    <string name="product_detail_diet_labels_title">Labels alimentaires</string>
+    <string name="product_detail_allergens_diet_title">Allergènes et labels alimentaires</string>
     <string name="product_detail_note_title">Note personnelle</string>
     <string name="product_detail_note_placeholder">Par ex. une idée de recette, votre façon préférée de le préparer, ou où vous l\'avez acheté</string>
+    <plurals name="product_detail_stat_scan_frequency_days">
+        <item quantity="one">≈ chaque jour</item>
+        <item quantity="other">≈ tous les %1$d jours</item>
+    </plurals>
 
     <!-- Allergènes (liste UE des 14) -->
     <string name="allergen_gluten">Gluten</string>
