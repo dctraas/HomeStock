@@ -451,13 +451,17 @@
     <string name="diet_label_kosher">Casher</string>
 
     <!-- Scanner -->
-    <string name="scan_quick_added_format">%1$s ajouté (+1)</string>
-    <string name="scan_overlay_hint">Pointez la caméra vers le code-barres d\'un produit</string>
+    <string name="scan_overlay_hint">Pointez la caméra vers le code-barres d\'un produit. Les produits connus sont ajoutés aussitôt.</string>
     <string name="scan_permission_rationale">HomeStock a besoin d\'accéder à la caméra pour scanner les codes-barres.</string>
     <string name="scan_permission_button">Autoriser l\'accès à la caméra</string>
     <string name="scan_permission_denied_rationale">Vous avez refusé l\'accès à la caméra. Activez-le dans les paramètres de l\'application pour continuer à scanner.</string>
     <string name="scan_permission_open_settings">Ouvrir les paramètres</string>
-    <string name="scan_search_by_name_cd">Rechercher par nom</string>
+    <string name="scan_session_count_format">%1$d scannés cette session</string>
+    <string name="scan_flash_cd">Flash</string>
+    <string name="scan_result_added_format">ajouté · %1$d en stock maintenant</string>
+    <string name="scan_action_by_name">Par nom</string>
+    <string name="scan_action_photo">Photo</string>
+    <string name="scan_action_receipt">Ticket</string>
 
     <!-- Résultat du scan -->
     <string name="scan_result_title">Ajouter un produit</string>

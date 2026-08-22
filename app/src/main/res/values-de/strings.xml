@@ -451,13 +451,17 @@
     <string name="diet_label_kosher">Koscher</string>
 
     <!-- Scannen -->
-    <string name="scan_quick_added_format">%1$s hinzugefügt (+1)</string>
-    <string name="scan_overlay_hint">Richte die Kamera auf den Barcode eines Produkts</string>
+    <string name="scan_overlay_hint">Richte die Kamera auf den Barcode eines Produkts. Bekannte Produkte werden direkt hinzugefügt.</string>
     <string name="scan_permission_rationale">HomeStock benötigt Kamerazugriff, um Barcodes scannen zu können.</string>
     <string name="scan_permission_button">Kamerazugriff erlauben</string>
     <string name="scan_permission_denied_rationale">Du hast den Kamerazugriff verweigert. Aktiviere ihn in den App-Einstellungen, um weiter zu scannen.</string>
     <string name="scan_permission_open_settings">Einstellungen öffnen</string>
-    <string name="scan_search_by_name_cd">Nach Name suchen</string>
+    <string name="scan_session_count_format">%1$d in dieser Sitzung gescannt</string>
+    <string name="scan_flash_cd">Blitz</string>
+    <string name="scan_result_added_format">hinzugefügt · jetzt %1$d vorrätig</string>
+    <string name="scan_action_by_name">Nach Name</string>
+    <string name="scan_action_photo">Foto</string>
+    <string name="scan_action_receipt">Bon</string>
 
     <!-- Scanergebnis -->
     <string name="scan_result_title">Produkt hinzufügen</string>

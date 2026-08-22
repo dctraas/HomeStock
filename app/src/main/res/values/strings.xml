@@ -452,13 +452,17 @@
     <string name="diet_label_kosher">Koosjer</string>
 
     <!-- Scannen -->
-    <string name="scan_quick_added_format">%1$s toegevoegd (+1)</string>
-    <string name="scan_overlay_hint">Richt de camera op de barcode van een product</string>
+    <string name="scan_overlay_hint">Richt de camera op de barcode van een product. Bekende producten worden direct toegevoegd.</string>
     <string name="scan_permission_rationale">HomeStock heeft toegang tot de camera nodig om barcodes te kunnen scannen.</string>
     <string name="scan_permission_button">Geef toegang tot camera</string>
     <string name="scan_permission_denied_rationale">Je hebt camera-toegang geweigerd. Zet deze aan bij de instellingen van de app om verder te kunnen scannen.</string>
     <string name="scan_permission_open_settings">Open instellingen</string>
-    <string name="scan_search_by_name_cd">Zoeken op naam</string>
+    <string name="scan_session_count_format">%1$d gescand in deze sessie</string>
+    <string name="scan_flash_cd">Flitser</string>
+    <string name="scan_result_added_format">toegevoegd · nu %1$d in huis</string>
+    <string name="scan_action_by_name">Op naam</string>
+    <string name="scan_action_photo">Foto</string>
+    <string name="scan_action_receipt">Bon</string>
 
     <!-- Scanresultaat -->
     <string name="scan_result_title">Product toevoegen</string>

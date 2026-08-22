@@ -451,13 +451,17 @@
     <string name="diet_label_kosher">Kosher</string>
 
     <!-- Scan -->
-    <string name="scan_quick_added_format">%1$s added (+1)</string>
-    <string name="scan_overlay_hint">Point the camera at a product\'s barcode</string>
+    <string name="scan_overlay_hint">Point the camera at a product\'s barcode. Known products are added right away.</string>
     <string name="scan_permission_rationale">HomeStock needs camera access to scan barcodes.</string>
     <string name="scan_permission_button">Grant camera access</string>
     <string name="scan_permission_denied_rationale">You\'ve denied camera access. Turn it on in the app\'s settings to keep scanning.</string>
     <string name="scan_permission_open_settings">Open settings</string>
-    <string name="scan_search_by_name_cd">Search by name</string>
+    <string name="scan_session_count_format">%1$d scanned this session</string>
+    <string name="scan_flash_cd">Flash</string>
+    <string name="scan_result_added_format">added · now %1$d in stock</string>
+    <string name="scan_action_by_name">By name</string>
+    <string name="scan_action_photo">Photo</string>
+    <string name="scan_action_receipt">Receipt</string>
 
     <!-- Scan result -->
     <string name="scan_result_title">Add product</string>

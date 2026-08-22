@@ -150,6 +150,7 @@ fun HomeStockApp(
                     },
                     onSearchClick = { navController.navigate(Destination.SearchProduct.route) },
                     onAiRecognizeClick = { navController.navigate(Destination.AiRecognize.route) },
+                    onReceiptScanClick = { navController.navigate(Destination.ReceiptScan.route) },
                     onNavigateToPremium = { navController.navigate(Destination.Premium.route) },
                 )
             }
