@@ -24,7 +24,7 @@
     <string name="nav_inventory">Voorraad</string>
     <string name="nav_scan">Scannen</string>
     <string name="nav_meals">Maaltijden</string>
-    <string name="nav_news">Meldingen</string>
+    <string name="nav_news">Activiteit</string>
     <string name="nav_more">Meer</string>
 
     <!-- Launcher shortcuts (long-press the app icon) -->
@@ -343,10 +343,20 @@
     <string name="group_by_location">Locatie</string>
 
     <!-- Nieuws -->
-    <string name="notifications_tab_notices">Meldingen</string>
-    <string name="notifications_tab_history">Geschiedenis</string>
+    <string name="notifications_filter_all">Alles</string>
+    <string name="notifications_tab_notices">Tips</string>
+    <string name="notifications_tab_history">Huishouden</string>
     <string name="notifications_history_empty">Scans en aanpassingen verschijnen hier.</string>
     <string name="notice_dismiss_cd">Verwijderen</string>
+    <string name="notifications_date_today">Vandaag</string>
+    <string name="notifications_date_yesterday">Gisteren</string>
+    <string name="notifications_urgent_action">Bekijk</string>
+    <string name="notifications_urgent_expiring_today_format">%1$s is vandaag over de datum</string>
+    <string name="notifications_urgent_expiring_tomorrow_format">%1$s is morgen over de datum</string>
+    <plurals name="notifications_tips_teaser_subtitle_format">
+        <item quantity="one">%1$d tip</item>
+        <item quantity="other">%1$d tips</item>
+    </plurals>
 
     <!-- Productdetail -->
     <string name="product_detail_default_title">Product</string>

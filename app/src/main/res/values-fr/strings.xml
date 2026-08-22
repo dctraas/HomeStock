@@ -24,7 +24,7 @@
     <string name="nav_inventory">Stock</string>
     <string name="nav_scan">Scanner</string>
     <string name="nav_meals">Repas</string>
-    <string name="nav_news">Alertes</string>
+    <string name="nav_news">Activité</string>
 
     <!-- Launcher shortcuts (long-press the app icon) -->
     <string name="shortcut_scan_long_label">Scanner un code-barres</string>
@@ -342,10 +342,20 @@
     <string name="group_by_location">Emplacement</string>
 
     <!-- Actualités -->
-    <string name="notifications_tab_notices">Notifications</string>
-    <string name="notifications_tab_history">Historique</string>
+    <string name="notifications_filter_all">Tout</string>
+    <string name="notifications_tab_notices">Astuces</string>
+    <string name="notifications_tab_history">Foyer</string>
     <string name="notifications_history_empty">Les scans et modifications apparaîtront ici.</string>
     <string name="notice_dismiss_cd">Supprimer</string>
+    <string name="notifications_date_today">Aujourd\'hui</string>
+    <string name="notifications_date_yesterday">Hier</string>
+    <string name="notifications_urgent_action">Voir</string>
+    <string name="notifications_urgent_expiring_today_format">%1$s périme aujourd\'hui</string>
+    <string name="notifications_urgent_expiring_tomorrow_format">%1$s périme demain</string>
+    <plurals name="notifications_tips_teaser_subtitle_format">
+        <item quantity="one">%1$d astuce</item>
+        <item quantity="other">%1$d astuces</item>
+    </plurals>
 
     <!-- Détail du produit -->
     <string name="product_detail_default_title">Produit</string>

@@ -193,7 +193,10 @@ fun HomeStockApp(
                 )
             }
             composable(Destination.Notifications.route) {
-                NotificationsScreen(onBack = { navController.popBackStack() })
+                NotificationsScreen(
+                    onBack = { navController.popBackStack() },
+                    onNavigateToProduct = { barcode -> navController.navigate(Destination.ProductDetail.createRoute(barcode)) },
+                )
             }
             composable(Destination.More.route) {
                 MoreScreen(

@@ -24,7 +24,7 @@
     <string name="nav_inventory">Inventario</string>
     <string name="nav_scan">Escanear</string>
     <string name="nav_meals">Comidas</string>
-    <string name="nav_news">Avisos</string>
+    <string name="nav_news">Actividad</string>
 
     <!-- Launcher shortcuts (long-press the app icon) -->
     <string name="shortcut_scan_long_label">Escanear código de barras</string>
@@ -342,10 +342,20 @@
     <string name="group_by_location">Ubicación</string>
 
     <!-- Novedades -->
-    <string name="notifications_tab_notices">Avisos</string>
-    <string name="notifications_tab_history">Historial</string>
+    <string name="notifications_filter_all">Todo</string>
+    <string name="notifications_tab_notices">Consejos</string>
+    <string name="notifications_tab_history">Hogar</string>
     <string name="notifications_history_empty">Los escaneos y cambios aparecerán aquí.</string>
     <string name="notice_dismiss_cd">Eliminar</string>
+    <string name="notifications_date_today">Hoy</string>
+    <string name="notifications_date_yesterday">Ayer</string>
+    <string name="notifications_urgent_action">Ver</string>
+    <string name="notifications_urgent_expiring_today_format">%1$s caduca hoy</string>
+    <string name="notifications_urgent_expiring_tomorrow_format">%1$s caduca mañana</string>
+    <plurals name="notifications_tips_teaser_subtitle_format">
+        <item quantity="one">%1$d consejo</item>
+        <item quantity="other">%1$d consejos</item>
+    </plurals>
 
     <!-- Detalle del producto -->
     <string name="product_detail_default_title">Producto</string>
