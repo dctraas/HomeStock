@@ -74,10 +74,15 @@ class ExpiryCheckWorker(
         } else {
             context.getString(R.string.notification_expiry_body_multiple_format, productNames.size)
         }
+        // The action (not just launching MainActivity plain) is what MainActivity reads to
+        // switch Voorraad's "Verloopt bijna" quick filter on, so tapping this notification
+        // actually shows the near-expiry products it's about instead of just the default view.
         val contentIntent = PendingIntent.getActivity(
             context,
             0,
-            Intent(context, MainActivity::class.java),
+            Intent(context, MainActivity::class.java).apply {
+                action = MainActivity.ACTION_SHOW_EXPIRING_SOON
+            },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
 

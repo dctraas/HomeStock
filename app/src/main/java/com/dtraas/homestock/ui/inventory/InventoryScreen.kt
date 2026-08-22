@@ -138,6 +138,11 @@ fun InventoryScreen(
     onNavigateToAiRecognize: () -> Unit = {},
     onNavigateToPremium: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
+    // True for exactly one composition right after opening the app from the expiry-reminder
+    // notification (see MainActivity/ExpiryCheckWorker) — switches on the "Verloopt bijna"
+    // quick filter so the products that notification was about are what's showing.
+    showExpiringSoonOnOpen: Boolean = false,
+    onShowExpiringSoonConsumed: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as HomeStockApplication
@@ -180,6 +185,16 @@ fun InventoryScreen(
     LaunchedEffect(Unit) {
         viewModel.restockEvents.collect { name ->
             snackbarHostState.showSnackbar(restockedFormat.format(name), duration = SnackbarDuration.Short)
+        }
+    }
+
+    // Keyed on the flag itself (not Unit) so tapping the notification again while already on
+    // Voorraad — e.g. after having since turned the filter back off — re-applies it, matching
+    // MainActivity's onNewIntent semantics for pendingRoute.
+    LaunchedEffect(showExpiringSoonOnOpen) {
+        if (showExpiringSoonOnOpen) {
+            viewModel.onExpiringSoonFilterChange(true)
+            onShowExpiringSoonConsumed()
         }
     }
 

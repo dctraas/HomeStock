@@ -64,7 +64,12 @@ import com.dtraas.homestock.ui.shoppinglist.ShoppingListScreen
 import com.dtraas.homestock.ui.statistics.StatisticsScreen
 
 @Composable
-fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Unit = {}) {
+fun HomeStockApp(
+    pendingRoute: String? = null,
+    onPendingRouteConsumed: () -> Unit = {},
+    pendingShowExpiringSoon: Boolean = false,
+    onPendingShowExpiringSoonConsumed: () -> Unit = {},
+) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -151,6 +156,8 @@ fun HomeStockApp(pendingRoute: String? = null, onPendingRouteConsumed: () -> Uni
                     onNavigateToAiRecognize = { navController.navigate(Destination.AiRecognize.route) },
                     onNavigateToPremium = { navController.navigate(Destination.Premium.route) },
                     onNavigateToNotifications = { navController.navigate(Destination.Notifications.route) },
+                    showExpiringSoonOnOpen = pendingShowExpiringSoon,
+                    onShowExpiringSoonConsumed = onPendingShowExpiringSoonConsumed,
                 )
             }
             composable(Destination.ShoppingList.route) {

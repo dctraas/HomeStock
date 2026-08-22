@@ -39,6 +39,13 @@ class MainActivity : AppCompatActivity() {
     // instead of spawning a new one).
     private var pendingRoute by mutableStateOf<String?>(null)
 
+    // Set when this activity was opened by tapping the expiry-reminder notification (see
+    // ExpiryCheckWorker) — read once by InventoryScreen to switch on the "Verloopt bijna"
+    // quick filter, so the products the notification was actually about are what's showing,
+    // not just the app's default Voorraad view. pendingRoute above still fires alongside this
+    // (see shortcutRouteForIntent) to make sure Voorraad is what's on screen at all.
+    private var pendingShowExpiringSoon by mutableStateOf(false)
+
     // From a homestock://join?code=XXXXXX link (see HouseholdInviteLink and
     // HouseholdSettingsScreen's "Deel uitnodiging" button) — only meaningful while this device
     // isn't in a household yet, since that's the only time HouseholdScreen is shown at all (see
@@ -50,6 +57,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         pendingRoute = shortcutRouteForIntent(intent)
+        pendingShowExpiringSoon = intent.action == ACTION_SHOW_EXPIRING_SOON
         pendingJoinCode = HouseholdInviteLink.codeFrom(intent.data)
         setContent {
             val application = LocalContext.current.applicationContext as HomeStockApplication
@@ -86,6 +94,8 @@ class MainActivity : AppCompatActivity() {
                         HomeStockApp(
                             pendingRoute = pendingRoute,
                             onPendingRouteConsumed = { pendingRoute = null },
+                            pendingShowExpiringSoon = pendingShowExpiringSoon,
+                            onPendingShowExpiringSoonConsumed = { pendingShowExpiringSoon = false },
                         )
                     }
                 }
@@ -97,17 +107,22 @@ class MainActivity : AppCompatActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         shortcutRouteForIntent(intent)?.let { pendingRoute = it }
+        if (intent.action == ACTION_SHOW_EXPIRING_SOON) pendingShowExpiringSoon = true
         HouseholdInviteLink.codeFrom(intent.data)?.let { pendingJoinCode = it }
     }
 
     private fun shortcutRouteForIntent(intent: Intent?): String? = when (intent?.action) {
         ACTION_SHORTCUT_SCAN -> Destination.Scan.route
         ACTION_SHORTCUT_SHOPPING_LIST -> Destination.ShoppingList.route
+        ACTION_SHOW_EXPIRING_SOON -> Destination.Inventory.route
         else -> null
     }
 
     companion object {
         const val ACTION_SHORTCUT_SCAN = "com.dtraas.homestock.action.SHORTCUT_SCAN"
         const val ACTION_SHORTCUT_SHOPPING_LIST = "com.dtraas.homestock.action.SHORTCUT_SHOPPING_LIST"
+
+        /** Set on the expiry-reminder notification's content [PendingIntent] — see ExpiryCheckWorker. */
+        const val ACTION_SHOW_EXPIRING_SOON = "com.dtraas.homestock.action.SHOW_EXPIRING_SOON"
     }
 }
