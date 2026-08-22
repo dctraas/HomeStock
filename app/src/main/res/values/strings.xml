@@ -544,28 +544,18 @@
 
     <!-- Statistieken -->
     <string name="statistics_title">Statistieken</string>
-    <string name="statistics_most_scanned">Meest gescand</string>
+    <string name="statistics_hero_eyebrow_format">VERSPILD IN %1$s</string>
     <string name="statistics_no_scans_yet">Nog geen scans om te tonen.</string>
-    <string name="statistics_most_wasted">Meest verspild</string>
+    <string name="statistics_most_wasted">Vaakst weggegooid</string>
     <string name="statistics_no_waste_yet">Nog niets als weggegooid gemarkeerd.</string>
-    <string name="statistics_category_distribution">Verdeling per categorie</string>
-    <string name="statistics_no_products_yet">Nog geen producten in voorraad.</string>
+    <string name="statistics_wasted_row_format">%1$d× · %2$s</string>
+    <string name="statistics_insight_format">Je gooit het vaakst producten uit de categorie %1$s weg. Overweeg kleinere porties te kopen, of vries de rest in voordat het bederft.</string>
     <string name="statistics_in_stock">In voorraad</string>
-    <string name="statistics_categories">Categorieën</string>
-    <string name="statistics_favorites">Favorieten</string>
-    <string name="statistics_this_week">Deze week</string>
-    <string name="statistics_range_month">Deze maand</string>
-    <string name="statistics_by_actor">Per huisgenoot</string>
+    <string name="statistics_by_actor">Wie doet wat</string>
     <string name="statistics_scan_count_format">%1$dx</string>
-    <string name="statistics_wasted_count_format">%1$dx</string>
-    <string name="statistics_section_health">Voorraadgezondheid</string>
-    <string name="statistics_expiring_soon">Bijna houdbaar</string>
-    <string name="statistics_low_stock">Laag op voorraad</string>
-    <string name="statistics_section_range_activity">Activiteit deze periode</string>
-    <string name="statistics_removed">Verwijderd</string>
-    <string name="statistics_added_to_list">Aan lijst toegevoegd</string>
+    <string name="statistics_expiring_soon">Verlopen bijna</string>
+    <string name="statistics_low_stock">Bijna op</string>
     <string name="statistics_busiest_day_title">Drukste scandag</string>
-    <string name="statistics_busiest_day_format">%1$s is doorgaans je drukste scandag</string>
 
     <!-- Home screen widget -->
     <string name="widget_shopping_list_title">Boodschappenlijst</string>

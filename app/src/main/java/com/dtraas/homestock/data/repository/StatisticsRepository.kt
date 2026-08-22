@@ -19,8 +19,12 @@ import kotlinx.coroutines.flow.map
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneId
 import java.time.ZoneOffset
+
+/** One month's total approximate waste value — see [StatisticsRepository.observeMonthlyWasteValue]. */
+data class MonthlyWaste(val month: YearMonth, val totalValue: Double)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StatisticsRepository(
@@ -164,11 +168,46 @@ class StatisticsRepository(
                                     category = product.category,
                                     imageUrl = product.imageUrl,
                                     wastedCount = count,
+                                    wastedValue = count * (product.lastPrice ?: 0.0),
                                 )
                             }
                         }
                         .sortedByDescending { it.wastedCount }
                         .take(limit)
+                }
+            }
+        }
+
+    /**
+     * Total waste value ([TopWastedProduct.wastedValue]'s same count × current-price
+     * approximation, summed per month) for [monthsBack] months up to and including the current
+     * one, oldest first — feeds the hero metric's month-over-month delta and its bar chart. A
+     * month with zero "wasted" activity entries (or none priced) still gets an entry at €0
+     * rather than being missing, so the chart always has exactly [monthsBack] bars.
+     */
+    fun observeMonthlyWasteValue(monthsBack: Int = 6): Flow<List<MonthlyWaste>> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(emptyList())
+            } else {
+                combine(
+                    collection(householdId, "activityLog").observeSnapshots(),
+                    products(householdId),
+                ) { snapshot, products ->
+                    val currentMonth = YearMonth.now()
+                    val months = (monthsBack - 1 downTo 0).map { currentMonth.minusMonths(it.toLong()) }
+                    val totals = months.associateWith { 0.0 }.toMutableMap()
+                    snapshot.documents
+                        .filter { it.getString("type") == ActivityType.WASTED.storageKey }
+                        .forEach { doc ->
+                            val timestamp = doc.getLong("timestamp") ?: return@forEach
+                            val month = YearMonth.from(Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()))
+                            if (month !in totals) return@forEach
+                            val barcode = doc.getString("barcode") ?: return@forEach
+                            val price = products[barcode]?.lastPrice ?: 0.0
+                            totals[month] = (totals[month] ?: 0.0) + price
+                        }
+                    months.map { MonthlyWaste(it, totals[it] ?: 0.0) }
                 }
             }
         }

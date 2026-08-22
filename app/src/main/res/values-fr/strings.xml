@@ -543,28 +543,18 @@
 
     <!-- Statistiques -->
     <string name="statistics_title">Statistiques</string>
-    <string name="statistics_most_scanned">Les plus scannés</string>
+    <string name="statistics_hero_eyebrow_format">GASPILLÉ EN %1$s</string>
     <string name="statistics_no_scans_yet">Aucun scan à afficher pour l\'instant.</string>
-    <string name="statistics_most_wasted">Les plus gaspillés</string>
+    <string name="statistics_most_wasted">Le plus souvent jeté</string>
     <string name="statistics_no_waste_yet">Rien marqué comme gaspillé pour l\'instant.</string>
-    <string name="statistics_category_distribution">Répartition par catégorie</string>
-    <string name="statistics_no_products_yet">Aucun produit en stock pour l\'instant.</string>
+    <string name="statistics_wasted_row_format">%1$d× · %2$s</string>
+    <string name="statistics_insight_format">Vous jetez le plus souvent des produits de la catégorie %1$s. Pensez à acheter de plus petites quantités, ou congelez le reste avant qu\'il ne s\'abîme.</string>
     <string name="statistics_in_stock">En stock</string>
-    <string name="statistics_categories">Catégories</string>
-    <string name="statistics_favorites">Favoris</string>
-    <string name="statistics_this_week">Cette semaine</string>
-    <string name="statistics_range_month">Ce mois-ci</string>
-    <string name="statistics_by_actor">Par membre du foyer</string>
+    <string name="statistics_by_actor">Qui fait quoi</string>
     <string name="statistics_scan_count_format">%1$dx</string>
-    <string name="statistics_wasted_count_format">%1$dx</string>
-    <string name="statistics_section_health">Santé du stock</string>
     <string name="statistics_expiring_soon">Bientôt périmé</string>
     <string name="statistics_low_stock">Stock faible</string>
-    <string name="statistics_section_range_activity">Activité sur cette période</string>
-    <string name="statistics_removed">Retiré</string>
-    <string name="statistics_added_to_list">Ajouté à la liste</string>
     <string name="statistics_busiest_day_title">Jour le plus actif</string>
-    <string name="statistics_busiest_day_format">%1$s est généralement votre jour de scan le plus actif</string>
 
     <!-- Home screen widget -->
     <string name="widget_shopping_list_title">Liste de courses</string>

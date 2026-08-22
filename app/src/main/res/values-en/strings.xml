@@ -543,28 +543,18 @@
 
     <!-- Statistics -->
     <string name="statistics_title">Statistics</string>
-    <string name="statistics_most_scanned">Most scanned</string>
+    <string name="statistics_hero_eyebrow_format">WASTED IN %1$s</string>
     <string name="statistics_no_scans_yet">No scans to show yet.</string>
-    <string name="statistics_most_wasted">Most wasted</string>
+    <string name="statistics_most_wasted">Thrown out most</string>
     <string name="statistics_no_waste_yet">Nothing marked as wasted yet.</string>
-    <string name="statistics_category_distribution">Breakdown by category</string>
-    <string name="statistics_no_products_yet">No products in inventory yet.</string>
+    <string name="statistics_wasted_row_format">%1$d× · %2$s</string>
+    <string name="statistics_insight_format">You throw out products from the %1$s category most often. Consider buying smaller amounts, or freeze the rest before it spoils.</string>
     <string name="statistics_in_stock">In stock</string>
-    <string name="statistics_categories">Categories</string>
-    <string name="statistics_favorites">Favorites</string>
-    <string name="statistics_this_week">This week</string>
-    <string name="statistics_range_month">This month</string>
-    <string name="statistics_by_actor">By household member</string>
+    <string name="statistics_by_actor">Who does what</string>
     <string name="statistics_scan_count_format">%1$dx</string>
-    <string name="statistics_wasted_count_format">%1$dx</string>
-    <string name="statistics_section_health">Inventory health</string>
     <string name="statistics_expiring_soon">Expiring soon</string>
     <string name="statistics_low_stock">Low stock</string>
-    <string name="statistics_section_range_activity">Activity this period</string>
-    <string name="statistics_removed">Removed</string>
-    <string name="statistics_added_to_list">Added to list</string>
     <string name="statistics_busiest_day_title">Busiest scan day</string>
-    <string name="statistics_busiest_day_format">%1$s is usually your busiest scan day</string>
 
     <!-- Home screen widget -->
     <string name="widget_shopping_list_title">Shopping list</string>

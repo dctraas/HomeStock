@@ -89,6 +89,13 @@ fun HomeStockApp(
     // one-time introduction.
     var showOnboardingTour by remember { mutableStateOf(!onboardingTourPreferences.hasSeenTour) }
 
+    // Statistieken's "verlopen bijna"/"bijna op" status tiles set these right before navigating
+    // to Voorraad — same one-shot "consume and clear" shape as [pendingShowExpiringSoon] above
+    // (which is combined with [pendingShowExpiringSoonLocal] below), just for an in-app trigger
+    // instead of one arriving from outside via MainActivity/a notification.
+    var pendingShowExpiringSoonLocal by remember { mutableStateOf(false) }
+    var pendingShowLowStock by remember { mutableStateOf(false) }
+
     // Fires once, right when this composable first mounts after creating/joining a household
     // (see HouseholdSession.setHousehold) — a one-time nudge rather than a blocking step in
     // that flow, and never shown again afterward regardless of how the user responds.
@@ -157,15 +164,33 @@ fun HomeStockApp(
                     onNavigateToAiRecognize = { navController.navigate(Destination.AiRecognize.route) },
                     onNavigateToPremium = { navController.navigate(Destination.Premium.route) },
                     onNavigateToNotifications = { navController.navigate(Destination.Notifications.route) },
-                    showExpiringSoonOnOpen = pendingShowExpiringSoon,
-                    onShowExpiringSoonConsumed = onPendingShowExpiringSoonConsumed,
+                    showExpiringSoonOnOpen = pendingShowExpiringSoon || pendingShowExpiringSoonLocal,
+                    onShowExpiringSoonConsumed = {
+                        onPendingShowExpiringSoonConsumed()
+                        pendingShowExpiringSoonLocal = false
+                    },
+                    showLowStockOnOpen = pendingShowLowStock,
+                    onShowLowStockConsumed = { pendingShowLowStock = false },
                 )
             }
             composable(Destination.ShoppingList.route) {
                 ShoppingListScreen()
             }
             composable(Destination.Statistics.route) {
-                StatisticsScreen(onBack = { navController.popBackStack() })
+                StatisticsScreen(
+                    onBack = { navController.popBackStack() },
+                    onNavigateToExpiringSoon = {
+                        pendingShowExpiringSoonLocal = true
+                        navController.navigate(Destination.Inventory.route) { launchSingleTop = true }
+                    },
+                    onNavigateToLowStock = {
+                        pendingShowLowStock = true
+                        navController.navigate(Destination.Inventory.route) { launchSingleTop = true }
+                    },
+                    onNavigateToInventory = {
+                        navController.navigate(Destination.Inventory.route) { launchSingleTop = true }
+                    },
+                )
             }
             composable(Destination.Notifications.route) {
                 NotificationsScreen(onBack = { navController.popBackStack() })

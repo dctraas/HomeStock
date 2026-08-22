@@ -543,28 +543,18 @@
 
     <!-- Estadísticas -->
     <string name="statistics_title">Estadísticas</string>
-    <string name="statistics_most_scanned">Más escaneados</string>
+    <string name="statistics_hero_eyebrow_format">DESPERDICIADO EN %1$s</string>
     <string name="statistics_no_scans_yet">Todavía no hay escaneos que mostrar.</string>
-    <string name="statistics_most_wasted">Más desperdiciados</string>
+    <string name="statistics_most_wasted">Más tirado a la basura</string>
     <string name="statistics_no_waste_yet">Todavía no hay nada marcado como desperdiciado.</string>
-    <string name="statistics_category_distribution">Distribución por categoría</string>
-    <string name="statistics_no_products_yet">Todavía no hay productos en el inventario.</string>
+    <string name="statistics_wasted_row_format">%1$d× · %2$s</string>
+    <string name="statistics_insight_format">Tiras a la basura con más frecuencia productos de la categoría %1$s. Considera comprar cantidades más pequeñas, o congela el resto antes de que se estropee.</string>
     <string name="statistics_in_stock">En existencia</string>
-    <string name="statistics_categories">Categorías</string>
-    <string name="statistics_favorites">Favoritos</string>
-    <string name="statistics_this_week">Esta semana</string>
-    <string name="statistics_range_month">Este mes</string>
-    <string name="statistics_by_actor">Por miembro del hogar</string>
+    <string name="statistics_by_actor">Quién hace qué</string>
     <string name="statistics_scan_count_format">%1$dx</string>
-    <string name="statistics_wasted_count_format">%1$dx</string>
-    <string name="statistics_section_health">Salud del inventario</string>
     <string name="statistics_expiring_soon">Por caducar</string>
     <string name="statistics_low_stock">Poca existencia</string>
-    <string name="statistics_section_range_activity">Actividad en este período</string>
-    <string name="statistics_removed">Eliminado</string>
-    <string name="statistics_added_to_list">Añadido a la lista</string>
     <string name="statistics_busiest_day_title">Día de más escaneos</string>
-    <string name="statistics_busiest_day_format">%1$s suele ser tu día con más escaneos</string>
 
     <!-- Home screen widget -->
     <string name="widget_shopping_list_title">Lista de la compra</string>

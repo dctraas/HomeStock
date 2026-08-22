@@ -149,6 +149,10 @@ fun InventoryScreen(
     // quick filter so the products that notification was about are what's showing.
     showExpiringSoonOnOpen: Boolean = false,
     onShowExpiringSoonConsumed: () -> Unit = {},
+    // Same idea as [showExpiringSoonOnOpen], but for arriving from Statistieken's "bijna op"
+    // status tile instead of a system notification — see HomeStockApp's pendingInventoryFilter.
+    showLowStockOnOpen: Boolean = false,
+    onShowLowStockConsumed: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val application = context.applicationContext as HomeStockApplication
@@ -208,6 +212,13 @@ fun InventoryScreen(
         if (showExpiringSoonOnOpen) {
             viewModel.onExpiringSoonFilterChange(true)
             onShowExpiringSoonConsumed()
+        }
+    }
+
+    LaunchedEffect(showLowStockOnOpen) {
+        if (showLowStockOnOpen) {
+            viewModel.onLowStockFilterChange(true)
+            onShowLowStockConsumed()
         }
     }
 
