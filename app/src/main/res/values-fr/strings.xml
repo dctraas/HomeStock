@@ -275,12 +275,10 @@
     <!-- Stock -->
     <string name="inventory_title">Stock</string>
     <string name="inventory_show_as_tiles_cd">Afficher en cartes</string>
-    <string name="inventory_show_as_list_cd">Afficher en liste</string>
     <string name="inventory_search_placeholder">Rechercher dans le stock…</string>
     <string name="inventory_filter_all">Tout</string>
     <string name="inventory_sort_cd">Trier</string>
     <string name="inventory_filter_cd">Filtrer</string>
-    <string name="inventory_filter_active_cd_format">Filtrer (actif : %1$s)</string>
     <string name="inventory_favorites_filter_cd">Afficher uniquement les favoris</string>
     <string name="inventory_favorites_filter_active_cd">Afficher uniquement les favoris (actif)</string>
     <string name="inventory_favorites_filter_menu_item">Favoris</string>
@@ -288,13 +286,14 @@
     <string name="inventory_quick_filter_low_stock">Stock faible</string>
     <string name="inventory_quick_filter_expiring_soon">Bientôt périmé</string>
     <string name="inventory_unmark_favorite_cd">Retirer des favoris</string>
-    <string name="inventory_search_cd">Rechercher</string>
+    <string name="inventory_tune_cd">Trier, filtrer et affichage</string>
+    <string name="inventory_view_mode_title">Affichage</string>
+    <string name="inventory_view_mode_grid">Cartes</string>
+    <string name="inventory_view_mode_list">Liste</string>
     <string name="inventory_add_menu_cd">Ajouter</string>
     <string name="inventory_add_menu_title">Ajouter un produit</string>
     <string name="inventory_add_menu_barcode">Scanner un code-barres</string>
     <string name="inventory_add_menu_search">Rechercher par nom</string>
-    <string name="inventory_search_close_cd">Fermer la recherche</string>
-    <string name="inventory_sort_active_cd_format">Trier (actif : %1$s)</string>
     <string name="inventory_removed_snackbar_format">%1$s supprimé</string>
     <plurals name="inventory_bulk_removed_snackbar_format">
         <item quantity="one">%1$d produit supprimé</item>
@@ -327,10 +326,7 @@
     </plurals>
     <string name="inventory_row_menu_cd">Plus d\'options</string>
     <string name="inventory_group_by_cd">Grouper par</string>
-    <string name="inventory_group_by_active_cd_format">Grouper par (actif : %1$s)</string>
     <string name="inventory_no_location_label">Aucun emplacement</string>
-    <!-- "Keuken" redesign (2026-08) -->
-    <string name="inventory_scan_button">Scanner</string>
 
     <!-- Stock sort options -->
     <string name="sort_option_name">Nom</string>

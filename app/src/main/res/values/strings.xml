@@ -276,12 +276,10 @@
     <!-- Voorraad -->
     <string name="inventory_title">Voorraad</string>
     <string name="inventory_show_as_tiles_cd">Toon als tegels</string>
-    <string name="inventory_show_as_list_cd">Toon als lijst</string>
     <string name="inventory_search_placeholder">Zoek in voorraad…</string>
     <string name="inventory_filter_all">Alles</string>
     <string name="inventory_sort_cd">Sorteren</string>
     <string name="inventory_filter_cd">Filteren</string>
-    <string name="inventory_filter_active_cd_format">Filteren (actief: %1$s)</string>
     <string name="inventory_favorites_filter_cd">Alleen favorieten tonen</string>
     <string name="inventory_favorites_filter_active_cd">Alleen favorieten tonen (actief)</string>
     <string name="inventory_favorites_filter_menu_item">Favorieten</string>
@@ -289,13 +287,14 @@
     <string name="inventory_quick_filter_low_stock">Weinig voorraad</string>
     <string name="inventory_quick_filter_expiring_soon">Verloopt bijna</string>
     <string name="inventory_unmark_favorite_cd">Favoriet verwijderen</string>
-    <string name="inventory_search_cd">Zoeken</string>
+    <string name="inventory_tune_cd">Sorteren, filteren en weergave</string>
+    <string name="inventory_view_mode_title">Weergave</string>
+    <string name="inventory_view_mode_grid">Tegels</string>
+    <string name="inventory_view_mode_list">Lijst</string>
     <string name="inventory_add_menu_cd">Toevoegen</string>
     <string name="inventory_add_menu_title">Product toevoegen</string>
     <string name="inventory_add_menu_barcode">Barcode scannen</string>
     <string name="inventory_add_menu_search">Zoeken op naam</string>
-    <string name="inventory_search_close_cd">Zoeken sluiten</string>
-    <string name="inventory_sort_active_cd_format">Sorteren (actief: %1$s)</string>
     <string name="inventory_removed_snackbar_format">%1$s verwijderd</string>
     <plurals name="inventory_bulk_removed_snackbar_format">
         <item quantity="one">%1$d product verwijderd</item>
@@ -328,10 +327,7 @@
     </plurals>
     <string name="inventory_row_menu_cd">Meer opties</string>
     <string name="inventory_group_by_cd">Groeperen</string>
-    <string name="inventory_group_by_active_cd_format">Groeperen (actief: %1$s)</string>
     <string name="inventory_no_location_label">Geen locatie</string>
-    <!-- "Keuken" redesign (2026-08) -->
-    <string name="inventory_scan_button">Scannen</string>
 
     <!-- Voorraad sort options -->
     <string name="sort_option_name">Naam</string>

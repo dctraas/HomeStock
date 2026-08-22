@@ -1,15 +1,19 @@
 package com.dtraas.homestock.ui.components
 
 import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Remove
@@ -41,6 +45,11 @@ fun QuantityStepper(
     modifier: Modifier = Modifier,
     minQuantity: Int = 0,
     dense: Boolean = false,
+    // A full-width pill (surfaceContainerHigh background, fully rounded) with − pinned left,
+    // quantity centered and + pinned right — for a row where the stepper is the only thing in
+    // it (e.g. the Voorraad grid tile), rather than the default hug-content row meant to sit
+    // beside other controls.
+    pill: Boolean = false,
     // Lets callers show "500g"/"1L"/"6 stuks" instead of the bare number; see [formatQuantityWithUnit].
     displayText: String = quantity.toString(),
 ) {
@@ -49,7 +58,19 @@ fun QuantityStepper(
     val textStyle = if (dense) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.titleMedium
     val textWidth = if (dense) 36.dp else 48.dp
 
-    Row(modifier = modifier, verticalAlignment = Alignment.CenterVertically) {
+    Row(
+        modifier = if (pill) {
+            modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(percent = 50))
+                .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+                .padding(horizontal = 6.dp)
+        } else {
+            modifier
+        },
+        horizontalArrangement = if (pill) Arrangement.SpaceBetween else Arrangement.Start,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         RepeatingIconButton(onClick = onDecrease, enabled = quantity > minQuantity, modifier = Modifier.size(buttonSize)) {
             Icon(
                 Icons.Filled.Remove,

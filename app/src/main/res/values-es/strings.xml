@@ -275,12 +275,10 @@
     <!-- Inventario -->
     <string name="inventory_title">Inventario</string>
     <string name="inventory_show_as_tiles_cd">Mostrar como tarjetas</string>
-    <string name="inventory_show_as_list_cd">Mostrar como lista</string>
     <string name="inventory_search_placeholder">Buscar en el inventario…</string>
     <string name="inventory_filter_all">Todo</string>
     <string name="inventory_sort_cd">Ordenar</string>
     <string name="inventory_filter_cd">Filtrar</string>
-    <string name="inventory_filter_active_cd_format">Filtrar (activo: %1$s)</string>
     <string name="inventory_favorites_filter_cd">Mostrar solo favoritos</string>
     <string name="inventory_favorites_filter_active_cd">Mostrar solo favoritos (activo)</string>
     <string name="inventory_favorites_filter_menu_item">Favoritos</string>
@@ -288,13 +286,14 @@
     <string name="inventory_quick_filter_low_stock">Poca existencia</string>
     <string name="inventory_quick_filter_expiring_soon">Por caducar</string>
     <string name="inventory_unmark_favorite_cd">Quitar de favoritos</string>
-    <string name="inventory_search_cd">Buscar</string>
+    <string name="inventory_tune_cd">Ordenar, filtrar y vista</string>
+    <string name="inventory_view_mode_title">Vista</string>
+    <string name="inventory_view_mode_grid">Tarjetas</string>
+    <string name="inventory_view_mode_list">Lista</string>
     <string name="inventory_add_menu_cd">Añadir</string>
     <string name="inventory_add_menu_title">Añadir producto</string>
     <string name="inventory_add_menu_barcode">Escanear código de barras</string>
     <string name="inventory_add_menu_search">Buscar por nombre</string>
-    <string name="inventory_search_close_cd">Cerrar búsqueda</string>
-    <string name="inventory_sort_active_cd_format">Ordenar (activo: %1$s)</string>
     <string name="inventory_removed_snackbar_format">%1$s eliminado</string>
     <plurals name="inventory_bulk_removed_snackbar_format">
         <item quantity="one">%1$d producto eliminado</item>
@@ -327,10 +326,7 @@
     </plurals>
     <string name="inventory_row_menu_cd">Más opciones</string>
     <string name="inventory_group_by_cd">Agrupar por</string>
-    <string name="inventory_group_by_active_cd_format">Agrupar por (activo: %1$s)</string>
     <string name="inventory_no_location_label">Sin ubicación</string>
-    <!-- "Keuken" redesign (2026-08) -->
-    <string name="inventory_scan_button">Escanear</string>
 
     <!-- Inventario sort options -->
     <string name="sort_option_name">Nombre</string>

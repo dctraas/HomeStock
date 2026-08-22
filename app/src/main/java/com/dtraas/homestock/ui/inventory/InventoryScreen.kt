@@ -6,11 +6,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +24,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -29,6 +34,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
@@ -36,8 +42,6 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Email
-import androidx.compose.material.icons.filled.EventBusy
-import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocationOn
@@ -47,9 +51,8 @@ import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.TrendingDown
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.outlined.StarBorder
@@ -61,14 +64,16 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -121,6 +126,7 @@ import com.dtraas.homestock.ui.components.color
 import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.components.onColor
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
+import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
 import java.io.File
@@ -160,9 +166,12 @@ fun InventoryScreen(
     )
     val uiState by viewModel.uiState.collectAsState()
     var viewMode by remember { mutableStateOf(InventoryViewMode.GRID) }
-    var searchActive by remember { mutableStateOf(false) }
     var showProfileDialog by remember { mutableStateOf(false) }
     var showAddMenu by remember { mutableStateOf(false) }
+    // Opens InventoryFilterSheet — the search field's trailing "tune" icon, replacing the old
+    // always-visible sorteren/filteren/groeperen/weergave row with one bottom sheet holding all
+    // four, per the Claude Design review.
+    var showFilterSheet by remember { mutableStateOf(false) }
     var selectedBarcodes by remember { mutableStateOf(emptySet<String>()) }
     // Bonnetje scannen / AI-productherkenning in the "+" menu below are premium-only, same
     // gating as their entries in Instellingen/Meer and the (now-removed) Scannen tab.
@@ -181,6 +190,10 @@ fun InventoryScreen(
     val addedToShoppingListMessage = stringResource(R.string.inventory_added_to_shopping_list_snackbar)
     val bulkAddedFormat = stringResource(R.string.inventory_bulk_added_to_shopping_list_format)
     val restockedFormat = stringResource(R.string.inventory_restocked_snackbar_format)
+
+    // Drives the coral dot on the tune icon — any dimension the sheet controls being non-default.
+    val hasActiveFilter = uiState.selectedCategory != null || uiState.favoritesOnly || uiState.lowStockOnly ||
+        uiState.expiringSoonOnly || uiState.selectedLocation != null
 
     LaunchedEffect(Unit) {
         viewModel.restockEvents.collect { name ->
@@ -327,19 +340,22 @@ fun InventoryScreen(
         },
         floatingActionButton = {
             if (!selectionMode) {
-                FloatingActionBar(onScanClick = { showAddMenu = true })
+                AddFab(onClick = { showAddMenu = true })
             }
         },
         floatingActionButtonPosition = FabPosition.End,
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            if (searchActive) {
+            // A persistent search field, not a tap-to-reveal one — sorteren/filteren/
+            // groeperen/weergave (and, folded in as one more filter dimension, locatie) all
+            // moved behind the trailing "tune" button into one InventoryFilterSheet, replacing
+            // the old always-visible icon row entirely, per the Claude Design review.
+            if (!selectionMode) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
                 ) {
                     SearchField(
                         query = uiState.searchQuery,
@@ -347,80 +363,24 @@ fun InventoryScreen(
                         placeholder = stringResource(R.string.inventory_search_placeholder),
                         modifier = Modifier.weight(1f),
                     )
-                    IconButton(
-                        onClick = {
-                            searchActive = false
-                            viewModel.onSearchQueryChange("")
-                        },
-                        modifier = Modifier.size(56.dp),
-                    ) {
-                        Icon(
-                            Icons.Filled.Close,
-                            contentDescription = stringResource(R.string.inventory_search_close_cd),
-                            modifier = Modifier.size(28.dp),
-                        )
-                    }
-                }
-            } else if (!selectionMode) {
-                // The sorteren/filteren/weergave row reads as clutter while actively narrowing
-                // the list by text — same reasoning the old code had for swapping it out for
-                // the search field above. Locatie is one of the choices inside FilterMenuButton
-                // rather than its own always-visible chip row — see that composable.
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                ) {
-                    IconButton(onClick = { searchActive = true }, modifier = Modifier.size(48.dp)) {
-                        Icon(
-                            Icons.Filled.Search,
-                            contentDescription = stringResource(R.string.inventory_search_cd),
-                            modifier = Modifier.size(24.dp),
-                        )
-                    }
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        FilterMenuButton(
-                            selectedCategory = uiState.selectedCategory,
-                            favoritesOnly = uiState.favoritesOnly,
-                            lowStockOnly = uiState.lowStockOnly,
-                            expiringSoonOnly = uiState.expiringSoonOnly,
-                            availableLocations = uiState.availableLocations,
-                            selectedLocation = uiState.selectedLocation,
-                            onCategorySelected = viewModel::onCategoryFilterChange,
-                            onFavoritesToggle = viewModel::onFavoritesFilterChange,
-                            onLowStockToggle = viewModel::onLowStockFilterChange,
-                            onExpiringSoonToggle = viewModel::onExpiringSoonFilterChange,
-                            onLocationSelected = viewModel::onLocationFilterChange,
-                        )
-                        SortMenuButton(
-                            selected = uiState.sortOption,
-                            onSelected = viewModel::onSortOptionChange,
-                        )
-                        // Only worth offering once there's more than one location in use —
-                        // with zero or one, "group by location" would either be pointless
-                        // (nothing to group) or identical to the flat list.
-                        if (uiState.availableLocations.size > 1) {
-                            GroupByMenuButton(
-                                selected = uiState.groupBy,
-                                onSelected = viewModel::onGroupByChange,
-                            )
-                        }
-                        IconButton(
-                            onClick = {
-                                viewMode = if (viewMode == InventoryViewMode.LIST) InventoryViewMode.GRID else InventoryViewMode.LIST
-                            },
-                            modifier = Modifier.size(48.dp),
+                    Box {
+                        FilledIconButton(
+                            onClick = { showFilterSheet = true },
+                            shape = SoftCardShape,
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                contentColor = MaterialTheme.colorScheme.onSurface,
+                            ),
                         ) {
-                            Icon(
-                                imageVector = if (viewMode == InventoryViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
-                                contentDescription = if (viewMode == InventoryViewMode.LIST) {
-                                    stringResource(R.string.inventory_show_as_tiles_cd)
-                                } else {
-                                    stringResource(R.string.inventory_show_as_list_cd)
-                                },
-                                modifier = Modifier.size(24.dp),
+                            Icon(Icons.Filled.Tune, contentDescription = stringResource(R.string.inventory_tune_cd))
+                        }
+                        if (hasActiveFilter) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(6.dp)
+                                    .size(8.dp)
+                                    .background(MaterialTheme.colorScheme.secondary, CircleShape),
                             )
                         }
                     }
@@ -617,34 +577,47 @@ fun InventoryScreen(
             onDismiss = { showAddMenu = false },
         )
     }
+
+    if (showFilterSheet) {
+        InventoryFilterSheet(
+            viewMode = viewMode,
+            onViewModeChange = { viewMode = it },
+            sortSelected = uiState.sortOption,
+            onSortSelected = viewModel::onSortOptionChange,
+            groupBySelected = uiState.groupBy,
+            onGroupBySelected = viewModel::onGroupByChange,
+            showGroupBy = uiState.availableLocations.size > 1,
+            selectedCategory = uiState.selectedCategory,
+            favoritesOnly = uiState.favoritesOnly,
+            lowStockOnly = uiState.lowStockOnly,
+            expiringSoonOnly = uiState.expiringSoonOnly,
+            availableLocations = uiState.availableLocations,
+            selectedLocation = uiState.selectedLocation,
+            onCategorySelected = viewModel::onCategoryFilterChange,
+            onFavoritesToggle = viewModel::onFavoritesFilterChange,
+            onLowStockToggle = viewModel::onLowStockFilterChange,
+            onExpiringSoonToggle = viewModel::onExpiringSoonFilterChange,
+            onLocationSelected = viewModel::onLocationFilterChange,
+            onDismiss = { showFilterSheet = false },
+        )
+    }
 }
 
 /**
- * Now just the "Scannen" trigger on its own — sorteren/filteren/weergave and zoeken moved back
- * up into the always-visible row above the list (see InventoryScreen's content Column), so the
- * floating bar no longer needs to carry them. Tapping it opens [AddMenuDialog], not the camera
- * directly, since bonnetje scannen/AI-herkenning/zoeken op naam live there too.
+ * An extended pill FAB, not an icon-only circle — the visible "Toevoegen" label makes it clear
+ * this opens the whole add-a-product menu ([AddMenuDialog]: barcode/bon/AI/zoeken), not just a
+ * direct camera shortcut, per the Claude Design review.
  */
 @Composable
-private fun FloatingActionBar(
-    onScanClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    FilledIconButton(
-        onClick = onScanClick,
-        modifier = modifier.size(64.dp),
-        shape = CircleShape,
-        colors = IconButtonDefaults.filledIconButtonColors(
-            containerColor = MaterialTheme.colorScheme.secondary,
-            contentColor = MaterialTheme.colorScheme.onSecondary,
-        ),
-    ) {
-        Icon(
-            Icons.Filled.QrCodeScanner,
-            contentDescription = stringResource(R.string.inventory_scan_button),
-            modifier = Modifier.size(28.dp),
-        )
-    }
+private fun AddFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    ExtendedFloatingActionButton(
+        onClick = onClick,
+        modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.secondary,
+        contentColor = MaterialTheme.colorScheme.onSecondary,
+        icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+        text = { Text(stringResource(R.string.inventory_add_menu_cd)) },
+    )
 }
 
 /**
@@ -765,102 +738,22 @@ private fun AddMenuTile(
     }
 }
 
-/** Switches the section headers below between category and location grouping — a small,
- *  always-two-choice menu, so a dropdown of checkable items (mirroring SortMenuButton) rather
- *  than a whole filter-style sheet. Only shown at all once there's more than one location in
- *  use — see the call site in InventoryScreen. */
+/**
+ * One sheet holding everything that used to live behind four separate icon-button dropdowns
+ * (sorteren/groeperen/filteren/weergave) — opened from the search field's trailing "tune"
+ * button, per the Claude Design review. Scrollable: the category chip row alone can run wider
+ * than useful screen height together with everything above it on a small device.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun GroupByMenuButton(
-    selected: InventoryGroupBy,
-    onSelected: (InventoryGroupBy) -> Unit,
-) {
-    var menuExpanded by remember { mutableStateOf(false) }
-    val isCustomGrouping = selected != InventoryGroupBy.CATEGORY
-    Box {
-        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(48.dp)) {
-            if (isCustomGrouping) {
-                val activeFormat = stringResource(R.string.inventory_group_by_active_cd_format)
-                BadgedBox(badge = { Badge() }) {
-                    Icon(
-                        Icons.Filled.LocationOn,
-                        contentDescription = activeFormat.format(stringResource(selected.labelRes)),
-                        modifier = Modifier.size(24.dp),
-                    )
-                }
-            } else {
-                Icon(
-                    Icons.Filled.LocationOn,
-                    contentDescription = stringResource(R.string.inventory_group_by_cd),
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-        }
-        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-            InventoryGroupBy.entries.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(option.labelRes)) },
-                    trailingIcon = {
-                        if (option == selected) {
-                            Icon(Icons.Filled.Check, contentDescription = null)
-                        }
-                    },
-                    onClick = {
-                        onSelected(option)
-                        menuExpanded = false
-                    },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun SortMenuButton(
-    selected: InventorySortOption,
-    onSelected: (InventorySortOption) -> Unit,
-) {
-    var menuExpanded by remember { mutableStateOf(false) }
-    val isCustomSort = selected != InventorySortOption.NAME
-    Box {
-        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(48.dp)) {
-            if (isCustomSort) {
-                val activeFormat = stringResource(R.string.inventory_sort_active_cd_format)
-                BadgedBox(badge = { Badge() }) {
-                    Icon(
-                        Icons.Filled.Sort,
-                        contentDescription = activeFormat.format(stringResource(selected.labelRes)),
-                        modifier = Modifier.size(24.dp),
-                    )
-                }
-            } else {
-                Icon(
-                    Icons.Filled.Sort,
-                    contentDescription = stringResource(R.string.inventory_sort_cd),
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-        }
-        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-            InventorySortOption.entries.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(option.labelRes)) },
-                    trailingIcon = {
-                        if (option == selected) {
-                            Icon(Icons.Filled.Check, contentDescription = null)
-                        }
-                    },
-                    onClick = {
-                        onSelected(option)
-                        menuExpanded = false
-                    },
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun FilterMenuButton(
+private fun InventoryFilterSheet(
+    viewMode: InventoryViewMode,
+    onViewModeChange: (InventoryViewMode) -> Unit,
+    sortSelected: InventorySortOption,
+    onSortSelected: (InventorySortOption) -> Unit,
+    groupBySelected: InventoryGroupBy,
+    onGroupBySelected: (InventoryGroupBy) -> Unit,
+    showGroupBy: Boolean,
     selectedCategory: Category?,
     favoritesOnly: Boolean,
     lowStockOnly: Boolean,
@@ -872,170 +765,155 @@ private fun FilterMenuButton(
     onLowStockToggle: (Boolean) -> Unit,
     onExpiringSoonToggle: (Boolean) -> Unit,
     onLocationSelected: (String?) -> Unit,
+    onDismiss: () -> Unit,
 ) {
-    var menuExpanded by remember { mutableStateOf(false) }
-    val isActive = selectedCategory != null || favoritesOnly || lowStockOnly || expiringSoonOnly || selectedLocation != null
-    Box {
-        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(48.dp)) {
-            if (isActive) {
-                // Every filter dimension can be active together (e.g. "Weinig voorraad"
-                // within "Groente & fruit"), so the badge's description lists whichever
-                // are on rather than assuming just one.
-                val activeLabels = listOfNotNull(
-                    stringResource(R.string.inventory_favorites_filter_menu_item).takeIf { favoritesOnly },
-                    selectedCategory?.let { stringResource(it.displayNameRes) },
-                    stringResource(R.string.inventory_quick_filter_low_stock).takeIf { lowStockOnly },
-                    stringResource(R.string.inventory_quick_filter_expiring_soon).takeIf { expiringSoonOnly },
-                    selectedLocation,
-                ).joinToString(", ")
-                val activeFormat = stringResource(R.string.inventory_filter_active_cd_format)
-                BadgedBox(badge = { Badge() }) {
-                    Icon(
-                        Icons.Filled.FilterAlt,
-                        contentDescription = activeFormat.format(activeLabels),
-                        modifier = Modifier.size(24.dp),
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 20.dp)
+                .padding(bottom = 28.dp),
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+        ) {
+            FilterSheetSection(title = stringResource(R.string.inventory_view_mode_title)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    FilterChip(
+                        selected = viewMode == InventoryViewMode.GRID,
+                        onClick = { onViewModeChange(InventoryViewMode.GRID) },
+                        label = { Text(stringResource(R.string.inventory_view_mode_grid)) },
+                        leadingIcon = { Icon(Icons.Filled.GridView, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                    )
+                    FilterChip(
+                        selected = viewMode == InventoryViewMode.LIST,
+                        onClick = { onViewModeChange(InventoryViewMode.LIST) },
+                        label = { Text(stringResource(R.string.inventory_view_mode_list)) },
+                        leadingIcon = { Icon(Icons.Filled.ViewList, contentDescription = null, modifier = Modifier.size(18.dp)) },
                     )
                 }
-            } else {
-                Icon(
-                    Icons.Filled.FilterAlt,
-                    contentDescription = stringResource(R.string.inventory_filter_cd),
-                    modifier = Modifier.size(24.dp),
-                )
+            }
+            FilterSheetSection(title = stringResource(R.string.inventory_sort_cd)) {
+                Column {
+                    InventorySortOption.entries.forEach { option ->
+                        FilterSheetRow(
+                            label = stringResource(option.labelRes),
+                            selected = option == sortSelected,
+                            onClick = { onSortSelected(option) },
+                        )
+                    }
+                }
+            }
+            // Only worth offering once there's more than one location in use — with zero or
+            // one, "group by location" would either be pointless (nothing to group) or
+            // identical to the flat list.
+            if (showGroupBy) {
+                FilterSheetSection(title = stringResource(R.string.inventory_group_by_cd)) {
+                    Column {
+                        InventoryGroupBy.entries.forEach { option ->
+                            FilterSheetRow(
+                                label = stringResource(option.labelRes),
+                                selected = option == groupBySelected,
+                                onClick = { onGroupBySelected(option) },
+                            )
+                        }
+                    }
+                }
+            }
+            FilterSheetSection(title = stringResource(R.string.inventory_filter_cd)) {
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                    FilterSheetRow(
+                        label = stringResource(R.string.inventory_favorites_filter_menu_item),
+                        selected = favoritesOnly,
+                        onClick = { onFavoritesToggle(!favoritesOnly) },
+                    )
+                    FilterSheetRow(
+                        label = stringResource(R.string.inventory_quick_filter_low_stock),
+                        selected = lowStockOnly,
+                        onClick = { onLowStockToggle(!lowStockOnly) },
+                    )
+                    FilterSheetRow(
+                        label = stringResource(R.string.inventory_quick_filter_expiring_soon),
+                        selected = expiringSoonOnly,
+                        onClick = { onExpiringSoonToggle(!expiringSoonOnly) },
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
+                // The full fixed category set, in the same order a typical supermarket lays
+                // out its aisles (see Category.sortOrder).
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item {
+                        FilterChip(
+                            selected = selectedCategory == null,
+                            onClick = { onCategorySelected(null) },
+                            label = { Text(stringResource(R.string.inventory_filter_all)) },
+                        )
+                    }
+                    items(Category.entries.sortedBy { it.sortOrder }) { category ->
+                        FilterChip(
+                            selected = selectedCategory == category,
+                            onClick = { onCategorySelected(if (selectedCategory == category) null else category) },
+                            label = { Text(stringResource(category.displayNameRes)) },
+                            leadingIcon = { Icon(category.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                        )
+                    }
+                }
+                // Only offered once at least one item has a location set — an always-visible
+                // empty row would just be dead space for households not using the field yet.
+                if (availableLocations.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        item {
+                            FilterChip(
+                                selected = selectedLocation == null,
+                                onClick = { onLocationSelected(null) },
+                                label = { Text(stringResource(R.string.inventory_filter_all)) },
+                            )
+                        }
+                        items(availableLocations) { location ->
+                            FilterChip(
+                                selected = selectedLocation == location,
+                                onClick = { onLocationSelected(if (selectedLocation == location) null else location) },
+                                label = { Text(locationDisplayLabel(location)) },
+                                leadingIcon = { Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                            )
+                        }
+                    }
+                }
             }
         }
-        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.inventory_filter_all)) },
-                trailingIcon = {
-                    if (selectedCategory == null && !favoritesOnly) {
-                        Icon(Icons.Filled.Check, contentDescription = null)
-                    }
-                },
-                onClick = {
-                    onCategorySelected(null)
-                    onFavoritesToggle(false)
-                    menuExpanded = false
-                },
-            )
-            // Favorieten used to be its own star icon next to this menu; folding it in here
-            // instead means every way of narrowing the list lives in one place. It's
-            // independent of the category choice below — both can be active at once.
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.inventory_favorites_filter_menu_item)) },
-                leadingIcon = {
-                    Icon(
-                        imageVector = if (favoritesOnly) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                        contentDescription = null,
-                        tint = if (favoritesOnly) MaterialTheme.colorScheme.primary else LocalContentColor.current,
-                        modifier = Modifier.size(20.dp),
-                    )
-                },
-                trailingIcon = {
-                    if (favoritesOnly) {
-                        Icon(Icons.Filled.Check, contentDescription = null)
-                    }
-                },
-                onClick = {
-                    onFavoritesToggle(!favoritesOnly)
-                    menuExpanded = false
-                },
-            )
-            // The full fixed category set, in the same order a typical supermarket lays out
-            // its aisles (see Category.sortOrder) — every category a product can have is
-            // also offered as a filter.
-            val filterableCategories = Category.entries.sortedBy { it.sortOrder }
-            filterableCategories.forEach { category ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(category.displayNameRes)) },
-                    leadingIcon = {
-                        Icon(category.icon, contentDescription = null, modifier = Modifier.size(20.dp))
-                    },
-                    trailingIcon = {
-                        if (selectedCategory == category) {
-                            Icon(Icons.Filled.Check, contentDescription = null)
-                        }
-                    },
-                    onClick = {
-                        onCategorySelected(if (selectedCategory == category) null else category)
-                        menuExpanded = false
-                    },
-                )
-            }
-            // "Weinig voorraad" / "Verloopt bijna" used to be their own always-visible chip
-            // row above this menu; folded in here instead to give the list more breathing
-            // room. A divider sets them apart from the category/favorites choices above —
-            // those narrow *what* shows, these flag stock conditions on top of that, and
-            // both groups are independent (any combination can be active at once).
-            HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.inventory_quick_filter_low_stock)) },
-                leadingIcon = {
-                    Icon(
-                        Icons.Filled.TrendingDown,
-                        contentDescription = null,
-                        tint = if (lowStockOnly) MaterialTheme.colorScheme.primary else LocalContentColor.current,
-                        modifier = Modifier.size(20.dp),
-                    )
-                },
-                trailingIcon = {
-                    if (lowStockOnly) {
-                        Icon(Icons.Filled.Check, contentDescription = null)
-                    }
-                },
-                onClick = {
-                    onLowStockToggle(!lowStockOnly)
-                    menuExpanded = false
-                },
-            )
-            DropdownMenuItem(
-                text = { Text(stringResource(R.string.inventory_quick_filter_expiring_soon)) },
-                leadingIcon = {
-                    Icon(
-                        Icons.Filled.EventBusy,
-                        contentDescription = null,
-                        tint = if (expiringSoonOnly) MaterialTheme.colorScheme.primary else LocalContentColor.current,
-                        modifier = Modifier.size(20.dp),
-                    )
-                },
-                trailingIcon = {
-                    if (expiringSoonOnly) {
-                        Icon(Icons.Filled.Check, contentDescription = null)
-                    }
-                },
-                onClick = {
-                    onExpiringSoonToggle(!expiringSoonOnly)
-                    menuExpanded = false
-                },
-            )
-            // Only offered once at least one item has a location set — an always-visible
-            // empty "Locatie" section would just be dead space for households not using the
-            // field at all yet.
-            if (availableLocations.isNotEmpty()) {
-                HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                availableLocations.forEach { location ->
-                    DropdownMenuItem(
-                        text = { Text(locationDisplayLabel(location)) },
-                        leadingIcon = {
-                            Icon(
-                                Icons.Filled.LocationOn,
-                                contentDescription = null,
-                                tint = if (selectedLocation == location) MaterialTheme.colorScheme.primary else LocalContentColor.current,
-                                modifier = Modifier.size(20.dp),
-                            )
-                        },
-                        trailingIcon = {
-                            if (selectedLocation == location) {
-                                Icon(Icons.Filled.Check, contentDescription = null)
-                            }
-                        },
-                        onClick = {
-                            onLocationSelected(if (selectedLocation == location) null else location)
-                            menuExpanded = false
-                        },
-                    )
-                }
-            }
+    }
+}
+
+/** One titled group inside [InventoryFilterSheet] — an eyebrow-style label above its content. */
+@Composable
+private fun FilterSheetSection(title: String, content: @Composable ColumnScope.() -> Unit) {
+    Column {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(bottom = 8.dp),
+        )
+        content()
+    }
+}
+
+/** One selectable row inside a [FilterSheetSection] — label left, checkmark right when selected. */
+@Composable
+private fun FilterSheetRow(label: String, selected: Boolean, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(SoftCardShapeCompact)
+            .clickable(onClick = onClick)
+            .padding(vertical = 12.dp, horizontal = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(text = label, style = MaterialTheme.typography.bodyLarge)
+        if (selected) {
+            Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
         }
     }
 }
@@ -1404,15 +1282,17 @@ private fun InventoryGridTile(
             }
             // Replaces the old status dot — color and text both, right on the photo, so what
             // needs attention (or how long something's still good for) reads without a tap.
-            // Null (no badge at all) for a well-stocked item with no known expiry: nothing
-            // here is worth flagging, so nothing is shown, rather than always occupying the
-            // spot regardless of whether it says anything useful.
+            // Top-left rather than bottom — the add-to-list cart button below now claims the
+            // opposite (bottom-end) corner, so the two never compete for the same spot. Null
+            // (no badge at all) for a well-stocked item with no known expiry: nothing here is
+            // worth flagging, so nothing is shown, rather than always occupying the spot
+            // regardless of whether it says anything useful.
             val pillText = stockStatusPillText(stockStatus, item.expirationDate)
             if (pillText != null) {
                 Surface(
                     shape = SoftBadgeShape,
                     color = stockStatus.color,
-                    modifier = Modifier.align(Alignment.BottomStart).padding(6.dp),
+                    modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
                 ) {
                     Text(
                         text = pillText,
@@ -1420,6 +1300,26 @@ private fun InventoryGridTile(
                         fontWeight = FontWeight.Bold,
                         color = stockStatus.onColor,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
+                }
+            }
+            // Add-to-shopping-list lives on the photo itself now (bottom-end corner), not
+            // beside the stepper below — shown only when a restock might actually be relevant
+            // (low/out), same condition as before.
+            val showCartBadge = stockStatus == InventoryStockStatus.LOW_STOCK || stockStatus == InventoryStockStatus.OUT_OF_STOCK
+            if (!selectionMode && showCartBadge) {
+                FilledIconButton(
+                    onClick = onAddToShoppingList,
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp).size(26.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
+                ) {
+                    Icon(
+                        Icons.Filled.AddShoppingCart,
+                        contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
+                        modifier = Modifier.size(14.dp),
                     )
                 }
             }
@@ -1457,35 +1357,16 @@ private fun InventoryGridTile(
                     modifier = Modifier.padding(top = 1.dp),
                 )
             }
-            // Add-to-shopping-list moves off the photo and down here, beside the stepper,
-            // rather than a small circular badge overlapping the image corner — shown only
-            // when a restock might actually be relevant (low/out), same condition as before.
-            // The stepper is centered on the card regardless of whether the cart button is
-            // showing (a Box overlay, not a SpaceBetween Row, so it never shifts left when the
-            // cart button is hidden) — the cart button floats independently in the corner.
-            Box(modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
-                QuantityStepper(
-                    quantity = item.quantity,
-                    onDecrease = onDecrease,
-                    onIncrease = onIncrease,
-                    dense = true,
-                    modifier = Modifier.align(Alignment.Center),
-                )
-                val showCartBadge = stockStatus == InventoryStockStatus.LOW_STOCK || stockStatus == InventoryStockStatus.OUT_OF_STOCK
-                if (!selectionMode && showCartBadge) {
-                    IconButton(
-                        onClick = onAddToShoppingList,
-                        modifier = Modifier.align(Alignment.CenterEnd).size(28.dp),
-                    ) {
-                        Icon(
-                            Icons.Filled.AddShoppingCart,
-                            contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
-                }
-            }
+            // A full-width pill now that the cart button has moved off this row entirely (see
+            // the photo above) — − pinned left, quantity centered, + pinned right.
+            QuantityStepper(
+                quantity = item.quantity,
+                onDecrease = onDecrease,
+                onIncrease = onIncrease,
+                dense = true,
+                pill = true,
+                modifier = Modifier.padding(top = 4.dp),
+            )
         }
     }
 }

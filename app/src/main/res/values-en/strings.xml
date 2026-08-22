@@ -275,12 +275,10 @@
     <!-- Inventory -->
     <string name="inventory_title">Inventory</string>
     <string name="inventory_show_as_tiles_cd">Show as tiles</string>
-    <string name="inventory_show_as_list_cd">Show as list</string>
     <string name="inventory_search_placeholder">Search inventory…</string>
     <string name="inventory_filter_all">All</string>
     <string name="inventory_sort_cd">Sort</string>
     <string name="inventory_filter_cd">Filter</string>
-    <string name="inventory_filter_active_cd_format">Filter (active: %1$s)</string>
     <string name="inventory_favorites_filter_cd">Show favorites only</string>
     <string name="inventory_favorites_filter_active_cd">Show favorites only (active)</string>
     <string name="inventory_favorites_filter_menu_item">Favorites</string>
@@ -288,13 +286,14 @@
     <string name="inventory_quick_filter_low_stock">Low stock</string>
     <string name="inventory_quick_filter_expiring_soon">Expiring soon</string>
     <string name="inventory_unmark_favorite_cd">Remove favorite</string>
-    <string name="inventory_search_cd">Search</string>
+    <string name="inventory_tune_cd">Sort, filter and view</string>
+    <string name="inventory_view_mode_title">View</string>
+    <string name="inventory_view_mode_grid">Tiles</string>
+    <string name="inventory_view_mode_list">List</string>
     <string name="inventory_add_menu_cd">Add</string>
     <string name="inventory_add_menu_title">Add product</string>
     <string name="inventory_add_menu_barcode">Scan barcode</string>
     <string name="inventory_add_menu_search">Search by name</string>
-    <string name="inventory_search_close_cd">Close search</string>
-    <string name="inventory_sort_active_cd_format">Sort (active: %1$s)</string>
     <string name="inventory_removed_snackbar_format">%1$s removed</string>
     <plurals name="inventory_bulk_removed_snackbar_format">
         <item quantity="one">%1$d product removed</item>
@@ -327,10 +326,7 @@
     </plurals>
     <string name="inventory_row_menu_cd">More options</string>
     <string name="inventory_group_by_cd">Group by</string>
-    <string name="inventory_group_by_active_cd_format">Group by (active: %1$s)</string>
     <string name="inventory_no_location_label">No location</string>
-    <!-- "Keuken" redesign (2026-08) -->
-    <string name="inventory_scan_button">Scan</string>
 
     <!-- Inventory sort options -->
     <string name="sort_option_name">Name</string>
