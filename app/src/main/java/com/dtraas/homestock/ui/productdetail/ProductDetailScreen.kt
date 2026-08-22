@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -345,7 +346,10 @@ fun ProductDetailScreen(
                     minQuantity = uiState.minQuantity,
                     onDecrease = { viewModel.setQuantity((uiState.quantityInInventory ?: 1) - 1) },
                     onIncrease = { viewModel.setQuantity((uiState.quantityInInventory ?: 0) + 1) },
-                    modifier = Modifier.padding(top = (-14).dp),
+                    // offset, not padding: Modifier.padding() rejects negative values outright
+                    // (throws IllegalArgumentException), while offset shifts the draw position
+                    // without that restriction — the only way to get this intentional overlap.
+                    modifier = Modifier.offset(y = (-14).dp),
                 )
 
                 Row(
