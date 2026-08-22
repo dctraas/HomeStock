@@ -60,6 +60,7 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -71,7 +72,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -103,6 +103,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -299,6 +300,17 @@ fun ShoppingListScreen() {
                         )
                     }
                 },
+                // Delen used to live only inside the "..." overflow — reachable, but two taps
+                // away for what's often the whole point of opening this screen before leaving
+                // the house. A dedicated top-bar button, same glance position Voorraad's
+                // notification icon uses, per the Claude Design review.
+                actions = {
+                    if (groupedByStore.isNotEmpty()) {
+                        IconButton(onClick = ::shareList) {
+                            Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.shopping_list_share_cd))
+                        }
+                    }
+                },
             )
         },
         floatingActionButton = {
@@ -351,6 +363,7 @@ fun ShoppingListScreen() {
                     checkedCount = allItems.count { it.isChecked },
                     totalCount = allItems.size,
                     totalPrice = totalPrice,
+                    storeCount = groupedByStore.keys.count { it.isNotBlank() },
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
                 )
                 StoreChipsRow(
@@ -1258,7 +1271,7 @@ private fun ShoppingCheckCircle(
         shape = CircleShape,
         color = if (checked) MaterialTheme.colorScheme.primary else Color.Transparent,
         border = BorderStroke(2.dp, if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline),
-        modifier = modifier.size(26.dp).clickable { onCheckedChange(!checked) },
+        modifier = modifier.size(36.dp).clickable { onCheckedChange(!checked) },
     ) {
         if (checked) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
@@ -1266,7 +1279,7 @@ private fun ShoppingCheckCircle(
                     imageVector = Icons.Filled.Check,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(16.dp),
+                    modifier = Modifier.size(20.dp),
                 )
             }
         }
@@ -1283,33 +1296,50 @@ private fun ShoppingProgressBar(
     checkedCount: Int,
     totalCount: Int,
     totalPrice: Double?,
+    storeCount: Int,
     modifier: Modifier = Modifier,
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+    val remaining = totalCount - checkedCount
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        // A ring rather than the old horizontal bar — checkedCount/totalCount reads as a
+        // count-down ("how much is left") at a glance, same information as before, just in
+        // the more compact, more scannable shape the Claude Design review asked for.
+        Box(modifier = Modifier.size(52.dp), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(
+                progress = { if (totalCount > 0) checkedCount.toFloat() / totalCount else 0f },
+                modifier = Modifier.fillMaxSize(),
+                color = MaterialTheme.colorScheme.secondary,
+                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                strokeWidth = 5.dp,
+            )
             Text(
-                text = stringResource(R.string.shopping_list_progress_format, checkedCount, totalCount),
-                style = MaterialTheme.typography.titleSmall,
+                text = checkedCount.toString(),
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
             )
-            if (totalPrice != null) {
+        }
+        Column(modifier = Modifier.padding(start = 14.dp)) {
+            Text(
+                text = pluralStringResource(R.plurals.shopping_list_progress_remaining_format, remaining, remaining),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+            )
+            val metaParts = listOfNotNull(
+                if (storeCount > 0) pluralStringResource(R.plurals.shopping_list_store_count_format, storeCount, storeCount) else null,
+                totalPrice?.let { formatPrice(it) },
+            )
+            if (metaParts.isNotEmpty()) {
                 Text(
-                    text = formatPrice(totalPrice),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
+                    text = metaParts.joinToString(" · "),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 1.dp),
                 )
             }
         }
-        LinearProgressIndicator(
-            progress = { if (totalCount > 0) checkedCount.toFloat() / totalCount else 0f },
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp).height(6.dp).clip(CircleShape),
-            trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-        )
     }
 }
 

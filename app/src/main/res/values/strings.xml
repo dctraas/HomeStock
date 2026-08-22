@@ -473,7 +473,14 @@
     <string name="shopping_list_quick_add_cd">Snel toevoegen</string>
     <string name="shopping_list_more_options_cd">Meer opties</string>
     <string name="shopping_list_more_options_title">Opties</string>
-    <string name="shopping_list_progress_format">%1$d/%2$d afgevinkt</string>
+    <plurals name="shopping_list_progress_remaining_format">
+        <item quantity="one">Nog %1$d te halen</item>
+        <item quantity="other">Nog %1$d te halen</item>
+    </plurals>
+    <plurals name="shopping_list_store_count_format">
+        <item quantity="one">%1$d winkel</item>
+        <item quantity="other">%1$d winkels</item>
+    </plurals>
     <string name="shopping_list_all_stores">Alle winkels</string>
     <string name="shopping_list_in_cart_format">In de wagen (%1$d)</string>
     <string name="shopping_list_removed_format">%1$s verwijderd</string>

@@ -472,7 +472,14 @@
     <string name="shopping_list_quick_add_cd">Quick add</string>
     <string name="shopping_list_more_options_cd">More options</string>
     <string name="shopping_list_more_options_title">Options</string>
-    <string name="shopping_list_progress_format">%1$d/%2$d checked</string>
+    <plurals name="shopping_list_progress_remaining_format">
+        <item quantity="one">%1$d left to get</item>
+        <item quantity="other">%1$d left to get</item>
+    </plurals>
+    <plurals name="shopping_list_store_count_format">
+        <item quantity="one">%1$d store</item>
+        <item quantity="other">%1$d stores</item>
+    </plurals>
     <string name="shopping_list_all_stores">All stores</string>
     <string name="shopping_list_in_cart_format">In the cart (%1$d)</string>
     <string name="shopping_list_removed_format">%1$s removed</string>
