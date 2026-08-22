@@ -142,18 +142,23 @@
     <string name="onboarding_get_started">Empezar</string>
     <string name="onboarding_welcome_title">Bienvenido a HomeStock</string>
     <string name="onboarding_welcome_description">Controla sin esfuerzo lo que tienes en casa y lo que aún necesitas comprar. Un recorrido rápido por las funciones más importantes.</string>
-    <string name="onboarding_inventory_title">Controlar tu despensa</string>
-    <string name="onboarding_inventory_description">Escanea un código de barras y el producto aparece al instante en tu inventario. Ve de un vistazo qué se está acabando o está a punto de caducar.</string>
-    <string name="onboarding_shopping_list_title">Lista de la compra</string>
-    <string name="onboarding_shopping_list_description">Añade artículos tú mismo, o deja que se añadan automáticamente cuando el stock esté bajo. Organizada por tienda, para que nunca tengas que buscar.</string>
-    <string name="onboarding_scanning_title">Escaneo inteligente</string>
-    <string name="onboarding_scanning_description">¿Sin código de barras en el envase? Haz una foto y la IA reconoce el producto. O escanea un tique de compra entero de una vez.</string>
-    <string name="onboarding_recipes_title">Recetas y comidas</string>
-    <string name="onboarding_recipes_description">Descubre recetas basadas en lo que ya tienes en casa, o deja que la IA te proponga algo. Planifica tu semana con el planificador de comidas.</string>
-    <string name="onboarding_household_title">Junto a tus convivientes</string>
-    <string name="onboarding_household_description">Comparte tu inventario y tu lista de la compra con todo tu hogar — todos ven al instante la misma lista, siempre actualizada.</string>
-    <string name="onboarding_ready_title">Listo para empezar</string>
-    <string name="onboarding_ready_description">Empieza escaneando tu primer producto, o explora la app por tu cuenta.</string>
+    <string name="onboarding_staples_title">¿Qué tienes ahora en la cocina?</string>
+    <string name="onboarding_staples_subtitle">Toca lo que ya tienes en casa — lo añadimos a tu inventario al instante.</string>
+    <string name="onboarding_staples_hint">¿Prefieres escanear luego? También puedes.</string>
+    <plurals name="onboarding_staples_cta_format">
+        <item quantity="one">Añadir %1$d producto</item>
+        <item quantity="other">Añadir %1$d productos</item>
+    </plurals>
+    <string name="onboarding_staple_milk">Leche</string>
+    <string name="onboarding_staple_bread">Pan</string>
+    <string name="onboarding_staple_eggs">Huevos</string>
+    <string name="onboarding_staple_cheese">Queso</string>
+    <string name="onboarding_staple_butter">Mantequilla</string>
+    <string name="onboarding_staple_pasta">Pasta</string>
+    <string name="onboarding_staple_coffee">Café</string>
+    <string name="onboarding_staple_produce">Fruta y verdura</string>
+    <string name="onboarding_invite_title">Invita a tus convivientes</string>
+    <string name="onboarding_invite_subtitle">Cualquiera con este código ve al instante el mismo inventario y la misma lista de la compra.</string>
 
     <!-- Más -->
     <string name="more_household_title">Hogar</string>

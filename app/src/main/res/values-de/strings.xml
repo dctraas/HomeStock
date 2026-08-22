@@ -142,18 +142,23 @@
     <string name="onboarding_get_started">Los geht\'s</string>
     <string name="onboarding_welcome_title">Willkommen bei HomeStock</string>
     <string name="onboarding_welcome_description">Behalte mühelos im Blick, was du zu Hause hast und was noch fehlt. Eine kurze Tour durch die wichtigsten Funktionen.</string>
-    <string name="onboarding_inventory_title">Vorrat verwalten</string>
-    <string name="onboarding_inventory_description">Scanne einen Barcode und das Produkt ist sofort in deinem Vorrat. Sieh auf einen Blick, was knapp wird oder bald abläuft.</string>
-    <string name="onboarding_shopping_list_title">Einkaufsliste</string>
-    <string name="onboarding_shopping_list_description">Füge selbst Artikel hinzu, oder lass Produkte automatisch auf die Liste setzen, sobald der Vorrat knapp wird. Nach Geschäft sortiert, damit du nie suchen musst.</string>
-    <string name="onboarding_scanning_title">Intelligentes Scannen</string>
-    <string name="onboarding_scanning_description">Kein Barcode auf der Verpackung? Mach ein Foto und die KI erkennt das Produkt. Oder scanne einen ganzen Kassenbon auf einmal.</string>
-    <string name="onboarding_recipes_title">Rezepte &amp; Mahlzeiten</string>
-    <string name="onboarding_recipes_description">Entdecke Rezepte basierend auf dem, was du bereits zu Hause hast, oder lass dir von der KI etwas vorschlagen. Plane deine Woche mit dem Essensplaner.</string>
-    <string name="onboarding_household_title">Gemeinsam mit deinen Mitbewohnern</string>
-    <string name="onboarding_household_description">Teile deinen Vorrat und deine Einkaufsliste mit deinem ganzen Haushalt — alle sehen sofort dieselbe, aktuelle Liste.</string>
-    <string name="onboarding_ready_title">Bereit loszulegen</string>
-    <string name="onboarding_ready_description">Scanne dein erstes Produkt, oder erkunde die App in deinem eigenen Tempo.</string>
+    <string name="onboarding_staples_title">Was steht gerade in deiner Küche?</string>
+    <string name="onboarding_staples_subtitle">Tippe an, was du schon zu Hause hast — wir setzen es sofort in deinen Vorrat.</string>
+    <string name="onboarding_staples_hint">Lieber später scannen? Geht auch.</string>
+    <plurals name="onboarding_staples_cta_format">
+        <item quantity="one">%1$d Produkt hinzufügen</item>
+        <item quantity="other">%1$d Produkte hinzufügen</item>
+    </plurals>
+    <string name="onboarding_staple_milk">Milch</string>
+    <string name="onboarding_staple_bread">Brot</string>
+    <string name="onboarding_staple_eggs">Eier</string>
+    <string name="onboarding_staple_cheese">Käse</string>
+    <string name="onboarding_staple_butter">Butter</string>
+    <string name="onboarding_staple_pasta">Pasta</string>
+    <string name="onboarding_staple_coffee">Kaffee</string>
+    <string name="onboarding_staple_produce">Obst &amp; Gemüse</string>
+    <string name="onboarding_invite_title">Lade deine Mitbewohner ein</string>
+    <string name="onboarding_invite_subtitle">Jeder mit diesem Code sieht sofort denselben Vorrat und dieselbe Einkaufsliste.</string>
 
     <!-- Mehr -->
     <string name="more_household_title">Haushalt</string>

@@ -142,18 +142,23 @@
     <string name="onboarding_get_started">Get started</string>
     <string name="onboarding_welcome_title">Welcome to HomeStock</string>
     <string name="onboarding_welcome_description">Effortlessly keep track of what you have at home and what you still need to buy. A quick tour of the most important features.</string>
-    <string name="onboarding_inventory_title">Keeping track of stock</string>
-    <string name="onboarding_inventory_description">Scan a barcode and the product is instantly in your inventory. See at a glance what\'s running low or about to expire.</string>
-    <string name="onboarding_shopping_list_title">Shopping list</string>
-    <string name="onboarding_shopping_list_description">Add items yourself, or let products join the list automatically once stock runs low. Grouped by store, so you never have to search.</string>
-    <string name="onboarding_scanning_title">Smart scanning</string>
-    <string name="onboarding_scanning_description">No barcode on the packaging? Take a photo and AI recognizes the product. Or scan a whole receipt at once.</string>
-    <string name="onboarding_recipes_title">Recipes &amp; meals</string>
-    <string name="onboarding_recipes_description">Discover recipes based on what you already have at home, or let AI come up with something. Plan your week ahead with the meal planner.</string>
-    <string name="onboarding_household_title">Together with your housemates</string>
-    <string name="onboarding_household_description">Share your inventory and shopping list with your whole household — everyone instantly sees the same, up-to-date list.</string>
-    <string name="onboarding_ready_title">Ready to get started</string>
-    <string name="onboarding_ready_description">Start by scanning your first product, or explore the app on your own.</string>
+    <string name="onboarding_staples_title">What\'s in your kitchen right now?</string>
+    <string name="onboarding_staples_subtitle">Tap what you already have — we\'ll add it to your inventory right away.</string>
+    <string name="onboarding_staples_hint">Prefer to scan later? That works too.</string>
+    <plurals name="onboarding_staples_cta_format">
+        <item quantity="one">Add %1$d product</item>
+        <item quantity="other">Add %1$d products</item>
+    </plurals>
+    <string name="onboarding_staple_milk">Milk</string>
+    <string name="onboarding_staple_bread">Bread</string>
+    <string name="onboarding_staple_eggs">Eggs</string>
+    <string name="onboarding_staple_cheese">Cheese</string>
+    <string name="onboarding_staple_butter">Butter</string>
+    <string name="onboarding_staple_pasta">Pasta</string>
+    <string name="onboarding_staple_coffee">Coffee</string>
+    <string name="onboarding_staple_produce">Fruit &amp; veg</string>
+    <string name="onboarding_invite_title">Invite your housemates</string>
+    <string name="onboarding_invite_subtitle">Anyone with this code instantly sees the same inventory and shopping list.</string>
 
     <!-- More -->
     <string name="more_household_title">Household</string>
