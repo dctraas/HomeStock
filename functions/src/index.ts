@@ -1,5 +1,6 @@
 import { setGlobalOptions } from "firebase-functions/v2";
 import { HttpsError, onCall } from "firebase-functions/v2/https";
+import { onDocumentCreated, onDocumentDeleted } from "firebase-functions/v2/firestore";
 import { defineSecret } from "firebase-functions/params";
 import * as logger from "firebase-functions/logger";
 import * as admin from "firebase-admin";
@@ -1874,5 +1875,100 @@ export const verifyPurchase = onCall(
     await memberRef.set({ isPremium: isActive, isPremiumVerifiedAt: Date.now() }, { merge: true });
 
     return { verified: true, isPremium: isActive };
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Real-time cross-device push (huisgenoot-activiteit, huishouden-wijziging) — the only
+// Firestore-triggered (as opposed to onCall) exports in this file. See
+// HomeStockMessagingService.kt on the client for how these are received and displayed, and
+// HouseholdMembersRepository.updateFcmToken for how each member doc's `fcmToken` gets there.
+// ---------------------------------------------------------------------------
+
+/**
+ * Sends [data] to every member of [householdId] except [excludeUid] (the acting/joining/leaving
+ * device itself, so nobody gets pinged about their own action) who has a stored `fcmToken`.
+ * Data-only (no `notification` key) — see HomeStockMessagingService's doc for why that matters.
+ * Best-effort: a send failure is logged, never thrown, since this runs inside a background
+ * trigger with nothing waiting on its result; a token FCM reports as no-longer-registered is
+ * cleared from that member's doc so future triggers stop retrying it.
+ */
+async function pushToOtherMembers(
+  householdId: string,
+  excludeUid: string | undefined,
+  data: Record<string, string>,
+): Promise<void> {
+  const membersSnapshot = await db.collection("households").doc(householdId).collection("members").get();
+  const recipients = membersSnapshot.docs.filter(
+    (doc) => doc.id !== excludeUid && typeof doc.get("fcmToken") === "string",
+  );
+  if (recipients.length === 0) return;
+
+  const tokens = recipients.map((doc) => doc.get("fcmToken") as string);
+  try {
+    const response = await admin.messaging().sendEachForMulticast({ tokens, data });
+    await Promise.all(
+      response.responses.map((result, index) => {
+        if (result.success) return Promise.resolve();
+        const code = result.error?.code;
+        if (code !== "messaging/registration-token-not-registered" && code !== "messaging/invalid-registration-token") {
+          return Promise.resolve();
+        }
+        return recipients[index].ref.set({ fcmToken: admin.firestore.FieldValue.delete() }, { merge: true });
+      }),
+    );
+  } catch (error) {
+    logger.error("pushToOtherMembers: sendEachForMulticast failed", { error, householdId });
+  }
+}
+
+/**
+ * Pushes "huisgenoot-activiteit" to the rest of the household whenever an inventory/shopping-
+ * list change is logged. The client builds the actual displayed title/body from `actorName`
+ * (see HomeStockMessagingService) rather than this function sending pre-rendered text, so the
+ * notification always reads in the *recipient's* language, not the actor's.
+ */
+export const notifyHouseholdActivity = onDocumentCreated(
+  "households/{householdId}/activityLog/{entryId}",
+  async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) return;
+    const activity = snapshot.data();
+    const actorUid = activity.actorUid as string | undefined;
+    const actorName = (activity.actorName as string | undefined) ?? "";
+    await pushToOtherMembers(event.params.householdId, actorUid, { type: "activity", actorName });
+  },
+);
+
+/** Pushes "huishouden-wijziging" (iemand is toegetreden) to the rest of the household. */
+export const notifyHouseholdMemberJoined = onDocumentCreated(
+  "households/{householdId}/members/{uid}",
+  async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) return;
+    const displayName = (snapshot.data().displayName as string | undefined) ?? "";
+    await pushToOtherMembers(event.params.householdId, event.params.uid, {
+      type: "member_joined",
+      actorName: displayName,
+    });
+  },
+);
+
+/**
+ * Pushes "huishouden-wijziging" (iemand heeft het huishouden verlaten) to the rest of the
+ * household. Reads the just-deleted doc's last-known `displayName` off [event.data] — Firestore
+ * still hands a delete trigger the document's content as it was right before deletion, even
+ * though `get()`ing that same path now would return nothing.
+ */
+export const notifyHouseholdMemberLeft = onDocumentDeleted(
+  "households/{householdId}/members/{uid}",
+  async (event) => {
+    const snapshot = event.data;
+    if (!snapshot) return;
+    const displayName = (snapshot.data()?.displayName as string | undefined) ?? "";
+    await pushToOtherMembers(event.params.householdId, event.params.uid, {
+      type: "member_left",
+      actorName: displayName,
+    });
   },
 );

@@ -235,7 +235,13 @@
     <string name="more_accessibility_high_contrast_description">Stärkerer Kontrast zwischen Text und Hintergrund für bessere Lesbarkeit.</string>
     <string name="more_auto_restock_title">Automatisch auf die Liste</string>
     <string name="more_auto_restock_subtitle">bei Vorrat unter Minimum</string>
-    <string name="more_notifications_row_title">Benachrichtigungen</string>
+    <string name="more_notifications_row_title">Haltbarkeit</string>
+    <string name="more_inventory_insight_notifications_title">Vorrat und Verschwendung</string>
+    <string name="more_inventory_insight_notifications_subtitle">Benachrichtigungen über niedrigen Vorrat und wöchentliche Lebensmittelverschwendung</string>
+    <string name="more_household_activity_notifications_title">Mitbewohner-Aktivität</string>
+    <string name="more_household_activity_notifications_subtitle">Benachrichtigungen, wenn ein Mitbewohner etwas ändert oder sich der Haushalt ändert</string>
+    <string name="more_premium_notifications_title">Premium</string>
+    <string name="more_premium_notifications_subtitle">Benachrichtigung, wenn deine Testphase bald endet</string>
     <string name="more_language_title">Sprache</string>
     <string name="more_language_option_nl">Niederländisch</string>
     <string name="more_language_option_en">Englisch</string>
@@ -552,6 +558,25 @@
     <string name="notification_expiry_group_days_format">In %1$d Tagen</string>
     <string name="notification_receipt_queue_title">Kassenbon verarbeitet</string>
     <string name="notification_receipt_queue_body_format">%1$d Produkte zum Vorrat hinzugefügt</string>
+    <string name="notification_inventory_insight_channel_name">Vorrat-Einblicke</string>
+    <string name="notification_inventory_insight_channel_description">Benachrichtigungen über niedrigen Vorrat und Lebensmittelverschwendung</string>
+    <string name="notification_low_stock_title">Niedriger Vorrat</string>
+    <string name="notification_low_stock_body_multiple_format">%1$d Produkte werden knapp</string>
+    <string name="notification_waste_summary_title">Lebensmittelverschwendung</string>
+    <string name="notification_waste_summary_body_format">Diese Woche hast du %1$d Produkte weggeworfen</string>
+    <string name="notification_waste_summary_body_with_value_format">Diese Woche hast du %1$d Produkte weggeworfen (ca. %2$s)</string>
+    <string name="notification_premium_channel_name">Premium</string>
+    <string name="notification_premium_channel_description">Benachrichtigungen über deine Premium-Testphase</string>
+    <string name="notification_premium_trial_title">Deine Testphase endet bald</string>
+    <string name="notification_premium_trial_body">Deine kostenlose HomeStock-Premium-Testphase endet bald. Sieh dir dein Abo in den Einstellungen an.</string>
+    <string name="notification_household_activity_channel_name">Mitbewohner-Aktivität</string>
+    <string name="notification_household_activity_channel_description">Benachrichtigungen, wenn ein Mitbewohner etwas ändert oder sich der Haushalt ändert</string>
+    <string name="notification_household_activity_title">Neue Aktivität</string>
+    <string name="notification_household_activity_body_format">%1$s hat den Vorrat aktualisiert</string>
+    <string name="notification_household_activity_body_generic">Ein Mitbewohner hat den Vorrat aktualisiert</string>
+    <string name="notification_household_change_title">Haushalt geändert</string>
+    <string name="notification_member_joined_body_format">%1$s ist dem Haushalt beigetreten</string>
+    <string name="notification_member_left_body_format">%1$s hat den Haushalt verlassen</string>
 
     <!-- Statistiken -->
     <string name="statistics_title">Statistiken</string>

@@ -235,7 +235,13 @@
     <string name="more_accessibility_high_contrast_description">Contraste plus marqué entre le texte et l\'arrière-plan, pour une meilleure lisibilité.</string>
     <string name="more_auto_restock_title">Automatiquement sur la liste</string>
     <string name="more_auto_restock_subtitle">si le stock passe sous le minimum</string>
-    <string name="more_notifications_row_title">Notifications</string>
+    <string name="more_notifications_row_title">Péremption</string>
+    <string name="more_inventory_insight_notifications_title">Stock et gaspillage</string>
+    <string name="more_inventory_insight_notifications_subtitle">Notifications sur le stock faible et le gaspillage alimentaire hebdomadaire</string>
+    <string name="more_household_activity_notifications_title">Activité du foyer</string>
+    <string name="more_household_activity_notifications_subtitle">Notifications lorsqu'un colocataire modifie quelque chose, ou que le foyer change</string>
+    <string name="more_premium_notifications_title">Premium</string>
+    <string name="more_premium_notifications_subtitle">Notification lorsque votre période d'essai touche à sa fin</string>
     <string name="more_language_title">Langue</string>
     <string name="more_language_option_nl">Néerlandais</string>
     <string name="more_language_option_en">Anglais</string>
@@ -552,6 +558,25 @@
     <string name="notification_expiry_group_days_format">Dans %1$d jours</string>
     <string name="notification_receipt_queue_title">Ticket traité</string>
     <string name="notification_receipt_queue_body_format">%1$d produits ajoutés à votre stock</string>
+    <string name="notification_inventory_insight_channel_name">Aperçus du stock</string>
+    <string name="notification_inventory_insight_channel_description">Notifications sur le stock faible et le gaspillage alimentaire</string>
+    <string name="notification_low_stock_title">Stock faible</string>
+    <string name="notification_low_stock_body_multiple_format">%1$d produits viennent à manquer</string>
+    <string name="notification_waste_summary_title">Gaspillage alimentaire</string>
+    <string name="notification_waste_summary_body_format">Vous avez jeté %1$d produits cette semaine</string>
+    <string name="notification_waste_summary_body_with_value_format">Vous avez jeté %1$d produits cette semaine (environ %2$s)</string>
+    <string name="notification_premium_channel_name">Premium</string>
+    <string name="notification_premium_channel_description">Notifications sur votre période d'essai Premium</string>
+    <string name="notification_premium_trial_title">Votre période d'essai touche à sa fin</string>
+    <string name="notification_premium_trial_body">Votre période d'essai gratuite HomeStock Premium se termine bientôt. Consultez votre abonnement dans les Paramètres.</string>
+    <string name="notification_household_activity_channel_name">Activité du foyer</string>
+    <string name="notification_household_activity_channel_description">Notifications lorsqu'un colocataire modifie quelque chose, ou que le foyer change</string>
+    <string name="notification_household_activity_title">Nouvelle activité</string>
+    <string name="notification_household_activity_body_format">%1$s a mis à jour le stock</string>
+    <string name="notification_household_activity_body_generic">Un colocataire a mis à jour le stock</string>
+    <string name="notification_household_change_title">Foyer modifié</string>
+    <string name="notification_member_joined_body_format">%1$s a rejoint le foyer</string>
+    <string name="notification_member_left_body_format">%1$s a quitté le foyer</string>
 
     <!-- Statistiques -->
     <string name="statistics_title">Statistiques</string>

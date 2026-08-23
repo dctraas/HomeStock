@@ -236,7 +236,13 @@
     <string name="more_accessibility_high_contrast_description">Sterker contrast tussen tekst en achtergrond, voor betere leesbaarheid.</string>
     <string name="more_auto_restock_title">Automatisch op lijstje</string>
     <string name="more_auto_restock_subtitle">bij voorraad onder minimum</string>
-    <string name="more_notifications_row_title">Meldingen</string>
+    <string name="more_notifications_row_title">Houdbaarheid</string>
+    <string name="more_inventory_insight_notifications_title">Voorraad en verspilling</string>
+    <string name="more_inventory_insight_notifications_subtitle">Meldingen over lage voorraad en wekelijkse voedselverspilling</string>
+    <string name="more_household_activity_notifications_title">Huisgenoot-activiteit</string>
+    <string name="more_household_activity_notifications_subtitle">Meldingen wanneer een huisgenoot iets wijzigt, of het huishouden verandert</string>
+    <string name="more_premium_notifications_title">Premium</string>
+    <string name="more_premium_notifications_subtitle">Melding wanneer je proefperiode bijna afloopt</string>
     <string name="more_language_title">Taal</string>
     <string name="more_language_option_nl">Nederlands</string>
     <string name="more_language_option_en">Engels</string>
@@ -553,6 +559,25 @@
     <string name="notification_expiry_group_days_format">Over %1$d dagen</string>
     <string name="notification_receipt_queue_title">Bonnetje verwerkt</string>
     <string name="notification_receipt_queue_body_format">%1$d producten toegevoegd aan je voorraad</string>
+    <string name="notification_inventory_insight_channel_name">Voorraad-inzichten</string>
+    <string name="notification_inventory_insight_channel_description">Meldingen over lage voorraad en voedselverspilling</string>
+    <string name="notification_low_stock_title">Lage voorraad</string>
+    <string name="notification_low_stock_body_multiple_format">%1$d producten zijn bijna op</string>
+    <string name="notification_waste_summary_title">Voedselverspilling</string>
+    <string name="notification_waste_summary_body_format">Je hebt deze week %1$d producten weggegooid</string>
+    <string name="notification_waste_summary_body_with_value_format">Je hebt deze week %1$d producten weggegooid (ongeveer %2$s)</string>
+    <string name="notification_premium_channel_name">Premium</string>
+    <string name="notification_premium_channel_description">Meldingen over je Premium-proefperiode</string>
+    <string name="notification_premium_trial_title">Je proefperiode loopt bijna af</string>
+    <string name="notification_premium_trial_body">Je gratis proefperiode van HomeStock Premium eindigt binnenkort. Bekijk je abonnement in Instellingen.</string>
+    <string name="notification_household_activity_channel_name">Huisgenoot-activiteit</string>
+    <string name="notification_household_activity_channel_description">Meldingen wanneer een huisgenoot iets wijzigt, of het huishouden verandert</string>
+    <string name="notification_household_activity_title">Nieuwe activiteit</string>
+    <string name="notification_household_activity_body_format">%1$s heeft de voorraad bijgewerkt</string>
+    <string name="notification_household_activity_body_generic">Een huisgenoot heeft de voorraad bijgewerkt</string>
+    <string name="notification_household_change_title">Huishouden gewijzigd</string>
+    <string name="notification_member_joined_body_format">%1$s is toegetreden tot het huishouden</string>
+    <string name="notification_member_left_body_format">%1$s heeft het huishouden verlaten</string>
 
     <!-- Statistieken -->
     <string name="statistics_title">Statistieken</string>

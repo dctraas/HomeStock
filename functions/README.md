@@ -18,6 +18,20 @@ only in this project's Secret Manager config, which is the whole reason these go
 backend instead of calling the APIs directly from the device (anyone could otherwise extract a
 key straight from the APK).
 
+Alongside those, three Firestore-*triggered* functions (not callables — no API key involved)
+push real-time cross-device notifications via FCM:
+
+| Function | Fires on | Notifies |
+| --- | --- | --- |
+| `notifyHouseholdActivity` | new `households/{id}/activityLog/{entryId}` doc | rest of the household — "huisgenoot-activiteit" |
+| `notifyHouseholdMemberJoined` | new `households/{id}/members/{uid}` doc | rest of the household — "huishouden-wijziging" |
+| `notifyHouseholdMemberLeft` | deleted `households/{id}/members/{uid}` doc | rest of the household — "huishouden-wijziging" |
+
+No extra setup needed for these beyond the normal deploy below — `admin.messaging()` uses this
+project's own Firebase service account, the same one `admin.initializeApp()` already picked up.
+See `HomeStockMessagingService.kt` on the Android side for how the pushes are received/displayed,
+and `HouseholdMembersRepository.updateFcmToken` for how each member doc's `fcmToken` gets there.
+
 ## One-time setup
 
 Requires the [Firebase CLI](https://firebase.google.com/docs/cli) and a **Blaze (pay-as-you-go)**

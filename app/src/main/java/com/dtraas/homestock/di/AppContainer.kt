@@ -34,6 +34,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.google.firebase.firestore.PersistentCacheSettings
 import com.google.firebase.functions.FirebaseFunctions
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.storage.FirebaseStorage
 import java.util.concurrent.TimeUnit
 import okhttp3.Interceptor
@@ -82,6 +83,7 @@ class AppContainer(context: Context) {
     }
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val storage: FirebaseStorage = FirebaseStorage.getInstance()
+    private val firebaseMessaging: FirebaseMessaging = FirebaseMessaging.getInstance()
 
     val householdRepository: HouseholdRepository by lazy {
         HouseholdRepository(appContext, firestore, auth, householdSession)
@@ -98,6 +100,7 @@ class AppContainer(context: Context) {
     val householdMembersRepository: HouseholdMembersRepository by lazy {
         HouseholdMembersRepository(
             firestore, storage, householdSession, auth, billingRepository, deviceProfile, analyticsRepository, functions,
+            firebaseMessaging,
         )
     }
 
@@ -162,7 +165,7 @@ class AppContainer(context: Context) {
     }
 
     val activityLogRepository: ActivityLogRepository by lazy {
-        ActivityLogRepository(appContext, firestore, householdSession, deviceProfile)
+        ActivityLogRepository(appContext, firestore, householdSession, deviceProfile, auth)
     }
 
     val shoppingListRepository: ShoppingListRepository by lazy {

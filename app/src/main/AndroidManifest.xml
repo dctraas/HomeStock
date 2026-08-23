@@ -79,6 +79,18 @@
         <receiver
             android:name=".work.AddExpiringItemToShoppingListReceiver"
             android:exported="false" />
+
+        <!-- Real-time cross-device push (huisgenoot-activiteit, huishouden-wijziging) — see
+             HomeStockMessagingService's own doc and the matching Firestore-triggered Cloud
+             Functions in functions/src/index.ts. Not exported: only the Firebase Messaging
+             system component is meant to bind to this. -->
+        <service
+            android:name=".messaging.HomeStockMessagingService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
     </application>
 
 </manifest>

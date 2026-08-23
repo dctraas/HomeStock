@@ -69,6 +69,8 @@ fun HomeStockApp(
     onPendingRouteConsumed: () -> Unit = {},
     pendingShowExpiringSoon: Boolean = false,
     onPendingShowExpiringSoonConsumed: () -> Unit = {},
+    pendingShowLowStock: Boolean = false,
+    onPendingShowLowStockConsumed: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -93,7 +95,7 @@ fun HomeStockApp(
     // (which is combined with [pendingShowExpiringSoonLocal] below), just for an in-app trigger
     // instead of one arriving from outside via MainActivity/a notification.
     var pendingShowExpiringSoonLocal by remember { mutableStateOf(false) }
-    var pendingShowLowStock by remember { mutableStateOf(false) }
+    var pendingShowLowStockLocal by remember { mutableStateOf(false) }
 
     // Fires once, right when this composable first mounts after creating/joining a household
     // (see HouseholdSession.setHousehold) — a one-time nudge rather than a blocking step in
@@ -169,8 +171,11 @@ fun HomeStockApp(
                         onPendingShowExpiringSoonConsumed()
                         pendingShowExpiringSoonLocal = false
                     },
-                    showLowStockOnOpen = pendingShowLowStock,
-                    onShowLowStockConsumed = { pendingShowLowStock = false },
+                    showLowStockOnOpen = pendingShowLowStock || pendingShowLowStockLocal,
+                    onShowLowStockConsumed = {
+                        onPendingShowLowStockConsumed()
+                        pendingShowLowStockLocal = false
+                    },
                 )
             }
             composable(Destination.ShoppingList.route) {
@@ -184,7 +189,7 @@ fun HomeStockApp(
                         navController.navigate(Destination.Inventory.route) { launchSingleTop = true }
                     },
                     onNavigateToLowStock = {
-                        pendingShowLowStock = true
+                        pendingShowLowStockLocal = true
                         navController.navigate(Destination.Inventory.route) { launchSingleTop = true }
                     },
                     onNavigateToInventory = {

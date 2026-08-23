@@ -43,7 +43,9 @@ import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Feedback
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.ImportExport
+import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PrivacyTip
@@ -117,6 +119,9 @@ import com.dtraas.homestock.ui.theme.SageGreenPrimaryContainer
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
 import com.dtraas.homestock.work.ExpiryCheckWorker
+import com.dtraas.homestock.work.LowStockCheckWorker
+import com.dtraas.homestock.work.PremiumTrialCheckWorker
+import com.dtraas.homestock.work.WasteSummaryWorker
 import java.io.File
 import java.util.UUID
 import kotlinx.coroutines.flow.first
@@ -154,6 +159,9 @@ fun MoreScreen(
     val application = context.applicationContext as HomeStockApplication
     val notificationPreferences = application.container.notificationPreferences
     val notificationsEnabled by notificationPreferences.expiryNotificationsEnabled.collectAsState()
+    val inventoryInsightNotificationsEnabled by notificationPreferences.inventoryInsightNotificationsEnabled.collectAsState()
+    val premiumNotificationsEnabled by notificationPreferences.premiumNotificationsEnabled.collectAsState()
+    val householdActivityNotificationsEnabled by notificationPreferences.householdActivityNotificationsEnabled.collectAsState()
     val themePreferences = application.container.themePreferences
     val themeMode by themePreferences.themeMode.collectAsState()
     val largeText by themePreferences.largeText.collectAsState()
@@ -207,6 +215,38 @@ fun MoreScreen(
             }
             ExpiryCheckWorker.runOnce(context)
         }
+    }
+
+    // Same request-permission-then-run-once-for-instant-feedback shape as setNotificationsEnabled
+    // above, for the three notification types added alongside the expiry one.
+    fun requestNotificationPermissionIfNeeded() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED
+        ) {
+            permissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    fun setInventoryInsightNotificationsEnabled(enabled: Boolean) {
+        notificationPreferences.setInventoryInsightNotificationsEnabled(enabled)
+        if (enabled) {
+            requestNotificationPermissionIfNeeded()
+            LowStockCheckWorker.runOnce(context)
+            WasteSummaryWorker.runOnce(context)
+        }
+    }
+
+    fun setPremiumNotificationsEnabled(enabled: Boolean) {
+        notificationPreferences.setPremiumNotificationsEnabled(enabled)
+        if (enabled) {
+            requestNotificationPermissionIfNeeded()
+            PremiumTrialCheckWorker.runOnce(context)
+        }
+    }
+
+    fun setHouseholdActivityNotificationsEnabled(enabled: Boolean) {
+        notificationPreferences.setHouseholdActivityNotificationsEnabled(enabled)
+        if (enabled) requestNotificationPermissionIfNeeded()
     }
 
     // CSV export (Voorraad) — moved verbatim from the now-gone MoreOptionsScreen.kt: the CSV
@@ -410,6 +450,33 @@ fun MoreScreen(
                                 subtitle = stringResource(R.string.more_expiry_notifications_description),
                                 checked = notificationsEnabled,
                                 onCheckedChange = ::setNotificationsEnabled,
+                            )
+                        },
+                        {
+                            SwitchRow(
+                                icon = Icons.Filled.Inventory2,
+                                title = stringResource(R.string.more_inventory_insight_notifications_title),
+                                subtitle = stringResource(R.string.more_inventory_insight_notifications_subtitle),
+                                checked = inventoryInsightNotificationsEnabled,
+                                onCheckedChange = ::setInventoryInsightNotificationsEnabled,
+                            )
+                        },
+                        {
+                            SwitchRow(
+                                icon = Icons.Filled.Groups,
+                                title = stringResource(R.string.more_household_activity_notifications_title),
+                                subtitle = stringResource(R.string.more_household_activity_notifications_subtitle),
+                                checked = householdActivityNotificationsEnabled,
+                                onCheckedChange = ::setHouseholdActivityNotificationsEnabled,
+                            )
+                        },
+                        {
+                            SwitchRow(
+                                icon = Icons.Filled.WorkspacePremium,
+                                title = stringResource(R.string.more_premium_notifications_title),
+                                subtitle = stringResource(R.string.more_premium_notifications_subtitle),
+                                checked = premiumNotificationsEnabled,
+                                onCheckedChange = ::setPremiumNotificationsEnabled,
                             )
                         },
                         {

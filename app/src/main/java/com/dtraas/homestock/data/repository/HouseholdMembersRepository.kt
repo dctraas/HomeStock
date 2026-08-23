@@ -9,6 +9,7 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import com.google.firebase.functions.FirebaseFunctions
+import com.google.firebase.messaging.FirebaseMessaging
 import com.google.firebase.storage.FirebaseStorage
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
@@ -16,6 +17,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
@@ -78,6 +80,7 @@ class HouseholdMembersRepository(
     private val deviceProfile: DeviceProfile,
     private val analyticsRepository: AnalyticsRepository,
     private val functions: FirebaseFunctions,
+    private val firebaseMessaging: FirebaseMessaging,
 ) {
     private val repositoryScope = CoroutineScope(Dispatchers.IO)
 
@@ -109,6 +112,18 @@ class HouseholdMembersRepository(
         // so it's synced explicitly instead — see syncCurrentDevicePhoto).
         combine(householdSession.householdId, deviceProfile.displayName) { householdId, name -> householdId to name }
             .onEach { (householdId, name) -> if (householdId != null) syncDisplayName(householdId, name) }
+            .launchIn(repositoryScope)
+
+        // Keeps this device's own member doc's fcmToken in sync whenever the active household
+        // changes (join/switch) — [updateFcmToken] alone only fires when FCM actually
+        // (re)issues a token, not when this device joins/switches to a household with an
+        // already-issued token. Backs the real-time cross-device pushes in
+        // functions/src/index.ts (huisgenoot-activiteit, huishouden-wijziging) — see
+        // [com.dtraas.homestock.messaging.HomeStockMessagingService].
+        householdSession.householdId.filterNotNull()
+            .onEach { householdId ->
+                runCatching { firebaseMessaging.token.await() }.getOrNull()?.let { token -> syncFcmToken(householdId, token) }
+            }
             .launchIn(repositoryScope)
     }
 
@@ -302,6 +317,21 @@ class HouseholdMembersRepository(
     private suspend fun syncDisplayName(householdId: String, name: String?) {
         val uid = auth.currentUser?.uid ?: return
         membersCollection(householdId).document(uid).set(mapOf("displayName" to name), SetOptions.merge()).await()
+    }
+
+    private suspend fun syncFcmToken(householdId: String, token: String) {
+        val uid = auth.currentUser?.uid ?: return
+        membersCollection(householdId).document(uid).set(mapOf("fcmToken" to token), SetOptions.merge()).await()
+    }
+
+    /** Called by [com.dtraas.homestock.messaging.HomeStockMessagingService] whenever FCM issues
+     *  this device a new token — written to the currently active household's member doc; see
+     *  [init]'s own token sync above for the complementary "token unchanged, active household
+     *  changed" case this alone doesn't cover. A no-op while this device isn't in a household
+     *  yet (the token is picked up by the [init] sync as soon as it joins one). */
+    suspend fun updateFcmToken(token: String) {
+        val householdId = householdSession.householdId.value ?: return
+        syncFcmToken(householdId, token)
     }
 
     companion object {

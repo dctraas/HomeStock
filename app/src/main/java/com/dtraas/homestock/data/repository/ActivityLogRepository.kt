@@ -6,6 +6,7 @@ import com.dtraas.homestock.data.local.dao.ActivityLogWithProduct
 import com.dtraas.homestock.data.local.entity.ProductEntity
 import com.dtraas.homestock.data.model.ActivityType
 import com.dtraas.homestock.data.remote.observeSnapshots
+import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -27,6 +28,7 @@ class ActivityLogRepository(
     private val firestore: FirebaseFirestore,
     private val householdSession: HouseholdSession,
     private val deviceProfile: DeviceProfile,
+    private val auth: FirebaseAuth,
 ) {
     private fun collection(householdId: String, name: String) =
         firestore.collection("households").document(householdId).collection(name)
@@ -102,6 +104,11 @@ class ActivityLogRepository(
                 "detail" to detail,
                 "timestamp" to System.currentTimeMillis(),
                 "actorName" to deviceProfile.displayName.value,
+                // Lets the notifyHouseholdActivity Cloud Function (functions/src/index.ts)
+                // exclude this device's own token when it pushes "huisgenoot-activiteit" to the
+                // rest of the household — actorName alone isn't a stable enough identifier for
+                // that (a display name can be blank, or shared by coincidence).
+                "actorUid" to auth.currentUser?.uid,
             )
         ).await()
     }

@@ -46,6 +46,10 @@ class MainActivity : AppCompatActivity() {
     // (see shortcutRouteForIntent) to make sure Voorraad is what's on screen at all.
     private var pendingShowExpiringSoon by mutableStateOf(false)
 
+    // Same idea as [pendingShowExpiringSoon] above, but for LowStockCheckWorker's low-stock
+    // reminder — read once by InventoryScreen to switch on the "Lage voorraad" quick filter.
+    private var pendingShowLowStock by mutableStateOf(false)
+
     // From a homestock://join?code=XXXXXX link (see HouseholdInviteLink and
     // HouseholdSettingsScreen's "Deel uitnodiging" button) — only meaningful while this device
     // isn't in a household yet, since that's the only time HouseholdScreen is shown at all (see
@@ -58,6 +62,7 @@ class MainActivity : AppCompatActivity() {
         enableEdgeToEdge()
         pendingRoute = shortcutRouteForIntent(intent)
         pendingShowExpiringSoon = intent.action == ACTION_SHOW_EXPIRING_SOON
+        pendingShowLowStock = intent.action == ACTION_SHOW_LOW_STOCK
         pendingJoinCode = HouseholdInviteLink.codeFrom(intent.data)
         setContent {
             val application = LocalContext.current.applicationContext as HomeStockApplication
@@ -96,6 +101,8 @@ class MainActivity : AppCompatActivity() {
                             onPendingRouteConsumed = { pendingRoute = null },
                             pendingShowExpiringSoon = pendingShowExpiringSoon,
                             onPendingShowExpiringSoonConsumed = { pendingShowExpiringSoon = false },
+                            pendingShowLowStock = pendingShowLowStock,
+                            onPendingShowLowStockConsumed = { pendingShowLowStock = false },
                         )
                     }
                 }
@@ -108,6 +115,7 @@ class MainActivity : AppCompatActivity() {
         setIntent(intent)
         shortcutRouteForIntent(intent)?.let { pendingRoute = it }
         if (intent.action == ACTION_SHOW_EXPIRING_SOON) pendingShowExpiringSoon = true
+        if (intent.action == ACTION_SHOW_LOW_STOCK) pendingShowLowStock = true
         HouseholdInviteLink.codeFrom(intent.data)?.let { pendingJoinCode = it }
     }
 
@@ -115,6 +123,10 @@ class MainActivity : AppCompatActivity() {
         ACTION_SHORTCUT_SCAN -> Destination.Scan.route
         ACTION_SHORTCUT_SHOPPING_LIST -> Destination.ShoppingList.route
         ACTION_SHOW_EXPIRING_SOON -> Destination.Inventory.route
+        ACTION_SHOW_LOW_STOCK -> Destination.Inventory.route
+        ACTION_SHOW_WASTE_SUMMARY -> Destination.Statistics.route
+        ACTION_SHOW_PREMIUM_TRIAL -> Destination.Premium.route
+        ACTION_SHOW_HOUSEHOLD_ACTIVITY -> Destination.Notifications.route
         else -> null
     }
 
@@ -124,5 +136,18 @@ class MainActivity : AppCompatActivity() {
 
         /** Set on the expiry-reminder notification's content [PendingIntent] — see ExpiryCheckWorker. */
         const val ACTION_SHOW_EXPIRING_SOON = "com.dtraas.homestock.action.SHOW_EXPIRING_SOON"
+
+        /** Set on the low-stock notification's content [PendingIntent] — see LowStockCheckWorker. */
+        const val ACTION_SHOW_LOW_STOCK = "com.dtraas.homestock.action.SHOW_LOW_STOCK"
+
+        /** Set on the waste-summary notification's content [PendingIntent] — see WasteSummaryWorker. */
+        const val ACTION_SHOW_WASTE_SUMMARY = "com.dtraas.homestock.action.SHOW_WASTE_SUMMARY"
+
+        /** Set on the Premium-trial-ending notification's content [PendingIntent] — see PremiumTrialCheckWorker. */
+        const val ACTION_SHOW_PREMIUM_TRIAL = "com.dtraas.homestock.action.SHOW_PREMIUM_TRIAL"
+
+        /** Set on the household-activity/member-change push notification's content [PendingIntent]
+         *  — see HomeStockMessagingService. */
+        const val ACTION_SHOW_HOUSEHOLD_ACTIVITY = "com.dtraas.homestock.action.SHOW_HOUSEHOLD_ACTIVITY"
     }
 }

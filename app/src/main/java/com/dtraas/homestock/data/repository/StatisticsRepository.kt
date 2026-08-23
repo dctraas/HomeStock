@@ -26,6 +26,10 @@ import java.time.ZoneOffset
 /** One month's total approximate waste value — see [StatisticsRepository.observeMonthlyWasteValue]. */
 data class MonthlyWaste(val month: YearMonth, val totalValue: Double)
 
+/** How many items were logged as waste, and their approximate combined value, in some window —
+ *  see [StatisticsRepository.observeWasteSince]. */
+data class WasteSummary(val count: Int, val totalValue: Double)
+
 @OptIn(ExperimentalCoroutinesApi::class)
 class StatisticsRepository(
     private val firestore: FirebaseFirestore,
@@ -208,6 +212,32 @@ class StatisticsRepository(
                             totals[month] = (totals[month] ?: 0.0) + price
                         }
                     months.map { MonthlyWaste(it, totals[it] ?: 0.0) }
+                }
+            }
+        }
+
+    /**
+     * Waste logged since [sinceMillis] — used by [com.dtraas.homestock.work.WasteSummaryWorker]'s
+     * periodic "voedselverspilling"-melding, a narrower rolling window than
+     * [observeMonthlyWasteValue]'s fixed calendar-month buckets.
+     */
+    fun observeWasteSince(sinceMillis: Long): Flow<WasteSummary> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(WasteSummary(0, 0.0))
+            } else {
+                combine(
+                    collection(householdId, "activityLog").observeSnapshots(),
+                    products(householdId),
+                ) { snapshot, products ->
+                    val wastedSince = snapshot.documents.filter {
+                        it.getString("type") == ActivityType.WASTED.storageKey && (it.getLong("timestamp") ?: 0L) >= sinceMillis
+                    }
+                    val totalValue = wastedSince.sumOf { doc ->
+                        val barcode = doc.getString("barcode") ?: return@sumOf 0.0
+                        products[barcode]?.lastPrice ?: 0.0
+                    }
+                    WasteSummary(count = wastedSince.size, totalValue = totalValue)
                 }
             }
         }

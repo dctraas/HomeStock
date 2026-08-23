@@ -2,8 +2,12 @@ package com.dtraas.homestock
 
 import android.app.Application
 import com.dtraas.homestock.di.AppContainer
+import com.dtraas.homestock.messaging.HomeStockMessagingService
 import com.dtraas.homestock.work.ExpiryCheckWorker
+import com.dtraas.homestock.work.LowStockCheckWorker
+import com.dtraas.homestock.work.PremiumTrialCheckWorker
 import com.dtraas.homestock.work.ReceiptQueueWorker
+import com.dtraas.homestock.work.WasteSummaryWorker
 import com.google.firebase.appcheck.FirebaseAppCheck
 import com.google.firebase.appcheck.debug.DebugAppCheckProviderFactory
 import com.google.firebase.appcheck.playintegrity.PlayIntegrityAppCheckProviderFactory
@@ -23,6 +27,14 @@ class HomeStockApplication : Application() {
         container = AppContainer(this)
         ExpiryCheckWorker.createNotificationChannel(this)
         ExpiryCheckWorker.schedule(this)
+        // Same idea as ExpiryCheckWorker above — channel creation is idempotent, scheduling is
+        // KEEP-idempotent, and each worker no-ops in doWork() if its own preference is off.
+        LowStockCheckWorker.createNotificationChannel(this)
+        LowStockCheckWorker.schedule(this)
+        WasteSummaryWorker.schedule(this) // shares LowStockCheckWorker's channel — see its own doc.
+        PremiumTrialCheckWorker.createNotificationChannel(this)
+        PremiumTrialCheckWorker.schedule(this)
+        HomeStockMessagingService.createNotificationChannel(this)
         // Safety net for a process death between ReceiptQueueRepository.enqueue()'s file write
         // and its own schedule() call — re-arms the drain on every app start whenever anything
         // is still pending, rather than leaving a receipt stuck in the queue forever.

@@ -89,6 +89,10 @@ dependencies {
     // the Premium household member cap. Same trust model as the rest of this app's household
     // logic: a soft business limit read client-side, not a hard security boundary.
     implementation(libs.firebase.config.ktx)
+    // Real-time cross-device push (HomeStockMessagingService) — a huisgenoot's activity, and
+    // household membership changes. See functions/src/index.ts's Firestore-triggered exports
+    // for the server side that calls admin.messaging() against the tokens this registers.
+    implementation(libs.firebase.messaging.ktx)
     // See HomeStockApplication.installAppCheck's doc — both providers are plain (not
     // debug-only) implementation deps so the same source compiles for every build type;
     // installAppCheck itself picks the right one at runtime via BuildConfig.DEBUG.

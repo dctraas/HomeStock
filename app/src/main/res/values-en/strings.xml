@@ -235,7 +235,13 @@
     <string name="more_accessibility_high_contrast_description">Stronger contrast between text and background, for better readability.</string>
     <string name="more_auto_restock_title">Automatically on the list</string>
     <string name="more_auto_restock_subtitle">when stock is below minimum</string>
-    <string name="more_notifications_row_title">Notifications</string>
+    <string name="more_notifications_row_title">Expiry</string>
+    <string name="more_inventory_insight_notifications_title">Inventory and waste</string>
+    <string name="more_inventory_insight_notifications_subtitle">Notifications about low stock and weekly food waste</string>
+    <string name="more_household_activity_notifications_title">Household activity</string>
+    <string name="more_household_activity_notifications_subtitle">Notifications when a housemate changes something, or the household changes</string>
+    <string name="more_premium_notifications_title">Premium</string>
+    <string name="more_premium_notifications_subtitle">Notification when your trial is about to end</string>
     <string name="more_language_title">Language</string>
     <string name="more_language_option_nl">Dutch</string>
     <string name="more_language_option_en">English</string>
@@ -552,6 +558,25 @@
     <string name="notification_expiry_group_days_format">In %1$d days</string>
     <string name="notification_receipt_queue_title">Receipt processed</string>
     <string name="notification_receipt_queue_body_format">%1$d products added to your inventory</string>
+    <string name="notification_inventory_insight_channel_name">Inventory insights</string>
+    <string name="notification_inventory_insight_channel_description">Notifications about low stock and food waste</string>
+    <string name="notification_low_stock_title">Low stock</string>
+    <string name="notification_low_stock_body_multiple_format">%1$d products are running low</string>
+    <string name="notification_waste_summary_title">Food waste</string>
+    <string name="notification_waste_summary_body_format">You threw away %1$d products this week</string>
+    <string name="notification_waste_summary_body_with_value_format">You threw away %1$d products this week (approx. %2$s)</string>
+    <string name="notification_premium_channel_name">Premium</string>
+    <string name="notification_premium_channel_description">Notifications about your Premium trial</string>
+    <string name="notification_premium_trial_title">Your trial is ending soon</string>
+    <string name="notification_premium_trial_body">Your free HomeStock Premium trial ends soon. Check your subscription in Settings.</string>
+    <string name="notification_household_activity_channel_name">Household activity</string>
+    <string name="notification_household_activity_channel_description">Notifications when a housemate changes something, or the household changes</string>
+    <string name="notification_household_activity_title">New activity</string>
+    <string name="notification_household_activity_body_format">%1$s updated the inventory</string>
+    <string name="notification_household_activity_body_generic">A housemate updated the inventory</string>
+    <string name="notification_household_change_title">Household changed</string>
+    <string name="notification_member_joined_body_format">%1$s joined the household</string>
+    <string name="notification_member_left_body_format">%1$s left the household</string>
 
     <!-- Statistics -->
     <string name="statistics_title">Statistics</string>
