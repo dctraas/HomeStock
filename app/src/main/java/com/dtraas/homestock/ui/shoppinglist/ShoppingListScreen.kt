@@ -348,7 +348,7 @@ fun ShoppingListScreen() {
                     stores = groupedByStore.keys.toList(),
                     selectedStore = selectedStoreFilter,
                     onStoreSelected = { selectedStoreFilter = it },
-                    modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
+                    modifier = Modifier.padding(top = 8.dp, bottom = 6.dp),
                 )
             }
 
@@ -1314,7 +1314,9 @@ private fun ShoppingListHeader(
             .background(Brush.verticalGradient(listOf(LocalTopAppBarContainerColor.current, LocalTopAppBarContainerGradientEnd.current)))
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(horizontal = 12.dp, vertical = 4.dp)
-            .padding(bottom = 12.dp),
+            // A touch tighter than before (was 12.dp) — reclaims a little vertical room for
+            // the item list below, per "iets meer boodschap items te kunnen tonen".
+            .padding(bottom = 8.dp),
     ) {
         Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Box {
@@ -1495,79 +1497,83 @@ private fun ShoppingListBottomBar(
     onAddClick: () -> Unit,
     onVoiceClick: () -> Unit,
 ) {
-    Surface(color = MaterialTheme.colorScheme.surface, tonalElevation = 3.dp) {
-        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
-            if (lowStockSuggestions.isNotEmpty() || historySuggestions.isNotEmpty()) {
-                LazyRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
-                ) {
-                    // Bijna-op items first — restocking is the more actionable suggestion of
-                    // the two — then the household's own recent history.
-                    items(lowStockSuggestions, key = { "low_${it.barcode}" }) { suggestion ->
-                        SuggestionChip(
-                            onClick = { onLowStockSuggestionClick(suggestion) },
-                            label = { Text(suggestion.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                            icon = {
-                                Icon(Icons.Filled.TrendingDown, contentDescription = null, modifier = Modifier.size(18.dp))
-                            },
-                            shape = SoftCardShapeCompact,
-                            colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                                iconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            ),
-                        )
-                    }
-                    items(historySuggestions, key = { "hist_$it" }) { name ->
-                        SuggestionChip(
-                            onClick = { onHistorySuggestionClick(name) },
-                            label = { Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                            shape = SoftCardShapeCompact,
-                        )
-                    }
+    // No Surface/tonalElevation wrapper any more — that painted a flat colorScheme.surface band
+    // (plus a faint elevation tint on top of it) directly under the scrolling list above, which
+    // sits on colorScheme.background instead; the two are subtly different tones, so the seam
+    // between them read as a stray white line the user kept seeing. A plain Column blends
+    // straight into the page instead. Padding is a touch tighter too (12dp/10dp -> 8dp/6dp) to
+    // reclaim a bit of vertical room for the list above.
+    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+        if (lowStockSuggestions.isNotEmpty() || historySuggestions.isNotEmpty()) {
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
+            ) {
+                // Bijna-op items first — restocking is the more actionable suggestion of
+                // the two — then the household's own recent history.
+                items(lowStockSuggestions, key = { "low_${it.barcode}" }) { suggestion ->
+                    SuggestionChip(
+                        onClick = { onLowStockSuggestionClick(suggestion) },
+                        label = { Text(suggestion.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        icon = {
+                            Icon(Icons.Filled.TrendingDown, contentDescription = null, modifier = Modifier.size(18.dp))
+                        },
+                        shape = SoftCardShapeCompact,
+                        colors = SuggestionChipDefaults.suggestionChipColors(
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            iconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                        ),
+                    )
+                }
+                items(historySuggestions, key = { "hist_$it" }) { name ->
+                    SuggestionChip(
+                        onClick = { onHistorySuggestionClick(name) },
+                        label = { Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        shape = SoftCardShapeCompact,
+                    )
                 }
             }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                modifier = Modifier.fillMaxWidth(),
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Surface(
+                onClick = onAddClick,
+                modifier = Modifier.weight(1f).height(52.dp),
+                shape = SoftCardShapeCompact,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
             ) {
-                Surface(
-                    onClick = onAddClick,
-                    modifier = Modifier.weight(1f).height(52.dp),
-                    shape = SoftCardShapeCompact,
-                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                Row(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        Icon(
-                            Icons.Filled.Add,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            text = stringResource(R.string.shopping_list_bottom_add_placeholder),
-                            color = MaterialTheme.colorScheme.onSurface,
-                            style = MaterialTheme.typography.bodyLarge,
-                        )
-                    }
+                    Icon(
+                        Icons.Filled.Add,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = stringResource(R.string.shopping_list_bottom_add_placeholder),
+                        color = MaterialTheme.colorScheme.onSurface,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
                 }
-                FilledIconButton(
-                    onClick = onVoiceClick,
-                    modifier = Modifier.size(52.dp),
-                    shape = CircleShape,
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary,
-                        contentColor = MaterialTheme.colorScheme.onSecondary,
-                    ),
-                ) {
-                    Icon(Icons.Filled.Mic, contentDescription = stringResource(R.string.shopping_list_voice_quick_add_cd))
-                }
+            }
+            FilledIconButton(
+                onClick = onVoiceClick,
+                modifier = Modifier.size(52.dp),
+                shape = CircleShape,
+                colors = IconButtonDefaults.filledIconButtonColors(
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
+                ),
+            ) {
+                Icon(Icons.Filled.Mic, contentDescription = stringResource(R.string.shopping_list_voice_quick_add_cd))
             }
         }
     }
