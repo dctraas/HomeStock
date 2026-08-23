@@ -595,8 +595,7 @@
     <string name="recipes_show_as_grid_cd">Als Raster anzeigen</string>
     <string name="recipes_show_as_list_cd">Als Liste anzeigen</string>
     <string name="recipes_match_ratio_format">%1$d/%2$d vorhanden</string>
-    <string name="recipes_allergen_filter_label">Allergene ausschließen</string>
-    <string name="recipes_allergen_filter_active_cd_format">Allergene ausschließen (aktiv: %1$s)</string>
+    <string name="recipes_more_options_cd">Weitere Optionen</string>
     <string name="recipes_area_match_cd">Passt zu deiner Sprache/Region</string>
     <string name="recipes_detail_error">Dieses Rezept konnte nicht geladen werden. Bitte versuche es erneut.</string>
     <string name="recipes_ingredients_title">Zutaten</string>

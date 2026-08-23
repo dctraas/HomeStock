@@ -595,8 +595,7 @@
     <string name="recipes_show_as_grid_cd">Mostrar como cuadrícula</string>
     <string name="recipes_show_as_list_cd">Mostrar como lista</string>
     <string name="recipes_match_ratio_format">%1$d/%2$d en casa</string>
-    <string name="recipes_allergen_filter_label">Excluir alérgenos</string>
-    <string name="recipes_allergen_filter_active_cd_format">Excluir alérgenos (activo: %1$s)</string>
+    <string name="recipes_more_options_cd">Más opciones</string>
     <string name="recipes_area_match_cd">Coincide con tu idioma/región</string>
     <string name="recipes_detail_error">No se pudo cargar esta receta. Inténtalo de nuevo.</string>
     <string name="recipes_ingredients_title">Ingredientes</string>

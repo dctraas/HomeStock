@@ -6,13 +6,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
@@ -25,17 +30,15 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FilterAlt
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.RestaurantMenu
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.WifiOff
@@ -50,12 +53,13 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -74,8 +78,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -96,12 +100,14 @@ import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.model.RecipeTag
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
-import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.SearchField
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
+import com.dtraas.homestock.ui.theme.SageGreenPrimary
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
+import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
 
 /**
  * Browses Spoonacular's recipe catalog by default (see RecipeRepository.browseAllRecipes) — not
@@ -175,121 +181,49 @@ fun RecipesScreen(
     }
 
     Scaffold(
-        topBar = {
-            HomeStockTopAppBar(
-                title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.recipes_title))
-                        // Only on Uit je voorraad — the other tabs don't have a single natural
-                        // "N of something" count to summarize (Ontdekken's page size isn't
-                        // meaningful, Favorieten/Eigen already show their own count as the list
-                        // length at a glance).
-                        if (uiState.tab == RecipesTab.INVENTORY && !uiState.isLoading && uiState.recipes.isNotEmpty()) {
-                            Text(
-                                text = pluralStringResource(R.plurals.recipes_inventory_subtitle, uiState.recipes.size, uiState.recipes.size),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = OnTopAppBarContainerAccent,
-                            )
-                        }
-                    }
-                },
-                // Recepten is a bottom-nav tab, not a screen pushed onto the back stack — a
-                // "Terug" button here had nowhere meaningful to go.
-                actions = {
-                    // List/grid toggle — same pattern as Voorraad's. On BROWSE this lives in
-                    // the icon row below instead (alongside search/filter — see that row's
-                    // comment); on INVENTORY the hero + grid layout is fixed, no toggle to show.
-                    // Only Favorieten/Eigen recepten (plain lists with no row of their own) use
-                    // this top-bar one.
-                    if (uiState.tab == RecipesTab.FAVORITES || uiState.tab == RecipesTab.CUSTOM) {
-                        IconButton(onClick = { viewMode = viewMode.toggled() }) {
-                            Icon(
-                                imageVector = if (viewMode == RecipesViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
-                                contentDescription = stringResource(
-                                    if (viewMode == RecipesViewMode.LIST) R.string.recipes_show_as_grid_cd else R.string.recipes_show_as_list_cd,
-                                ),
-                            )
-                        }
-                    }
-                },
-            )
-        },
+        // RecipesHeader below already claims the status bar inset itself — without this,
+        // Scaffold's default contentWindowInsets (safeDrawing, top included since there's no
+        // topBar) hands that same inset to `padding` too, stacking a second status-bar-height
+        // gap above the header instead of it starting flush at the true top of the screen.
+        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
+            // Icon-only — "De knop 'AI-recept' hoeft geen tekst op het label te bevatten."
+            FloatingActionButton(
                 onClick = { showGenerateDialog = true },
                 containerColor = MaterialTheme.colorScheme.secondary,
                 contentColor = MaterialTheme.colorScheme.onSecondary,
-                icon = { Icon(Icons.Filled.AutoAwesome, contentDescription = null) },
-                text = { Text(stringResource(R.string.recipes_generate_fab)) },
-            )
+            ) {
+                Icon(Icons.Filled.AutoAwesome, contentDescription = stringResource(R.string.recipes_generate_fab))
+            }
         },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            // Zoekbalk zit nu altijd zichtbaar in de header zelf (BROWSE-tab), niet meer achter
+            // een tap-to-reveal zoek-icoon; de allergenfilter en de lijst/rooster-toggle zijn
+            // samengevoegd achter één "Meer opties"-knop helemaal rechtsboven in de header.
+            RecipesHeader(
+                tab = uiState.tab,
+                subtitleCount = if (uiState.tab == RecipesTab.INVENTORY && !uiState.isLoading && uiState.recipes.isNotEmpty()) {
+                    uiState.recipes.size
+                } else {
+                    null
+                },
+                searchQuery = uiState.searchQuery,
+                onSearchQueryChange = { query ->
+                    viewModel.onSearchQueryChange(query)
+                    if (query.isEmpty()) viewModel.clearSearch()
+                },
+                onSearch = viewModel::search,
+                viewMode = viewMode,
+                onToggleViewMode = { viewMode = viewMode.toggled() },
+                excludedAllergens = uiState.excludedAllergens,
+                onToggleAllergen = viewModel::toggleAllergen,
+            )
+
             RecipesTabRow(selected = uiState.tab, onSelect = viewModel::selectTab)
 
-            if (uiState.tab == RecipesTab.BROWSE) {
-                // One consolidated icon row for everything that used to be split between the
-                // top bar (list/grid toggle) and its own row below the tabs (search field,
-                // allergenfilter) — collapsed to just their icons, right-aligned
-                // like a toolbar, so BROWSE's first screenful stays mostly recipes. Search
-                // itself only shows an icon here too (not a permanent bar) — tapping it expands
-                // this same row into a full-width field instead, closer to how Android's own
-                // search-in-app-bar pattern works, and collapses back to icons when dismissed.
-                var searchExpanded by remember { mutableStateOf(uiState.searchQuery.isNotBlank()) }
-                val searchFocusRequester = remember { FocusRequester() }
-                LaunchedEffect(searchExpanded) {
-                    if (searchExpanded) searchFocusRequester.requestFocus()
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 4.dp),
-                ) {
-                    if (searchExpanded) {
-                        IconButton(onClick = {
-                            searchExpanded = false
-                            if (uiState.searchQuery.isNotEmpty()) viewModel.clearSearch()
-                        }) {
-                            Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
-                        }
-                        SearchField(
-                            query = uiState.searchQuery,
-                            onQueryChange = { query ->
-                                viewModel.onSearchQueryChange(query)
-                                if (query.isEmpty()) viewModel.clearSearch()
-                            },
-                            placeholder = stringResource(R.string.recipes_search_placeholder),
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(start = 4.dp)
-                                .focusRequester(searchFocusRequester),
-                            dense = true,
-                            onSearch = viewModel::search,
-                        )
-                    } else {
-                        Spacer(modifier = Modifier.weight(1f))
-                        IconButton(onClick = { searchExpanded = true }) {
-                            Icon(Icons.Filled.Search, contentDescription = stringResource(R.string.search_product_action))
-                        }
-                        // Used to be an always-visible chip row of its own between the search
-                        // bar and the list; folded into this dropdown instead so BROWSE's first
-                        // screenful is mostly recipes, not filter chrome.
-                        AllergenFilterMenuButton(
-                            excludedAllergens = uiState.excludedAllergens,
-                            onToggle = viewModel::toggleAllergen,
-                        )
-                        IconButton(onClick = { viewMode = viewMode.toggled() }) {
-                            Icon(
-                                imageVector = if (viewMode == RecipesViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
-                                contentDescription = stringResource(
-                                    if (viewMode == RecipesViewMode.LIST) R.string.recipes_show_as_grid_cd else R.string.recipes_show_as_list_cd,
-                                ),
-                            )
-                        }
-                    }
-                }
-            } else if (uiState.tab == RecipesTab.CUSTOM) {
+            if (uiState.tab == RecipesTab.CUSTOM) {
                 Row(modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)) {
                     TextButton(onClick = onAddCustomRecipe, modifier = Modifier.padding(horizontal = 8.dp)) {
                         Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
@@ -307,6 +241,9 @@ fun RecipesScreen(
             // shows on Favorieten/Eigen recepten.
             if (uiState.tab == RecipesTab.FAVORITES || uiState.tab == RecipesTab.CUSTOM) {
                 RecipeTagFilterRow(
+                    // De 3 standaardlabels (Snel/kindvriendelijk/Restjes) verdwijnen alleen
+                    // onder Favorieten, op uitdrukkelijk verzoek — Eigen recepten behoudt ze.
+                    showPresetTags = uiState.tab == RecipesTab.CUSTOM,
                     selectedTags = uiState.selectedTags,
                     onToggle = viewModel::toggleTagFilter,
                     customTags = uiState.availableCustomTags,
@@ -749,40 +686,136 @@ private fun HeroRecipeCard(
 }
 
 /**
- * Filter icon + dropdown for the curated allergen subset (see
- * [RecipeRepository.filterableAllergens]) — a checked item means that allergen is excluded.
- * Used to be an always-visible chip row of its own between the search bar and the list; folded
- * into a dropdown instead (same pattern as Voorraad's filter menu) so BROWSE's first screenful
- * is mostly recipes, not filter chrome.
+ * Green gradient header (same Keukenlinnen pattern as Voorraad/Productdetail/Boodschappenlijst/
+ * Maaltijdplanner/Instellingen/Statistieken/Premium/Activiteiten this round) — replaces the flat
+ * HomeStockTopAppBar. Title (+ item-count subtitle on Uit je voorraad) sits on the first line
+ * with one "Meer opties" button pinned at the very top-right, per the design review ("Deze knop
+ * staat helemaal rechtsboven in de header"). On Ontdekken, a persistent search bar shows below
+ * instead of the old tap-to-reveal search icon ("De zoekknop mag als zoekbalk verschijnen in de
+ * Header zelf"). Everything that isn't the search itself — the allergenfilter and the list/
+ * rooster-toggle — lives behind that one Meer-opties menu instead of its own icon
+ * ("De overige knoppen mogen achter een Meer opties knop geplaatst worden").
  */
 @Composable
-private fun AllergenFilterMenuButton(excludedAllergens: Set<Allergen>, onToggle: (Allergen) -> Unit) {
+private fun RecipesHeader(
+    tab: RecipesTab,
+    subtitleCount: Int?,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    onSearch: () -> Unit,
+    viewMode: RecipesViewMode,
+    onToggleViewMode: () -> Unit,
+    excludedAllergens: Set<Allergen>,
+    onToggleAllergen: (Allergen) -> Unit,
+) {
+    val contentColor = LocalTopAppBarContentColor.current
     var menuExpanded by remember { mutableStateOf(false) }
-    Box {
-        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.padding(start = 4.dp)) {
-            if (excludedAllergens.isEmpty()) {
-                Icon(Icons.Filled.FilterAlt, contentDescription = stringResource(R.string.recipes_allergen_filter_label))
-            } else {
-                val activeLabels = excludedAllergens.map { stringResource(it.labelRes) }.joinToString(", ")
-                BadgedBox(badge = { Badge() }) {
-                    Icon(
-                        Icons.Filled.FilterAlt,
-                        contentDescription = stringResource(R.string.recipes_allergen_filter_active_cd_format, activeLabels),
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Brush.verticalGradient(listOf(SageGreenPrimary, TopAppBarContainerGradientEnd)))
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(horizontal = 20.dp, vertical = 4.dp)
+            .padding(bottom = 14.dp),
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.recipes_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    color = contentColor,
+                )
+                // Only on Uit je voorraad — the other tabs don't have a single natural "N of
+                // something" count to summarize (Ontdekken's page size isn't meaningful,
+                // Favorieten/Eigen already show their own count as the list length at a glance).
+                if (subtitleCount != null) {
+                    Text(
+                        text = pluralStringResource(R.plurals.recipes_inventory_subtitle, subtitleCount, subtitleCount),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = OnTopAppBarContainerAccent,
                     )
                 }
             }
-        }
-        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-            RecipeRepository.filterableAllergens.forEach { allergen ->
-                val selected = allergen in excludedAllergens
-                DropdownMenuItem(
-                    text = { Text(stringResource(allergen.labelRes)) },
-                    trailingIcon = {
-                        if (selected) Icon(Icons.Filled.Check, contentDescription = null)
-                    },
-                    onClick = { onToggle(allergen) },
-                )
+            Box {
+                val hasActiveAllergenFilter = tab == RecipesTab.BROWSE && excludedAllergens.isNotEmpty()
+                IconButton(onClick = { menuExpanded = true }) {
+                    if (hasActiveAllergenFilter) {
+                        BadgedBox(badge = { Badge() }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.recipes_more_options_cd), tint = contentColor)
+                        }
+                    } else {
+                        Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.recipes_more_options_cd), tint = contentColor)
+                    }
+                }
+                DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                    // Vast rooster op Uit je voorraad (hero + 2-koloms grid) — geen toggle nodig.
+                    if (tab != RecipesTab.INVENTORY) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    stringResource(
+                                        if (viewMode == RecipesViewMode.LIST) R.string.recipes_show_as_grid_cd else R.string.recipes_show_as_list_cd,
+                                    ),
+                                )
+                            },
+                            leadingIcon = {
+                                Icon(
+                                    imageVector = if (viewMode == RecipesViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
+                                    contentDescription = null,
+                                )
+                            },
+                            onClick = {
+                                onToggleViewMode()
+                                menuExpanded = false
+                            },
+                        )
+                    }
+                    // Allergenen zijn alleen zinvol tegen Spoonacular's brede catalogus op
+                    // Ontdekken — Favorieten/Eigen/Uit je voorraad zijn al beperkt tot wat het
+                    // huishouden zelf al heeft opgeslagen of in voorraad heeft.
+                    if (tab == RecipesTab.BROWSE) {
+                        RecipeRepository.filterableAllergens.forEach { allergen ->
+                            val selected = allergen in excludedAllergens
+                            DropdownMenuItem(
+                                text = { Text(stringResource(allergen.labelRes)) },
+                                trailingIcon = {
+                                    if (selected) Icon(Icons.Filled.Check, contentDescription = null)
+                                },
+                                onClick = { onToggleAllergen(allergen) },
+                            )
+                        }
+                    }
+                }
             }
+        }
+        if (tab == RecipesTab.BROWSE) {
+            SearchField(
+                query = searchQuery,
+                onQueryChange = onSearchQueryChange,
+                placeholder = stringResource(R.string.recipes_search_placeholder),
+                dense = true,
+                onSearch = onSearch,
+                // A white pill instead of the default outline styling, which would barely read
+                // against the green gradient — same white-on-green pairing as Voorraad's header
+                // search field.
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    disabledContainerColor = Color.White,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedTextColor = SageGreenPrimary,
+                    unfocusedTextColor = SageGreenPrimary,
+                    focusedLeadingIconColor = SageGreenPrimary,
+                    unfocusedLeadingIconColor = SageGreenPrimary,
+                    focusedTrailingIconColor = SageGreenPrimary,
+                    unfocusedTrailingIconColor = SageGreenPrimary,
+                    cursorColor = SageGreenPrimary,
+                    focusedPlaceholderColor = SageGreenPrimary.copy(alpha = 0.6f),
+                    unfocusedPlaceholderColor = SageGreenPrimary.copy(alpha = 0.6f),
+                ),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            )
         }
     }
 }
@@ -790,10 +823,12 @@ private fun AllergenFilterMenuButton(excludedAllergens: Set<Allergen>, onToggle:
 /** Chip row for filtering Favorieten/Eigen recepten by [RecipeTag] plus any custom labels a
  *  household has typed themselves (see RecipeDetailScreen's tag editor) — an AND match against
  *  every selected chip (see [RecipesViewModel.toggleTagFilter]/[RecipesViewModel.toggleCustomTagFilter]).
- *  Only 3 fixed tags exist, so a plain always-visible row reads faster than a dropdown here,
- *  unlike [AllergenFilterMenuButton]'s much longer list; custom labels ride along in the same row. */
+ *  [showPresetTags] hides the 3 fixed [RecipeTag] chips on Favorieten specifically ("de standaard
+ *  tags hoeven niet") while still showing them on Eigen recepten; custom labels always show
+ *  regardless — those are what "Label toevoegen" (on the recipe detail screen) adds. */
 @Composable
 private fun RecipeTagFilterRow(
+    showPresetTags: Boolean,
     selectedTags: Set<RecipeTag>,
     onToggle: (RecipeTag) -> Unit,
     customTags: List<String>,
@@ -807,12 +842,14 @@ private fun RecipeTagFilterRow(
             .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        RecipeTag.entries.forEach { tag ->
-            FilterChip(
-                selected = tag in selectedTags,
-                onClick = { onToggle(tag) },
-                label = { Text(stringResource(tag.labelRes)) },
-            )
+        if (showPresetTags) {
+            RecipeTag.entries.forEach { tag ->
+                FilterChip(
+                    selected = tag in selectedTags,
+                    onClick = { onToggle(tag) },
+                    label = { Text(stringResource(tag.labelRes)) },
+                )
+            }
         }
         customTags.forEach { label ->
             FilterChip(

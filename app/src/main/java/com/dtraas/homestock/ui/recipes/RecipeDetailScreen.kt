@@ -29,11 +29,11 @@ import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -352,18 +352,21 @@ fun RecipeDetailScreen(
                         modifier = Modifier.padding(top = 12.dp),
                     )
                 } else {
-                    Button(
-                        onClick = viewModel::addMissingIngredientsToShoppingList,
-                        modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                    ) {
-                        // Icon-only on purpose — the button's own shape/color already reads as
-                        // "tap me", and the long label crowded this row; the action is still
-                        // exposed to screen readers via the icon's contentDescription.
-                        Icon(
-                            Icons.Filled.PlaylistAdd,
-                            contentDescription = stringResource(R.string.recipes_add_missing_to_shopping_list),
-                            modifier = Modifier.size(24.dp),
-                        )
+                    // Kleiner en rechts uitgelijnd op de regel in plaats van een volle-breedte
+                    // knop — per de design review. Icon-only blijft: de knop se eigen vorm/
+                    // kleur leest al als "tap me", en de actie is nog steeds beschikbaar voor
+                    // screenreaders via de icon's contentDescription.
+                    Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.End) {
+                        FilledIconButton(
+                            onClick = viewModel::addMissingIngredientsToShoppingList,
+                            modifier = Modifier.size(40.dp),
+                        ) {
+                            Icon(
+                                Icons.Filled.PlaylistAdd,
+                                contentDescription = stringResource(R.string.recipes_add_missing_to_shopping_list),
+                                modifier = Modifier.size(20.dp),
+                            )
+                        }
                     }
                 }
 
