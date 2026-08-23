@@ -176,7 +176,7 @@
     <string name="household_allergens_menu_cd">My allergens and dietary preferences</string>
     <string name="household_photo_cd">Household photo</string>
     <string name="household_photo_remove_cd">Remove photo</string>
-    <string name="household_photo_error">Couldn't update the photo, please try again</string>
+    <string name="household_photo_error">Couldn\'t update the photo, please try again</string>
     <string name="household_member_allergens_format">Avoids: %1$s</string>
     <string name="more_rename_household_error">Couldn\'t change the name. Please try again.</string>
     <string name="more_premium_title">HomeStock Premium</string>
