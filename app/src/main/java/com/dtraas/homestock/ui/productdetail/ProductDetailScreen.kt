@@ -6,6 +6,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ScrollState
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
@@ -13,13 +14,16 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -79,6 +83,7 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -104,13 +109,16 @@ import com.dtraas.homestock.data.local.entity.ProductEntity
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.DietLabel
-import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.CategoryDropdown
 import com.dtraas.homestock.ui.components.LocationDropdown
 import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.components.icon
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
+import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
+import com.dtraas.homestock.ui.theme.SageGreenPrimary
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
+import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
 import com.dtraas.homestock.ui.theme.UrgencyTileShape
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
@@ -171,7 +179,6 @@ fun ProductDetailScreen(
     val retryLookupFailureMessage = stringResource(R.string.product_detail_retry_lookup_failure)
     var showDeleteConfirm by remember { mutableStateOf(false) }
     var showPhotoDialog by remember { mutableStateOf(false) }
-    var showOverflowMenu by remember { mutableStateOf(false) }
     val pickPhoto = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
     ) { uri: Uri? -> uri?.let(viewModel::uploadCustomPhoto) }
@@ -203,80 +210,6 @@ fun ProductDetailScreen(
     }
 
     Scaffold(
-        topBar = {
-            HomeStockTopAppBar(
-                // The product's own name is already shown prominently in the header row right
-                // below this bar — repeating it as the title bar text was redundant, so this
-                // stays a generic label instead.
-                title = { Text(stringResource(R.string.product_detail_default_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
-                    }
-                },
-                actions = {
-                    // Favorite + overflow, per the design review — every other action (edit,
-                    // change photo, retry lookup, delete) now lives behind the overflow menu
-                    // instead of its own top-bar icon.
-                    if (stillInInventory && product != null) {
-                        IconButton(onClick = viewModel::toggleFavorite) {
-                            Icon(
-                                imageVector = if (uiState.isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                                contentDescription = stringResource(
-                                    if (uiState.isFavorite) R.string.inventory_unmark_favorite_cd else R.string.inventory_mark_favorite_cd,
-                                ),
-                                tint = if (uiState.isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
-                    }
-                    if (product != null) {
-                        Box {
-                            IconButton(onClick = { showOverflowMenu = true }) {
-                                Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.product_detail_overflow_cd))
-                            }
-                            DropdownMenu(expanded = showOverflowMenu, onDismissRequest = { showOverflowMenu = false }) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.product_detail_edit_cd)) },
-                                    onClick = {
-                                        showOverflowMenu = false
-                                        productDetailsSection.expand()
-                                    },
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.product_detail_edit_photo_title)) },
-                                    onClick = {
-                                        showOverflowMenu = false
-                                        if (isPremium) showPhotoDialog = true else onNavigateToPremium()
-                                    },
-                                )
-                                if (looksManuallyEntered) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.product_detail_retry_lookup)) },
-                                        enabled = !isRetryingLookup,
-                                        onClick = {
-                                            showOverflowMenu = false
-                                            viewModel.retryLookup()
-                                        },
-                                    )
-                                }
-                                // Delete moved off the primary-actions row (it must not sit next
-                                // to "Op de lijst") and into here — "Opgemaakt" below covers the
-                                // same everyday case, this is the explicit fallback entry point.
-                                if (stillInInventory) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.product_detail_remove), color = MaterialTheme.colorScheme.error) },
-                                        onClick = {
-                                            showOverflowMenu = false
-                                            showDeleteConfirm = true
-                                        },
-                                    )
-                                }
-                            }
-                        }
-                    }
-                },
-            )
-        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         if (uiState.isLoading) {
@@ -294,49 +227,37 @@ fun ProductDetailScreen(
         val sectionGap = 20.dp
         val headerToCardGap = 12.dp
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(scrollState)
-                .padding(16.dp),
-        ) {
-            // Header: 96dp product image + title/subtitle/status pill, replacing the old
-            // centered 160dp image block.
-            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.Top) {
-                ProductImage(
-                    product = product,
-                    category = category,
-                    showEditPhoto = product != null,
-                    onEditPhotoClick = { if (isPremium) showPhotoDialog = true else onNavigateToPremium() },
-                )
-                Column(modifier = Modifier.weight(1f).padding(start = 14.dp)) {
-                    Text(
-                        text = product?.name ?: stringResource(R.string.product_detail_default_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                    )
-                    if (product != null) {
-                        val nutriScoreText = product.nutriScoreGrade
-                            ?.let { stringResource(R.string.product_detail_nutriscore_format, it.uppercase(Locale.ROOT)) }
-                            ?: stringResource(R.string.product_detail_nutriscore_unavailable)
-                        val subtitle = listOfNotNull(product.brand, stringResource(category.displayNameRes), nutriScoreText)
-                            .joinToString(" · ")
-                        Text(
-                            text = subtitle,
-                            style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 4.dp),
-                        )
-                    }
-                    if (stillInInventory) {
-                        StatusPill(
-                            label = expirationStatusLabel(uiState.expirationDate),
-                            modifier = Modifier.padding(top = 8.dp),
-                        )
-                    }
-                }
-            }
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            // The green header now runs all the way down through the image/title/subtitle
+            // row and the "Nog 2 dagen" status pill — it used to stop at a plain top app bar,
+            // leaving that whole row (houdbaarheid included) on white, scrolling background.
+            // The stock card below still overlaps its bottom edge by design (see its own
+            // offset(y = -14.dp)), but now that overlap lands on the header's own reserved
+            // bottom padding instead of on top of the status pill, which is what made the
+            // pill unreadable before.
+            ProductDetailHeader(
+                product = product,
+                category = category,
+                stillInInventory = stillInInventory,
+                expirationDate = uiState.expirationDate,
+                isFavorite = uiState.isFavorite,
+                looksManuallyEntered = looksManuallyEntered,
+                isRetryingLookup = isRetryingLookup,
+                onBack = onBack,
+                onToggleFavorite = viewModel::toggleFavorite,
+                onEditPhotoClick = { if (isPremium) showPhotoDialog = true else onNavigateToPremium() },
+                onEditDetailsClick = { productDetailsSection.expand() },
+                onRetryLookupClick = viewModel::retryLookup,
+                onDeleteClick = { showDeleteConfirm = true },
+            )
 
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(scrollState)
+                    .padding(16.dp),
+            ) {
             if (stillInInventory) {
                 // Overlaps the header row by design — a bit of visual overlap between the hero
                 // area and the stock card, per the review.
@@ -503,6 +424,7 @@ fun ProductDetailScreen(
                 // Column (see [ExpandableSection.bottomOffset]) is what expanding this section
                 // scrolls to, so this needs to sit past the card's very last field.
                 Spacer(modifier = Modifier.onGloballyPositioned { productDetailsSection.bottomOffset = it.positionInParent().y.roundToInt() })
+            }
             }
         }
 
@@ -676,6 +598,128 @@ private fun DetailRow(title: String, expanded: Boolean, onToggle: () -> Unit, mo
             )
         }
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+    }
+}
+
+/**
+ * The fixed (non-scrolling) green gradient header — back/favorite/overflow row, then the
+ * product image + title/subtitle + houdbaarheid status pill. It used to end after the plain
+ * back/favorite/overflow app bar, leaving the image/title/pill row on white, scrolling
+ * background where [StockCard]'s intentional −14dp overlap could land on top of the status
+ * pill instead of the header's own reserved bottom padding — see [ProductDetailScreen].
+ */
+@Composable
+private fun ProductDetailHeader(
+    product: ProductEntity?,
+    category: Category,
+    stillInInventory: Boolean,
+    expirationDate: Long?,
+    isFavorite: Boolean,
+    looksManuallyEntered: Boolean,
+    isRetryingLookup: Boolean,
+    onBack: () -> Unit,
+    onToggleFavorite: () -> Unit,
+    onEditPhotoClick: () -> Unit,
+    onEditDetailsClick: () -> Unit,
+    onRetryLookupClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+) {
+    val contentColor = LocalTopAppBarContentColor.current
+    var showOverflowMenu by remember { mutableStateOf(false) }
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Brush.verticalGradient(listOf(SageGreenPrimary, TopAppBarContainerGradientEnd)))
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(bottom = 20.dp),
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back), tint = contentColor)
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            // Favorite + overflow, per the design review — every other action (edit, change
+            // photo, retry lookup, delete) lives behind the overflow menu instead of its own
+            // top-bar icon.
+            if (stillInInventory && product != null) {
+                IconButton(onClick = onToggleFavorite) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Star else Icons.Outlined.StarBorder,
+                        contentDescription = stringResource(
+                            if (isFavorite) R.string.inventory_unmark_favorite_cd else R.string.inventory_mark_favorite_cd,
+                        ),
+                        tint = if (isFavorite) OnTopAppBarContainerAccent else contentColor,
+                    )
+                }
+            }
+            if (product != null) {
+                Box {
+                    IconButton(onClick = { showOverflowMenu = true }) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.product_detail_overflow_cd), tint = contentColor)
+                    }
+                    DropdownMenu(expanded = showOverflowMenu, onDismissRequest = { showOverflowMenu = false }) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.product_detail_edit_cd)) },
+                            onClick = { showOverflowMenu = false; onEditDetailsClick() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.product_detail_edit_photo_title)) },
+                            onClick = { showOverflowMenu = false; onEditPhotoClick() },
+                        )
+                        if (looksManuallyEntered) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.product_detail_retry_lookup)) },
+                                enabled = !isRetryingLookup,
+                                onClick = { showOverflowMenu = false; onRetryLookupClick() },
+                            )
+                        }
+                        // Delete moved off the primary-actions row (it must not sit next to
+                        // "Op de lijst") and into here — "Opgemaakt" below covers the same
+                        // everyday case, this is the explicit fallback entry point.
+                        if (stillInInventory) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.product_detail_remove), color = MaterialTheme.colorScheme.error) },
+                                onClick = { showOverflowMenu = false; onDeleteClick() },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp), verticalAlignment = Alignment.Top) {
+            ProductImage(
+                product = product,
+                category = category,
+                showEditPhoto = product != null,
+                onEditPhotoClick = onEditPhotoClick,
+            )
+            Column(modifier = Modifier.weight(1f).padding(start = 14.dp)) {
+                Text(
+                    text = product?.name ?: stringResource(R.string.product_detail_default_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = contentColor,
+                )
+                if (product != null) {
+                    val nutriScoreText = product.nutriScoreGrade
+                        ?.let { stringResource(R.string.product_detail_nutriscore_format, it.uppercase(Locale.ROOT)) }
+                        ?: stringResource(R.string.product_detail_nutriscore_unavailable)
+                    val subtitle = listOfNotNull(product.brand, stringResource(category.displayNameRes), nutriScoreText)
+                        .joinToString(" · ")
+                    Text(
+                        text = subtitle,
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                        color = OnTopAppBarContainerAccent,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+                if (stillInInventory) {
+                    StatusPill(
+                        label = expirationStatusLabel(expirationDate),
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                }
+            }
+        }
     }
 }
 
