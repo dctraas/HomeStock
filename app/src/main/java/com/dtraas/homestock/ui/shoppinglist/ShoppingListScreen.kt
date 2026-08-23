@@ -18,12 +18,15 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -306,6 +309,12 @@ fun ShoppingListScreen() {
     }
 
     Scaffold(
+        // The custom header below already claims the status bar inset itself (see
+        // ShoppingListHeader's own windowInsetsPadding) — without this, Scaffold's default
+        // contentWindowInsets (safeDrawing, top included since there's no topBar) hands that
+        // same inset to `padding` below too, stacking a second status-bar-height gap above the
+        // header instead of the header starting flush at the true top of the screen.
+        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -1528,7 +1537,8 @@ private fun ShoppingListBottomBar(
                     onClick = onAddClick,
                     modifier = Modifier.weight(1f).height(52.dp),
                     shape = SoftCardShapeCompact,
-                    color = MaterialTheme.colorScheme.primaryContainer,
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
                 ) {
                     Row(
                         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -1538,11 +1548,11 @@ private fun ShoppingListBottomBar(
                         Icon(
                             Icons.Filled.Add,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                            tint = MaterialTheme.colorScheme.primary,
                         )
                         Text(
                             text = stringResource(R.string.shopping_list_bottom_add_placeholder),
-                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     }
