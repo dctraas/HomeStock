@@ -464,7 +464,9 @@ private fun HomeStockBottomBar(navController: NavHostController, currentRoute: S
                     Text(
                         text = label,
                         style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 10.sp,
+                            // Was 10.sp — nudged up a touch per "de tekst bij de 5 buttons
+                            // onderaan mag nog een klein beetje groter".
+                            fontSize = 11.sp,
                             fontWeight = if (selected) FontWeight.Bold else FontWeight.SemiBold,
                         ),
                     )
