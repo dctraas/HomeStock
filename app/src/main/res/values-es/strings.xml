@@ -800,7 +800,7 @@
     <!-- Premium -->
     <string name="premium_title">Premium</string>
     <string name="premium_pitch_title">Nunca más tires comida</string>
-    <string name="premium_pitch_subtitle_format">Premium para todo tu hogar — %1$d días gratis.</string>
+    <string name="premium_pitch_subtitle_format">Premium para todo tu hogar - %1$d días gratis.</string>
     <string name="premium_active_title">Ya eres Premium</string>
     <string name="premium_active_subtitle">¡Gracias! Todas las funciones Premium están disponibles para todo tu hogar.</string>
     <string name="premium_benefit_recipes">Cocina con lo que ya tienes</string>
@@ -829,6 +829,6 @@
     <string name="premium_subscribe_button">Suscribirse</string>
     <string name="premium_subscribe_trial_button">%1$d días de prueba gratis</string>
     <string name="premium_terms_notice">Se renueva automáticamente. Cancélala cuando quieras en Google Play.</string>
-    <string name="premium_restore_action">Restaurar una compra anterior</string>
+    <string name="premium_restore_action">Restaurar</string>
     <string name="premium_restore_done">Compras comprobadas</string>
 </resources>

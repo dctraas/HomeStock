@@ -800,7 +800,7 @@
     <!-- Premium -->
     <string name="premium_title">Premium</string>
     <string name="premium_pitch_title">Ne gaspillez plus jamais</string>
-    <string name="premium_pitch_subtitle_format">Premium pour tout votre foyer — %1$d jours gratuits.</string>
+    <string name="premium_pitch_subtitle_format">Premium pour tout votre foyer - %1$d jours gratuits.</string>
     <string name="premium_active_title">Vous êtes Premium</string>
     <string name="premium_active_subtitle">Merci ! Toutes les fonctionnalités Premium sont accessibles pour tout votre foyer.</string>
     <string name="premium_benefit_recipes">Cuisinez avec ce que vous avez déjà</string>
@@ -829,6 +829,6 @@
     <string name="premium_subscribe_button">S\'abonner</string>
     <string name="premium_subscribe_trial_button">%1$d jours d\'essai gratuit</string>
     <string name="premium_terms_notice">Renouvelé automatiquement. Résiliable à tout moment via Google Play.</string>
-    <string name="premium_restore_action">Restaurer un achat précédent</string>
+    <string name="premium_restore_action">Restaurer</string>
     <string name="premium_restore_done">Achats vérifiés</string>
 </resources>

@@ -801,7 +801,7 @@
     <!-- Premium -->
     <string name="premium_title">Premium</string>
     <string name="premium_pitch_title">Nooit meer eten weggooien</string>
-    <string name="premium_pitch_subtitle_format">Premium voor je hele huishouden — %1$d dagen gratis.</string>
+    <string name="premium_pitch_subtitle_format">Premium voor je hele huishouden - %1$d dagen gratis.</string>
     <string name="premium_active_title">Je bent Premium</string>
     <string name="premium_active_subtitle">Bedankt! Alle Premium-functies staan open voor je hele huishouden.</string>
     <string name="premium_benefit_recipes">Koken met wat je al hebt</string>
@@ -830,6 +830,6 @@
     <string name="premium_subscribe_button">Abonneren</string>
     <string name="premium_subscribe_trial_button">%1$d dagen gratis proberen</string>
     <string name="premium_terms_notice">Wordt automatisch verlengd. Op elk moment opzegbaar via Google Play.</string>
-    <string name="premium_restore_action">Eerdere aankoop herstellen</string>
+    <string name="premium_restore_action">Herstellen</string>
     <string name="premium_restore_done">Aankopen gecontroleerd</string>
 </resources>

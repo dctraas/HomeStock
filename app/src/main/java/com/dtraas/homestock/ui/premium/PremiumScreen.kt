@@ -9,11 +9,14 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -138,6 +141,11 @@ fun PremiumScreen(onBack: () -> Unit) {
     var selectedPlan by remember { mutableStateOf(PremiumPlan.YEARLY) }
 
     Scaffold(
+        // PremiumHeader below already claims the status bar inset itself — without this,
+        // Scaffold's default contentWindowInsets (safeDrawing, top included since there's no
+        // topBar) hands that same inset to `padding` too, stacking a second status-bar-height
+        // gap above the header instead of it starting flush at the true top of the screen.
+        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
         snackbarHost = { SnackbarHost(snackbarHostState) },
         // Plans + CTA are pinned here, outside the scrolling benefits list below, so the
         // purchase itself is always reachable without scrolling — per the design review.
