@@ -298,7 +298,7 @@
     <string name="inventory_view_mode_title">Ansicht</string>
     <string name="inventory_view_mode_grid">Kacheln</string>
     <string name="inventory_view_mode_list">Liste</string>
-    <string name="inventory_add_menu_cd">Hinzufügen</string>
+    <string name="inventory_add_menu_cd">Scannen</string>
     <string name="inventory_add_menu_title">Produkt hinzufügen</string>
     <string name="inventory_add_menu_barcode">Barcode scannen</string>
     <string name="inventory_add_menu_search">Nach Namen suchen</string>

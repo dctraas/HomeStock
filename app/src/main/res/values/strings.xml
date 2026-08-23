@@ -299,7 +299,7 @@
     <string name="inventory_view_mode_title">Weergave</string>
     <string name="inventory_view_mode_grid">Tegels</string>
     <string name="inventory_view_mode_list">Lijst</string>
-    <string name="inventory_add_menu_cd">Toevoegen</string>
+    <string name="inventory_add_menu_cd">Scan</string>
     <string name="inventory_add_menu_title">Product toevoegen</string>
     <string name="inventory_add_menu_barcode">Barcode scannen</string>
     <string name="inventory_add_menu_search">Zoeken op naam</string>

@@ -34,7 +34,6 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
@@ -615,9 +614,9 @@ fun InventoryScreen(
 }
 
 /**
- * An extended pill FAB, not an icon-only circle — the visible "Toevoegen" label makes it clear
- * this opens the whole add-a-product menu ([AddMenuDialog]: barcode/bon/AI/zoeken), not just a
- * direct camera shortcut, per the Claude Design review.
+ * An extended pill FAB, not an icon-only circle — labelled "Scan" (the most common way in), it
+ * still opens the whole add-a-product menu ([AddMenuDialog]: barcode/bon/AI/zoeken) rather than
+ * jumping straight to the camera, per user feedback on the Claude Design review.
  */
 @Composable
 private fun AddFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
@@ -626,7 +625,7 @@ private fun AddFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.secondary,
         contentColor = MaterialTheme.colorScheme.onSecondary,
-        icon = { Icon(Icons.Filled.Add, contentDescription = null) },
+        icon = { Icon(Icons.Filled.QrCodeScanner, contentDescription = null) },
         text = { Text(stringResource(R.string.inventory_add_menu_cd)) },
     )
 }
@@ -1357,17 +1356,19 @@ private fun InventoryGridTile(
             // tile most needs to say, so this line goes to unit/locatie instead (see
             // [inventoryMetaText]'s doc for why brand specifically is the one that moves to
             // Productdetail rather than unit or locatie).
-            val meta = inventoryMetaText(item)
-            if (meta != null) {
-                Text(
-                    text = meta,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 1.dp),
-                )
-            }
+            //
+            // Always rendered — even as an empty string when there's no unit/locatie — so
+            // this line reserves the same height on every tile. Without it, tiles for items
+            // missing that meta text (or, previously, any quantity) came out one text-line
+            // shorter than their neighbours, throwing the whole grid row's height off.
+            Text(
+                text = inventoryMetaText(item) ?: "",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 1.dp),
+            )
             // A full-width pill now that the cart button has moved off this row entirely (see
             // the photo above) — − pinned left, quantity centered, + pinned right.
             QuantityStepper(

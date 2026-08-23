@@ -298,7 +298,7 @@
     <string name="inventory_view_mode_title">Vista</string>
     <string name="inventory_view_mode_grid">Tarjetas</string>
     <string name="inventory_view_mode_list">Lista</string>
-    <string name="inventory_add_menu_cd">Añadir</string>
+    <string name="inventory_add_menu_cd">Escanear</string>
     <string name="inventory_add_menu_title">Añadir producto</string>
     <string name="inventory_add_menu_barcode">Escanear código de barras</string>
     <string name="inventory_add_menu_search">Buscar por nombre</string>

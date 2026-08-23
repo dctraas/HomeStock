@@ -298,7 +298,7 @@
     <string name="inventory_view_mode_title">Affichage</string>
     <string name="inventory_view_mode_grid">Cartes</string>
     <string name="inventory_view_mode_list">Liste</string>
-    <string name="inventory_add_menu_cd">Ajouter</string>
+    <string name="inventory_add_menu_cd">Scanner</string>
     <string name="inventory_add_menu_title">Ajouter un produit</string>
     <string name="inventory_add_menu_barcode">Scanner un code-barres</string>
     <string name="inventory_add_menu_search">Rechercher par nom</string>

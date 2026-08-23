@@ -298,7 +298,7 @@
     <string name="inventory_view_mode_title">View</string>
     <string name="inventory_view_mode_grid">Tiles</string>
     <string name="inventory_view_mode_list">List</string>
-    <string name="inventory_add_menu_cd">Add</string>
+    <string name="inventory_add_menu_cd">Scan</string>
     <string name="inventory_add_menu_title">Add product</string>
     <string name="inventory_add_menu_barcode">Scan barcode</string>
     <string name="inventory_add_menu_search">Search by name</string>
