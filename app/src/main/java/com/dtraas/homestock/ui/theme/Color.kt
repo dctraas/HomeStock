@@ -70,9 +70,13 @@ val OnTopAppBarContainerAccent = Color(0xFFF0A88F)
 /** Deadline label ("2 dagen") inside the amber "Eerst opmaken" urgency tile — distinct from
  *  [OnGoldTertiaryContainer], which is reserved for that tile's product-name text. */
 val GoldTertiaryContainerAccent = Color(0xFF8A5F16)
-/** Bottom stop of the "Keuken" header's gradient (top stop is [TopAppBarContainer] itself) — a
- *  touch darker so the band reads as a deliberate gradient rather than a flat fill, same
- *  fixed-regardless-of-theme reasoning as the two accents above. */
+/** Bottom stop of the "Keuken" header's gradient in light theme (top stop is
+ *  [TopAppBarContainer] itself) — a touch darker so the band reads as a deliberate gradient
+ *  rather than a flat fill. Unlike the two accents above, this one does have a dark-theme
+ *  counterpart — see [TopAppBarContainerGradientEndDark] — because the header's top stop
+ *  itself switches to [TopAppBarContainerDark] there; both are resolved together via
+ *  [LocalTopAppBarContainerGradientEnd] so the header never mismatches the system status bar
+ *  color MainActivity paints from [LocalTopAppBarContainerColor]. */
 val TopAppBarContainerGradientEnd = Color(0xFF35583E)
 
 val SageGreenPrimaryDark = Color(0xFF9BC79E)
@@ -110,6 +114,11 @@ val LinenSurfaceContainerHighestDark = Color(0xFF25261E)
 // just as bold a splash of color against the near-black page in dark theme.
 val TopAppBarContainerDark = Color(0xFF25422E)
 val OnTopAppBarContainerDark = Color(0xFFDCEFDD)
+/** Bottom stop of the "Keuken" header's gradient in dark theme (top stop is
+ *  [TopAppBarContainerDark] itself) — same proportional darkening as
+ *  [TopAppBarContainerGradientEnd] is to [TopAppBarContainer] in light theme, so the header
+ *  reads as one deliberate gradient band, not a flat fill, in dark mode too. */
+val TopAppBarContainerGradientEndDark = Color(0xFF1F3726)
 
 val LinenErrorDark = Color(0xFFF2A08F)
 val OnLinenErrorDark = Color(0xFF4A130A)

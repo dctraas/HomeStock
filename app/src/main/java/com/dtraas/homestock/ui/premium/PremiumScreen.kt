@@ -72,12 +72,12 @@ import com.dtraas.homestock.R
 import com.dtraas.homestock.data.repository.PremiumPlan
 import com.dtraas.homestock.data.repository.formattedRecurringPrice
 import com.dtraas.homestock.data.repository.hasTrialOffer
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerGradientEnd
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
-import com.dtraas.homestock.ui.theme.SageGreenPrimary
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
-import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
 import java.util.Locale
 import kotlinx.coroutines.launch
 
@@ -248,7 +248,7 @@ private fun PremiumHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(SageGreenPrimary, TopAppBarContainerGradientEnd)))
+            .background(Brush.verticalGradient(listOf(LocalTopAppBarContainerColor.current, LocalTopAppBarContainerGradientEnd.current)))
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(horizontal = 20.dp, vertical = 4.dp)
             .padding(bottom = 20.dp),

@@ -69,12 +69,12 @@ import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.repository.MonthlyWaste
 import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.theme.CoralSecondaryDark
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerGradientEnd
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
-import com.dtraas.homestock.ui.theme.SageGreenPrimary
 import com.dtraas.homestock.ui.theme.SageGreenPrimaryDark
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
-import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
@@ -206,7 +206,7 @@ private fun StatisticsHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(SageGreenPrimary, TopAppBarContainerGradientEnd)))
+            .background(Brush.verticalGradient(listOf(LocalTopAppBarContainerColor.current, LocalTopAppBarContainerGradientEnd.current)))
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(horizontal = 20.dp, vertical = 4.dp)
             .padding(bottom = 20.dp),

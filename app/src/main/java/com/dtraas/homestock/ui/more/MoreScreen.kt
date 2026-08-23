@@ -108,10 +108,11 @@ import com.dtraas.homestock.data.model.MeasurementUnit
 import com.dtraas.homestock.data.repository.HouseholdMember
 import com.dtraas.homestock.data.repository.ThemeMode
 import com.dtraas.homestock.ui.components.ProfileEditDialog
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerGradientEnd
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnSageGreenPrimaryContainer
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
-import com.dtraas.homestock.ui.theme.SageGreenPrimary
 import com.dtraas.homestock.ui.theme.SageGreenPrimaryContainer
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
@@ -821,7 +822,7 @@ private fun MoreScreenHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(SageGreenPrimary, TopAppBarContainerGradientEnd)))
+            .background(Brush.verticalGradient(listOf(LocalTopAppBarContainerColor.current, LocalTopAppBarContainerGradientEnd.current)))
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(horizontal = 20.dp, vertical = 4.dp)
             .padding(bottom = 18.dp),

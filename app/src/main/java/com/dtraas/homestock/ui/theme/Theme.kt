@@ -88,6 +88,14 @@ private val DarkColors = darkColorScheme(
 // the exact same color — see its usage there) can read the same resolved value.
 val LocalTopAppBarContainerColor = compositionLocalOf { TopAppBarContainer }
 
+// Bottom stop of the gradient headers built on top of LocalTopAppBarContainerColor (see
+// TopAppBarContainerGradientEnd/-Dark in Color.kt) — resolved alongside it so every screen's
+// header gradient starts at exactly the color MainActivity paints onto the system status bar,
+// in both themes. Before this was split out, every header hardcoded the light-mode constants
+// directly, which left dark theme's gradient visibly lighter than the status bar strip above
+// it — two different greens that read as a seam instead of one continuous band.
+val LocalTopAppBarContainerGradientEnd = compositionLocalOf { TopAppBarContainerGradientEnd }
+
 // Title/icon color to pair with LocalTopAppBarContainerColor above. The bar is now a
 // full-strength, saturated sage rather than a pale tint, so it needs a light content
 // color for contrast rather than MaterialTheme's usual ink-dark onSurface.
@@ -147,6 +155,14 @@ fun HomeStockTheme(
         darkTheme -> TopAppBarContainerDark
         else -> TopAppBarContainer
     }
+    // Dynamic color has no gradient counterpart either — same flat surfaceContainer as
+    // topAppBarContainerColor above, so a dynamic-color header is a flat fill rather than a
+    // gradient rather than risk a wallpaper-derived tone that doesn't darken sensibly.
+    val topAppBarContainerGradientEnd = when {
+        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> colorScheme.surfaceContainer
+        darkTheme -> TopAppBarContainerGradientEndDark
+        else -> TopAppBarContainerGradientEnd
+    }
     // Falls back to the theme's own onSurfaceVariant under dynamic color, since a
     // wallpaper-derived surfaceContainer can land anywhere on the light/dark spectrum
     // and the fixed light OnTopAppBarContainer would not reliably contrast against it.
@@ -158,6 +174,7 @@ fun HomeStockTheme(
 
     CompositionLocalProvider(
         LocalTopAppBarContainerColor provides topAppBarContainerColor,
+        LocalTopAppBarContainerGradientEnd provides topAppBarContainerGradientEnd,
         LocalTopAppBarContentColor provides topAppBarContentColor,
     ) {
         MaterialTheme(
