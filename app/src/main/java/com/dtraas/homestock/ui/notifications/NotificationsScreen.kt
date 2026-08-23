@@ -7,10 +7,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
@@ -31,6 +35,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +53,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -61,14 +68,17 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
-import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.data.local.dao.ActivityLogWithProduct
 import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.model.ActivityType
 import com.dtraas.homestock.data.model.DeveloperNotice
 import com.dtraas.homestock.data.repository.HouseholdMember
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
+import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
+import com.dtraas.homestock.ui.theme.SageGreenPrimary
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
+import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneId
@@ -102,41 +112,18 @@ fun NotificationsScreen(onBack: () -> Unit, onNavigateToProduct: (String) -> Uni
     // tab index now that tabs are gone.
     LaunchedEffect(Unit) { viewModel.markNoticesSeen() }
 
-    Scaffold(
-        // No longer a permanent bottom-nav tab — reached via the Activiteit icon on Voorraad
-        // instead, so this needs a real back action now like any other pushed screen.
-        topBar = {
-            HomeStockTopAppBar(
-                title = { Text(stringResource(R.string.nav_news)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
-                    }
-                },
-            )
-        },
-    ) { padding ->
+    Scaffold { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                FilterChip(
-                    selected = filter == ActivityFilter.ALL,
-                    onClick = { viewModel.onFilterChange(ActivityFilter.ALL) },
-                    label = { Text(stringResource(R.string.notifications_filter_all)) },
-                )
-                FilterChip(
-                    selected = filter == ActivityFilter.HOUSEHOLD,
-                    onClick = { viewModel.onFilterChange(ActivityFilter.HOUSEHOLD) },
-                    label = { Text(stringResource(R.string.notifications_tab_history)) },
-                )
-                FilterChip(
-                    selected = filter == ActivityFilter.TIPS,
-                    onClick = { viewModel.onFilterChange(ActivityFilter.TIPS) },
-                    label = { Text(stringResource(R.string.notifications_tab_notices)) },
-                )
-            }
+            // Terugknop/titel + de filterchips zaten voorheen in een platte HomeStockTopAppBar
+            // met de chips los daaronder op wit; ze verhuizen hier naar dezelfde groene
+            // gradient-header als de andere herbouwde schermen, zoals artboard 1i in het
+            // geuploade Claude Design-canvas laat zien. "Alles" is op verzoek geschrapt — twee
+            // chips blijven over, Huishouden en Meldingen (het oude "Tips").
+            NotificationsHeader(
+                onBack = onBack,
+                filter = filter,
+                onFilterChange = viewModel::onFilterChange,
+            )
 
             if (filter == ActivityFilter.TIPS) {
                 if (developerNotices.isEmpty()) {
@@ -156,7 +143,10 @@ fun NotificationsScreen(onBack: () -> Unit, onNavigateToProduct: (String) -> Uni
                 if (appActivity.isEmpty() && urgentItem == null) {
                     EmptyState(stringResource(R.string.notifications_history_empty))
                 } else {
-                    val showTipsTeaser = filter == ActivityFilter.ALL && developerNotices.isNotEmpty()
+                    // Huishouden is nu de enige "hoofd"-weergave (Alles bestaat niet meer), dus
+                    // de teaser naar Meldingen hoort hier thuis in plaats van achter een aparte
+                    // Alles-modus.
+                    val showTipsTeaser = filter == ActivityFilter.HOUSEHOLD && developerNotices.isNotEmpty()
                     ActivityTimeline(
                         urgentItem = urgentItem,
                         activity = appActivity,
@@ -170,6 +160,74 @@ fun NotificationsScreen(onBack: () -> Unit, onNavigateToProduct: (String) -> Uni
             }
         }
     }
+}
+
+/**
+ * The fixed (non-scrolling) green gradient header — back button + title row, then the two
+ * filter chips (Huishouden / Meldingen). Replaces the old flat HomeStockTopAppBar with the chips
+ * on plain white background underneath it.
+ */
+@Composable
+private fun NotificationsHeader(
+    onBack: () -> Unit,
+    filter: ActivityFilter,
+    onFilterChange: (ActivityFilter) -> Unit,
+) {
+    val contentColor = LocalTopAppBarContentColor.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Brush.verticalGradient(listOf(SageGreenPrimary, TopAppBarContainerGradientEnd)))
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .padding(bottom = 14.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack, modifier = Modifier.offset(x = (-12).dp)) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back), tint = contentColor)
+            }
+            Text(
+                text = stringResource(R.string.nav_news),
+                style = MaterialTheme.typography.titleLarge,
+                color = contentColor,
+            )
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            NotificationsFilterChip(
+                label = stringResource(R.string.notifications_tab_history),
+                selected = filter == ActivityFilter.HOUSEHOLD,
+                onClick = { onFilterChange(ActivityFilter.HOUSEHOLD) },
+            )
+            NotificationsFilterChip(
+                label = stringResource(R.string.notifications_tab_notices),
+                selected = filter == ActivityFilter.TIPS,
+                onClick = { onFilterChange(ActivityFilter.TIPS) },
+            )
+        }
+    }
+}
+
+/** A filter chip styled for the green header — a solid white pill when selected, a translucent
+ *  white pill otherwise — same treatment as the dagstrip/day-cards on the other rebuilt headers
+ *  this round, rather than [FilterChip]'s default Material colors which assume a light surface. */
+@Composable
+private fun NotificationsFilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label) },
+        shape = SoftCardShapeCompact,
+        colors = FilterChipDefaults.filterChipColors(
+            containerColor = Color.White.copy(alpha = 0.14f),
+            labelColor = OnTopAppBarContainerAccent,
+            selectedContainerColor = Color.White,
+            selectedLabelColor = SageGreenPrimary,
+        ),
+        border = null,
+    )
 }
 
 @Composable

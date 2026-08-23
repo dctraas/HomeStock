@@ -347,8 +347,7 @@
     <string name="group_by_location">Location</string>
 
     <!-- News -->
-    <string name="notifications_filter_all">All</string>
-    <string name="notifications_tab_notices">Tips</string>
+    <string name="notifications_tab_notices">Notifications</string>
     <string name="notifications_tab_history">Household</string>
     <string name="notifications_history_empty">Scans and changes will appear here.</string>
     <string name="notice_dismiss_cd">Delete</string>

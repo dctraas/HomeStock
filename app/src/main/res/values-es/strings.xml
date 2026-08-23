@@ -347,8 +347,7 @@
     <string name="group_by_location">Ubicación</string>
 
     <!-- Novedades -->
-    <string name="notifications_filter_all">Todo</string>
-    <string name="notifications_tab_notices">Consejos</string>
+    <string name="notifications_tab_notices">Notificaciones</string>
     <string name="notifications_tab_history">Hogar</string>
     <string name="notifications_history_empty">Los escaneos y cambios aparecerán aquí.</string>
     <string name="notice_dismiss_cd">Eliminar</string>

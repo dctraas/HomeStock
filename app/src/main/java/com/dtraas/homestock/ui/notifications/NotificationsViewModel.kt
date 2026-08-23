@@ -20,8 +20,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
-/** The three filter chips replacing the old two tabs — "Alles" is the default. */
-enum class ActivityFilter { ALL, HOUSEHOLD, TIPS }
+/** The two filter chips replacing the old two tabs — "Huishouden" is the default. The earlier
+ *  third option, "Alles", was removed on request; Huishouden's own timeline still surfaces a
+ *  teaser row into Meldingen (see NotificationsScreen's showTipsTeaser) so tips stay reachable
+ *  without a dedicated "everything" view. */
+enum class ActivityFilter { HOUSEHOLD, TIPS }
 
 class NotificationsViewModel(
     activityLogRepository: ActivityLogRepository,
@@ -69,7 +72,7 @@ class NotificationsViewModel(
             }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    private val _filter = MutableStateFlow(ActivityFilter.ALL)
+    private val _filter = MutableStateFlow(ActivityFilter.HOUSEHOLD)
     val filter: StateFlow<ActivityFilter> = _filter
 
     fun onFilterChange(filter: ActivityFilter) {

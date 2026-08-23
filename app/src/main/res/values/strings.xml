@@ -348,8 +348,7 @@
     <string name="group_by_location">Locatie</string>
 
     <!-- Nieuws -->
-    <string name="notifications_filter_all">Alles</string>
-    <string name="notifications_tab_notices">Tips</string>
+    <string name="notifications_tab_notices">Meldingen</string>
     <string name="notifications_tab_history">Huishouden</string>
     <string name="notifications_history_empty">Scans en aanpassingen verschijnen hier.</string>
     <string name="notice_dismiss_cd">Verwijderen</string>
