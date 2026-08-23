@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +25,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -54,6 +58,7 @@ import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
@@ -64,7 +69,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
@@ -79,6 +83,8 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SuggestionChip
+import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
@@ -99,6 +105,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -121,19 +128,21 @@ import com.dtraas.homestock.data.local.entity.ShoppingListMeta
 import com.dtraas.homestock.data.local.entity.StoreEntity
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.MeasurementUnit
-import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.CategoryDropdown
 import com.dtraas.homestock.ui.components.MeasurementUnitDropdown
 import com.dtraas.homestock.ui.components.ProductImage
 import com.dtraas.homestock.ui.components.QuantityStepper
-import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.components.StoreDropdown
 import com.dtraas.homestock.ui.components.formatQuantityWithUnit
 import com.dtraas.homestock.ui.components.icon
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
+import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
+import com.dtraas.homestock.ui.theme.SageGreenPrimary
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
+import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
 import kotlinx.coroutines.launch
 import java.util.Locale
 import kotlin.math.roundToInt
@@ -184,6 +193,8 @@ fun ShoppingListScreen() {
                     application.container.shoppingListRepository,
                     application.container.storeRepository,
                     application.container.shoppingListsRepository,
+                    application.container.activityLogRepository,
+                    application.container.inventoryRepository,
                     defaultListName,
                 )
             }
@@ -191,7 +202,6 @@ fun ShoppingListScreen() {
     )
     val groupedByStore by viewModel.groupedByStore.collectAsState()
     val stores by viewModel.stores.collectAsState()
-    val searchQuery by viewModel.searchQueryState.collectAsState()
     val sortMode by viewModel.sortModeState.collectAsState()
     val lists by viewModel.lists.collectAsState()
     val activeList by viewModel.activeList.collectAsState()
@@ -266,111 +276,70 @@ fun ShoppingListScreen() {
         }
     }
 
+    val historySuggestions by viewModel.historySuggestions.collectAsState()
+    val lowStockSuggestions by viewModel.lowStockSuggestions.collectAsState()
+
+    // Screen-level speech input for the bottom bar's mic button — quick-adds the transcription
+    // straight away (same defaults as the old search-field quick-add: Overig/geen winkel/1
+    // stuk), unlike ItemFormDialog's own identical launcher below, which only pre-fills a name
+    // field the household still confirms. A bare "say a product" action doesn't have a form to
+    // pre-fill into, so quick-adding directly is the honest equivalent here.
+    val voiceQuickAddPrompt = stringResource(R.string.shopping_list_voice_input_prompt)
+    val speechQuickAddLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult(),
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            val spoken = result.data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
+            if (!spoken.isNullOrBlank()) viewModel.addItem(spoken.trim(), Category.OVERIG, "", 1)
+        }
+    }
+    fun launchVoiceQuickAdd() {
+        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+            putExtra(RecognizerIntent.EXTRA_PROMPT, voiceQuickAddPrompt)
+        }
+        try {
+            speechQuickAddLauncher.launch(intent)
+        } catch (e: ActivityNotFoundException) {
+            onVoiceInputUnavailable()
+        }
+    }
+
     Scaffold(
-        topBar = {
-            HomeStockTopAppBar(
-                title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.clickable { showListMenu = true },
-                        ) {
-                            Text(
-                                text = activeList.name,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                            Icon(
-                                Icons.Filled.ArrowDropDown,
-                                contentDescription = stringResource(R.string.shopping_list_switch_list_cd),
-                            )
-                        }
-                        // The running total used to repeat here as a topBar subtitle — dropped
-                        // now that ShoppingProgressBar shows it right below, more prominently
-                        // and right next to the checked/total count it's most useful beside.
-                        ShoppingListSwitcherMenu(
-                            expanded = showListMenu,
-                            lists = lists,
-                            activeListId = activeList.id,
-                            onDismiss = { showListMenu = false },
-                            onSelect = { viewModel.selectList(it) },
-                            onCreateNew = { showCreateListDialog = true },
-                            onRename = { listToRename = it },
-                            onDelete = { listToDelete = it },
-                        )
-                    }
-                },
-                // Delen used to live only inside the "..." overflow — reachable, but two taps
-                // away for what's often the whole point of opening this screen before leaving
-                // the house. A dedicated top-bar button, same glance position Voorraad's
-                // notification icon uses, per the Claude Design review.
-                actions = {
-                    if (groupedByStore.isNotEmpty()) {
-                        IconButton(onClick = ::shareList) {
-                            Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.shopping_list_share_cd))
-                        }
-                    }
-                },
-            )
-        },
-        floatingActionButton = {
-            ShoppingFloatingActionBar(onAddClick = { showAddDialog = true })
-        },
-        floatingActionButtonPosition = FabPosition.End,
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // Single search/add field, always visible — typing narrows the list below as
-            // before, and the "+" that appears beside it (only once there's text, so it
-            // can't be tapped by accident) quick-adds a new item with that exact name and
-            // sensible defaults (Overig/geen winkel/1 stuk) rather than opening the full
-            // ItemFormDialog — that dialog is still one tap away via the floating "+" button
-            // below for anyone who wants to set a category/winkel/eenheid up front.
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 4.dp),
-            ) {
-                SearchField(
-                    query = searchQuery,
-                    onQueryChange = viewModel::onSearchQueryChange,
-                    placeholder = stringResource(R.string.shopping_list_search_add_placeholder),
-                    onSearch = {
-                        if (searchQuery.isNotBlank()) {
-                            viewModel.addItem(searchQuery.trim(), Category.OVERIG, "", 1)
-                            viewModel.onSearchQueryChange("")
-                        }
-                    },
-                    modifier = Modifier.weight(1f),
-                )
-                if (searchQuery.isNotBlank()) {
-                    IconButton(
-                        onClick = {
-                            viewModel.addItem(searchQuery.trim(), Category.OVERIG, "", 1)
-                            viewModel.onSearchQueryChange("")
-                        },
-                        modifier = Modifier.size(48.dp),
-                    ) {
-                        Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.shopping_list_quick_add_cd))
-                    }
-                }
-                IconButton(onClick = { showMoreOptions = true }, modifier = Modifier.size(48.dp)) {
-                    Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.shopping_list_more_options_cd))
-                }
-            }
+            // The green header now carries the list switcher + delen/meer-opties (both used
+            // to live in a plain HomeStockTopAppBar) and the progress ring right underneath —
+            // the search/quick-add field that used to sit here is gone entirely, replaced by
+            // the thumb-zone bottom bar (suggestions + full-width add + spraak) below.
+            ShoppingListHeader(
+                listName = activeList.name,
+                onListNameClick = { showListMenu = true },
+                listMenuExpanded = showListMenu,
+                lists = lists,
+                activeListId = activeList.id,
+                onDismissListMenu = { showListMenu = false },
+                onSelectList = viewModel::selectList,
+                onCreateNewList = { showCreateListDialog = true },
+                onRenameList = { listToRename = it },
+                onDeleteList = { listToDelete = it },
+                canShare = groupedByStore.isNotEmpty(),
+                onShareClick = ::shareList,
+                onMoreOptionsClick = { showMoreOptions = true },
+                showProgress = groupedByStore.isNotEmpty(),
+                checkedCount = allItems.count { it.isChecked },
+                totalCount = allItems.size,
+                totalPrice = totalPrice,
+                storeCount = groupedByStore.keys.count { it.isNotBlank() },
+            )
 
             if (groupedByStore.isNotEmpty()) {
-                ShoppingProgressBar(
-                    checkedCount = allItems.count { it.isChecked },
-                    totalCount = allItems.size,
-                    totalPrice = totalPrice,
-                    storeCount = groupedByStore.keys.count { it.isNotBlank() },
-                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
-                )
                 StoreChipsRow(
                     stores = groupedByStore.keys.toList(),
                     selectedStore = selectedStoreFilter,
                     onStoreSelected = { selectedStoreFilter = it },
-                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
+                    modifier = Modifier.padding(top = 12.dp, bottom = 8.dp),
                 )
             }
 
@@ -398,9 +367,10 @@ fun ShoppingListScreen() {
                 }
             }
 
+            Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
             if (displayedGroups.isEmpty()) {
                 EmptyShoppingList(
-                    isFiltered = searchQuery.isNotBlank() || selectedStoreFilter != null,
+                    isFiltered = selectedStoreFilter != null,
                     modifier = Modifier.fillMaxSize(),
                 )
             } else if (viewMode == ShoppingListViewMode.LIST && sortMode == ShoppingListSortMode.MANUAL) {
@@ -494,6 +464,21 @@ fun ShoppingListScreen() {
                     }
                 }
             }
+            }
+
+            // Thumb-zone bottom bar: suggestion chips (own history + Voorraad items running
+            // low), then a full-width "voeg iets toe" button beside a dedicated spraak button
+            // — replaces the old top-of-screen search/quick-add field entirely.
+            ShoppingListBottomBar(
+                historySuggestions = historySuggestions,
+                lowStockSuggestions = lowStockSuggestions,
+                onHistorySuggestionClick = { name -> viewModel.addItem(name, Category.OVERIG, "", 1) },
+                onLowStockSuggestionClick = { suggestion ->
+                    viewModel.addItem(suggestion.name, suggestion.category, "", 1)
+                },
+                onAddClick = { showAddDialog = true },
+                onVoiceClick = ::launchVoiceQuickAdd,
+            )
         }
 
         if (showMoreOptions) {
@@ -1287,9 +1272,100 @@ private fun ShoppingCheckCircle(
 }
 
 /**
+ * The fixed (non-scrolling) green gradient header — replaces the old flat HomeStockTopAppBar.
+ * List-name switcher + delen/meer-opties on the top row, and — once the active list has items —
+ * the progress ring right underneath, all inside the same gradient block ("Neem de voortgangsring
+ * op in de groene header. Delen en meer opties moeten bovenin naast de header.").
+ */
+@Composable
+private fun ShoppingListHeader(
+    listName: String,
+    onListNameClick: () -> Unit,
+    listMenuExpanded: Boolean,
+    lists: List<ShoppingListMeta>,
+    activeListId: String?,
+    onDismissListMenu: () -> Unit,
+    onSelectList: (String?) -> Unit,
+    onCreateNewList: () -> Unit,
+    onRenameList: (ShoppingListMeta) -> Unit,
+    onDeleteList: (ShoppingListMeta) -> Unit,
+    canShare: Boolean,
+    onShareClick: () -> Unit,
+    onMoreOptionsClick: () -> Unit,
+    showProgress: Boolean,
+    checkedCount: Int,
+    totalCount: Int,
+    totalPrice: Double?,
+    storeCount: Int,
+) {
+    val contentColor = LocalTopAppBarContentColor.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Brush.verticalGradient(listOf(SageGreenPrimary, TopAppBarContainerGradientEnd)))
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .padding(bottom = 12.dp),
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            Box {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clickable(onClick = onListNameClick)
+                        .padding(vertical = 10.dp, horizontal = 4.dp),
+                ) {
+                    Text(
+                        text = listName,
+                        style = MaterialTheme.typography.titleLarge,
+                        color = contentColor,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Icon(
+                        Icons.Filled.ArrowDropDown,
+                        contentDescription = stringResource(R.string.shopping_list_switch_list_cd),
+                        tint = contentColor,
+                    )
+                }
+                ShoppingListSwitcherMenu(
+                    expanded = listMenuExpanded,
+                    lists = lists,
+                    activeListId = activeListId,
+                    onDismiss = onDismissListMenu,
+                    onSelect = onSelectList,
+                    onCreateNew = onCreateNewList,
+                    onRename = onRenameList,
+                    onDelete = onDeleteList,
+                )
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            if (canShare) {
+                IconButton(onClick = onShareClick) {
+                    Icon(Icons.Filled.Share, contentDescription = stringResource(R.string.shopping_list_share_cd), tint = contentColor)
+                }
+            }
+            IconButton(onClick = onMoreOptionsClick) {
+                Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.shopping_list_more_options_cd), tint = contentColor)
+            }
+        }
+        if (showProgress) {
+            ShoppingProgressBar(
+                checkedCount = checkedCount,
+                totalCount = totalCount,
+                totalPrice = totalPrice,
+                storeCount = storeCount,
+                modifier = Modifier.padding(top = 4.dp, start = 4.dp),
+            )
+        }
+    }
+}
+
+/**
  * How far through the list the household is — checked/total items, plus the running total
- * (see [ShoppingListViewModel.totalPrice]) when at least one item has a price set. Sits right
- * under the search/add field, above the store chips.
+ * (see [ShoppingListViewModel.totalPrice]) when at least one item has a price set. Lives
+ * permanently inside [ShoppingListHeader]'s dark green gradient now, hence the white/coral
+ * palette below instead of the surface-oriented colors this used before that move.
  */
 @Composable
 private fun ShoppingProgressBar(
@@ -1311,14 +1387,15 @@ private fun ShoppingProgressBar(
             CircularProgressIndicator(
                 progress = { if (totalCount > 0) checkedCount.toFloat() / totalCount else 0f },
                 modifier = Modifier.fillMaxSize(),
-                color = MaterialTheme.colorScheme.secondary,
-                trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                color = OnTopAppBarContainerAccent,
+                trackColor = Color.White.copy(alpha = 0.18f),
                 strokeWidth = 5.dp,
             )
             Text(
                 text = checkedCount.toString(),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
+                color = Color.White,
             )
         }
         Column(modifier = Modifier.padding(start = 14.dp)) {
@@ -1326,6 +1403,7 @@ private fun ShoppingProgressBar(
                 text = pluralStringResource(R.plurals.shopping_list_progress_remaining_format, remaining, remaining),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
+                color = Color.White,
             )
             val metaParts = listOfNotNull(
                 if (storeCount > 0) pluralStringResource(R.plurals.shopping_list_store_count_format, storeCount, storeCount) else null,
@@ -1335,7 +1413,7 @@ private fun ShoppingProgressBar(
                 Text(
                     text = metaParts.joinToString(" · "),
                     style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = OnTopAppBarContainerAccent,
                     modifier = Modifier.padding(top = 1.dp),
                 )
             }
@@ -1391,27 +1469,97 @@ private fun StoreChipsRow(
 }
 
 /**
- * The lone floating "+" — opens the full [ItemFormDialog] with category/winkel/eenheid fields,
- * unlike the quick-add field above. "Winkelmodus" used to sit beside it as a wide pill; now that
- * it's gone (removed on request, see suggestions elsewhere for where it could resurface) the "+"
- * stays exactly as it always was — a small round icon button — but sits in the bottom-right
- * corner ([FabPosition.End] on the Scaffold above) rather than centered.
+ * Thumb-zone bottom bar: suggestion chips (own history + Voorraad items running low, see
+ * [ShoppingListViewModel.historySuggestions]/[ShoppingListViewModel.lowStockSuggestions]) above
+ * a page-wide "voeg iets toe" pill and a dedicated round spraak button — replaces both the old
+ * top-of-screen search/quick-add field and the old bottom-right floating "+" ("Onderaan de
+ * pagina een paginabrede knop om iets toe te voegen en rechtsonder een knop om iets via spraak
+ * toe te voegen. Daarboven suggestiechips uit mijn eigen historie en de voorraad die bijna op
+ * is.").
  */
 @Composable
-private fun ShoppingFloatingActionBar(
+private fun ShoppingListBottomBar(
+    historySuggestions: List<String>,
+    lowStockSuggestions: List<LowStockSuggestion>,
+    onHistorySuggestionClick: (String) -> Unit,
+    onLowStockSuggestionClick: (LowStockSuggestion) -> Unit,
     onAddClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    onVoiceClick: () -> Unit,
 ) {
-    FilledIconButton(
-        onClick = onAddClick,
-        modifier = modifier.size(52.dp),
-        shape = SoftCardShapeCompact,
-        colors = IconButtonDefaults.filledIconButtonColors(
-            containerColor = MaterialTheme.colorScheme.secondary,
-            contentColor = MaterialTheme.colorScheme.onSecondary,
-        ),
-    ) {
-        Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.shopping_list_add_item_cd))
+    Surface(color = MaterialTheme.colorScheme.surface, tonalElevation = 3.dp) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)) {
+            if (lowStockSuggestions.isNotEmpty() || historySuggestions.isNotEmpty()) {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                ) {
+                    // Bijna-op items first — restocking is the more actionable suggestion of
+                    // the two — then the household's own recent history.
+                    items(lowStockSuggestions, key = { "low_${it.barcode}" }) { suggestion ->
+                        SuggestionChip(
+                            onClick = { onLowStockSuggestionClick(suggestion) },
+                            label = { Text(suggestion.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                            icon = {
+                                Icon(Icons.Filled.TrendingDown, contentDescription = null, modifier = Modifier.size(18.dp))
+                            },
+                            shape = SoftCardShapeCompact,
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                iconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            ),
+                        )
+                    }
+                    items(historySuggestions, key = { "hist_$it" }) { name ->
+                        SuggestionChip(
+                            onClick = { onHistorySuggestionClick(name) },
+                            label = { Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                            shape = SoftCardShapeCompact,
+                        )
+                    }
+                }
+            }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Surface(
+                    onClick = onAddClick,
+                    modifier = Modifier.weight(1f).height(52.dp),
+                    shape = SoftCardShapeCompact,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.Add,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        )
+                        Text(
+                            text = stringResource(R.string.shopping_list_bottom_add_placeholder),
+                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                }
+                FilledIconButton(
+                    onClick = onVoiceClick,
+                    modifier = Modifier.size(52.dp),
+                    shape = CircleShape,
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.onSecondary,
+                    ),
+                ) {
+                    Icon(Icons.Filled.Mic, contentDescription = stringResource(R.string.shopping_list_voice_quick_add_cd))
+                }
+            }
+        }
     }
 }
 

@@ -495,11 +495,10 @@
     <string name="shopping_list_voice_input_cd">Dicter le nom</string>
     <string name="shopping_list_voice_input_prompt">Dites le nom du produit</string>
     <string name="shopping_list_voice_input_unavailable">La reconnaissance vocale n\'est pas disponible sur cet appareil</string>
-    <string name="shopping_list_add_item_cd">Ajouter un article</string>
     <string name="shopping_list_search_placeholder">Rechercher dans la liste de courses…</string>
     <!-- "Keuken" redesign (2026-08) -->
-    <string name="shopping_list_search_add_placeholder">Rechercher ou ajouter…</string>
-    <string name="shopping_list_quick_add_cd">Ajout rapide</string>
+    <string name="shopping_list_bottom_add_placeholder">Ajouter quelque chose…</string>
+    <string name="shopping_list_voice_quick_add_cd">Ajouter à la voix</string>
     <string name="shopping_list_more_options_cd">Plus d\'options</string>
     <string name="shopping_list_more_options_title">Options</string>
     <plurals name="shopping_list_progress_remaining_format">

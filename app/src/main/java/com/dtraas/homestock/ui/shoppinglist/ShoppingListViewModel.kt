@@ -8,7 +8,10 @@ import com.dtraas.homestock.data.local.entity.ShoppingListItemEntity
 import com.dtraas.homestock.data.local.entity.ShoppingListMeta
 import com.dtraas.homestock.data.local.entity.StoreEntity
 import com.dtraas.homestock.data.model.Category
+import com.dtraas.homestock.data.model.InventoryStockStatus
 import com.dtraas.homestock.data.model.MeasurementUnit
+import com.dtraas.homestock.data.repository.ActivityLogRepository
+import com.dtraas.homestock.data.repository.InventoryRepository
 import com.dtraas.homestock.data.repository.ShoppingListRepository
 import com.dtraas.homestock.data.repository.ShoppingListsRepository
 import com.dtraas.homestock.data.repository.StoreRepository
@@ -21,6 +24,10 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+
+/** One low-stock/out-of-stock inventory item offered as a suggestion chip on the shopping
+ *  list's bottom bar — see [ShoppingListViewModel.lowStockSuggestions]. */
+data class LowStockSuggestion(val barcode: String, val name: String, val category: Category)
 
 /** How items are ordered within each store's group. */
 enum class ShoppingListSortMode(@StringRes val labelRes: Int) {
@@ -41,11 +48,10 @@ class ShoppingListViewModel(
     private val shoppingListRepository: ShoppingListRepository,
     private val storeRepository: StoreRepository,
     private val shoppingListsRepository: ShoppingListsRepository,
+    activityLogRepository: ActivityLogRepository,
+    inventoryRepository: InventoryRepository,
     defaultListName: String,
 ) : ViewModel() {
-
-    private val searchQuery = MutableStateFlow("")
-    val searchQueryState: StateFlow<String> = searchQuery
 
     private val sortMode = MutableStateFlow(ShoppingListSortMode.MANUAL)
     val sortModeState: StateFlow<ShoppingListSortMode> = sortMode
@@ -78,14 +84,11 @@ class ShoppingListViewModel(
     val groupedByStore: StateFlow<Map<String, List<ShoppingListItemEntity>>> =
         combine(
             activeListId.flatMapLatest { listId -> shoppingListRepository.observeItemsForList(listId) },
-            searchQuery,
             storeRepository.observeStores(),
             sortMode,
-        ) { items, query, knownStores, mode ->
+        ) { items, knownStores, mode ->
             val sortOrderByName = knownStores.associate { it.name to it.sortOrder }
-            val grouped = items
-                .filter { query.isBlank() || it.name.contains(query, ignoreCase = true) }
-                .groupBy { it.store }
+            val grouped = items.groupBy { it.store }
             val ordered = if (mode == ShoppingListSortMode.AISLE) {
                 // isChecked stays the primary key even here — an already-checked item
                 // shouldn't jump back among the unchecked ones just because its category
@@ -120,9 +123,36 @@ class ShoppingListViewModel(
             priced.takeIf { it.isNotEmpty() }?.sum()
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
-    fun onSearchQueryChange(query: String) {
-        searchQuery.value = query
-    }
+    /** Product names the household recently scanned/adjusted (see ActivityLogRepository),
+     *  most-recent-first and deduplicated, offered as quick-add suggestion chips — reusing
+     *  the household's own activity log rather than a dedicated "shopping history" store that
+     *  doesn't otherwise exist (removed items aren't kept anywhere once deleted). Names
+     *  already on the active list are filtered out so a chip never duplicates a real row. */
+    val historySuggestions: StateFlow<List<String>> =
+        combine(activityLogRepository.observeRecent(), groupedByStore) { recent, grouped ->
+            val onListAlready = grouped.values.flatten().map { it.name.lowercase() }.toSet()
+            recent.map { it.productName }
+                .distinct()
+                .filterNot { it.lowercase() in onListAlready }
+                .take(8)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** Inventory items running low or out entirely — the same [InventoryStockStatus] Voorraad
+     *  itself flags — offered as suggestion chips so restocking doesn't require a trip to
+     *  Voorraad first. Items already on the active list are excluded the same way as
+     *  [historySuggestions]. */
+    val lowStockSuggestions: StateFlow<List<LowStockSuggestion>> =
+        combine(inventoryRepository.observeInventoryWithProduct(), groupedByStore) { inventory, grouped ->
+            val onListAlready = grouped.values.flatten().map { it.name.lowercase() }.toSet()
+            inventory
+                .filter { item ->
+                    val status = InventoryStockStatus.of(item.quantity, item.minQuantity, item.expirationDate)
+                    (status == InventoryStockStatus.LOW_STOCK || status == InventoryStockStatus.OUT_OF_STOCK) &&
+                        item.name.lowercase() !in onListAlready
+                }
+                .map { LowStockSuggestion(it.barcode, it.name, Category.fromStorageKey(it.category)) }
+                .take(8)
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     fun onSortModeChange(mode: ShoppingListSortMode) {
         sortMode.value = mode

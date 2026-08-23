@@ -496,11 +496,10 @@
     <string name="shopping_list_voice_input_cd">Naam inspreken</string>
     <string name="shopping_list_voice_input_prompt">Zeg de naam van het product</string>
     <string name="shopping_list_voice_input_unavailable">Spraakherkenning is niet beschikbaar op dit toestel</string>
-    <string name="shopping_list_add_item_cd">Item toevoegen</string>
     <string name="shopping_list_search_placeholder">Zoek in boodschappenlijst…</string>
     <!-- "Keuken" redesign (2026-08) -->
-    <string name="shopping_list_search_add_placeholder">Zoeken of toevoegen…</string>
-    <string name="shopping_list_quick_add_cd">Snel toevoegen</string>
+    <string name="shopping_list_bottom_add_placeholder">Voeg iets toe…</string>
+    <string name="shopping_list_voice_quick_add_cd">Toevoegen via spraak</string>
     <string name="shopping_list_more_options_cd">Meer opties</string>
     <string name="shopping_list_more_options_title">Opties</string>
     <plurals name="shopping_list_progress_remaining_format">
