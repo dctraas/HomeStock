@@ -7,13 +7,17 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -41,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -59,12 +64,12 @@ import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.dao.TopWastedProduct
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.repository.MonthlyWaste
-import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.theme.CoralSecondaryDark
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
+import com.dtraas.homestock.ui.theme.SageGreenPrimary
 import com.dtraas.homestock.ui.theme.SageGreenPrimaryDark
-import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
 import java.time.format.DateTimeFormatter
@@ -93,78 +98,77 @@ fun StatisticsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val locale = LocalConfiguration.current.locales[0]
 
-    Scaffold(
-        topBar = {
-            HomeStockTopAppBar(
-                title = { Text(stringResource(R.string.statistics_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
-                    }
-                },
+    Scaffold { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            // "Verspilling per maand" — eyebrow, €-waarde, delta en de 6-maands-balkjes — zat
+            // eerst in een los gekleurde Card bovenaan de scrollende lijst; die verhuist hier
+            // naar een echte, vaste groene gradient-header die vanaf de statusbalk doorloopt,
+            // met de terugknop/titel-rij erin, per de Claude Design review (artboard 1g).
+            StatisticsHeader(
+                onBack = onBack,
+                monthlyWaste = uiState.monthlyWaste,
+                deltaPercent = uiState.wasteDeltaPercent,
+                locale = locale,
             )
-        },
-    ) { padding ->
-        if (uiState.isLoading) {
-            Box(
-                modifier = Modifier.fillMaxSize().padding(padding),
-                contentAlignment = Alignment.Center,
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier.weight(1f).fillMaxWidth(),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    CircularProgressIndicator()
+                }
+                return@Column
+            }
+
+            LazyColumn(
+                modifier = Modifier.weight(1f).fillMaxWidth(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp),
             ) {
-                CircularProgressIndicator()
-            }
-            return@Scaffold
-        }
-
-        LazyColumn(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
-        ) {
-            item { WasteHeroCard(monthlyWaste = uiState.monthlyWaste, deltaPercent = uiState.wasteDeltaPercent, locale = locale) }
-
-            item {
-                StatusTilesRow(
-                    expiringSoonCount = uiState.expiringSoonCount,
-                    lowStockCount = uiState.lowStockCount,
-                    totalInInventory = uiState.totalInInventory,
-                    onExpiringSoonClick = onNavigateToExpiringSoon,
-                    onLowStockClick = onNavigateToLowStock,
-                    onInStockClick = onNavigateToInventory,
-                )
-            }
-
-            item {
-                Text(stringResource(R.string.statistics_most_wasted), style = MaterialTheme.typography.titleMedium)
-            }
-            if (uiState.topWastedProducts.isEmpty()) {
                 item {
-                    Text(
-                        text = stringResource(R.string.statistics_no_waste_yet),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    StatusTilesRow(
+                        expiringSoonCount = uiState.expiringSoonCount,
+                        lowStockCount = uiState.lowStockCount,
+                        totalInInventory = uiState.totalInInventory,
+                        onExpiringSoonClick = onNavigateToExpiringSoon,
+                        onLowStockClick = onNavigateToLowStock,
+                        onInStockClick = onNavigateToInventory,
                     )
                 }
-            } else {
-                val maxWastedCount = uiState.topWastedProducts.maxOf { it.wastedCount }
-                itemsIndexed(uiState.topWastedProducts, key = { _, product -> product.barcode }) { index, product ->
-                    TopWastedRow(rank = index + 1, product = product, maxCount = maxWastedCount)
-                }
-                item { WasteInsightCard(topProduct = uiState.topWastedProducts.first()) }
-            }
 
-            item {
-                Text(stringResource(R.string.statistics_by_actor), style = MaterialTheme.typography.titleMedium)
-            }
-            if (uiState.memberScans.isEmpty()) {
                 item {
-                    Text(
-                        text = stringResource(R.string.statistics_no_scans_yet),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Text(stringResource(R.string.statistics_most_wasted), style = MaterialTheme.typography.titleMedium)
                 }
-            } else {
-                item { MemberScanRow(uiState.memberScans) }
+                if (uiState.topWastedProducts.isEmpty()) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.statistics_no_waste_yet),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else {
+                    val maxWastedCount = uiState.topWastedProducts.maxOf { it.wastedCount }
+                    itemsIndexed(uiState.topWastedProducts, key = { _, product -> product.barcode }) { index, product ->
+                        TopWastedRow(rank = index + 1, product = product, maxCount = maxWastedCount)
+                    }
+                    item { WasteInsightCard(topProduct = uiState.topWastedProducts.first()) }
+                }
+
+                item {
+                    Text(stringResource(R.string.statistics_by_actor), style = MaterialTheme.typography.titleMedium)
+                }
+                if (uiState.memberScans.isEmpty()) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.statistics_no_scans_yet),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                } else {
+                    item { MemberScanRow(uiState.memberScans) }
+                }
             }
         }
     }
@@ -173,56 +177,78 @@ fun StatisticsScreen(
 private fun formatPrice(value: Double): String = String.format(Locale.getDefault(), "€%.2f", value)
 
 /**
- * The screen's headline metric: this month's total approximate waste value, a month-over-month
- * delta, and a 6-bar chart giving the number visible context — replaces the old time-range
- * toggle + separate stat cards entirely; the chart itself now *is* the period selector (there's
- * nothing to pick, it's always "the last 6 months").
+ * The fixed (non-scrolling) green gradient header — back button + title row, then the screen's
+ * headline metric: this month's total approximate waste value, a month-over-month delta, and a
+ * 6-bar chart giving the number visible context. Used to be a flat HomeStockTopAppBar with a
+ * separately-colored WasteHeroCard underneath, on plain white background; "Verspilling per maand
+ * bovenaan moet opgenomen worden in groene header" per the Claude Design review folds both into
+ * one true gradient header extending from the status bar (artboard 1g in the uploaded mockup).
+ * The chart itself is still the period selector — there's nothing to pick, it's always "the last
+ * 6 months".
  */
 @Composable
-private fun WasteHeroCard(monthlyWaste: List<MonthlyWaste>, deltaPercent: Int?, locale: Locale) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = TopAppBarContainerGradientEnd),
-        shape = SoftCardShape,
+private fun StatisticsHeader(
+    onBack: () -> Unit,
+    monthlyWaste: List<MonthlyWaste>,
+    deltaPercent: Int?,
+    locale: Locale,
+) {
+    val contentColor = LocalTopAppBarContentColor.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Brush.verticalGradient(listOf(SageGreenPrimary, TopAppBarContainerGradientEnd)))
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(horizontal = 20.dp, vertical = 4.dp)
+            .padding(bottom = 20.dp),
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            val currentMonth = monthlyWaste.lastOrNull()
-            val monthName = currentMonth?.month?.let {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack, modifier = Modifier.offset(x = (-12).dp)) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back), tint = contentColor)
+            }
+            Text(
+                text = stringResource(R.string.statistics_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = contentColor,
+            )
+        }
+        val currentMonth = monthlyWaste.lastOrNull()
+        val monthName = currentMonth?.month?.let {
+            DateTimeFormatter.ofPattern("MMMM", locale).format(it.atDay(1))
+        }.orEmpty()
+        Text(
+            text = stringResource(R.string.statistics_hero_eyebrow_format, monthName.uppercase(locale)),
+            style = MaterialTheme.typography.labelSmall,
+            color = OnTopAppBarContainerAccent,
+            fontWeight = FontWeight.ExtraBold,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        Text(
+            text = formatPrice(currentMonth?.totalValue ?: 0.0),
+            style = MaterialTheme.typography.displaySmall,
+            color = Color.White,
+            fontWeight = FontWeight.ExtraBold,
+            modifier = Modifier.padding(top = 4.dp),
+        )
+        if (deltaPercent != null) {
+            val previousMonthName = monthlyWaste.getOrNull(monthlyWaste.size - 2)?.month?.let {
                 DateTimeFormatter.ofPattern("MMMM", locale).format(it.atDay(1))
             }.orEmpty()
+            val arrow = if (deltaPercent <= 0) "▼" else "▲"
             Text(
-                text = stringResource(R.string.statistics_hero_eyebrow_format, monthName.uppercase(locale)),
-                style = MaterialTheme.typography.labelSmall,
-                color = OnTopAppBarContainerAccent,
-                fontWeight = FontWeight.ExtraBold,
-            )
-            Text(
-                text = formatPrice(currentMonth?.totalValue ?: 0.0),
-                style = MaterialTheme.typography.displaySmall,
-                color = Color.White,
-                fontWeight = FontWeight.ExtraBold,
+                text = stringResource(
+                    R.string.product_detail_stat_price_delta_format,
+                    "$arrow ${abs(deltaPercent)}%",
+                    previousMonthName,
+                ),
+                style = MaterialTheme.typography.bodyMedium,
+                color = SageGreenPrimaryDark,
+                fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(top = 4.dp),
             )
-            if (deltaPercent != null) {
-                val previousMonthName = monthlyWaste.getOrNull(monthlyWaste.size - 2)?.month?.let {
-                    DateTimeFormatter.ofPattern("MMMM", locale).format(it.atDay(1))
-                }.orEmpty()
-                val arrow = if (deltaPercent <= 0) "▼" else "▲"
-                Text(
-                    text = stringResource(
-                        R.string.product_detail_stat_price_delta_format,
-                        "$arrow ${abs(deltaPercent)}%",
-                        previousMonthName,
-                    ),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = SageGreenPrimaryDark,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(top = 4.dp),
-                )
-            }
-            if (monthlyWaste.isNotEmpty()) {
-                MiniBarChart(monthlyWaste = monthlyWaste, locale = locale, modifier = Modifier.padding(top = 20.dp))
-            }
+        }
+        if (monthlyWaste.isNotEmpty()) {
+            MiniBarChart(monthlyWaste = monthlyWaste, locale = locale, modifier = Modifier.padding(top = 20.dp))
         }
     }
 }
