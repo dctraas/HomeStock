@@ -78,7 +78,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -104,7 +103,6 @@ import com.dtraas.homestock.data.model.MealSlot
 import com.dtraas.homestock.data.repository.RecipeDetail
 import com.dtraas.homestock.data.repository.RecipeSuggestion
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
-import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerGradientEnd
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SageGreenPrimary
@@ -353,7 +351,7 @@ private fun MealPlanHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(LocalTopAppBarContainerColor.current, LocalTopAppBarContainerGradientEnd.current)))
+            .background(LocalTopAppBarContainerColor.current)
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(horizontal = 16.dp, vertical = 4.dp)
             .padding(bottom = 14.dp),

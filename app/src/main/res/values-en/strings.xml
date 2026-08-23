@@ -166,7 +166,7 @@
         <item quantity="one">%1$d member · Code: %2$s</item>
         <item quantity="other">%1$d members · Code: %2$s</item>
     </plurals>
-    <string name="more_household_row_title">Settings</string>
+    <string name="more_household_row_title">Configuration</string>
     <string name="more_household_default_name">My household</string>
     <string name="more_household_members_title">Members</string>
     <string name="household_members_title_with_limit_format">Members (%1$d/%2$d)</string>
@@ -351,7 +351,6 @@
     <string name="notifications_tab_notices">Notifications</string>
     <string name="notifications_tab_history">Household</string>
     <string name="notifications_history_empty">Scans and changes will appear here.</string>
-    <string name="notice_dismiss_cd">Delete</string>
     <string name="notifications_date_today">Today</string>
     <string name="notifications_date_yesterday">Yesterday</string>
     <string name="notifications_urgent_action">View</string>

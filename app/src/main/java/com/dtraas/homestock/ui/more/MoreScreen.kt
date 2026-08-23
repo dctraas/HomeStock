@@ -84,7 +84,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -111,7 +110,6 @@ import com.dtraas.homestock.data.repository.HouseholdMember
 import com.dtraas.homestock.data.repository.ThemeMode
 import com.dtraas.homestock.ui.components.ProfileEditDialog
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
-import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerGradientEnd
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnSageGreenPrimaryContainer
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
@@ -393,6 +391,11 @@ fun MoreScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
+                // Terug naar de oorspronkelijke plek, direct onder de header — "Premium
+                // simuleren" (helemaal onderaan, bij Debug) was wat te weinig ruimte eronder
+                // had, niet deze kaart.
+                PremiumCard(isPremium = isPremium, onClick = onNavigateToPremium)
+
                 SectionHeader(stringResource(R.string.more_section_household))
                 SettingsGroup(
                     rows = listOf(
@@ -561,14 +564,6 @@ fun MoreScreen(
                             )
                         },
                     ),
-                )
-
-                // Helemaal aan het einde van de pagina in plaats van vlak onder de header — daar
-                // liet de kaart een hoop lege ruimte eronder voordat Huishouden begon.
-                PremiumCard(
-                    isPremium = isPremium,
-                    onClick = onNavigateToPremium,
-                    modifier = Modifier.padding(top = 6.dp),
                 )
 
                 Text(
@@ -892,7 +887,7 @@ private fun MoreScreenHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(LocalTopAppBarContainerColor.current, LocalTopAppBarContainerGradientEnd.current)))
+            .background(LocalTopAppBarContainerColor.current)
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(horizontal = 20.dp, vertical = 4.dp)
             .padding(bottom = 18.dp),
@@ -1082,13 +1077,15 @@ private fun SettingsRow(
                 .padding(start = 16.dp),
         ) {
             Text(title, style = MaterialTheme.typography.titleSmall)
-            if (subtitle != null) {
-                Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
+            // Always rendered, even as an empty string when there's no subtitle — an empty
+            // Text still reserves its style's line height, so every row in a group ends up the
+            // same total height instead of the subtitle-less ones (Data overzetten, Feedback
+            // geven, Beoordeel de app, Privacybeleid en licenties) looking more cramped.
+            Text(
+                text = subtitle ?: "",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
         if (trailingLabel != null) {
             Text(

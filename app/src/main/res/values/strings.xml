@@ -167,7 +167,7 @@
         <item quantity="one">%1$d lid · Code: %2$s</item>
         <item quantity="other">%1$d leden · Code: %2$s</item>
     </plurals>
-    <string name="more_household_row_title">Instellingen</string>
+    <string name="more_household_row_title">Configuratie</string>
     <string name="more_household_default_name">Mijn huishouden</string>
     <string name="more_household_members_title">Leden</string>
     <string name="household_members_title_with_limit_format">Leden (%1$d/%2$d)</string>
@@ -352,7 +352,6 @@
     <string name="notifications_tab_notices">Meldingen</string>
     <string name="notifications_tab_history">Huishouden</string>
     <string name="notifications_history_empty">Scans en aanpassingen verschijnen hier.</string>
-    <string name="notice_dismiss_cd">Verwijderen</string>
     <string name="notifications_date_today">Vandaag</string>
     <string name="notifications_date_yesterday">Gisteren</string>
     <string name="notifications_urgent_action">Bekijk</string>

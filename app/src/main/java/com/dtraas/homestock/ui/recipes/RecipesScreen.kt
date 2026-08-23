@@ -80,7 +80,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -104,7 +103,6 @@ import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
 import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
-import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerGradientEnd
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SageGreenPrimary
@@ -718,7 +716,7 @@ private fun RecipesHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(LocalTopAppBarContainerColor.current, LocalTopAppBarContainerGradientEnd.current)))
+            .background(LocalTopAppBarContainerColor.current)
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(horizontal = 20.dp, vertical = 4.dp)
             .padding(bottom = 14.dp),

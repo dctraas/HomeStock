@@ -108,7 +108,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -139,7 +138,6 @@ import com.dtraas.homestock.ui.components.StoreDropdown
 import com.dtraas.homestock.ui.components.formatQuantityWithUnit
 import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
-import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerGradientEnd
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
@@ -1041,7 +1039,9 @@ private fun ShoppingListRow(
                         onDragCancel = onDragEnd,
                     )
                 },
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            // Transparent — individual items don't need their own fill/border, per design
+            // review; the page's own background is enough to separate one row from the next.
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
             // Belt-and-braces alongside backgroundContent now being transparent at rest (see
             // above): Card's own drop shadow is semi-transparent, so it shows whatever sits
             // directly behind it — even with nothing painted there any more, still 0dp so
@@ -1311,7 +1311,7 @@ private fun ShoppingListHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(LocalTopAppBarContainerColor.current, LocalTopAppBarContainerGradientEnd.current)))
+            .background(LocalTopAppBarContainerColor.current)
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(horizontal = 12.dp, vertical = 4.dp)
             // A touch tighter than before (was 12.dp) — reclaims a little vertical room for
@@ -1540,12 +1540,14 @@ private fun ShoppingListBottomBar(
             horizontalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.fillMaxWidth(),
         ) {
+            // No fill/border — just the icon+text in the theme's plain foreground color (white
+            // in dark mode, black in light mode via onBackground), same as any other in-line
+            // "voeg toe" affordance on this page rather than a boxed control.
             Surface(
                 onClick = onAddClick,
                 modifier = Modifier.weight(1f).height(52.dp),
                 shape = SoftCardShapeCompact,
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                color = Color.Transparent,
             ) {
                 Row(
                     modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -1555,11 +1557,11 @@ private fun ShoppingListBottomBar(
                     Icon(
                         Icons.Filled.Add,
                         contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
+                        tint = MaterialTheme.colorScheme.onBackground,
                     )
                     Text(
                         text = stringResource(R.string.shopping_list_bottom_add_placeholder),
-                        color = MaterialTheme.colorScheme.onSurface,
+                        color = MaterialTheme.colorScheme.onBackground,
                         style = MaterialTheme.typography.bodyLarge,
                     )
                 }

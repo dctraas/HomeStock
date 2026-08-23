@@ -86,7 +86,6 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -117,7 +116,6 @@ import com.dtraas.homestock.ui.components.LocationDropdown
 import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
-import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerGradientEnd
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SoftCardShape
@@ -637,7 +635,7 @@ private fun ProductDetailHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(LocalTopAppBarContainerColor.current, LocalTopAppBarContainerGradientEnd.current)))
+            .background(LocalTopAppBarContainerColor.current)
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(bottom = 20.dp),
     ) {

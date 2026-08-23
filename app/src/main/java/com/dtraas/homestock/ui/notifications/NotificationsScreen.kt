@@ -56,7 +56,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -80,7 +79,6 @@ import com.dtraas.homestock.data.model.ActivityType
 import com.dtraas.homestock.data.model.DeveloperNotice
 import com.dtraas.homestock.data.repository.HouseholdMember
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
-import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerGradientEnd
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SageGreenPrimary
@@ -190,7 +188,7 @@ private fun NotificationsHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Brush.verticalGradient(listOf(LocalTopAppBarContainerColor.current, LocalTopAppBarContainerGradientEnd.current)))
+            .background(LocalTopAppBarContainerColor.current)
             .windowInsetsPadding(WindowInsets.statusBars)
             .padding(horizontal = 16.dp, vertical = 4.dp)
             .padding(bottom = 14.dp),
@@ -479,25 +477,15 @@ private fun DeveloperNoticeRow(notice: DeveloperNotice, onDismiss: () -> Unit, m
     SwipeToDismissBox(
         state = dismissState,
         modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
+        // No trash icon any more — the colored reveal alone is the swipe-to-delete feedback,
+        // per "het prullenbakicoontje mag ook weg, verwijderen kun je doen door te swipen".
         backgroundContent = {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(SoftCardShapeCompact)
-                    .background(MaterialTheme.colorScheme.errorContainer)
-                    .padding(horizontal = 20.dp),
-                contentAlignment = if (dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd) {
-                    Alignment.CenterStart
-                } else {
-                    Alignment.CenterEnd
-                },
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Delete,
-                    contentDescription = stringResource(R.string.notice_dismiss_cd),
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                )
-            }
+                    .background(MaterialTheme.colorScheme.errorContainer),
+            )
         },
     ) {
         // No card background of its own — "activiteit meldingen hoeven ook geen aparte

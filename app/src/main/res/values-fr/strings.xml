@@ -166,7 +166,7 @@
         <item quantity="one">%1$d membre · Code : %2$s</item>
         <item quantity="other">%1$d membres · Code : %2$s</item>
     </plurals>
-    <string name="more_household_row_title">Paramètres</string>
+    <string name="more_household_row_title">Configuration</string>
     <string name="more_household_default_name">Mon foyer</string>
     <string name="more_household_members_title">Membres</string>
     <string name="household_members_title_with_limit_format">Membres (%1$d/%2$d)</string>
@@ -351,7 +351,6 @@
     <string name="notifications_tab_notices">Notifications</string>
     <string name="notifications_tab_history">Foyer</string>
     <string name="notifications_history_empty">Les scans et modifications apparaîtront ici.</string>
-    <string name="notice_dismiss_cd">Supprimer</string>
     <string name="notifications_date_today">Aujourd\'hui</string>
     <string name="notifications_date_yesterday">Hier</string>
     <string name="notifications_urgent_action">Voir</string>
