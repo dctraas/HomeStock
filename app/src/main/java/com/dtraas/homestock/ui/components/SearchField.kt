@@ -12,7 +12,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -39,6 +41,10 @@ fun SearchField(
     placeholder: String = stringResource(R.string.search_placeholder_default),
     dense: Boolean = false,
     onSearch: (() -> Unit)? = null,
+    // Left at the Material3 default everywhere except a colored header (e.g. Voorraad's/
+    // Recepten's green gradient header), where a call site overrides it to a white pill with
+    // dark content instead of the default outline styling, which would be unreadable there.
+    colors: TextFieldColors = OutlinedTextFieldDefaults.colors(),
 ) {
     val textStyle: TextStyle? = if (dense) MaterialTheme.typography.bodyMedium else null
     val iconSize = if (dense) Modifier.size(20.dp) else Modifier
@@ -67,6 +73,7 @@ fun SearchField(
         },
         singleLine = true,
         shape = SoftCardShape,
+        colors = colors,
         textStyle = textStyle ?: LocalTextStyle.current,
         keyboardOptions = if (onSearch != null) KeyboardOptions(imeAction = ImeAction.Search) else KeyboardOptions.Default,
         keyboardActions = if (onSearch != null) KeyboardActions(onSearch = { onSearch() }) else KeyboardActions.Default,

@@ -15,14 +15,20 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -63,9 +69,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FabPosition
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -73,6 +79,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
@@ -95,6 +102,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -124,10 +132,13 @@ import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.components.color
 import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.components.onColor
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
+import com.dtraas.homestock.ui.theme.SageGreenPrimary
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
+import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
 import java.io.File
 import kotlinx.coroutines.launch
 
@@ -285,7 +296,22 @@ fun InventoryScreen(
     }
 
     Scaffold(
-        topBar = {
+        // InventoryHeader below already claims the status bar inset itself (selectionMode's
+        // HomeStockTopAppBar does too, via its own default TopAppBarDefaults.windowInsets) —
+        // without this, Scaffold's default contentWindowInsets (safeDrawing, top included
+        // since there's no topBar) hands that same inset to `padding` too, stacking a second
+        // status-bar-height gap above the header instead of it starting flush at the true top
+        // of the screen.
+        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
+        floatingActionButton = {
+            if (!selectionMode) {
+                AddFab(onClick = { showAddMenu = true })
+            }
+        },
+        floatingActionButtonPosition = FabPosition.End,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+    ) { padding ->
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             if (selectionMode) {
                 HomeStockTopAppBar(
                     title = {
@@ -309,92 +335,20 @@ fun InventoryScreen(
                     },
                 )
             } else {
-                HomeStockTopAppBar(
-                    title = {
-                        Text(
-                            text = uiState.householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.inventory_title),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    },
-                    navigationIcon = {
-                        // Meldingen is no longer its own bottom-nav tab — this is the way to
-                        // reach it, at the far-left glance position. The red counter badge
-                        // tracks unread developer notices.
-                        IconButton(onClick = onNavigateToNotifications) {
-                            if (unreadNoticeCount > 0) {
-                                BadgedBox(badge = { Badge { Text(unreadNoticeCount.toString()) } }) {
-                                    Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news))
-                                }
-                            } else {
-                                Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news))
-                            }
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = { showProfileDialog = true }) {
-                            if (photoPath != null) {
-                                AsyncImage(
-                                    model = File(photoPath),
-                                    contentDescription = stringResource(R.string.more_profile_title),
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier.size(32.dp).clip(CircleShape),
-                                )
-                            } else {
-                                Icon(Icons.Filled.AccountCircle, contentDescription = stringResource(R.string.more_profile_title))
-                            }
-                        }
-                    },
+                // Zoekbalk en filterknop zitten nu in de header zelf, net als het huishouden-
+                // profiel-rijtje dat hiervoor los als HomeStockTopAppBar bovenaan stond — de
+                // aparte Row eronder met SearchField + tune-knop is hierin opgegaan.
+                InventoryHeader(
+                    householdName = uiState.householdName,
+                    photoPath = photoPath,
+                    unreadNoticeCount = unreadNoticeCount,
+                    onNotificationsClick = onNavigateToNotifications,
+                    onProfileClick = { showProfileDialog = true },
+                    searchQuery = uiState.searchQuery,
+                    onSearchQueryChange = viewModel::onSearchQueryChange,
+                    onFilterClick = { showFilterSheet = true },
+                    hasActiveFilter = hasActiveFilter,
                 )
-            }
-        },
-        floatingActionButton = {
-            if (!selectionMode) {
-                AddFab(onClick = { showAddMenu = true })
-            }
-        },
-        floatingActionButtonPosition = FabPosition.End,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-    ) { padding ->
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // A persistent search field, not a tap-to-reveal one — sorteren/filteren/
-            // groeperen/weergave (and, folded in as one more filter dimension, locatie) all
-            // moved behind the trailing "tune" button into one InventoryFilterSheet, replacing
-            // the old always-visible icon row entirely, per the Claude Design review.
-            if (!selectionMode) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-                ) {
-                    SearchField(
-                        query = uiState.searchQuery,
-                        onQueryChange = viewModel::onSearchQueryChange,
-                        placeholder = stringResource(R.string.inventory_search_placeholder),
-                        modifier = Modifier.weight(1f),
-                    )
-                    Box {
-                        FilledIconButton(
-                            onClick = { showFilterSheet = true },
-                            shape = SoftCardShape,
-                            colors = IconButtonDefaults.filledIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                contentColor = MaterialTheme.colorScheme.onSurface,
-                            ),
-                        ) {
-                            Icon(Icons.Filled.Tune, contentDescription = stringResource(R.string.inventory_tune_cd))
-                        }
-                        if (hasActiveFilter) {
-                            Box(
-                                modifier = Modifier
-                                    .align(Alignment.TopEnd)
-                                    .padding(6.dp)
-                                    .size(8.dp)
-                                    .background(MaterialTheme.colorScheme.secondary, CircleShape),
-                            )
-                        }
-                    }
-                }
             }
 
             // Grouping by category loses the order between categories (each still shows in
@@ -614,20 +568,139 @@ fun InventoryScreen(
 }
 
 /**
- * An extended pill FAB, not an icon-only circle — labelled "Scan" (the most common way in), it
- * still opens the whole add-a-product menu ([AddMenuDialog]: barcode/bon/AI/zoeken) rather than
- * jumping straight to the camera, per user feedback on the Claude Design review.
+ * Household profile row + search field + filter button, all folded into one green gradient
+ * header (same Keukenlinnen pattern as Productdetail/Boodschappenlijst/Maaltijdplanner/
+ * Instellingen/Statistieken/Premium/Activiteiten this round) — replaces the flat
+ * HomeStockTopAppBar plus the separate always-visible search Row that used to sit right below
+ * it, per the design review ("Neem de Zoekbalk en filter op in de Header").
+ */
+@Composable
+private fun InventoryHeader(
+    householdName: String?,
+    photoPath: String?,
+    unreadNoticeCount: Int,
+    onNotificationsClick: () -> Unit,
+    onProfileClick: () -> Unit,
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    onFilterClick: () -> Unit,
+    hasActiveFilter: Boolean,
+) {
+    val contentColor = LocalTopAppBarContentColor.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Brush.verticalGradient(listOf(SageGreenPrimary, TopAppBarContainerGradientEnd)))
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .padding(bottom = 14.dp),
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            // Meldingen is no longer its own bottom-nav tab — this is the way to reach it, at
+            // the far-left glance position. The red counter badge tracks unread developer
+            // notices.
+            IconButton(onClick = onNotificationsClick) {
+                if (unreadNoticeCount > 0) {
+                    BadgedBox(badge = { Badge { Text(unreadNoticeCount.toString()) } }) {
+                        Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news), tint = contentColor)
+                    }
+                } else {
+                    Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news), tint = contentColor)
+                }
+            }
+            Text(
+                text = householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.inventory_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = contentColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f).padding(start = 4.dp),
+            )
+            IconButton(onClick = onProfileClick) {
+                if (photoPath != null) {
+                    AsyncImage(
+                        model = File(photoPath),
+                        contentDescription = stringResource(R.string.more_profile_title),
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.size(32.dp).clip(CircleShape),
+                    )
+                } else {
+                    Icon(Icons.Filled.AccountCircle, contentDescription = stringResource(R.string.more_profile_title), tint = contentColor)
+                }
+            }
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 6.dp, start = 4.dp, end = 4.dp),
+        ) {
+            SearchField(
+                query = searchQuery,
+                onQueryChange = onSearchQueryChange,
+                placeholder = stringResource(R.string.inventory_search_placeholder),
+                dense = true,
+                // A white pill instead of the default outline styling, which would barely read
+                // against the green gradient — same white-on-green pairing as the filter
+                // button beside it and the filter chips used elsewhere in this round's headers.
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White,
+                    disabledContainerColor = Color.White,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    focusedTextColor = SageGreenPrimary,
+                    unfocusedTextColor = SageGreenPrimary,
+                    focusedLeadingIconColor = SageGreenPrimary,
+                    unfocusedLeadingIconColor = SageGreenPrimary,
+                    focusedTrailingIconColor = SageGreenPrimary,
+                    unfocusedTrailingIconColor = SageGreenPrimary,
+                    cursorColor = SageGreenPrimary,
+                    focusedPlaceholderColor = SageGreenPrimary.copy(alpha = 0.6f),
+                    unfocusedPlaceholderColor = SageGreenPrimary.copy(alpha = 0.6f),
+                ),
+                modifier = Modifier.weight(1f),
+            )
+            Box {
+                FilledIconButton(
+                    onClick = onFilterClick,
+                    shape = SoftCardShape,
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = Color.White,
+                        contentColor = SageGreenPrimary,
+                    ),
+                ) {
+                    Icon(Icons.Filled.Tune, contentDescription = stringResource(R.string.inventory_tune_cd))
+                }
+                if (hasActiveFilter) {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(6.dp)
+                            .size(8.dp)
+                            .background(MaterialTheme.colorScheme.secondary, CircleShape),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/**
+ * An icon-only circular FAB — opens the whole add-a-product menu ([AddMenuDialog]:
+ * barcode/bon/AI/zoeken) rather than jumping straight to the camera. No longer an extended
+ * pill with a "Scan" label; per the design review the bottom-right scan button shouldn't
+ * carry any text.
  */
 @Composable
 private fun AddFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
-    ExtendedFloatingActionButton(
+    FloatingActionButton(
         onClick = onClick,
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.secondary,
         contentColor = MaterialTheme.colorScheme.onSecondary,
-        icon = { Icon(Icons.Filled.QrCodeScanner, contentDescription = null) },
-        text = { Text(stringResource(R.string.inventory_add_menu_cd)) },
-    )
+    ) {
+        Icon(Icons.Filled.QrCodeScanner, contentDescription = stringResource(R.string.inventory_add_menu_cd))
+    }
 }
 
 /**
