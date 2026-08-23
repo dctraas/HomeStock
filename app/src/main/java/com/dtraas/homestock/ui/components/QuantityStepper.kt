@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -58,39 +59,79 @@ fun QuantityStepper(
     val textStyle = if (dense) MaterialTheme.typography.bodyMedium else MaterialTheme.typography.titleMedium
     val textWidth = if (dense) 36.dp else 48.dp
 
-    Row(
-        modifier = if (pill) {
-            modifier
+    if (pill) {
+        // A Box with the three parts pinned via .align(...) instead of a Row relying on
+        // Arrangement.SpaceBetween — SpaceBetween only reads as centered when both side items
+        // happen to be exactly the same width, which quietly broke ("niet mooi uitgelijnd")
+        // whenever the − button's width shifted relative to the + button (e.g. a disabled-state
+        // ripple/ripple-bounds difference at minQuantity). Anchoring each part to its own edge
+        // of the pill guarantees the count sits dead-center and −/+ sit flush on the pill's own
+        // edges, regardless of anything about the buttons' own layout.
+        Box(
+            modifier = modifier
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(percent = 50))
                 .background(MaterialTheme.colorScheme.surfaceContainerHigh)
                 .padding(horizontal = 6.dp)
-        } else {
-            modifier
-        },
-        horizontalArrangement = if (pill) Arrangement.SpaceBetween else Arrangement.Start,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RepeatingIconButton(onClick = onDecrease, enabled = quantity > minQuantity, modifier = Modifier.size(buttonSize)) {
-            Icon(
-                Icons.Filled.Remove,
-                contentDescription = stringResource(R.string.quantity_decrease_cd),
-                modifier = Modifier.size(iconSize),
+                .height(buttonSize),
+        ) {
+            RepeatingIconButton(
+                onClick = onDecrease,
+                enabled = quantity > minQuantity,
+                modifier = Modifier.align(Alignment.CenterStart).size(buttonSize),
+            ) {
+                Icon(
+                    Icons.Filled.Remove,
+                    contentDescription = stringResource(R.string.quantity_decrease_cd),
+                    modifier = Modifier.size(iconSize),
+                )
+            }
+            Text(
+                text = displayText,
+                style = textStyle,
+                modifier = Modifier.align(Alignment.Center),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                maxLines = 1,
             )
+            RepeatingIconButton(
+                onClick = onIncrease,
+                enabled = true,
+                modifier = Modifier.align(Alignment.CenterEnd).size(buttonSize),
+            ) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.quantity_increase_cd),
+                    modifier = Modifier.size(iconSize),
+                )
+            }
         }
-        Text(
-            text = displayText,
-            style = textStyle,
-            modifier = Modifier.width(textWidth).padding(horizontal = 2.dp),
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            maxLines = 1,
-        )
-        RepeatingIconButton(onClick = onIncrease, enabled = true, modifier = Modifier.size(buttonSize)) {
-            Icon(
-                Icons.Filled.Add,
-                contentDescription = stringResource(R.string.quantity_increase_cd),
-                modifier = Modifier.size(iconSize),
+    } else {
+        Row(
+            modifier = modifier,
+            horizontalArrangement = Arrangement.Start,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            RepeatingIconButton(onClick = onDecrease, enabled = quantity > minQuantity, modifier = Modifier.size(buttonSize)) {
+                Icon(
+                    Icons.Filled.Remove,
+                    contentDescription = stringResource(R.string.quantity_decrease_cd),
+                    modifier = Modifier.size(iconSize),
+                )
+            }
+            Text(
+                text = displayText,
+                style = textStyle,
+                modifier = Modifier.width(textWidth).padding(horizontal = 2.dp),
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                maxLines = 1,
             )
+            RepeatingIconButton(onClick = onIncrease, enabled = true, modifier = Modifier.size(buttonSize)) {
+                Icon(
+                    Icons.Filled.Add,
+                    contentDescription = stringResource(R.string.quantity_increase_cd),
+                    modifier = Modifier.size(iconSize),
+                )
+            }
         }
     }
 }
