@@ -2,16 +2,21 @@ package com.dtraas.homestock.ui.premium
 
 import android.app.Activity
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
@@ -50,6 +55,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -63,9 +69,12 @@ import com.dtraas.homestock.R
 import com.dtraas.homestock.data.repository.PremiumPlan
 import com.dtraas.homestock.data.repository.formattedRecurringPrice
 import com.dtraas.homestock.data.repository.hasTrialOffer
-import com.dtraas.homestock.ui.components.HomeStockTopAppBar
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
+import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
+import com.dtraas.homestock.ui.theme.SageGreenPrimary
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
+import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
 import java.util.Locale
 import kotlinx.coroutines.launch
 
@@ -129,31 +138,6 @@ fun PremiumScreen(onBack: () -> Unit) {
     var selectedPlan by remember { mutableStateOf(PremiumPlan.YEARLY) }
 
     Scaffold(
-        topBar = {
-            HomeStockTopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.common_close))
-                    }
-                },
-                actions = {
-                    if (!isPremium) {
-                        TextButton(
-                            onClick = {
-                                analyticsRepository.logRestorePurchasesTapped()
-                                coroutineScope.launch {
-                                    billingRepository.refreshPurchases()
-                                    snackbarHostState.showSnackbar(restoredMessage, duration = SnackbarDuration.Short)
-                                }
-                            },
-                        ) {
-                            Text(stringResource(R.string.premium_restore_action))
-                        }
-                    }
-                },
-            )
-        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         // Plans + CTA are pinned here, outside the scrolling benefits list below, so the
         // purchase itself is always reachable without scrolling — per the design review.
@@ -174,66 +158,118 @@ fun PremiumScreen(onBack: () -> Unit) {
             }
         },
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp),
-        ) {
-            if (isPremium) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(top = 12.dp)) {
-                    Surface(
-                        shape = SoftBadgeShape,
-                        color = MaterialTheme.colorScheme.primaryContainer,
-                        modifier = Modifier.size(88.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                            Icon(
-                                imageVector = Icons.Filled.WorkspacePremium,
-                                contentDescription = null,
-                                modifier = Modifier.size(44.dp),
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                            )
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            // "Nooit meer eten weggooien" + "Premium voor je hele huishouden" — used to be plain
+            // body text below a flat close/herstellen app bar; both now live in the same green
+            // gradient header, matching artboard 1h in the uploaded mockup ("Herstellen" moved
+            // into that header too, next to close, rather than as a third action under the CTA).
+            PremiumHeader(
+                onBack = onBack,
+                isPremium = isPremium,
+                title = if (isPremium) stringResource(R.string.premium_active_title) else stringResource(R.string.premium_pitch_title),
+                subtitle = if (isPremium) {
+                    stringResource(R.string.premium_active_subtitle)
+                } else {
+                    stringResource(R.string.premium_pitch_subtitle_format, trialDays)
+                },
+                onRestore = {
+                    analyticsRepository.logRestorePurchasesTapped()
+                    coroutineScope.launch {
+                        billingRepository.refreshPurchases()
+                        snackbarHostState.showSnackbar(restoredMessage, duration = SnackbarDuration.Short)
+                    }
+                },
+            )
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = 20.dp),
+            ) {
+                if (isPremium) {
+                    Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxWidth().padding(top = 20.dp)) {
+                        Surface(
+                            shape = SoftBadgeShape,
+                            color = MaterialTheme.colorScheme.primaryContainer,
+                            modifier = Modifier.size(88.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                Icon(
+                                    imageVector = Icons.Filled.WorkspacePremium,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(44.dp),
+                                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                )
+                            }
                         }
                     }
-                    Text(
-                        text = stringResource(R.string.premium_active_title),
-                        style = MaterialTheme.typography.headlineSmall,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 20.dp),
-                    )
-                    Text(
-                        text = stringResource(R.string.premium_active_subtitle),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(top = 8.dp, bottom = 24.dp),
-                    )
+                    Spacer(modifier = Modifier.height(24.dp))
+                } else {
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
-            } else {
-                Text(
-                    text = stringResource(R.string.premium_pitch_title),
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.ExtraBold,
-                    modifier = Modifier.padding(top = 16.dp),
-                )
-                Text(
-                    text = stringResource(R.string.premium_pitch_subtitle_format, trialDays),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 6.dp, bottom = 24.dp),
-                )
-            }
 
-            premiumBenefits.forEachIndexed { index, benefit ->
-                PremiumBenefitRow(benefit = benefit, tintIndex = index)
-            }
+                premiumBenefits.forEachIndexed { index, benefit ->
+                    PremiumBenefitRow(benefit = benefit, tintIndex = index)
+                }
 
-            // Bottom padding so the last benefit row doesn't sit flush against the pinned
-            // bottomBar above it.
-            Spacer(modifier = Modifier.height(24.dp))
+                // Bottom padding so the last benefit row doesn't sit flush against the pinned
+                // bottomBar above it.
+                Spacer(modifier = Modifier.height(24.dp))
+            }
         }
+    }
+}
+
+/**
+ * The fixed (non-scrolling) green gradient header — close button + "Herstellen" (only while not
+ * yet subscribed — there's nothing to restore once you are) on the top row, then the headline
+ * ("Nooit meer eten weggooien" while pitching, "Je bent Premium" once subscribed) and its
+ * subtitle. Replaces the old flat close/herstellen HomeStockTopAppBar plus separate plain-text
+ * headline further down in the scrolling body.
+ */
+@Composable
+private fun PremiumHeader(
+    onBack: () -> Unit,
+    isPremium: Boolean,
+    title: String,
+    subtitle: String,
+    onRestore: () -> Unit,
+) {
+    val contentColor = LocalTopAppBarContentColor.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Brush.verticalGradient(listOf(SageGreenPrimary, TopAppBarContainerGradientEnd)))
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(horizontal = 20.dp, vertical = 4.dp)
+            .padding(bottom = 20.dp),
+    ) {
+        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack, modifier = Modifier.offset(x = (-12).dp)) {
+                Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.common_close), tint = contentColor)
+            }
+            Spacer(modifier = Modifier.weight(1f))
+            if (!isPremium) {
+                TextButton(onClick = onRestore) {
+                    Text(stringResource(R.string.premium_restore_action), color = OnTopAppBarContainerAccent)
+                }
+            }
+        }
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.ExtraBold,
+            color = contentColor,
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = OnTopAppBarContainerAccent,
+            modifier = Modifier.padding(top = 6.dp),
+        )
     }
 }
 
