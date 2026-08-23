@@ -137,6 +137,7 @@ import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.components.StoreDropdown
 import com.dtraas.homestock.ui.components.formatQuantityWithUnit
 import com.dtraas.homestock.ui.components.icon
+import com.dtraas.homestock.ui.theme.LocalIsDarkTheme
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
@@ -1548,15 +1549,17 @@ private fun ShoppingListBottomBar(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                // No fill/border — just the icon+text in the theme's plain foreground color,
-                // same as any other in-line "voeg toe" affordance on this page rather than a
-                // boxed control. onSurface (not onBackground) now that this sits on the
-                // surfaceContainer panel above, not directly on colorScheme.background.
+                // Deliberately literal white (light mode) / black (dark mode) rather than a
+                // theme color — always the maximum-contrast opposite of LocalIsDarkTheme, not
+                // just "whatever onSurface happens to be" — per explicit request.
+                val isDarkTheme = LocalIsDarkTheme.current
+                val addButtonContainer = if (isDarkTheme) Color.Black else Color.White
+                val addButtonContent = if (isDarkTheme) Color.White else Color.Black
                 Surface(
                     onClick = onAddClick,
                     modifier = Modifier.weight(1f).height(52.dp),
                     shape = SoftCardShapeCompact,
-                    color = Color.Transparent,
+                    color = addButtonContainer,
                 ) {
                     Row(
                         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
@@ -1566,11 +1569,11 @@ private fun ShoppingListBottomBar(
                         Icon(
                             Icons.Filled.Add,
                             contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurface,
+                            tint = addButtonContent,
                         )
                         Text(
                             text = stringResource(R.string.shopping_list_bottom_add_placeholder),
-                            color = MaterialTheme.colorScheme.onSurface,
+                            color = addButtonContent,
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     }

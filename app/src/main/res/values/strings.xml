@@ -66,6 +66,10 @@
     <string name="activity_detail_removed">Verwijderd uit voorraad (%1$dx)</string>
     <string name="activity_detail_wasted">Weggegooid (%1$dx)</string>
     <string name="activity_actor_unknown">Onbekend</string>
+    <!-- Connector between actor and product in the activity feed, e.g. "Dennis Traas heeft
+         ijsbergsla gescand." — see HouseholdActivityRow. Every activity_detail_* string above is
+         a past participle, so "heeft" always fits grammatically regardless of which one follows. -->
+    <string name="activity_action_connector">heeft</string>
 
     <!-- Developer notices (Nieuws -> Meldingen tab, newest first) -->
     <string name="notice_csv_import_export_title">Voorraad importeren/exporteren (CSV)</string>
@@ -176,6 +180,7 @@
     <string name="household_allergens_menu_cd">Mijn allergenen en dieetwensen</string>
     <string name="household_photo_cd">Foto van huishouden</string>
     <string name="household_photo_remove_cd">Foto verwijderen</string>
+    <string name="household_photo_error">Foto bijwerken is mislukt, probeer het opnieuw</string>
     <string name="household_member_allergens_format">Vermijdt: %1$s</string>
     <string name="more_rename_household_error">Kon de naam niet wijzigen. Probeer het opnieuw.</string>
     <string name="more_premium_title">HomeStock Premium</string>
@@ -261,8 +266,10 @@
     <string name="more_stores_empty">Nog geen winkels toegevoegd.</string>
     <string name="more_stores_remove_format">%1$s verwijderen</string>
     <string name="more_statistics_title">Statistieken</string>
+    <string name="more_statistics_subtitle">Voorraad, verspilling en scans per huisgenoot</string>
     <string name="more_section_household">Huishouden</string>
     <string name="more_data_csv_title">Data overzetten</string>
+    <string name="more_data_csv_subtitle">Voorraad en boodschappenlijst exporteren of importeren als CSV</string>
     <string name="more_csv_import_action">Importeren (CSV)</string>
     <string name="more_csv_export_action">Exporteren (CSV)</string>
     <string name="more_export_header_favorite">Favoriet</string>
@@ -275,9 +282,13 @@
     <string name="more_section_support">Ondersteuning</string>
     <string name="more_about_version_format">App versie %1$s</string>
     <string name="more_about_feedback">Feedback geven</string>
+    <string name="more_about_feedback_subtitle">Stuur ideeën of problemen naar de ontwikkelaar</string>
     <string name="more_about_rate_app">Beoordeel de app</string>
+    <string name="more_about_rate_app_subtitle">Open de Play Store om een beoordeling achter te laten</string>
     <string name="more_about_privacy_policy">Privacybeleid</string>
+    <string name="more_about_privacy_policy_subtitle">Lees hoe je gegevens worden gebruikt en bewaard</string>
     <string name="more_about_licenses">Licenties</string>
+    <string name="more_about_licenses_subtitle">Open source-bibliotheken gebruikt in deze app</string>
     <string name="more_feedback_placeholder">Vertel ons wat je vindt…</string>
     <string name="more_feedback_send">Verzenden</string>
     <string name="more_feedback_star_cd">Ster %1$d</string>

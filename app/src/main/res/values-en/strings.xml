@@ -65,6 +65,7 @@
     <string name="activity_detail_removed">Removed from inventory (%1$dx)</string>
     <string name="activity_detail_wasted">Wasted (%1$dx)</string>
     <string name="activity_actor_unknown">Unknown</string>
+    <string name="activity_action_connector">has</string>
 
     <!-- Developer notices (News -> Notices tab, newest first) -->
     <string name="notice_csv_import_export_title">Import/export inventory (CSV)</string>
@@ -175,6 +176,7 @@
     <string name="household_allergens_menu_cd">My allergens and dietary preferences</string>
     <string name="household_photo_cd">Household photo</string>
     <string name="household_photo_remove_cd">Remove photo</string>
+    <string name="household_photo_error">Couldn't update the photo, please try again</string>
     <string name="household_member_allergens_format">Avoids: %1$s</string>
     <string name="more_rename_household_error">Couldn\'t change the name. Please try again.</string>
     <string name="more_premium_title">HomeStock Premium</string>
@@ -260,8 +262,10 @@
     <string name="more_stores_empty">No stores added yet.</string>
     <string name="more_stores_remove_format">Remove %1$s</string>
     <string name="more_statistics_title">Statistics</string>
+    <string name="more_statistics_subtitle">Inventory, waste, and scans per household member</string>
     <string name="more_section_household">Household</string>
     <string name="more_data_csv_title">Transfer data</string>
+    <string name="more_data_csv_subtitle">Export or import your inventory and shopping list as CSV</string>
     <string name="more_section_support">Support</string>
     <string name="more_csv_import_action">Import (CSV)</string>
     <string name="more_csv_export_action">Export (CSV)</string>
@@ -274,9 +278,13 @@
     <string name="more_import_error">Import failed</string>
     <string name="more_about_version_format">App version %1$s</string>
     <string name="more_about_feedback">Give feedback</string>
+    <string name="more_about_feedback_subtitle">Send ideas or issues to the developer</string>
     <string name="more_about_rate_app">Rate the app</string>
+    <string name="more_about_rate_app_subtitle">Open the Play Store to leave a rating</string>
     <string name="more_about_privacy_policy">Privacy policy</string>
+    <string name="more_about_privacy_policy_subtitle">Read how your data is used and stored</string>
     <string name="more_about_licenses">Licenses</string>
+    <string name="more_about_licenses_subtitle">Open-source libraries used in this app</string>
     <string name="more_feedback_placeholder">Tell us what you think…</string>
     <string name="more_feedback_send">Send</string>
     <string name="more_feedback_star_cd">Star %1$d</string>

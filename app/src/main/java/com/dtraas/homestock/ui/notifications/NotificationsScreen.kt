@@ -382,12 +382,18 @@ private fun HouseholdActivityRow(entry: ActivityLogWithProduct, photoUrl: String
     }
     val day = dayHeaderLabel(entryDate, today)
     val actorLabel = entry.actorName ?: stringResource(R.string.activity_actor_unknown)
+    // "<naam> heeft <product> <actie>." — every activity_detail_* string is already a past
+    // participle (see that string's own doc), so the localized connector always fits.
+    val connector = stringResource(R.string.activity_action_connector)
     val actionText = buildAnnotatedString {
         append(actorLabel)
+        append(" ")
+        append(connector)
         append(" ")
         withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(entry.productName) }
         append(" ")
         append(entry.detail.replaceFirstChar { it.lowercase() })
+        append(".")
     }
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
@@ -479,12 +485,18 @@ private fun DeveloperNoticeRow(notice: DeveloperNotice, onDismiss: () -> Unit, m
         modifier = modifier.fillMaxWidth().padding(vertical = 4.dp),
         // No trash icon any more — the colored reveal alone is the swipe-to-delete feedback,
         // per "het prullenbakicoontje mag ook weg, verwijderen kun je doen door te swipen".
+        // Transparent at rest, same fix as ShoppingListRow/ShoppingListGridTile's own swipe
+        // backgrounds — SwipeToDismissBox always composes backgroundContent regardless of swipe
+        // state, so without this check every item in the Meldingen tab sat on a permanently
+        // visible errorContainer (red) background instead of only showing it during an active
+        // swipe ("elk meldingen item heeft een rode achtergrond, graag zonder").
         backgroundContent = {
+            val isSettled = dismissState.dismissDirection == SwipeToDismissBoxValue.Settled
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(SoftCardShapeCompact)
-                    .background(MaterialTheme.colorScheme.errorContainer),
+                    .background(if (isSettled) Color.Transparent else MaterialTheme.colorScheme.errorContainer),
             )
         },
     ) {

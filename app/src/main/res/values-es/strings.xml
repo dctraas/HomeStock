@@ -65,6 +65,7 @@
     <string name="activity_detail_removed">Eliminado del inventario (%1$dx)</string>
     <string name="activity_detail_wasted">Desperdiciado (%1$dx)</string>
     <string name="activity_actor_unknown">Desconocido</string>
+    <string name="activity_action_connector">ha</string>
 
     <!-- Developer notices (Novedades -> Avisos tab, newest first) -->
     <string name="notice_csv_import_export_title">Importar/exportar inventario (CSV)</string>
@@ -175,6 +176,7 @@
     <string name="household_allergens_menu_cd">Mis alérgenos y preferencias alimentarias</string>
     <string name="household_photo_cd">Foto del hogar</string>
     <string name="household_photo_remove_cd">Quitar foto</string>
+    <string name="household_photo_error">No se pudo actualizar la foto, inténtalo de nuevo</string>
     <string name="household_member_allergens_format">Evita: %1$s</string>
     <string name="more_rename_household_error">No se pudo cambiar el nombre. Inténtalo de nuevo.</string>
     <string name="more_premium_title">HomeStock Premium</string>
@@ -260,8 +262,10 @@
     <string name="more_stores_empty">Aún no se han añadido tiendas.</string>
     <string name="more_stores_remove_format">Eliminar %1$s</string>
     <string name="more_statistics_title">Estadísticas</string>
+    <string name="more_statistics_subtitle">Inventario, desperdicio y escaneos por miembro del hogar</string>
     <string name="more_section_household">Hogar</string>
     <string name="more_data_csv_title">Transferir datos</string>
+    <string name="more_data_csv_subtitle">Exporta o importa tu inventario y lista de la compra como CSV</string>
     <string name="more_section_support">Soporte</string>
     <string name="more_csv_import_action">Importar (CSV)</string>
     <string name="more_csv_export_action">Exportar (CSV)</string>
@@ -274,9 +278,13 @@
     <string name="more_import_error">Error al importar</string>
     <string name="more_about_version_format">Versión de la app %1$s</string>
     <string name="more_about_feedback">Enviar comentarios</string>
+    <string name="more_about_feedback_subtitle">Envía ideas o problemas al desarrollador</string>
     <string name="more_about_rate_app">Valorar la app</string>
+    <string name="more_about_rate_app_subtitle">Abre Play Store para dejar una valoración</string>
     <string name="more_about_privacy_policy">Política de privacidad</string>
+    <string name="more_about_privacy_policy_subtitle">Lee cómo se usan y guardan tus datos</string>
     <string name="more_about_licenses">Licencias</string>
+    <string name="more_about_licenses_subtitle">Bibliotecas de código abierto usadas en esta app</string>
     <string name="more_feedback_placeholder">Cuéntanos qué opinas…</string>
     <string name="more_feedback_send">Enviar</string>
     <string name="more_feedback_star_cd">Estrella %1$d</string>

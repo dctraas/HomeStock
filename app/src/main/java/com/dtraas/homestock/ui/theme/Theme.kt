@@ -93,6 +93,13 @@ val LocalTopAppBarContainerColor = compositionLocalOf { TopAppBarContainer }
 // color for contrast rather than MaterialTheme's usual ink-dark onSurface.
 val LocalTopAppBarContentColor = compositionLocalOf { OnTopAppBarContainer }
 
+// The resolved dark/light state HomeStockTheme is actually rendering with — not the same as
+// calling isSystemInDarkTheme() downstream, since [HomeStockTheme.darkTheme] can be overridden
+// away from the system setting (Instellingen's Licht/Donker/Systeem toggle). Lets a composable
+// pick a color that must read as literally white in light mode and literally black in dark mode
+// (e.g. Boodschappenlijst's "Voeg iets toe" pill), independent of the app's own tinted palette.
+val LocalIsDarkTheme = compositionLocalOf { false }
+
 /** "Groot lettertype" scale factor — a modest, layout-safe bump (Android's own system-wide
  *  large-text setting uses a similar range) rather than something aggressive enough to start
  *  overflowing this app's many fixed-height cards/rows. */
@@ -159,6 +166,7 @@ fun HomeStockTheme(
     CompositionLocalProvider(
         LocalTopAppBarContainerColor provides topAppBarContainerColor,
         LocalTopAppBarContentColor provides topAppBarContentColor,
+        LocalIsDarkTheme provides darkTheme,
     ) {
         MaterialTheme(
             colorScheme = colorScheme,

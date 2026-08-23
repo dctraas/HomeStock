@@ -108,6 +108,7 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
     val deleteErrorMessage = stringResource(R.string.more_delete_household_error)
     val switchFullMessage = stringResource(R.string.household_join_full_error)
     val switchNotFoundMessage = stringResource(R.string.household_switch_not_found_error)
+    val photoErrorMessage = stringResource(R.string.household_photo_error)
 
     // Re-seeds from the live household name whenever it changes (e.g. this screen reopening,
     // or a housemate renaming it on their own device) — but not on every keystroke, since
@@ -233,10 +234,20 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                     onDeleteClick = { showDeleteConfirm = true },
                     photoUrl = householdPhotoUrl,
                     onPhotoPicked = { uri ->
-                        householdId?.let { id -> coroutineScope.launch { householdRepository.uploadHouseholdPhoto(id, uri) } }
+                        householdId?.let { id ->
+                            coroutineScope.launch {
+                                householdRepository.uploadHouseholdPhoto(id, uri)
+                                    .onFailure { snackbarHostState.showSnackbar(photoErrorMessage, duration = SnackbarDuration.Short) }
+                            }
+                        }
                     },
                     onRemovePhoto = {
-                        householdId?.let { id -> coroutineScope.launch { householdRepository.removeHouseholdPhoto(id) } }
+                        householdId?.let { id ->
+                            coroutineScope.launch {
+                                householdRepository.removeHouseholdPhoto(id)
+                                    .onFailure { snackbarHostState.showSnackbar(photoErrorMessage, duration = SnackbarDuration.Short) }
+                            }
+                        }
                     },
                 )
 
@@ -463,7 +474,9 @@ private fun HouseholdSection(
     onRemovePhoto: () -> Unit,
 ) {
     SectionCard {
-        HouseholdPhotoPicker(photoUrl = photoUrl, onPhotoPicked = onPhotoPicked, onRemovePhoto = onRemovePhoto)
+        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            HouseholdPhotoPicker(photoUrl = photoUrl, onPhotoPicked = onPhotoPicked, onRemovePhoto = onRemovePhoto)
+        }
 
         Text(stringResource(R.string.household_name_label), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         OutlinedTextField(

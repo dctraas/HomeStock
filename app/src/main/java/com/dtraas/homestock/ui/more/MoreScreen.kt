@@ -424,6 +424,7 @@ fun MoreScreen(
                             SettingsRow(
                                 icon = Icons.Filled.BarChart,
                                 title = stringResource(R.string.more_statistics_title),
+                                subtitle = stringResource(R.string.more_statistics_subtitle),
                                 trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                                 onClick = { if (isPremium) onNavigateToStatistics() else onNavigateToPremium() },
                             )
@@ -514,6 +515,7 @@ fun MoreScreen(
                             SettingsRow(
                                 icon = Icons.Filled.ImportExport,
                                 title = stringResource(R.string.more_data_csv_title),
+                                subtitle = stringResource(R.string.more_data_csv_subtitle),
                                 trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                                 onClick = { if (isPremium) showImportExportDialog = true else onNavigateToPremium() },
                             )
@@ -522,6 +524,7 @@ fun MoreScreen(
                             SettingsRow(
                                 icon = Icons.Filled.Feedback,
                                 title = stringResource(R.string.more_about_feedback),
+                                subtitle = stringResource(R.string.more_about_feedback_subtitle),
                                 onClick = { showFeedbackDialog = true },
                             )
                         },
@@ -529,6 +532,7 @@ fun MoreScreen(
                             SettingsRow(
                                 icon = Icons.Filled.StarRate,
                                 title = stringResource(R.string.more_about_rate_app),
+                                subtitle = stringResource(R.string.more_about_rate_app_subtitle),
                                 onClick = { openPlayStoreListing(context) },
                             )
                         },
@@ -536,6 +540,7 @@ fun MoreScreen(
                             SettingsRow(
                                 icon = Icons.Filled.PrivacyTip,
                                 title = stringResource(R.string.more_about_privacy_policy),
+                                subtitle = stringResource(R.string.more_about_privacy_policy_subtitle),
                                 onClick = onNavigateToPrivacyPolicy,
                             )
                         },
@@ -543,6 +548,7 @@ fun MoreScreen(
                             SettingsRow(
                                 icon = Icons.Filled.Description,
                                 title = stringResource(R.string.more_about_licenses),
+                                subtitle = stringResource(R.string.more_about_licenses_subtitle),
                                 onClick = onNavigateToLicenses,
                             )
                         },
@@ -1144,8 +1150,7 @@ private fun SettingsRow(
             Text(title, style = MaterialTheme.typography.titleSmall)
             // Always rendered, even as an empty string when there's no subtitle — an empty
             // Text still reserves its style's line height, so every row in a group ends up the
-            // same total height instead of the subtitle-less ones (Data overzetten, Feedback
-            // geven, Beoordeel de app, Privacybeleid en licenties) looking more cramped.
+            // same total height instead of a subtitle-less one looking more cramped.
             Text(
                 text = subtitle ?: "",
                 style = MaterialTheme.typography.bodySmall,
