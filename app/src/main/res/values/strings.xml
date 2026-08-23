@@ -597,6 +597,7 @@
     <string name="recipes_show_as_list_cd">Toon als lijst</string>
     <string name="recipes_match_ratio_format">%1$d/%2$d in huis</string>
     <string name="recipes_more_options_cd">Meer opties</string>
+    <string name="recipes_allergen_menu_header">Allergenen uitsluiten</string>
     <string name="recipes_area_match_cd">Sluit aan bij jouw taal/regio</string>
     <string name="recipes_detail_error">Kon dit recept niet laden. Probeer het opnieuw.</string>
     <string name="recipes_ingredients_title">Ingrediënten</string>

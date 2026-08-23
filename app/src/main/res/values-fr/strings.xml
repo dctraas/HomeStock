@@ -596,6 +596,7 @@
     <string name="recipes_show_as_list_cd">Afficher en liste</string>
     <string name="recipes_match_ratio_format">%1$d/%2$d en stock</string>
     <string name="recipes_more_options_cd">Plus d\'options</string>
+    <string name="recipes_allergen_menu_header">Exclure les allergènes</string>
     <string name="recipes_area_match_cd">Correspond à ta langue/région</string>
     <string name="recipes_detail_error">Impossible de charger cette recette. Réessayez.</string>
     <string name="recipes_ingredients_title">Ingrédients</string>

@@ -37,7 +37,7 @@ import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Link
-import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.Timer
@@ -56,6 +56,7 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -579,11 +580,13 @@ private fun RecipesTabRow(selected: RecipesTab, onSelect: (RecipesTab) -> Unit) 
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
+        // Ontdekken, Favorieten, Mijn recepten, Uit je voorraad — Uit je voorraad verhuisd naar
+        // plek 4, op uitdrukkelijk verzoek.
         val tabs = listOf(
-            RecipesTab.INVENTORY to R.string.recipes_tab_inventory,
             RecipesTab.BROWSE to R.string.recipes_tab_browse,
             RecipesTab.FAVORITES to R.string.recipes_tab_favorites,
             RecipesTab.CUSTOM to R.string.recipes_tab_custom,
+            RecipesTab.INVENTORY to R.string.recipes_tab_inventory,
         )
         tabs.forEach { (tab, labelRes) ->
             FilterChip(
@@ -743,10 +746,10 @@ private fun RecipesHeader(
                 IconButton(onClick = { menuExpanded = true }) {
                     if (hasActiveAllergenFilter) {
                         BadgedBox(badge = { Badge() }) {
-                            Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.recipes_more_options_cd), tint = contentColor)
+                            Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.recipes_more_options_cd), tint = contentColor)
                         }
                     } else {
-                        Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.recipes_more_options_cd), tint = contentColor)
+                        Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.recipes_more_options_cd), tint = contentColor)
                     }
                 }
                 DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
@@ -774,8 +777,17 @@ private fun RecipesHeader(
                     }
                     // Allergenen zijn alleen zinvol tegen Spoonacular's brede catalogus op
                     // Ontdekken — Favorieten/Eigen/Uit je voorraad zijn al beperkt tot wat het
-                    // huishouden zelf al heeft opgeslagen of in voorraad heeft.
+                    // huishouden zelf al heeft opgeslagen of in voorraad heeft. Een scheiding
+                    // en een eigen kopje maken duidelijk dat dit een apart blok is, los van de
+                    // lijst/rooster-toggle erboven.
                     if (tab == RecipesTab.BROWSE) {
+                        HorizontalDivider()
+                        Text(
+                            text = stringResource(R.string.recipes_allergen_menu_header),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                        )
                         RecipeRepository.filterableAllergens.forEach { allergen ->
                             val selected = allergen in excludedAllergens
                             DropdownMenuItem(

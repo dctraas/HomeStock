@@ -596,6 +596,7 @@
     <string name="recipes_show_as_list_cd">Show as list</string>
     <string name="recipes_match_ratio_format">%1$d/%2$d in stock</string>
     <string name="recipes_more_options_cd">More options</string>
+    <string name="recipes_allergen_menu_header">Exclude allergens</string>
     <string name="recipes_area_match_cd">Matches your language/region</string>
     <string name="recipes_detail_error">Couldn\'t load this recipe. Please try again.</string>
     <string name="recipes_ingredients_title">Ingredients</string>
