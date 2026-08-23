@@ -18,11 +18,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -56,7 +59,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -325,6 +327,11 @@ fun MoreScreen(
     }
 
     Scaffold(
+        // MoreScreenHeader below already claims the status bar inset itself — without this,
+        // Scaffold's default contentWindowInsets (safeDrawing, top included since there's no
+        // topBar) hands that same inset to `padding` too, stacking a second status-bar-height
+        // gap above the header instead of it starting flush at the true top of the screen.
+        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -335,8 +342,6 @@ fun MoreScreen(
                 displayName = displayName,
                 photoPath = photoPath,
                 householdName = householdName,
-                memberCount = memberCount,
-                householdCode = householdId,
                 onClick = { showProfileDialog = true },
             )
             Column(
@@ -435,14 +440,6 @@ fun MoreScreen(
                                 onClick = { showAccessibilityDialog = true },
                             )
                         },
-                        {
-                            SettingsRow(
-                                icon = Icons.Filled.ImportExport,
-                                title = stringResource(R.string.more_data_csv_title),
-                                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
-                                onClick = { if (isPremium) showImportExportDialog = true else onNavigateToPremium() },
-                            )
-                        },
                     ),
                 )
 
@@ -459,6 +456,17 @@ fun MoreScreen(
                                     stringResource(R.string.account_link_row_subtitle_unlinked)
                                 },
                                 onClick = onNavigateToAccountLink,
+                            )
+                        },
+                        {
+                            // Hoorde eerst thuis in de App-sectie tussen de andere apparaat-
+                            // instellingen; verhuisd naar Ondersteuning, direct onder Account
+                            // koppelen, op uitdrukkelijk verzoek.
+                            SettingsRow(
+                                icon = Icons.Filled.ImportExport,
+                                title = stringResource(R.string.more_data_csv_title),
+                                trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
+                                onClick = { if (isPremium) showImportExportDialog = true else onNavigateToPremium() },
                             )
                         },
                         {
@@ -807,8 +815,6 @@ private fun MoreScreenHeader(
     displayName: String?,
     photoPath: String?,
     householdName: String?,
-    memberCount: Int,
-    householdCode: String?,
     onClick: () -> Unit,
 ) {
     val contentColor = LocalTopAppBarContentColor.current
@@ -871,13 +877,7 @@ private fun MoreScreenHeader(
                     color = contentColor,
                 )
                 Text(
-                    text = pluralStringResource(
-                        R.plurals.more_header_subtitle_format,
-                        memberCount,
-                        householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.more_household_default_name),
-                        memberCount,
-                        householdCode ?: "—",
-                    ),
+                    text = householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.more_household_default_name),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.Bold,
                     color = OnTopAppBarContainerAccent,
@@ -966,31 +966,17 @@ private fun SectionHeader(title: String) {
 }
 
 /**
- * Wraps a whole section's worth of [SettingsRow]s in one shared card with thin dividers
- * between them, instead of each row being its own separately-shadowed card. [rows] takes a list
- * of composable lambdas rather than a list of plain data so each row can keep its own
- * conditional subtitle/trailingLabel/onClick logic exactly as before — this only changes how
- * they're laid out, not what any of them show.
+ * A section's worth of [SettingsRow]s, stacked plainly one after another — no card background
+ * and no divider lines between rows, per the design review ("de opties hoeven geen gekleurde
+ * achtergrond te hebben of gescheiden te worden door een streep"). [rows] takes a list of
+ * composable lambdas rather than a list of plain data so each row can keep its own conditional
+ * subtitle/trailingLabel/onClick logic exactly as before — this only changes how they're laid
+ * out, not what any of them show.
  */
 @Composable
 private fun SettingsGroup(rows: List<@Composable () -> Unit>) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = SoftCardShape,
-    ) {
-        Column {
-            rows.forEachIndexed { index, row ->
-                row()
-                if (index != rows.lastIndex) {
-                    // Indented to align under the title/subtitle text, not under the icon.
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 54.dp),
-                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-                    )
-                }
-            }
-        }
+    Column(modifier = Modifier.fillMaxWidth()) {
+        rows.forEach { row -> row() }
     }
 }
 
