@@ -167,7 +167,7 @@
         <item quantity="one">%1$d member · Code: %2$s</item>
         <item quantity="other">%1$d members · Code: %2$s</item>
     </plurals>
-    <string name="more_household_row_title">Household members &amp; code</string>
+    <string name="more_household_row_title">Details</string>
     <string name="more_household_default_name">My household</string>
     <plurals name="more_header_subtitle_format">
         <item quantity="one">%1$s · %2$d member · code %3$s</item>
@@ -254,7 +254,7 @@
     <string name="more_statistics_title">Statistics</string>
     <string name="more_section_household">Household</string>
     <string name="more_data_csv_title">Transfer data</string>
-    <string name="more_data_accessibility_support_title">Data, accessibility &amp; support</string>
+    <string name="more_section_support">Support</string>
     <string name="more_csv_import_action">Import (CSV)</string>
     <string name="more_csv_export_action">Export (CSV)</string>
     <string name="more_export_header_favorite">Favorite</string>

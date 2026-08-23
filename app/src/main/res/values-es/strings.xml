@@ -167,7 +167,7 @@
         <item quantity="one">%1$d miembro · Código: %2$s</item>
         <item quantity="other">%1$d miembros · Código: %2$s</item>
     </plurals>
-    <string name="more_household_row_title">Miembros del hogar y código</string>
+    <string name="more_household_row_title">Detalles</string>
     <string name="more_household_default_name">Mi hogar</string>
     <plurals name="more_header_subtitle_format">
         <item quantity="one">%1$s · %2$d miembro · código %3$s</item>
@@ -254,7 +254,7 @@
     <string name="more_statistics_title">Estadísticas</string>
     <string name="more_section_household">Hogar</string>
     <string name="more_data_csv_title">Transferir datos</string>
-    <string name="more_data_accessibility_support_title">Datos, accesibilidad y soporte</string>
+    <string name="more_section_support">Soporte</string>
     <string name="more_csv_import_action">Importar (CSV)</string>
     <string name="more_csv_export_action">Exportar (CSV)</string>
     <string name="more_export_header_favorite">Favorito</string>

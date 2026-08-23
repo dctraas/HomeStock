@@ -46,7 +46,6 @@ import com.dtraas.homestock.ui.household.HouseholdSettingsScreen
 import com.dtraas.homestock.ui.inventory.InventoryScreen
 import com.dtraas.homestock.ui.mealplan.MealPlanScreen
 import com.dtraas.homestock.ui.more.LicensesScreen
-import com.dtraas.homestock.ui.more.MoreOptionsScreen
 import com.dtraas.homestock.ui.more.MoreScreen
 import com.dtraas.homestock.ui.more.PrivacyPolicyScreen
 import com.dtraas.homestock.ui.notifications.NotificationsScreen
@@ -204,13 +203,6 @@ fun HomeStockApp(
                     onNavigateToStatistics = { navController.navigate(Destination.Statistics.route) },
                     onNavigateToPremium = { navController.navigate(Destination.Premium.route) },
                     onNavigateToHousehold = { navController.navigate(Destination.Household.route) },
-                    onNavigateToMoreOptions = { navController.navigate(Destination.MoreOptions.route) },
-                )
-            }
-            composable(Destination.MoreOptions.route) {
-                MoreOptionsScreen(
-                    onBack = { navController.popBackStack() },
-                    onNavigateToPremium = { navController.navigate(Destination.Premium.route) },
                     onNavigateToAccountLink = { navController.navigate(Destination.AccountLink.route) },
                     onNavigateToPrivacyPolicy = { navController.navigate(Destination.PrivacyPolicy.route) },
                     onNavigateToLicenses = { navController.navigate(Destination.Licenses.route) },

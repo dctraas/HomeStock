@@ -59,7 +59,6 @@ sealed class Destination(val route: String) {
     data object AccountLink : Destination("account_link")
     data object PrivacyPolicy : Destination("privacy_policy")
     data object Licenses : Destination("licenses")
-    data object MoreOptions : Destination("more_options")
 }
 
 data class TopLevelDestination(
