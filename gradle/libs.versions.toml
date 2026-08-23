@@ -65,6 +65,7 @@ firebase-storage-ktx = { group = "com.google.firebase", name = "firebase-storage
 firebase-functions-ktx = { group = "com.google.firebase", name = "firebase-functions-ktx" }
 firebase-analytics-ktx = { group = "com.google.firebase", name = "firebase-analytics-ktx" }
 firebase-config-ktx = { group = "com.google.firebase", name = "firebase-config-ktx" }
+firebase-messaging-ktx = { group = "com.google.firebase", name = "firebase-messaging-ktx" }
 # App Check — see HomeStockApplication.installAppCheck's doc and README.md for what this does
 # and doesn't protect, and why enforcement is a deliberately separate, manual Console step.
 firebase-appcheck-playintegrity = { group = "com.google.firebase", name = "firebase-appcheck-playintegrity" }
