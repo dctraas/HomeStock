@@ -173,6 +173,8 @@
     <string name="more_household_member_unnamed">Miembro sin nombre</string>
     <string name="more_household_member_you">Tú</string>
     <string name="household_allergens_menu_cd">Mis alérgenos y preferencias alimentarias</string>
+    <string name="household_photo_cd">Foto del hogar</string>
+    <string name="household_photo_remove_cd">Quitar foto</string>
     <string name="household_member_allergens_format">Evita: %1$s</string>
     <string name="more_rename_household_error">No se pudo cambiar el nombre. Inténtalo de nuevo.</string>
     <string name="more_premium_title">HomeStock Premium</string>
@@ -242,6 +244,11 @@
     <string name="more_household_activity_notifications_subtitle">Notificaciones cuando un miembro del hogar cambia algo, o el hogar cambia</string>
     <string name="more_premium_notifications_title">Premium</string>
     <string name="more_premium_notifications_subtitle">Notificación cuando tu periodo de prueba esté por terminar</string>
+    <string name="more_notifications_menu_title">Notificaciones</string>
+    <plurals name="more_notifications_menu_subtitle_format">
+        <item quantity="one">%1$d de %2$d activadas</item>
+        <item quantity="other">%1$d de %2$d activadas</item>
+    </plurals>
     <string name="more_language_title">Idioma</string>
     <string name="more_language_option_nl">Neerlandés</string>
     <string name="more_language_option_en">Inglés</string>
@@ -500,15 +507,13 @@
     <string name="shopping_list_voice_quick_add_cd">Añadir por voz</string>
     <string name="shopping_list_more_options_cd">Más opciones</string>
     <string name="shopping_list_more_options_title">Opciones</string>
-    <plurals name="shopping_list_progress_remaining_format">
-        <item quantity="one">Queda %1$d por comprar</item>
-        <item quantity="other">Quedan %1$d por comprar</item>
-    </plurals>
+    <string name="shopping_list_progress_checked_format">%1$d/%2$d marcados</string>
     <plurals name="shopping_list_store_count_format">
         <item quantity="one">%1$d tienda</item>
         <item quantity="other">%1$d tiendas</item>
     </plurals>
     <string name="shopping_list_all_stores">Todas las tiendas</string>
+    <string name="shopping_list_store_chip_label_format">%1$s (%2$d)</string>
     <string name="shopping_list_in_cart_format">En el carrito (%1$d)</string>
     <string name="shopping_list_removed_format">%1$s eliminado</string>
     <plurals name="shopping_list_cleared_snackbar_format">

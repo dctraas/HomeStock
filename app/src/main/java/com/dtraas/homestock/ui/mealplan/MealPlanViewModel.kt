@@ -3,6 +3,7 @@ package com.dtraas.homestock.ui.mealplan
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
+import com.dtraas.homestock.data.local.entity.MealCompletionStatus
 import com.dtraas.homestock.data.local.entity.PlannedMeal
 import com.dtraas.homestock.data.model.MealSlot
 import com.dtraas.homestock.data.repository.InventoryRepository
@@ -232,6 +233,28 @@ class MealPlanViewModel(
     fun removeMeal(slot: MealSlot, meal: PlannedMeal) {
         val date = _uiState.value.date
         viewModelScope.launch { mealPlanRepository.removeMeal(date, slot, meal) }
+    }
+
+    /** Marks a planned product [meal] opgebruikt — records that on the meal entry itself, and,
+     *  when it matched a voorraad item ([PlannedMeal.productBarcode] set), consumes one unit of
+     *  it from inventory (logged as ordinary consumption, not waste). */
+    fun markMealEaten(slot: MealSlot, meal: PlannedMeal) {
+        val date = _uiState.value.date
+        viewModelScope.launch {
+            mealPlanRepository.setMealStatus(date, slot, meal, MealCompletionStatus.EATEN)
+            meal.productBarcode?.let { inventoryRepository.consumeOneFromMeal(it, wasted = false) }
+        }
+    }
+
+    /** Same as [markMealEaten], but for weggegooid — the inventory-side consumption (when
+     *  applicable) is logged as waste instead, so it counts toward the household's
+     *  voedselverspilling stats/notifications. */
+    fun markMealWasted(slot: MealSlot, meal: PlannedMeal) {
+        val date = _uiState.value.date
+        viewModelScope.launch {
+            mealPlanRepository.setMealStatus(date, slot, meal, MealCompletionStatus.WASTED)
+            meal.productBarcode?.let { inventoryRepository.consumeOneFromMeal(it, wasted = true) }
+        }
     }
 
     /** Undo for [removeMeal] — re-adds the exact same [meal] (same id, thumbnail, recipe/product

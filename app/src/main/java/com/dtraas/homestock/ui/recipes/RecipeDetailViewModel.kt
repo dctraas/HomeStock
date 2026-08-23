@@ -108,36 +108,14 @@ class RecipeDetailViewModel(
     }
 
     /**
-     * Toggles [tag] on the currently loaded recipe — a no-op if it isn't a custom recipe and
-     * isn't (yet) a favorite either, since [RecipeRepository.setRecipeTags] has nowhere durable
-     * to write it in that case (see that function's doc). RecipeDetailScreen only shows the tag
-     * editor at all when one of those is true, so this guard is a safety net, not the primary gate.
-     *
-     * Operates on [RecipeDetail.tags] in place (add/remove just this one storage key) rather than
-     * rebuilding the list from only the fixed [RecipeTag] entries, so any custom free-text labels
-     * already on the recipe (see [addCustomTag]) survive a fixed-tag toggle untouched.
-     */
-    fun toggleTag(tag: RecipeTag) {
-        val detail = _uiState.value.detail ?: return
-        val isFavorite = _uiState.value.isFavorite
-        if (!detail.isCustom && !isFavorite) return
-        val updatedTags = if (tag.storageKey in detail.tags) {
-            detail.tags - tag.storageKey
-        } else {
-            detail.tags + tag.storageKey
-        }
-        viewModelScope.launch {
-            recipeRepository.setRecipeTags(detail, updatedTags, isFavorite)
-                .onSuccess { updated -> _uiState.update { it.copy(detail = updated) } }
-        }
-    }
-
-    /**
-     * Adds a free-text label the household typed themselves, alongside the fixed [RecipeTag]
-     * set — a no-op for a blank label, one that collides with a fixed tag's own storage key
-     * (case-insensitively, to avoid a confusing duplicate-looking chip), or an exact duplicate
-     * (also case-insensitively) of a custom label already on the recipe. Same durable-copy gate
-     * as [toggleTag].
+     * Adds a free-text label the household typed themselves — a no-op for a blank label, one
+     * that collides with a now-retired preset tag's own storage key (case-insensitively, so it
+     * can't silently resurrect one — see [RecipeTag]'s doc), or an exact duplicate (also
+     * case-insensitively) of a custom label already on the recipe. A no-op if the recipe isn't a
+     * custom recipe and isn't (yet) a favorite either, since [RecipeRepository.setRecipeTags] has
+     * nowhere durable to write it in that case (see that function's doc) — RecipeDetailScreen
+     * only shows the tag editor at all when one of those is true, so this guard is a safety net,
+     * not the primary gate.
      */
     fun addCustomTag(label: String) {
         val detail = _uiState.value.detail ?: return
@@ -154,7 +132,7 @@ class RecipeDetailViewModel(
         }
     }
 
-    /** Removes a previously added custom label. Same durable-copy gate as [toggleTag]. */
+    /** Removes a previously added custom label. Same durable-copy gate as [addCustomTag]. */
     fun removeCustomTag(label: String) {
         val detail = _uiState.value.detail ?: return
         val isFavorite = _uiState.value.isFavorite

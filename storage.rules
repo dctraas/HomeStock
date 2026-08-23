@@ -11,6 +11,11 @@ rules_version = '2';
 // enough to warrant per-household path validation here.
 service firebase.storage {
   match /b/{bucket}/o {
+    // households/{householdId}/photo.jpg — the household's own shared photo, see
+    // HouseholdRepository.uploadHouseholdPhoto/removeHouseholdPhoto.
+    match /households/{householdId}/photo.jpg {
+      allow read, write: if request.auth != null;
+    }
     // households/{householdId}/members/{uid}/photo.jpg — see HouseholdMembersRepository.
     match /households/{householdId}/members/{uid}/{fileName} {
       allow read, write: if request.auth != null;

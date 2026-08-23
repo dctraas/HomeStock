@@ -184,6 +184,28 @@ class InventoryRepository(
         return product.name
     }
 
+    /**
+     * Consumes one unit of [barcode] as the result of marking a meal-plan product opgebruikt or
+     * weggegooid (see MealPlanViewModel.markMealEaten/markMealWasted) — by one unit rather than
+     * the item's entire quantity the way [removeFromInventory] works, since a meal is one
+     * portion, not necessarily everything left in stock. The inventory row is dropped entirely
+     * once it hits 0, same end state [removeFromInventory] leaves. A no-op if [barcode] isn't in
+     * inventory at all (e.g. this meal referenced a product the household has since used up or
+     * removed by hand some other way).
+     */
+    suspend fun consumeOneFromMeal(barcode: String, wasted: Boolean) {
+        val householdId = householdSession.householdId.value ?: return
+        val inventoryDoc = inventoryCollection(householdId).document(barcode)
+        val existing = InventoryItemEntity.fromDocument(inventoryDoc.get().await()) ?: return
+        val newQuantity = existing.quantity - 1
+        if (newQuantity <= 0) {
+            inventoryDoc.delete().await()
+        } else {
+            inventoryDoc.set(existing.copy(quantity = newQuantity, updatedAt = System.currentTimeMillis()).toMap()).await()
+        }
+        if (wasted) activityLogRepository.logWasted(barcode, 1) else activityLogRepository.logRemoved(barcode, 1)
+    }
+
     suspend fun removeFromInventory(barcode: String, wasted: Boolean = false) {
         val householdId = householdSession.householdId.value ?: return
         val inventoryDoc = inventoryCollection(householdId).document(barcode)

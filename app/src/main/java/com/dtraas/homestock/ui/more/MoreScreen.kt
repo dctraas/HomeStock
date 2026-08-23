@@ -196,6 +196,7 @@ fun MoreScreen(
     var showLanguageDialog by remember { mutableStateOf(false) }
     var showStoresDialog by remember { mutableStateOf(false) }
     var showAccessibilityDialog by remember { mutableStateOf(false) }
+    var showNotificationsDialog by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
     var showImportExportDialog by remember { mutableStateOf(false) }
 
@@ -447,39 +448,21 @@ fun MoreScreen(
                 SettingsGroup(
                     rows = listOf(
                         {
-                            SwitchRow(
+                            // The four notification toggles used to live inline here, one row
+                            // each — folded into their own submenu (per design review) since
+                            // that's four full icon+title+subtitle rows just for one App
+                            // sub-topic, same "group it behind one row" treatment Toegankelijkheid
+                            // already gets for its two toggles below.
+                            SettingsRow(
                                 icon = Icons.Filled.Notifications,
-                                title = stringResource(R.string.more_notifications_row_title),
-                                subtitle = stringResource(R.string.more_expiry_notifications_description),
-                                checked = notificationsEnabled,
-                                onCheckedChange = ::setNotificationsEnabled,
-                            )
-                        },
-                        {
-                            SwitchRow(
-                                icon = Icons.Filled.Inventory2,
-                                title = stringResource(R.string.more_inventory_insight_notifications_title),
-                                subtitle = stringResource(R.string.more_inventory_insight_notifications_subtitle),
-                                checked = inventoryInsightNotificationsEnabled,
-                                onCheckedChange = ::setInventoryInsightNotificationsEnabled,
-                            )
-                        },
-                        {
-                            SwitchRow(
-                                icon = Icons.Filled.Groups,
-                                title = stringResource(R.string.more_household_activity_notifications_title),
-                                subtitle = stringResource(R.string.more_household_activity_notifications_subtitle),
-                                checked = householdActivityNotificationsEnabled,
-                                onCheckedChange = ::setHouseholdActivityNotificationsEnabled,
-                            )
-                        },
-                        {
-                            SwitchRow(
-                                icon = Icons.Filled.WorkspacePremium,
-                                title = stringResource(R.string.more_premium_notifications_title),
-                                subtitle = stringResource(R.string.more_premium_notifications_subtitle),
-                                checked = premiumNotificationsEnabled,
-                                onCheckedChange = ::setPremiumNotificationsEnabled,
+                                title = stringResource(R.string.more_notifications_menu_title),
+                                subtitle = notificationsSubtitle(
+                                    notificationsEnabled,
+                                    inventoryInsightNotificationsEnabled,
+                                    householdActivityNotificationsEnabled,
+                                    premiumNotificationsEnabled,
+                                ),
+                                onClick = { showNotificationsDialog = true },
                             )
                         },
                         {
@@ -651,6 +634,20 @@ fun MoreScreen(
         )
     }
 
+    if (showNotificationsDialog) {
+        NotificationsSettingsDialog(
+            expiryEnabled = notificationsEnabled,
+            onExpiryChange = ::setNotificationsEnabled,
+            inventoryInsightEnabled = inventoryInsightNotificationsEnabled,
+            onInventoryInsightChange = ::setInventoryInsightNotificationsEnabled,
+            householdActivityEnabled = householdActivityNotificationsEnabled,
+            onHouseholdActivityChange = ::setHouseholdActivityNotificationsEnabled,
+            premiumEnabled = premiumNotificationsEnabled,
+            onPremiumChange = ::setPremiumNotificationsEnabled,
+            onDismiss = { showNotificationsDialog = false },
+        )
+    }
+
     if (showImportExportDialog) {
         ImportExportDialog(
             onImport = ::importInventory,
@@ -697,6 +694,74 @@ private fun accessibilitySubtitle(largeText: Boolean, highContrast: Boolean): St
         stringResource(R.string.more_accessibility_high_contrast_title).takeIf { highContrast },
     )
     return if (enabled.isEmpty()) stringResource(R.string.common_off) else enabled.joinToString(", ")
+}
+
+/** Subtitle for the Meldingen row — how many of the four toggles are on, same "summarize before
+ *  you open it" idea as [accessibilitySubtitle]. */
+@Composable
+private fun notificationsSubtitle(vararg enabled: Boolean): String {
+    val onCount = enabled.count { it }
+    return if (onCount == 0) {
+        stringResource(R.string.common_off)
+    } else {
+        pluralStringResource(R.plurals.more_notifications_menu_subtitle_format, onCount, onCount, enabled.size)
+    }
+}
+
+@Composable
+private fun NotificationsSettingsDialog(
+    expiryEnabled: Boolean,
+    onExpiryChange: (Boolean) -> Unit,
+    inventoryInsightEnabled: Boolean,
+    onInventoryInsightChange: (Boolean) -> Unit,
+    householdActivityEnabled: Boolean,
+    onHouseholdActivityChange: (Boolean) -> Unit,
+    premiumEnabled: Boolean,
+    onPremiumChange: (Boolean) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.more_notifications_menu_title)) },
+        text = {
+            Column(
+                modifier = Modifier.verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                SwitchRow(
+                    icon = Icons.Filled.Notifications,
+                    title = stringResource(R.string.more_notifications_row_title),
+                    subtitle = stringResource(R.string.more_expiry_notifications_description),
+                    checked = expiryEnabled,
+                    onCheckedChange = onExpiryChange,
+                )
+                SwitchRow(
+                    icon = Icons.Filled.Inventory2,
+                    title = stringResource(R.string.more_inventory_insight_notifications_title),
+                    subtitle = stringResource(R.string.more_inventory_insight_notifications_subtitle),
+                    checked = inventoryInsightEnabled,
+                    onCheckedChange = onInventoryInsightChange,
+                )
+                SwitchRow(
+                    icon = Icons.Filled.Groups,
+                    title = stringResource(R.string.more_household_activity_notifications_title),
+                    subtitle = stringResource(R.string.more_household_activity_notifications_subtitle),
+                    checked = householdActivityEnabled,
+                    onCheckedChange = onHouseholdActivityChange,
+                )
+                SwitchRow(
+                    icon = Icons.Filled.WorkspacePremium,
+                    title = stringResource(R.string.more_premium_notifications_title),
+                    subtitle = stringResource(R.string.more_premium_notifications_subtitle),
+                    checked = premiumEnabled,
+                    onCheckedChange = onPremiumChange,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_close)) }
+        },
+    )
 }
 
 @Composable

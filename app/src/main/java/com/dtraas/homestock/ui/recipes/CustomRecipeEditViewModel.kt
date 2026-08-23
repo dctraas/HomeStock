@@ -25,9 +25,11 @@ data class CustomRecipeEditUiState(
     val servings: String = "",
     val instructions: String = "",
     val ingredients: List<CustomIngredientInput> = listOf(CustomIngredientInput()),
-    val tags: Set<RecipeTag> = emptySet(),
-    /** Free-text labels typed in alongside the fixed [RecipeTag] set — same pattern as
-     *  RecipeDetailScreen's tag editor, just pre-populated here for an existing recipe by [load]. */
+    /** Free-text labels the household types in themselves — same pattern as RecipeDetailScreen's
+     *  tag editor, just pre-populated here for an existing recipe by [load]. The fixed preset
+     *  labels (Snel/Kindvriendelijk/Restjes) this used to offer alongside these are gone; a
+     *  recipe already carrying one of those old keys from before their removal just quietly
+     *  drops it on next save (see [RecipeTag]'s doc). */
     val customTags: List<String> = emptyList(),
     val showValidationError: Boolean = false,
     val showSaveError: Boolean = false,
@@ -79,7 +81,6 @@ class CustomRecipeEditViewModel(
                             ingredients = detail.ingredients
                                 .map { (name, measure) -> CustomIngredientInput(name = name, measure = measure) }
                                 .ifEmpty { listOf(CustomIngredientInput()) },
-                            tags = detail.tags.mapNotNull(RecipeTag::fromStorageKey).toSet(),
                             customTags = detail.tags.filter { RecipeTag.fromStorageKey(it) == null },
                         )
                     }
@@ -101,14 +102,10 @@ class CustomRecipeEditViewModel(
     }
     fun onInstructionsChange(value: String) = _uiState.update { it.copy(instructions = value) }
 
-    fun onToggleTag(tag: RecipeTag) = _uiState.update { state ->
-        val updated = if (tag in state.tags) state.tags - tag else state.tags + tag
-        state.copy(tags = updated)
-    }
-
-    /** Adds a free-text label — a no-op for a blank label, one colliding with a fixed tag's own
-     *  storage key (case-insensitively), or an exact duplicate (also case-insensitively) of a
-     *  custom label already added. Same validation as [RecipeDetailViewModel.addCustomTag]. */
+    /** Adds a free-text label — a no-op for a blank label, one colliding with a now-retired
+     *  preset tag's own storage key (case-insensitively, so it can't silently resurrect one), or
+     *  an exact duplicate (also case-insensitively) of a custom label already added. Same
+     *  validation as [RecipeDetailViewModel.addCustomTag]. */
     fun onAddCustomTag(label: String) = _uiState.update { state ->
         val trimmed = label.trim()
         if (trimmed.isEmpty()) return@update state
@@ -157,7 +154,7 @@ class CustomRecipeEditViewModel(
                 servings = state.servings.toIntOrNull(),
                 instructions = state.instructions.takeIf { it.isNotBlank() },
                 ingredients = ingredients,
-                tags = state.tags.map { it.storageKey } + state.customTags,
+                tags = state.customTags,
             )
                 .onSuccess { detail -> _uiState.update { it.copy(isSaving = false, savedRecipeId = detail.id) } }
                 .onFailure { _uiState.update { it.copy(isSaving = false, showSaveError = true) } }

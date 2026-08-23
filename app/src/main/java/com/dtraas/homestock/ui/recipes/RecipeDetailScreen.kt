@@ -34,7 +34,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -197,8 +196,6 @@ fun RecipeDetailScreen(
                 // browse result has no tag editor at all rather than a dead-end one.
                 if (detail.isCustom || uiState.isFavorite) {
                     RecipeTagEditor(
-                        tags = detail.tags.mapNotNull(RecipeTag::fromStorageKey).toSet(),
-                        onToggle = viewModel::toggleTag,
                         customTags = detail.tags.filter { RecipeTag.fromStorageKey(it) == null },
                         onAddCustom = viewModel::addCustomTag,
                         onRemoveCustom = viewModel::removeCustomTag,
@@ -472,11 +469,13 @@ private fun formatScaledQuantity(value: Double): String {
     }
 }
 
-/** Toggleable chip row for [RecipeTag] — shown under RecipeDetailScreen's badges for a recipe the household has saved (custom or favorited), where tags actually have somewhere to persist. */
+/** Editable chip row of free-text labels the household typed themselves — shown under
+ *  RecipeDetailScreen's badges for a recipe the household has saved (custom or favorited), where
+ *  tags actually have somewhere to persist. The 3 fixed preset labels (Snel/Kindvriendelijk/
+ *  Restjes) this used to also offer are gone, per explicit request — only per-recipe custom
+ *  labels remain. */
 @Composable
 private fun RecipeTagEditor(
-    tags: Set<RecipeTag>,
-    onToggle: (RecipeTag) -> Unit,
     customTags: List<String>,
     onAddCustom: (String) -> Unit,
     onRemoveCustom: (String) -> Unit,
@@ -489,13 +488,6 @@ private fun RecipeTagEditor(
             .padding(top = 12.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        RecipeTag.entries.forEach { tag ->
-            FilterChip(
-                selected = tag in tags,
-                onClick = { onToggle(tag) },
-                label = { Text(stringResource(tag.labelRes)) },
-            )
-        }
         customTags.forEach { label ->
             // onClick is a no-op — only the trailing X (its own IconButton, below) removes the
             // label, so tapping the chip's body/text doesn't delete it by surprise.

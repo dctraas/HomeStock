@@ -68,7 +68,6 @@ import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -79,6 +78,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -343,7 +343,8 @@ fun ShoppingListScreen() {
 
             if (groupedByStore.isNotEmpty()) {
                 StoreChipsRow(
-                    stores = groupedByStore.keys.toList(),
+                    storeCounts = groupedByStore.mapValues { (_, items) -> items.size },
+                    totalCount = allItems.size,
                     selectedStore = selectedStoreFilter,
                     onStoreSelected = { selectedStoreFilter = it },
                     modifier = Modifier.padding(top = 8.dp, bottom = 6.dp),
@@ -1373,10 +1374,10 @@ private fun ShoppingListHeader(
 }
 
 /**
- * How far through the list the household is — checked/total items, plus the running total
- * (see [ShoppingListViewModel.totalPrice]) when at least one item has a price set. Lives
- * permanently inside [ShoppingListHeader]'s dark green gradient now, hence the white/coral
- * palette below instead of the surface-oriented colors this used before that move.
+ * How far through the list the household is — checked/total items as plain text plus a filled
+ * bar, the same shape this had before an earlier round swapped it for a progress ring. Lives
+ * permanently inside [ShoppingListHeader]'s dark green gradient, hence the white/coral palette
+ * below instead of the surface-oriented colors a plain page background would use.
  */
 @Composable
 private fun ShoppingProgressBar(
@@ -1386,32 +1387,14 @@ private fun ShoppingProgressBar(
     storeCount: Int,
     modifier: Modifier = Modifier,
 ) {
-    val remaining = totalCount - checkedCount
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        // A ring rather than the old horizontal bar — checkedCount/totalCount reads as a
-        // count-down ("how much is left") at a glance, same information as before, just in
-        // the more compact, more scannable shape the Claude Design review asked for.
-        Box(modifier = Modifier.size(52.dp), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(
-                progress = { if (totalCount > 0) checkedCount.toFloat() / totalCount else 0f },
-                modifier = Modifier.fillMaxSize(),
-                color = OnTopAppBarContainerAccent,
-                trackColor = Color.White.copy(alpha = 0.18f),
-                strokeWidth = 5.dp,
-            )
+    Column(modifier = modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
             Text(
-                text = checkedCount.toString(),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-            )
-        }
-        Column(modifier = Modifier.padding(start = 14.dp)) {
-            Text(
-                text = pluralStringResource(R.plurals.shopping_list_progress_remaining_format, remaining, remaining),
+                text = stringResource(R.string.shopping_list_progress_checked_format, checkedCount, totalCount),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
@@ -1425,18 +1408,29 @@ private fun ShoppingProgressBar(
                     text = metaParts.joinToString(" · "),
                     style = MaterialTheme.typography.labelMedium,
                     color = OnTopAppBarContainerAccent,
-                    modifier = Modifier.padding(top = 1.dp),
                 )
             }
         }
+        LinearProgressIndicator(
+            progress = { if (totalCount > 0) checkedCount.toFloat() / totalCount else 0f },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp)
+                .height(8.dp)
+                .clip(RoundedCornerShape(percent = 50)),
+            color = OnTopAppBarContainerAccent,
+            trackColor = Color.White.copy(alpha = 0.18f),
+        )
     }
 }
 
-/** Horizontal "Alle winkels" + one chip per store present on the (search-filtered) list —
- *  see [ShoppingListScreen]'s `selectedStoreFilter` for what selecting one does. */
+/** Horizontal "Alle winkels" + one chip per store present on the (search-filtered) list, each
+ *  labeled with its item count — see [ShoppingListScreen]'s `selectedStoreFilter` for what
+ *  selecting one does. */
 @Composable
 private fun StoreChipsRow(
-    stores: List<String>,
+    storeCounts: Map<String, Int>,
+    totalCount: Int,
     selectedStore: String?,
     onStoreSelected: (String?) -> Unit,
     modifier: Modifier = Modifier,
@@ -1444,7 +1438,7 @@ private fun StoreChipsRow(
     // A single store (or none at all) makes the "alle winkels" vs. "dat ene winkel" choice
     // meaningless — same reasoning as InventoryScreen only offering "group by locatie" once
     // there's more than one location in use.
-    if (stores.size <= 1) return
+    if (storeCounts.size <= 1) return
     LazyRow(
         modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1454,7 +1448,7 @@ private fun StoreChipsRow(
             FilterChip(
                 selected = selectedStore == null,
                 onClick = { onStoreSelected(null) },
-                label = { Text(stringResource(R.string.shopping_list_all_stores)) },
+                label = { Text(stringResource(R.string.shopping_list_store_chip_label_format, stringResource(R.string.shopping_list_all_stores), totalCount)) },
                 shape = SoftCardShapeCompact,
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = MaterialTheme.colorScheme.primaryContainer,
@@ -1462,11 +1456,19 @@ private fun StoreChipsRow(
                 ),
             )
         }
-        items(stores) { store ->
+        items(storeCounts.entries.toList(), key = { it.key }) { (store, count) ->
             FilterChip(
                 selected = selectedStore == store,
                 onClick = { onStoreSelected(if (selectedStore == store) null else store) },
-                label = { Text(store.ifBlank { stringResource(R.string.store_geen) }) },
+                label = {
+                    Text(
+                        stringResource(
+                            R.string.shopping_list_store_chip_label_format,
+                            store.ifBlank { stringResource(R.string.store_geen) },
+                            count,
+                        )
+                    )
+                },
                 leadingIcon = { Icon(Icons.Filled.Storefront, contentDescription = null, modifier = Modifier.size(18.dp)) },
                 shape = SoftCardShapeCompact,
                 colors = FilterChipDefaults.filterChipColors(
@@ -1497,85 +1499,93 @@ private fun ShoppingListBottomBar(
     onAddClick: () -> Unit,
     onVoiceClick: () -> Unit,
 ) {
-    // No Surface/tonalElevation wrapper any more — that painted a flat colorScheme.surface band
-    // (plus a faint elevation tint on top of it) directly under the scrolling list above, which
-    // sits on colorScheme.background instead; the two are subtly different tones, so the seam
-    // between them read as a stray white line the user kept seeing. A plain Column blends
-    // straight into the page instead. Padding is a touch tighter too (12dp/10dp -> 8dp/6dp) to
-    // reclaim a bit of vertical room for the list above.
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-        if (lowStockSuggestions.isNotEmpty() || historySuggestions.isNotEmpty()) {
-            LazyRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
-            ) {
-                // Bijna-op items first — restocking is the more actionable suggestion of
-                // the two — then the household's own recent history.
-                items(lowStockSuggestions, key = { "low_${it.barcode}" }) { suggestion ->
-                    SuggestionChip(
-                        onClick = { onLowStockSuggestionClick(suggestion) },
-                        label = { Text(suggestion.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        icon = {
-                            Icon(Icons.Filled.TrendingDown, contentDescription = null, modifier = Modifier.size(18.dp))
-                        },
-                        shape = SoftCardShapeCompact,
-                        colors = SuggestionChipDefaults.suggestionChipColors(
-                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                            labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            iconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        ),
-                    )
-                }
-                items(historySuggestions, key = { "hist_$it" }) { name ->
-                    SuggestionChip(
-                        onClick = { onHistorySuggestionClick(name) },
-                        label = { Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                        shape = SoftCardShapeCompact,
-                    )
-                }
-            }
-        }
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            // No fill/border — just the icon+text in the theme's plain foreground color (white
-            // in dark mode, black in light mode via onBackground), same as any other in-line
-            // "voeg toe" affordance on this page rather than a boxed control.
-            Surface(
-                onClick = onAddClick,
-                modifier = Modifier.weight(1f).height(52.dp),
-                shape = SoftCardShapeCompact,
-                color = Color.Transparent,
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+    // Wrapped in a rounded-top Surface again ("dezelfde achtergrondkleur als eerder") — but
+    // surfaceContainer + rounded top corners rather than the old plain colorScheme.surface +
+    // tonalElevation, which painted a flat band whose tone read as a visible seam against the
+    // scrolling list's colorScheme.background right above it. surfaceContainer already sits a
+    // deliberate step above background in the app's tonal ramp (see the theme's surfaceContainer
+    // restoration), and the rounded top corners read as a deliberate panel instead of an abrupt
+    // color cut, so the seam doesn't reappear.
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+            if (lowStockSuggestions.isNotEmpty() || historySuggestions.isNotEmpty()) {
+                LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp),
                 ) {
-                    Icon(
-                        Icons.Filled.Add,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onBackground,
-                    )
-                    Text(
-                        text = stringResource(R.string.shopping_list_bottom_add_placeholder),
-                        color = MaterialTheme.colorScheme.onBackground,
-                        style = MaterialTheme.typography.bodyLarge,
-                    )
+                    // Bijna-op items first — restocking is the more actionable suggestion of
+                    // the two — then the household's own recent history.
+                    items(lowStockSuggestions, key = { "low_${it.barcode}" }) { suggestion ->
+                        SuggestionChip(
+                            onClick = { onLowStockSuggestionClick(suggestion) },
+                            label = { Text(suggestion.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                            icon = {
+                                Icon(Icons.Filled.TrendingDown, contentDescription = null, modifier = Modifier.size(18.dp))
+                            },
+                            shape = SoftCardShapeCompact,
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                iconContentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            ),
+                        )
+                    }
+                    items(historySuggestions, key = { "hist_$it" }) { name ->
+                        SuggestionChip(
+                            onClick = { onHistorySuggestionClick(name) },
+                            label = { Text(name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                            shape = SoftCardShapeCompact,
+                        )
+                    }
                 }
             }
-            FilledIconButton(
-                onClick = onVoiceClick,
-                modifier = Modifier.size(52.dp),
-                shape = CircleShape,
-                colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary,
-                    contentColor = MaterialTheme.colorScheme.onSecondary,
-                ),
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                Icon(Icons.Filled.Mic, contentDescription = stringResource(R.string.shopping_list_voice_quick_add_cd))
+                // No fill/border — just the icon+text in the theme's plain foreground color,
+                // same as any other in-line "voeg toe" affordance on this page rather than a
+                // boxed control. onSurface (not onBackground) now that this sits on the
+                // surfaceContainer panel above, not directly on colorScheme.background.
+                Surface(
+                    onClick = onAddClick,
+                    modifier = Modifier.weight(1f).height(52.dp),
+                    shape = SoftCardShapeCompact,
+                    color = Color.Transparent,
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Icon(
+                            Icons.Filled.Add,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Text(
+                            text = stringResource(R.string.shopping_list_bottom_add_placeholder),
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                    }
+                }
+                FilledIconButton(
+                    onClick = onVoiceClick,
+                    modifier = Modifier.size(52.dp),
+                    shape = CircleShape,
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.onSecondary,
+                    ),
+                ) {
+                    Icon(Icons.Filled.Mic, contentDescription = stringResource(R.string.shopping_list_voice_quick_add_cd))
+                }
             }
         }
     }

@@ -173,6 +173,8 @@
     <string name="more_household_member_unnamed">Unnamed member</string>
     <string name="more_household_member_you">You</string>
     <string name="household_allergens_menu_cd">My allergens and dietary preferences</string>
+    <string name="household_photo_cd">Household photo</string>
+    <string name="household_photo_remove_cd">Remove photo</string>
     <string name="household_member_allergens_format">Avoids: %1$s</string>
     <string name="more_rename_household_error">Couldn\'t change the name. Please try again.</string>
     <string name="more_premium_title">HomeStock Premium</string>
@@ -242,6 +244,11 @@
     <string name="more_household_activity_notifications_subtitle">Notifications when a housemate changes something, or the household changes</string>
     <string name="more_premium_notifications_title">Premium</string>
     <string name="more_premium_notifications_subtitle">Notification when your trial is about to end</string>
+    <string name="more_notifications_menu_title">Notifications</string>
+    <plurals name="more_notifications_menu_subtitle_format">
+        <item quantity="one">%1$d of %2$d on</item>
+        <item quantity="other">%1$d of %2$d on</item>
+    </plurals>
     <string name="more_language_title">Language</string>
     <string name="more_language_option_nl">Dutch</string>
     <string name="more_language_option_en">English</string>
@@ -500,15 +507,13 @@
     <string name="shopping_list_voice_quick_add_cd">Add by voice</string>
     <string name="shopping_list_more_options_cd">More options</string>
     <string name="shopping_list_more_options_title">Options</string>
-    <plurals name="shopping_list_progress_remaining_format">
-        <item quantity="one">%1$d left to get</item>
-        <item quantity="other">%1$d left to get</item>
-    </plurals>
+    <string name="shopping_list_progress_checked_format">%1$d/%2$d checked</string>
     <plurals name="shopping_list_store_count_format">
         <item quantity="one">%1$d store</item>
         <item quantity="other">%1$d stores</item>
     </plurals>
     <string name="shopping_list_all_stores">All stores</string>
+    <string name="shopping_list_store_chip_label_format">%1$s (%2$d)</string>
     <string name="shopping_list_in_cart_format">In the cart (%1$d)</string>
     <string name="shopping_list_removed_format">%1$s removed</string>
     <plurals name="shopping_list_cleared_snackbar_format">

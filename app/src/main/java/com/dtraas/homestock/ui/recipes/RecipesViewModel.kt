@@ -44,19 +44,16 @@ enum class RecipesTab { INVENTORY, BROWSE, FAVORITES, CUSTOM }
 enum class RecipesLoadError { NO_CONNECTION, QUOTA_EXCEEDED, UNKNOWN }
 
 data class RecipesUiState(
-    val tab: RecipesTab = RecipesTab.INVENTORY,
+    val tab: RecipesTab = RecipesTab.BROWSE,
     val isLoading: Boolean = true,
     val recipes: List<RecipeSuggestion> = emptyList(),
     val loadError: RecipesLoadError? = null,
     val excludedAllergens: Set<Allergen> = emptySet(),
-    // Only meaningful for FAVORITES/CUSTOM — see RecipesViewModel.launchLiveList. BROWSE/search
-    // results never carry tags at all (see RecipeSuggestion's doc), so this filter simply isn't
-    // shown on that tab.
-    val selectedTags: Set<RecipeTag> = emptySet(),
-    // Free-text labels households typed themselves (see RecipeDetailScreen's tag editor) —
-    // filtered/derived the same way as [selectedTags], just against raw strings instead of the
-    // fixed [RecipeTag] enum. [availableCustomTags] is derived from the *unfiltered* Favorites/
-    // Custom list (see launchLiveList) so picking one filter doesn't hide the others.
+    // Free-text labels households typed themselves (see RecipeDetailScreen's tag editor) — only
+    // meaningful for FAVORITES/CUSTOM (see RecipesViewModel.launchLiveList); BROWSE/search results
+    // never carry tags at all (see RecipeSuggestion's doc), so this filter simply isn't shown on
+    // that tab. [availableCustomTags] is derived from the *unfiltered* Favorites/Custom list (see
+    // launchLiveList) so picking one filter doesn't hide the others.
     val availableCustomTags: List<String> = emptyList(),
     val selectedCustomTags: Set<String> = emptySet(),
     val searchQuery: String = "",
@@ -71,15 +68,15 @@ data class RecipesUiState(
 )
 
 /**
- * [RecipesTab.INVENTORY] ("Uit je voorraad") is the default tab — [RecipeRepository.suggestRecipes]'s
- * inventory-matched results, not paginated (Spoonacular's own ranking already returns its best
- * matches in one page). [RecipesTab.BROWSE] ("Ontdekken") instead browses Spoonacular's catalog by
+ * [RecipesTab.BROWSE] ("Ontdekken") is the default tab — browses Spoonacular's catalog by
  * default (see [RecipeRepository.browseAllRecipes]) — [search] switches it to a name search
  * instead (see [RecipeRepository.searchRecipesByName]) when [RecipesUiState.searchQuery] is
- * non-blank. Either way BROWSE's result is paginated (see [loadMore]) — a fresh browse/search
- * always starts at page 1, "load more" fetches the next page and appends it. [generateRecipe] is
- * a separate, AI-authored alternative (see [RecipeRepository.generateRecipe]) rather than a
- * search at all.
+ * non-blank. Its result is paginated (see [loadMore]) — a fresh browse/search always starts at
+ * page 1, "load more" fetches the next page and appends it. [generateRecipe] is a separate,
+ * AI-authored alternative (see [RecipeRepository.generateRecipe]) rather than a search at all.
+ * [RecipesTab.INVENTORY] ("Uit je voorraad") is the fourth tab — [RecipeRepository.suggestRecipes]'s
+ * inventory-matched results, not paginated (Spoonacular's own ranking already returns its best
+ * matches in one page).
  *
  * [RecipesTab.FAVORITES]/[RecipesTab.CUSTOM] are simple live Firestore lists (see
  * [RecipeRepository.observeFavoriteRecipes]/[RecipeRepository.observeCustomRecipes]) — no search,
@@ -126,12 +123,9 @@ class RecipesViewModel(
     // need the caller (RecipesScreen) to keep threading the current app language through every action.
     private var languageTag: String? = null
 
-    // Mirrors RecipesUiState.selectedTags — a separate flow (rather than deriving from _uiState
-    // itself) so launchLiveList's combine() below only re-filters on an actual tag-filter change,
-    // not on every unrelated uiState update (e.g. isLoading toggling).
-    private val selectedTags = MutableStateFlow<Set<RecipeTag>>(emptySet())
-
-    // Mirrors RecipesUiState.selectedCustomTags — same reasoning as [selectedTags] above.
+    // Mirrors RecipesUiState.selectedCustomTags — a separate flow (rather than deriving from
+    // _uiState itself) so launchLiveList's combine() below only re-filters on an actual
+    // tag-filter change, not on every unrelated uiState update (e.g. isLoading toggling).
     private val selectedCustomTags = MutableStateFlow<Set<String>>(emptySet())
 
     // Whichever tab's list is currently being collected — cancelled and replaced on every tab
@@ -178,21 +172,20 @@ class RecipesViewModel(
         }
     }
 
-    /** Favorites/Custom are further filtered client-side by [selectedTags]/[selectedCustomTags]
-     *  (an AND match across both — a recipe must carry every selected tag, fixed or custom) —
-     *  small, already-loaded lists, so no need for a separate Firestore query per tag combination
-     *  the way BROWSE's allergen filter needs one. [RecipesUiState.availableCustomTags] is
-     *  derived here from the unfiltered [list], not the filtered result, so narrowing by one
-     *  custom tag doesn't make the others disappear from the filter row. */
+    /** Favorites/Custom are further filtered client-side by [selectedCustomTags] (an AND match —
+     *  a recipe must carry every selected custom label) — small, already-loaded lists, so no
+     *  need for a separate Firestore query per tag combination the way BROWSE's allergen filter
+     *  needs one. [RecipesUiState.availableCustomTags] is derived here from the unfiltered
+     *  [list], not the filtered result, so narrowing by one custom tag doesn't make the others
+     *  disappear from the filter row. [RecipeTag.fromStorageKey] filters out any now-retired
+     *  preset key (Snel/Kindvriendelijk/Restjes) a recipe tagged before their removal might still
+     *  carry, so it can't resurface as a garbled custom-looking chip. */
     private fun launchLiveList(source: () -> Flow<List<RecipeSuggestion>>): Job =
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, loadError = null) }
-            combine(source(), selectedTags, selectedCustomTags) { list, tags, customTags ->
-                val fixedKeys = RecipeTag.entries.map { it.storageKey }.toSet()
-                val available = list.flatMap { it.tags }.filterNot { it in fixedKeys }.distinct().sorted()
-                val filtered = list.filter { recipe ->
-                    tags.all { it.storageKey in recipe.tags } && customTags.all { it in recipe.tags }
-                }
+            combine(source(), selectedCustomTags) { list, customTags ->
+                val available = list.flatMap { it.tags }.filter { RecipeTag.fromStorageKey(it) == null }.distinct().sorted()
+                val filtered = list.filter { recipe -> customTags.all { it in recipe.tags } }
                 available to filtered
             }.collect { (available, filtered) ->
                 _uiState.update {
@@ -312,17 +305,9 @@ class RecipesViewModel(
         }
     }
 
-    /** Toggles [tag] in/out of the Favorites/Custom tag filter (see [launchLiveList]) — an AND
-     *  match against every currently selected tag. No re-fetch needed: both lists are already
-     *  live-collected in full, this only changes which of them pass the filter. */
-    fun toggleTagFilter(tag: RecipeTag) {
-        val current = _uiState.value.selectedTags
-        val updated = if (tag in current) current - tag else current + tag
-        _uiState.update { it.copy(selectedTags = updated) }
-        selectedTags.value = updated
-    }
-
-    /** Same as [toggleTagFilter], for a free-text custom label instead of a fixed [RecipeTag]. */
+    /** Toggles [label] in/out of the Favorites/Custom tag filter (see [launchLiveList]) — an AND
+     *  match against every currently selected custom label. No re-fetch needed: both lists are
+     *  already live-collected in full, this only changes which of them pass the filter. */
     fun toggleCustomTagFilter(label: String) {
         val current = _uiState.value.selectedCustomTags
         val updated = if (label in current) current - label else current + label

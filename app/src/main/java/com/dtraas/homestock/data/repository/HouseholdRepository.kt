@@ -1,11 +1,15 @@
 package com.dtraas.homestock.data.repository
 
 import android.content.Context
+import android.net.Uri
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.remote.observeSnapshot
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.CollectionReference
+import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.SetOptions
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -24,9 +28,13 @@ class HouseholdNotFoundException(message: String) : Exception(message)
 class HouseholdRepository(
     private val context: Context,
     private val firestore: FirebaseFirestore,
+    private val storage: FirebaseStorage,
     private val auth: FirebaseAuth,
     private val householdSession: HouseholdSession,
 ) {
+    private fun photoRef(householdId: String) =
+        storage.reference.child("households/$householdId/photo.jpg")
+
     private suspend fun ensureSignedIn() {
         if (auth.currentUser == null) {
             auth.signInAnonymously().await()
@@ -82,6 +90,49 @@ class HouseholdRepository(
                     .map { it.getString(FIELD_NAME) }
             }
         }
+
+    /**
+     * The current household's photo, live — shown in Instellingen > Huishouden and, once set,
+     * behind/beside the household name elsewhere in the app. Most households have none, in
+     * which case this resolves to null and the UI falls back to a plain placeholder icon.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeHouseholdPhoto(): Flow<String?> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(null)
+            } else {
+                firestore.collection(HOUSEHOLDS_COLLECTION).document(householdId).observeSnapshot()
+                    .map { it.getString(FIELD_PHOTO_URL) }
+            }
+        }
+
+    /**
+     * Uploads [sourceUri] (from the system Photo Picker) as the household's shared photo,
+     * overwriting whatever was there before — one photo per household, not per device, unlike
+     * [DeviceProfile]'s own local one. Any household member can set/replace it; there's no
+     * separate permission tier for this, same as renaming the household.
+     */
+    suspend fun uploadHouseholdPhoto(householdId: String, sourceUri: Uri): Result<Unit> = try {
+        val downloadUrl = photoRef(householdId).putFile(sourceUri).await().storage.downloadUrl.await().toString()
+        firestore.collection(HOUSEHOLDS_COLLECTION).document(householdId)
+            .set(mapOf(FIELD_PHOTO_URL to downloadUrl), SetOptions.merge()).await()
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    /** Removes the household's shared photo, reverting the UI to its plain placeholder. */
+    suspend fun removeHouseholdPhoto(householdId: String): Result<Unit> = try {
+        // Deleting a Storage object that was never uploaded throws "not found" — harmless, and
+        // kept separate from the Firestore write below so that write still runs even then.
+        runCatching { photoRef(householdId).delete().await() }
+        firestore.collection(HOUSEHOLDS_COLLECTION).document(householdId)
+            .set(mapOf(FIELD_PHOTO_URL to FieldValue.delete()), SetOptions.merge()).await()
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
 
     /** Joins an existing household by its code, failing if no such household exists. */
     suspend fun joinHousehold(code: String): Result<String> {
@@ -161,6 +212,7 @@ class HouseholdRepository(
         const val HOUSEHOLD_NAME_MAX_LENGTH = 24
 
         private const val FIELD_NAME = "name"
+        private const val FIELD_PHOTO_URL = "photoUrl"
 
         // The code is the household's only access control (see firestore.rules), so it's
         // generated with a CSPRNG rather than Kotlin's non-cryptographic default Random.

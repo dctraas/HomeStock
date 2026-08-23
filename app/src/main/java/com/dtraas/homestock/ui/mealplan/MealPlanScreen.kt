@@ -27,11 +27,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Cookie
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.DinnerDining
 import androidx.compose.material.icons.filled.FreeBreakfast
 import androidx.compose.material.icons.filled.Inventory2
@@ -88,6 +90,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -98,6 +101,7 @@ import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
+import com.dtraas.homestock.data.local.entity.MealCompletionStatus
 import com.dtraas.homestock.data.local.entity.PlannedMeal
 import com.dtraas.homestock.data.model.MealSlot
 import com.dtraas.homestock.data.repository.RecipeDetail
@@ -273,6 +277,8 @@ fun MealPlanScreen(
                     },
                     onRemove = { meal -> removeWithUndo(MealSlot.DINNER, meal) },
                     onAddToShoppingList = { meal -> viewModel.addProductToShoppingList(meal.name) },
+                    onMarkEaten = { meal -> viewModel.markMealEaten(MealSlot.DINNER, meal) },
+                    onMarkWasted = { meal -> viewModel.markMealWasted(MealSlot.DINNER, meal) },
                     onStartCookMode = onNavigateToCookMode,
                 )
                 MealSlot.ORDERED.filter { it != MealSlot.DINNER }.forEach { slot ->
@@ -286,6 +292,8 @@ fun MealPlanScreen(
                         onOpenProduct = onProductClick,
                         onRemove = { meal -> removeWithUndo(slot, meal) },
                         onAddToShoppingList = { meal -> viewModel.addProductToShoppingList(meal.name) },
+                        onMarkEaten = { meal -> viewModel.markMealEaten(slot, meal) },
+                        onMarkWasted = { meal -> viewModel.markMealWasted(slot, meal) },
                     )
                 }
             }
@@ -474,6 +482,8 @@ private fun DinnerCard(
     onSwap: (PlannedMeal) -> Unit,
     onRemove: (PlannedMeal) -> Unit,
     onAddToShoppingList: (PlannedMeal) -> Unit,
+    onMarkEaten: (PlannedMeal) -> Unit,
+    onMarkWasted: (PlannedMeal) -> Unit,
     onStartCookMode: (String) -> Unit,
 ) {
     val featuredRecipe = planned.firstOrNull { it.recipeId != null }
@@ -586,6 +596,8 @@ private fun DinnerCard(
                     },
                     onRemove = { onRemove(meal) },
                     onAddToShoppingList = { onAddToShoppingList(meal) },
+                    onMarkEaten = { onMarkEaten(meal) },
+                    onMarkWasted = { onMarkWasted(meal) },
                 )
             }
             EmptySlotAddButton(onAddProductClick, onAddMealClick, contentDescription = stringResource(R.string.meal_plan_add_cd))
@@ -601,6 +613,8 @@ private fun DinnerCard(
                     },
                     onRemove = { onRemove(meal) },
                     onAddToShoppingList = { onAddToShoppingList(meal) },
+                    onMarkEaten = { onMarkEaten(meal) },
+                    onMarkWasted = { onMarkWasted(meal) },
                 )
             }
             EmptySlotAddButton(onAddProductClick, onAddMealClick, contentDescription = stringResource(R.string.meal_plan_add_cd))
@@ -623,6 +637,8 @@ private fun CompactSlotCard(
     onOpenProduct: (String) -> Unit,
     onRemove: (PlannedMeal) -> Unit,
     onAddToShoppingList: (PlannedMeal) -> Unit,
+    onMarkEaten: (PlannedMeal) -> Unit,
+    onMarkWasted: (PlannedMeal) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -645,6 +661,8 @@ private fun CompactSlotCard(
                 },
                 onRemove = { onRemove(meal) },
                 onAddToShoppingList = { onAddToShoppingList(meal) },
+                onMarkEaten = { onMarkEaten(meal) },
+                onMarkWasted = { onMarkWasted(meal) },
             )
         }
         EmptySlotAddButton(onAddProductClick, onAddMealClick, contentDescription = stringResource(R.string.meal_plan_add_cd))
@@ -723,7 +741,14 @@ private fun AddChooserDialog(onPickProduct: () -> Unit, onPickRecipe: () -> Unit
  * as before, on top of the explicit "X" button.
  */
 @Composable
-private fun CompactPlannedRow(meal: PlannedMeal, onClick: () -> Unit, onRemove: () -> Unit, onAddToShoppingList: () -> Unit) {
+private fun CompactPlannedRow(
+    meal: PlannedMeal,
+    onClick: () -> Unit,
+    onRemove: () -> Unit,
+    onAddToShoppingList: () -> Unit,
+    onMarkEaten: () -> Unit,
+    onMarkWasted: () -> Unit,
+) {
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
             if (value == SwipeToDismissBoxValue.EndToStart) onRemove()
@@ -762,11 +787,54 @@ private fun CompactPlannedRow(meal: PlannedMeal, onClick: () -> Unit, onRemove: 
             Text(
                 text = meal.name,
                 style = MaterialTheme.typography.bodyMedium,
+                textDecoration = if (meal.status != null) TextDecoration.LineThrough else null,
+                color = if (meal.status != null) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f),
             )
-            if (meal.isProduct && meal.productBarcode == null) {
+            // Opgebruikt/weggegooid only ever applies to a planned product, and only until it's
+            // been resolved — after that a small label replaces the two action icons rather than
+            // letting you flip it back and forth (matching Productdetail's own one-way
+            // opgebruikt/weggegooid choice, see removeFromInventory's doc).
+            if (meal.isProduct) {
+                if (meal.status == null) {
+                    IconButton(onClick = onMarkEaten, modifier = Modifier.size(28.dp)) {
+                        Icon(
+                            imageVector = Icons.Filled.CheckCircle,
+                            contentDescription = stringResource(R.string.product_detail_delete_used_up),
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                    IconButton(onClick = onMarkWasted, modifier = Modifier.size(28.dp)) {
+                        Icon(
+                            imageVector = Icons.Filled.DeleteSweep,
+                            contentDescription = stringResource(R.string.product_detail_delete_wasted),
+                            tint = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                } else {
+                    Text(
+                        text = stringResource(
+                            if (meal.status == MealCompletionStatus.EATEN) {
+                                R.string.product_detail_delete_used_up
+                            } else {
+                                R.string.product_detail_delete_wasted
+                            }
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (meal.status == MealCompletionStatus.EATEN) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            MaterialTheme.colorScheme.error
+                        },
+                        modifier = Modifier.padding(end = 4.dp),
+                    )
+                }
+            }
+            if (meal.isProduct && meal.productBarcode == null && meal.status == null) {
                 IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(28.dp)) {
                     Icon(
                         imageVector = Icons.Filled.PlaylistAdd,

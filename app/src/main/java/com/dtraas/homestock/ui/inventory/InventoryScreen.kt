@@ -46,11 +46,11 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
@@ -594,17 +594,23 @@ private fun InventoryHeader(
             .padding(horizontal = 12.dp, vertical = 4.dp)
             .padding(bottom = 14.dp),
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        // A Box rather than a plain Row: the household name is centered on the full header width
+        // (not just the space left over between the two icons), so it stays visually centered
+        // even though the notifications/profile icons on either side aren't the same width as
+        // each other (a badge on the left one, a possible round photo on the right one).
+        Box(modifier = Modifier.fillMaxWidth()) {
             // Meldingen is no longer its own bottom-nav tab — this is the way to reach it, at
             // the far-left glance position. The red counter badge tracks unread developer
-            // notices.
-            IconButton(onClick = onNotificationsClick) {
+            // notices. Bell icon rather than the old envelope — a bell is the more conventional
+            // "notifications" glyph, and this row already reads as generic developer-notice
+            // alerts rather than mail/messages specifically.
+            IconButton(onClick = onNotificationsClick, modifier = Modifier.align(Alignment.CenterStart)) {
                 if (unreadNoticeCount > 0) {
                     BadgedBox(badge = { Badge { Text(unreadNoticeCount.toString()) } }) {
-                        Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news), tint = contentColor)
+                        Icon(Icons.Filled.Notifications, contentDescription = stringResource(R.string.nav_news), tint = contentColor)
                     }
                 } else {
-                    Icon(Icons.Filled.Email, contentDescription = stringResource(R.string.nav_news), tint = contentColor)
+                    Icon(Icons.Filled.Notifications, contentDescription = stringResource(R.string.nav_news), tint = contentColor)
                 }
             }
             Text(
@@ -613,9 +619,10 @@ private fun InventoryHeader(
                 color = contentColor,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f).padding(start = 4.dp),
+                textAlign = TextAlign.Center,
+                modifier = Modifier.align(Alignment.Center).padding(horizontal = 56.dp),
             )
-            IconButton(onClick = onProfileClick) {
+            IconButton(onClick = onProfileClick, modifier = Modifier.align(Alignment.CenterEnd)) {
                 if (photoPath != null) {
                     AsyncImage(
                         model = File(photoPath),

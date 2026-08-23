@@ -86,7 +86,7 @@ class AppContainer(context: Context) {
     private val firebaseMessaging: FirebaseMessaging = FirebaseMessaging.getInstance()
 
     val householdRepository: HouseholdRepository by lazy {
-        HouseholdRepository(appContext, firestore, auth, householdSession)
+        HouseholdRepository(appContext, firestore, storage, auth, householdSession)
     }
 
     val accountLinkRepository: AccountLinkRepository by lazy {

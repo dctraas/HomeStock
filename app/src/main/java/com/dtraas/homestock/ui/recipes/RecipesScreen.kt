@@ -98,7 +98,6 @@ import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.model.Allergen
-import com.dtraas.homestock.data.model.RecipeTag
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
 import com.dtraas.homestock.ui.components.SearchField
@@ -237,16 +236,11 @@ fun RecipesScreen(
                 }
             }
 
-            // Tags (see RecipeTag) only ever exist on the household's own saved recipes — never
-            // on a BROWSE/search result (see RecipeSuggestion's doc) — so the filter row only
-            // shows on Favorieten/Eigen recepten.
+            // Custom labels (see RecipeDetailScreen's tag editor) only ever exist on the
+            // household's own saved recipes — never on a BROWSE/search result (see
+            // RecipeSuggestion's doc) — so the filter row only shows on Favorieten/Eigen recepten.
             if (uiState.tab == RecipesTab.FAVORITES || uiState.tab == RecipesTab.CUSTOM) {
                 RecipeTagFilterRow(
-                    // De 3 standaardlabels (Snel/kindvriendelijk/Restjes) verdwijnen alleen
-                    // onder Favorieten, op uitdrukkelijk verzoek — Eigen recepten behoudt ze.
-                    showPresetTags = uiState.tab == RecipesTab.CUSTOM,
-                    selectedTags = uiState.selectedTags,
-                    onToggle = viewModel::toggleTagFilter,
                     customTags = uiState.availableCustomTags,
                     selectedCustomTags = uiState.selectedCustomTags,
                     onToggleCustom = viewModel::toggleCustomTagFilter,
@@ -832,17 +826,13 @@ private fun RecipesHeader(
     }
 }
 
-/** Chip row for filtering Favorieten/Eigen recepten by [RecipeTag] plus any custom labels a
- *  household has typed themselves (see RecipeDetailScreen's tag editor) — an AND match against
- *  every selected chip (see [RecipesViewModel.toggleTagFilter]/[RecipesViewModel.toggleCustomTagFilter]).
- *  [showPresetTags] hides the 3 fixed [RecipeTag] chips on Favorieten specifically ("de standaard
- *  tags hoeven niet") while still showing them on Eigen recepten; custom labels always show
- *  regardless — those are what "Label toevoegen" (on the recipe detail screen) adds. */
+/** Chip row for filtering Favorieten/Eigen recepten by the household's own custom labels (see
+ *  RecipeDetailScreen's tag editor) — an AND match against every selected chip (see
+ *  [RecipesViewModel.toggleCustomTagFilter]). The 3 fixed preset chips (Snel/Kindvriendelijk/
+ *  Restjes) this row used to also offer are gone, per explicit request — only per-recipe custom
+ *  labels remain. */
 @Composable
 private fun RecipeTagFilterRow(
-    showPresetTags: Boolean,
-    selectedTags: Set<RecipeTag>,
-    onToggle: (RecipeTag) -> Unit,
     customTags: List<String>,
     selectedCustomTags: Set<String>,
     onToggleCustom: (String) -> Unit,
@@ -854,15 +844,6 @@ private fun RecipeTagFilterRow(
             .padding(horizontal = 16.dp, vertical = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        if (showPresetTags) {
-            RecipeTag.entries.forEach { tag ->
-                FilterChip(
-                    selected = tag in selectedTags,
-                    onClick = { onToggle(tag) },
-                    label = { Text(stringResource(tag.labelRes)) },
-                )
-            }
-        }
         customTags.forEach { label ->
             FilterChip(
                 selected = label in selectedCustomTags,

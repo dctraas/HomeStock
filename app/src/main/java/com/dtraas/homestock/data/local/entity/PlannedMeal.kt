@@ -20,6 +20,10 @@ data class PlannedMeal(
     val recipeId: String? = null,
     val productBarcode: String? = null,
     val isProduct: Boolean = false,
+    // Only ever set for isProduct entries — see MealPlanScreen's CompactPlannedRow, which is
+    // where a product meal gets marked opgebruikt/weggegooid. Null means "not resolved yet" for
+    // a product meal, and is simply unused/ignored for a recipe or hand-typed one.
+    val status: MealCompletionStatus? = null,
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
         "id" to id,
@@ -28,6 +32,7 @@ data class PlannedMeal(
         "recipeId" to recipeId,
         "productBarcode" to productBarcode,
         "isProduct" to isProduct,
+        "status" to status?.storageKey,
     )
 
     companion object {
@@ -42,7 +47,21 @@ data class PlannedMeal(
                 recipeId = map["recipeId"] as? String,
                 productBarcode = map["productBarcode"] as? String,
                 isProduct = map["isProduct"] as? Boolean ?: false,
+                status = MealCompletionStatus.fromStorageKey(map["status"] as? String),
             )
         }
+    }
+}
+
+/** Whether a planned product meal ([PlannedMeal.isProduct]) has been resolved yet — opgebruikt
+ *  (eaten, ordinary consumption) or weggegooid (wasted). Marking either one, when
+ *  [PlannedMeal.productBarcode] is set, also consumes one unit from inventory and logs it —
+ *  see InventoryRepository.consumeOneFromMeal and MealPlanViewModel.markMealEaten/markMealWasted. */
+enum class MealCompletionStatus(val storageKey: String) {
+    EATEN("eaten"),
+    WASTED("wasted");
+
+    companion object {
+        fun fromStorageKey(key: String?): MealCompletionStatus? = entries.find { it.storageKey == key }
     }
 }

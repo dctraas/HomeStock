@@ -1,5 +1,6 @@
 package com.dtraas.homestock.data.repository
 
+import com.dtraas.homestock.data.local.entity.MealCompletionStatus
 import com.dtraas.homestock.data.local.entity.PlannedMeal
 import com.dtraas.homestock.data.model.MealSlot
 import com.dtraas.homestock.data.remote.observeSnapshot
@@ -51,6 +52,24 @@ class MealPlanRepository(
     suspend fun addMeal(date: LocalDate, slot: MealSlot, meal: PlannedMeal) {
         val householdId = householdSession.householdId.value ?: return
         dayDoc(householdId, date).set(mapOf(slot.storageKey to FieldValue.arrayUnion(meal.toMap())), SetOptions.merge()).await()
+    }
+
+    /**
+     * Updates [meal]'s [PlannedMeal.status] in place, keeping every other field — used for
+     * marking a planned product opgebruikt/weggegooid (see MealPlanViewModel.markMealEaten/
+     * markMealWasted). Same transactional find-by-id-and-replace shape as [removeMeal], for the
+     * same reason: a stored entry is matched by its [PlannedMeal.id], not full map equality.
+     */
+    suspend fun setMealStatus(date: LocalDate, slot: MealSlot, meal: PlannedMeal, status: MealCompletionStatus?) {
+        val householdId = householdSession.householdId.value ?: return
+        val doc = dayDoc(householdId, date)
+        firestore.runTransaction { transaction ->
+            val current = (transaction.get(doc).get(slot.storageKey) as? List<*>).orEmpty()
+            val updated = current.map { entry ->
+                if ((entry as? Map<*, *>)?.get("id") == meal.id) meal.copy(status = status).toMap() else entry
+            }
+            transaction.set(doc, mapOf(slot.storageKey to updated), SetOptions.merge())
+        }.await()
     }
 
     /**

@@ -26,7 +26,6 @@ import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -52,7 +51,6 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
-import com.dtraas.homestock.data.model.RecipeTag
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 
 /**
@@ -223,13 +221,6 @@ private fun CustomRecipeForm(padding: PaddingValues, uiState: CustomRecipeEditUi
                 .padding(top = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            RecipeTag.entries.forEach { tag ->
-                FilterChip(
-                    selected = tag in uiState.tags,
-                    onClick = { viewModel.onToggleTag(tag) },
-                    label = { Text(stringResource(tag.labelRes)) },
-                )
-            }
             uiState.customTags.forEach { label ->
                 // onClick is a no-op — only the trailing X (its own IconButton, below) removes
                 // the label, so tapping the chip's body/text doesn't delete it by surprise.

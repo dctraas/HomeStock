@@ -4,12 +4,13 @@ import androidx.annotation.StringRes
 import com.dtraas.homestock.R
 
 /**
- * A small, fixed set of household-assignable labels for *saved* recipes — favorites and custom
- * recipes (see RecipeRepository's class doc for the three recipe sources). Tagging only applies
- * to those two: they're the only recipes with a durable per-household Firestore doc to store the
- * tags on, unlike a plain Spoonacular browse/search result the household hasn't kept a copy of.
- * Stored by [storageKey] rather than enum name/ordinal, the same pattern as [Category]/[Allergen],
- * so a future reordering or rename here doesn't silently break already-saved data.
+ * Retired: these 3 fixed preset labels used to be offered alongside per-recipe custom labels on
+ * every tag editor/filter (RecipeDetailScreen, CustomRecipeEditScreen, RecipesScreen's Favorieten/
+ * Eigen recepten filter row), but were removed from all of that UI per explicit request — only
+ * free-text custom labels remain there now. This enum itself stays only as a lookup
+ * ([fromStorageKey]) so those screens can still recognize and quietly drop a legacy "quick"/
+ * "kid_friendly"/"leftovers" storage key a recipe was tagged with before the removal, instead of
+ * it resurfacing as a garbled custom-looking chip.
  */
 enum class RecipeTag(val storageKey: String, @StringRes val labelRes: Int) {
     QUICK("quick", R.string.recipe_tag_quick),

@@ -174,6 +174,8 @@
     <string name="more_household_member_unnamed">Naamloos lid</string>
     <string name="more_household_member_you">Jij</string>
     <string name="household_allergens_menu_cd">Mijn allergenen en dieetwensen</string>
+    <string name="household_photo_cd">Foto van huishouden</string>
+    <string name="household_photo_remove_cd">Foto verwijderen</string>
     <string name="household_member_allergens_format">Vermijdt: %1$s</string>
     <string name="more_rename_household_error">Kon de naam niet wijzigen. Probeer het opnieuw.</string>
     <string name="more_premium_title">HomeStock Premium</string>
@@ -243,6 +245,11 @@
     <string name="more_household_activity_notifications_subtitle">Meldingen wanneer een huisgenoot iets wijzigt, of het huishouden verandert</string>
     <string name="more_premium_notifications_title">Premium</string>
     <string name="more_premium_notifications_subtitle">Melding wanneer je proefperiode bijna afloopt</string>
+    <string name="more_notifications_menu_title">Meldingen</string>
+    <plurals name="more_notifications_menu_subtitle_format">
+        <item quantity="one">%1$d van %2$d aan</item>
+        <item quantity="other">%1$d van %2$d aan</item>
+    </plurals>
     <string name="more_language_title">Taal</string>
     <string name="more_language_option_nl">Nederlands</string>
     <string name="more_language_option_en">Engels</string>
@@ -501,15 +508,13 @@
     <string name="shopping_list_voice_quick_add_cd">Toevoegen via spraak</string>
     <string name="shopping_list_more_options_cd">Meer opties</string>
     <string name="shopping_list_more_options_title">Opties</string>
-    <plurals name="shopping_list_progress_remaining_format">
-        <item quantity="one">Nog %1$d te halen</item>
-        <item quantity="other">Nog %1$d te halen</item>
-    </plurals>
+    <string name="shopping_list_progress_checked_format">%1$d/%2$d afgevinkt</string>
     <plurals name="shopping_list_store_count_format">
         <item quantity="one">%1$d winkel</item>
         <item quantity="other">%1$d winkels</item>
     </plurals>
     <string name="shopping_list_all_stores">Alle winkels</string>
+    <string name="shopping_list_store_chip_label_format">%1$s (%2$d)</string>
     <string name="shopping_list_in_cart_format">In de wagen (%1$d)</string>
     <string name="shopping_list_removed_format">%1$s verwijderd</string>
     <plurals name="shopping_list_cleared_snackbar_format">
