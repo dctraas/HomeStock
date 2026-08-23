@@ -353,11 +353,6 @@ fun MoreScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                PremiumCard(
-                    isPremium = isPremium,
-                    onClick = onNavigateToPremium,
-                )
-
                 SectionHeader(stringResource(R.string.more_section_household))
                 SettingsGroup(
                     rows = listOf(
@@ -499,6 +494,14 @@ fun MoreScreen(
                             )
                         },
                     ),
+                )
+
+                // Helemaal aan het einde van de pagina in plaats van vlak onder de header — daar
+                // liet de kaart een hoop lege ruimte eronder voordat Huishouden begon.
+                PremiumCard(
+                    isPremium = isPremium,
+                    onClick = onNavigateToPremium,
+                    modifier = Modifier.padding(top = 6.dp),
                 )
 
                 Text(
@@ -902,9 +905,9 @@ private fun MoreScreenHeader(
  * a "manage my plan" entry point once subscribed.
  */
 @Composable
-private fun PremiumCard(isPremium: Boolean, onClick: () -> Unit) {
+private fun PremiumCard(isPremium: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Card(
-        modifier = Modifier.fillMaxWidth().clickable(onClick = onClick),
+        modifier = modifier.fillMaxWidth().clickable(onClick = onClick),
         colors = CardDefaults.cardColors(containerColor = TopAppBarContainerGradientEnd),
         shape = SoftCardShape,
     ) {
