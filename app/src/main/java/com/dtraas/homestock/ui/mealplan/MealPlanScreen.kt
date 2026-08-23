@@ -7,12 +7,15 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -72,6 +75,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -91,15 +95,17 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
-import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.local.entity.PlannedMeal
 import com.dtraas.homestock.data.model.MealSlot
 import com.dtraas.homestock.data.repository.RecipeDetail
 import com.dtraas.homestock.data.repository.RecipeSuggestion
+import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
+import com.dtraas.homestock.ui.theme.SageGreenPrimary
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftImageShape
+import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -187,20 +193,6 @@ fun MealPlanScreen(
     }
 
     Scaffold(
-        topBar = {
-            HomeStockTopAppBar(
-                title = {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(stringResource(R.string.meal_plan_this_week_title))
-                        Text(
-                            text = pluralStringResource(R.plurals.meal_plan_dinners_planned, plannedDinnerCount, plannedDinnerCount),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = OnTopAppBarContainerAccent,
-                        )
-                    }
-                },
-            )
-        },
         snackbarHost = { SnackbarHost(snackbarHostState) },
         // Closes the plan -> shop loop: diffs every recipe planned anywhere this week against
         // inventory (see MealPlanViewModel.loadMissingIngredientsForWeek) and offers to add the
@@ -215,82 +207,80 @@ fun MealPlanScreen(
             }
         },
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                IconButton(onClick = viewModel::goToPreviousWeek) {
-                    Icon(Icons.Filled.ChevronLeft, contentDescription = stringResource(R.string.meal_plan_previous_week_cd))
-                }
-                WeekDayStrip(
-                    selectedDate = uiState.date,
-                    weekPlan = uiState.weekPlan,
-                    onSelectDate = viewModel::selectDate,
-                    modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = viewModel::goToNextWeek) {
-                    Icon(Icons.Filled.ChevronRight, contentDescription = stringResource(R.string.meal_plan_next_week_cd))
-                }
-            }
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-            ) {
-                Text(
-                    text = selectedDayLabel,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f, fill = false),
-                )
-                if (uiState.date == today) {
-                    Text(
-                        text = stringResource(R.string.meal_plan_today_label),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
-
-            // Avondeten first and visually featured — the one meal of the day a household most
-            // reliably plans ahead for — with the other three slots stacked below it in their
-            // usual order.
-            DinnerCard(
-                planned = uiState.plan[MealSlot.DINNER].orEmpty(),
-                detail = uiState.dinnerDetail,
-                isLoading = uiState.isDinnerDetailLoading,
-                allInStock = uiState.dinnerAllIngredientsInStock,
-                onOpenRecipe = onRecipeClick,
-                onOpenProduct = onProductClick,
-                onAddProductClick = { viewModel.openProductPicker(MealSlot.DINNER) },
-                onAddMealClick = { viewModel.openPicker(MealSlot.DINNER) },
-                onSwap = { meal ->
-                    removeWithUndo(MealSlot.DINNER, meal)
-                    viewModel.openPicker(MealSlot.DINNER)
-                },
-                onRemove = { meal -> removeWithUndo(MealSlot.DINNER, meal) },
-                onAddToShoppingList = { meal -> viewModel.addProductToShoppingList(meal.name) },
-                onStartCookMode = onNavigateToCookMode,
+        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+            // The dagstrip used to sit on plain white background right below a flat topBar —
+            // now it's inside the same green gradient block as the "Deze week" title, matching
+            // the Claude Design review's "Deze week" header (see MealPlanHeader).
+            MealPlanHeader(
+                plannedDinnerCount = plannedDinnerCount,
+                selectedDate = uiState.date,
+                weekPlan = uiState.weekPlan,
+                onSelectDate = viewModel::selectDate,
+                onPreviousWeek = viewModel::goToPreviousWeek,
+                onNextWeek = viewModel::goToNextWeek,
             )
-            MealSlot.ORDERED.filter { it != MealSlot.DINNER }.forEach { slot ->
-                CompactSlotCard(
-                    slot = slot,
-                    label = stringResource(slot.labelRes),
-                    planned = uiState.plan[slot].orEmpty(),
-                    onAddProductClick = { viewModel.openProductPicker(slot) },
-                    onAddMealClick = { viewModel.openPicker(slot) },
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = selectedDayLabel,
+                        style = MaterialTheme.typography.titleMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
+                    )
+                    if (uiState.date == today) {
+                        Text(
+                            text = stringResource(R.string.meal_plan_today_label),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                }
+
+                // Avondeten first and visually featured — the one meal of the day a household most
+                // reliably plans ahead for — with the other three slots stacked below it in their
+                // usual order.
+                DinnerCard(
+                    planned = uiState.plan[MealSlot.DINNER].orEmpty(),
+                    detail = uiState.dinnerDetail,
+                    isLoading = uiState.isDinnerDetailLoading,
+                    allInStock = uiState.dinnerAllIngredientsInStock,
                     onOpenRecipe = onRecipeClick,
                     onOpenProduct = onProductClick,
-                    onRemove = { meal -> removeWithUndo(slot, meal) },
+                    onAddProductClick = { viewModel.openProductPicker(MealSlot.DINNER) },
+                    onAddMealClick = { viewModel.openPicker(MealSlot.DINNER) },
+                    onSwap = { meal ->
+                        removeWithUndo(MealSlot.DINNER, meal)
+                        viewModel.openPicker(MealSlot.DINNER)
+                    },
+                    onRemove = { meal -> removeWithUndo(MealSlot.DINNER, meal) },
                     onAddToShoppingList = { meal -> viewModel.addProductToShoppingList(meal.name) },
+                    onStartCookMode = onNavigateToCookMode,
                 )
+                MealSlot.ORDERED.filter { it != MealSlot.DINNER }.forEach { slot ->
+                    CompactSlotCard(
+                        slot = slot,
+                        label = stringResource(slot.labelRes),
+                        planned = uiState.plan[slot].orEmpty(),
+                        onAddProductClick = { viewModel.openProductPicker(slot) },
+                        onAddMealClick = { viewModel.openPicker(slot) },
+                        onOpenRecipe = onRecipeClick,
+                        onOpenProduct = onProductClick,
+                        onRemove = { meal -> removeWithUndo(slot, meal) },
+                        onAddToShoppingList = { meal -> viewModel.addProductToShoppingList(meal.name) },
+                    )
+                }
             }
         }
     }
@@ -334,12 +324,72 @@ private val MealSlot.icon: ImageVector
     }
 
 /**
+ * The fixed (non-scrolling) green gradient header — "Deze week" + the "N van 7 avonden gepland"
+ * count, and the tappable dagstrip right underneath, all inside the same gradient block ("De
+ * dagstrip met tapbare kaarten moet in de groene header vallen", per the Claude Design review;
+ * see also artboard 1e in the uploaded mockup, which this header's layout mirrors). Replaces the
+ * old flat HomeStockTopAppBar the title/subtitle used to live in on their own, with the dagstrip
+ * further down on plain white background.
+ */
+@Composable
+private fun MealPlanHeader(
+    plannedDinnerCount: Int,
+    selectedDate: LocalDate,
+    weekPlan: Map<LocalDate, Map<MealSlot, List<PlannedMeal>>>,
+    onSelectDate: (LocalDate) -> Unit,
+    onPreviousWeek: () -> Unit,
+    onNextWeek: () -> Unit,
+) {
+    val contentColor = LocalTopAppBarContentColor.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(Brush.verticalGradient(listOf(SageGreenPrimary, TopAppBarContainerGradientEnd)))
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(horizontal = 16.dp, vertical = 4.dp)
+            .padding(bottom = 14.dp),
+    ) {
+        Column {
+            Text(
+                text = stringResource(R.string.meal_plan_this_week_title),
+                style = MaterialTheme.typography.headlineSmall,
+                color = contentColor,
+            )
+            Text(
+                text = pluralStringResource(R.plurals.meal_plan_dinners_planned, plannedDinnerCount, plannedDinnerCount),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = OnTopAppBarContainerAccent,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(top = 12.dp),
+        ) {
+            IconButton(onClick = onPreviousWeek) {
+                Icon(Icons.Filled.ChevronLeft, contentDescription = stringResource(R.string.meal_plan_previous_week_cd), tint = contentColor)
+            }
+            WeekDayStrip(
+                selectedDate = selectedDate,
+                weekPlan = weekPlan,
+                onSelectDate = onSelectDate,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = onNextWeek) {
+                Icon(Icons.Filled.ChevronRight, contentDescription = stringResource(R.string.meal_plan_next_week_cd), tint = contentColor)
+            }
+        }
+    }
+}
+
+/**
  * Monday-start row of 7 day cards for jumping straight to any day in the current week, rather
- * than only stepping one day at a time — the selected day inverts to a filled pill, and any day
- * with at least one planned meal in [weekPlan] (any slot, not just avondeten — unlike the header's
- * "N van 7 avonden gepland" count) gets a small dot underneath. Replaces the old single-day
- * chevron header and 32dp circle strip; week-to-week navigation moved to the chevrons flanking
- * this strip instead (see MealPlanViewModel.goToPreviousWeek/goToNextWeek).
+ * than only stepping one day at a time — the selected day inverts to a solid white pill (dark
+ * text/dot, matching the mockup's dagstrip on its green header), any other day is a translucent
+ * white pill, and any day with at least one planned meal in [weekPlan] (any slot, not just
+ * avondeten — unlike the header's "N van 7 avonden gepland" count) gets a small dot underneath.
+ * Week-to-week navigation is the chevrons flanking this strip in [MealPlanHeader].
  */
 @Composable
 private fun WeekDayStrip(
@@ -360,20 +410,21 @@ private fun WeekDayStrip(
                 modifier = Modifier
                     .weight(1f)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceContainerHigh)
+                    .background(if (isSelected) Color.White else Color.White.copy(alpha = 0.10f))
                     .clickable { onSelectDate(date) }
                     .padding(vertical = 8.dp),
             ) {
                 Text(
                     text = date.dayOfWeek.getDisplayName(TextStyle.NARROW, locale).uppercase(locale),
                     style = MaterialTheme.typography.labelSmall,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold,
+                    color = if (isSelected) SageGreenPrimary.copy(alpha = 0.7f) else OnTopAppBarContainerAccent,
                 )
                 Text(
                     text = date.dayOfMonth.toString(),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface,
+                    color = if (isSelected) SageGreenPrimary else Color.White,
                     modifier = Modifier.padding(top = 1.dp),
                 )
                 Box(
@@ -384,8 +435,8 @@ private fun WeekDayStrip(
                         .background(
                             when {
                                 !hasPlan -> Color.Transparent
-                                isSelected -> MaterialTheme.colorScheme.onPrimary
-                                else -> MaterialTheme.colorScheme.primary
+                                isSelected -> SageGreenPrimary
+                                else -> OnTopAppBarContainerAccent
                             }
                         ),
                 )
