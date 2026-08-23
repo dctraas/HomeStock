@@ -65,7 +65,6 @@
     <string name="activity_detail_removed">Aus dem Vorrat entfernt (%1$dx)</string>
     <string name="activity_detail_wasted">Weggeworfen (%1$dx)</string>
     <string name="activity_actor_unknown">Unbekannt</string>
-    <string name="activity_actor_detail_format">%1$s · %2$s</string>
 
     <!-- Developer notices (Neuigkeiten -> Meldungen tab, newest first) -->
     <string name="notice_csv_import_export_title">Vorrat importieren/exportieren (CSV)</string>

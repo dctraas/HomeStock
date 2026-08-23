@@ -65,7 +65,6 @@
     <string name="activity_detail_removed">Eliminado del inventario (%1$dx)</string>
     <string name="activity_detail_wasted">Desperdiciado (%1$dx)</string>
     <string name="activity_actor_unknown">Desconocido</string>
-    <string name="activity_actor_detail_format">%1$s · %2$s</string>
 
     <!-- Developer notices (Novedades -> Avisos tab, newest first) -->
     <string name="notice_csv_import_export_title">Importar/exportar inventario (CSV)</string>

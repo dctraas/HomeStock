@@ -8,10 +8,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -60,7 +63,10 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -112,7 +118,13 @@ fun NotificationsScreen(onBack: () -> Unit, onNavigateToProduct: (String) -> Uni
     // tab index now that tabs are gone.
     LaunchedEffect(Unit) { viewModel.markNoticesSeen() }
 
-    Scaffold { padding ->
+    Scaffold(
+        // NotificationsHeader below already claims the status bar inset itself — without this,
+        // Scaffold's default contentWindowInsets (safeDrawing, top included since there's no
+        // topBar) hands that same inset to `padding` too, stacking a second status-bar-height
+        // gap above the header instead of it starting flush at the true top of the screen.
+        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
+    ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             // Terugknop/titel + de filterchips zaten voorheen in een platte HomeStockTopAppBar
             // met de chips los daaronder op wit; ze verhuizen hier naar dezelfde groene
@@ -288,7 +300,7 @@ private fun ActivityTimeline(
                     }) 0.dp else 16.dp, bottom = 6.dp),
                 )
             }
-            HouseholdActivityRow(entry = entry, photoUrl = members.photoUrlFor(entry.actorName))
+            HouseholdActivityRow(entry = entry, photoUrl = members.photoUrlFor(entry.actorName), entryDate = entryDate, today = today)
         }
 
         if (showTipsTeaser) {
@@ -358,62 +370,61 @@ private fun activityIcon(type: ActivityType): ImageVector = when (type) {
 }
 
 /** A household event: a 34dp member avatar (photo, or a fallback icon when the best-effort
- *  name match in [NotificationsViewModel.members] finds nothing), the product name in bold,
- *  the actor+what-happened line, and the time. Date itself is established by the section
- *  header above, so only the time-of-day shows here, not a full date. */
+ *  name match in [NotificationsViewModel.members] finds nothing) at the far left of the row,
+ *  then exactly two lines — "<naam> <actie>" (the product name folded into the action text,
+ *  bold) and "<dag> <tijdstip>" — matching the design review's mockup format. No background of
+ *  its own, per the same review ("activiteit meldingen hoeven ook geen aparte achtergrondkleur
+ *  te hebben"). */
 @Composable
-private fun HouseholdActivityRow(entry: ActivityLogWithProduct, photoUrl: String?) {
+private fun HouseholdActivityRow(entry: ActivityLogWithProduct, photoUrl: String?, entryDate: LocalDate, today: LocalDate) {
     val type = ActivityType.fromStorageKey(entry.type)
     val time = remember(entry.timestamp) {
         timeOnlyFormatter.format(Instant.ofEpochMilli(entry.timestamp).atZone(ZoneId.systemDefault()))
     }
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        shape = SoftCardShapeCompact,
+    val day = dayHeaderLabel(entryDate, today)
+    val actorLabel = entry.actorName ?: stringResource(R.string.activity_actor_unknown)
+    val actionText = buildAnnotatedString {
+        append(actorLabel)
+        append(" ")
+        withStyle(SpanStyle(fontWeight = FontWeight.Bold)) { append(entry.productName) }
+        append(" ")
+        append(entry.detail.replaceFirstChar { it.lowercase() })
+    }
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Surface(
+            shape = CircleShape,
+            color = MaterialTheme.colorScheme.secondaryContainer,
+            modifier = Modifier.size(34.dp),
         ) {
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.secondaryContainer,
-                modifier = Modifier.size(34.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    if (photoUrl != null) {
-                        AsyncImage(
-                            model = photoUrl,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize().clip(CircleShape),
-                        )
-                    } else {
-                        Icon(
-                            imageVector = activityIcon(type),
-                            contentDescription = null,
-                            modifier = Modifier.size(16.dp),
-                            tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                        )
-                    }
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                if (photoUrl != null) {
+                    AsyncImage(
+                        model = photoUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    )
+                } else {
+                    Icon(
+                        imageVector = activityIcon(type),
+                        contentDescription = null,
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    )
                 }
             }
-            Column(modifier = Modifier.padding(start = 12.dp)) {
-                Text(entry.productName, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-                val actorLabel = entry.actorName ?: stringResource(R.string.activity_actor_unknown)
-                Text(
-                    text = stringResource(R.string.activity_actor_detail_format, actorLabel, entry.detail),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Text(
-                    text = time,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
-            }
+        }
+        Column(modifier = Modifier.padding(start = 12.dp)) {
+            Text(text = actionText, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = "$day $time",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
+            )
         }
     }
 }
@@ -488,9 +499,13 @@ private fun DeveloperNoticeRow(notice: DeveloperNotice, onDismiss: () -> Unit, m
             }
         },
     ) {
+        // No card background of its own — "activiteit meldingen hoeven ook geen aparte
+        // achtergrondkleur te hebben. Dit geldt voor zowel tabblad Huishouden als Meldingen" —
+        // Card stays only as the SwipeToDismissBox content slot, transparent and shadowless.
         Card(
             modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
             shape = SoftCardShapeCompact,
         ) {
             Row(

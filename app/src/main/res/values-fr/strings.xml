@@ -65,7 +65,6 @@
     <string name="activity_detail_removed">Retiré du stock (%1$dx)</string>
     <string name="activity_detail_wasted">Gaspillé (%1$dx)</string>
     <string name="activity_actor_unknown">Inconnu</string>
-    <string name="activity_actor_detail_format">%1$s · %2$s</string>
 
     <!-- Developer notices (Actualités -> onglet Notifications, newest first) -->
     <string name="notice_csv_import_export_title">Importer/exporter le stock (CSV)</string>
