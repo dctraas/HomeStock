@@ -8,12 +8,15 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
@@ -98,7 +101,13 @@ fun StatisticsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val locale = LocalConfiguration.current.locales[0]
 
-    Scaffold { padding ->
+    Scaffold(
+        // StatisticsHeader below already claims the status bar inset itself — without this,
+        // Scaffold's default contentWindowInsets (safeDrawing, top included since there's no
+        // topBar) hands that same inset to `padding` too, stacking a second status-bar-height
+        // gap above the header instead of it starting flush at the true top of the screen.
+        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
+    ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             // "Verspilling per maand" — eyebrow, €-waarde, delta en de 6-maands-balkjes — zat
             // eerst in een los gekleurde Card bovenaan de scrollende lijst; die verhuist hier
