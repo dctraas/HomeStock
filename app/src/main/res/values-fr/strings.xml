@@ -167,16 +167,13 @@
         <item quantity="one">%1$d membre · Code : %2$s</item>
         <item quantity="other">%1$d membres · Code : %2$s</item>
     </plurals>
-    <string name="more_household_row_title">Configuration</string>
+    <string name="more_household_row_title">Composition</string>
     <string name="more_household_default_name">Mon foyer</string>
     <string name="more_household_members_title">Membres</string>
     <string name="household_members_title_with_limit_format">Membres (%1$d/%2$d)</string>
     <string name="more_household_member_unnamed">Membre sans nom</string>
     <string name="more_household_member_you">Toi</string>
     <string name="household_allergens_menu_cd">Mes allergènes et préférences alimentaires</string>
-    <string name="household_photo_cd">Photo du foyer</string>
-    <string name="household_photo_remove_cd">Supprimer la photo</string>
-    <string name="household_photo_error">Impossible de mettre à jour la photo, veuillez réessayer</string>
     <string name="household_member_allergens_format">Évite : %1$s</string>
     <string name="more_rename_household_error">Impossible de modifier le nom. Réessayez.</string>
     <string name="more_premium_title">HomeStock Premium</string>

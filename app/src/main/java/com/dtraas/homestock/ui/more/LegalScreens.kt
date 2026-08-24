@@ -76,12 +76,15 @@ private val softwareLicenses = listOf(
     LicenseEntry("Coil", "Apache License 2.0"),
     LicenseEntry("Guava", "Apache License 2.0"),
     LicenseEntry("Google ML Kit (Barcode Scanning)", "Google APIs Terms of Service"),
-    LicenseEntry("Firebase SDK (Authentication, Firestore)", "Google APIs Terms of Service"),
+    LicenseEntry("Firebase SDK (Authentication, Firestore, Storage, Functions, Analytics, Remote Config, Cloud Messaging, App Check)", "Google APIs Terms of Service"),
+    LicenseEntry("Google Play Billing Library", "Google APIs Terms of Service"),
+    LicenseEntry("Credential Manager & Google Sign-In (AndroidX Credentials, Google Identity)", "Apache License 2.0"),
     LicenseEntry("Baloo 2 & Nunito (Google Fonts)", "SIL Open Font License 1.1"),
 )
 
 private val dataLicenses = listOf(
     LicenseEntry("Open Food Facts", "Open Database License (ODbL)"),
+    LicenseEntry("Spoonacular", "Spoonacular API Terms of Use"),
 )
 
 /** Instellingen > Over/Ondersteuning > Licenties — see [PrivacyPolicyScreen]'s doc for why this moved off a dialog. */

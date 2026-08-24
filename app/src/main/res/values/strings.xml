@@ -171,16 +171,13 @@
         <item quantity="one">%1$d lid · Code: %2$s</item>
         <item quantity="other">%1$d leden · Code: %2$s</item>
     </plurals>
-    <string name="more_household_row_title">Configuratie</string>
+    <string name="more_household_row_title">Samenstelling</string>
     <string name="more_household_default_name">Mijn huishouden</string>
     <string name="more_household_members_title">Leden</string>
     <string name="household_members_title_with_limit_format">Leden (%1$d/%2$d)</string>
     <string name="more_household_member_unnamed">Naamloos lid</string>
     <string name="more_household_member_you">Jij</string>
     <string name="household_allergens_menu_cd">Mijn allergenen en dieetwensen</string>
-    <string name="household_photo_cd">Foto van huishouden</string>
-    <string name="household_photo_remove_cd">Foto verwijderen</string>
-    <string name="household_photo_error">Foto bijwerken is mislukt, probeer het opnieuw</string>
     <string name="household_member_allergens_format">Vermijdt: %1$s</string>
     <string name="more_rename_household_error">Kon de naam niet wijzigen. Probeer het opnieuw.</string>
     <string name="more_premium_title">HomeStock Premium</string>

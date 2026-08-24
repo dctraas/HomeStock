@@ -36,6 +36,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
@@ -61,8 +62,10 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
@@ -93,6 +96,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
@@ -115,6 +119,7 @@ import com.dtraas.homestock.ui.theme.OnSageGreenPrimaryContainer
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SageGreenPrimaryContainer
 import com.dtraas.homestock.ui.theme.SoftCardShape
+import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
 import com.dtraas.homestock.work.ExpiryCheckWorker
 import com.dtraas.homestock.work.LowStockCheckWorker
@@ -125,12 +130,12 @@ import java.util.UUID
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
-private enum class AppLanguage(val tag: String, val labelRes: Int) {
-    NL("nl", R.string.more_language_option_nl),
-    EN("en", R.string.more_language_option_en),
-    DE("de", R.string.more_language_option_de),
-    FR("fr", R.string.more_language_option_fr),
-    ES("es", R.string.more_language_option_es),
+private enum class AppLanguage(val tag: String, val labelRes: Int, val flag: String) {
+    NL("nl", R.string.more_language_option_nl, "🇳🇱"),
+    EN("en", R.string.more_language_option_en, "🇬🇧"),
+    DE("de", R.string.more_language_option_de, "🇩🇪"),
+    FR("fr", R.string.more_language_option_fr, "🇫🇷"),
+    ES("es", R.string.more_language_option_es, "🇪🇸"),
 }
 
 /**
@@ -1367,7 +1372,12 @@ private fun LanguageDialog(selected: AppLanguage, onSelect: (AppLanguage) -> Uni
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         RadioButton(selected = language == selected, onClick = { onSelect(language); onDismiss() })
-                        Text(stringResource(language.labelRes), modifier = Modifier.padding(start = 8.dp))
+                        // Flag ahead of the name — a quick visual anchor per language on top of
+                        // the text, per explicit request.
+                        Text(
+                            text = "${language.flag}  ${stringResource(language.labelRes)}",
+                            modifier = Modifier.padding(start = 8.dp),
+                        )
                     }
                 }
             }
@@ -1391,38 +1401,63 @@ private fun StoresDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.more_stores_title)) },
         text = {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Column(
-                    modifier = Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState()),
-                    verticalArrangement = Arrangement.spacedBy(4.dp),
-                ) {
-                    if (stores.isEmpty()) {
-                        Text(
-                            text = stringResource(R.string.more_stores_empty),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    stores.forEach { store ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                        ) {
-                            Text(store.name, style = MaterialTheme.typography.bodyLarge)
-                            IconButton(onClick = { onRemove(store.id) }) {
-                                Icon(
-                                    Icons.Filled.Close,
-                                    contentDescription = stringResource(R.string.more_stores_remove_format, store.name),
-                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                if (stores.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.more_stores_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Column(
+                        modifier = Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState()),
+                        verticalArrangement = Arrangement.spacedBy(6.dp),
+                    ) {
+                        stores.forEach { store ->
+                            // Each store as its own soft-rounded row — same card language as the
+                            // rest of the app's lists — rather than plain text lines, per "deel
+                            // het pop up scherm Winkels wat mooier in".
+                            Surface(
+                                shape = SoftCardShapeCompact,
+                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                modifier = Modifier.fillMaxWidth(),
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Storefront,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(20.dp),
+                                    )
+                                    Text(
+                                        text = store.name,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f).padding(start = 10.dp),
+                                    )
+                                    IconButton(onClick = { onRemove(store.id) }) {
+                                        Icon(
+                                            Icons.Filled.Close,
+                                            contentDescription = stringResource(R.string.more_stores_remove_format, store.name),
+                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
                 }
+                // Add-new-store row moved into its own filled-pill affordance, matching the
+                // "voeg toe"-style rows elsewhere in the app, instead of a plain field + text
+                // button — same "mooier" request as the list rows above.
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
                     verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     OutlinedTextField(
                         value = newStoreName,
@@ -1431,15 +1466,18 @@ private fun StoresDialog(
                         singleLine = true,
                         modifier = Modifier.weight(1f),
                     )
-                    TextButton(
-                        enabled = newStoreName.isNotBlank(),
+                    FilledIconButton(
                         onClick = {
                             onAdd(newStoreName.trim())
                             newStoreName = ""
                         },
-                        modifier = Modifier.padding(start = 4.dp),
+                        enabled = newStoreName.isNotBlank(),
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                        ),
                     ) {
-                        Text(stringResource(R.string.store_add_action))
+                        Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.store_add_action))
                     }
                 }
             }
@@ -1449,3 +1487,4 @@ private fun StoresDialog(
         },
     )
 }
+

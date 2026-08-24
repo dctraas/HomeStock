@@ -20,9 +20,8 @@ service cloud.firestore {
       //
       // "delete" is allowed so a member can permanently erase a household's data
       // (Instellingen > Huishouden > Huishouden verwijderen — the AVG/GDPR right to
-      // erasure). "update" is allowed too — used to rename the household (Instellingen
-      // > Huishouden > naam wijzigen) and to set/remove its shared photo (see
-      // HouseholdRepository.uploadHouseholdPhoto/removeHouseholdPhoto).
+      // erasure). "update" is allowed too — currently only used to rename the household
+      // (Instellingen > Huishouden > naam wijzigen).
       allow get, create, update, delete: if request.auth != null;
       allow list: if false;
 

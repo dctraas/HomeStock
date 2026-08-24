@@ -167,16 +167,13 @@
         <item quantity="one">%1$d member · Code: %2$s</item>
         <item quantity="other">%1$d members · Code: %2$s</item>
     </plurals>
-    <string name="more_household_row_title">Configuration</string>
+    <string name="more_household_row_title">Composition</string>
     <string name="more_household_default_name">My household</string>
     <string name="more_household_members_title">Members</string>
     <string name="household_members_title_with_limit_format">Members (%1$d/%2$d)</string>
     <string name="more_household_member_unnamed">Unnamed member</string>
     <string name="more_household_member_you">You</string>
     <string name="household_allergens_menu_cd">My allergens and dietary preferences</string>
-    <string name="household_photo_cd">Household photo</string>
-    <string name="household_photo_remove_cd">Remove photo</string>
-    <string name="household_photo_error">Couldn\'t update the photo, please try again</string>
     <string name="household_member_allergens_format">Avoids: %1$s</string>
     <string name="more_rename_household_error">Couldn\'t change the name. Please try again.</string>
     <string name="more_premium_title">HomeStock Premium</string>

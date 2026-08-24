@@ -1,6 +1,6 @@
 PRIVACYVERKLARING HOMESTOCK
 
-Laatst bijgewerkt: 02-08-2026
+Laatst bijgewerkt: 24-08-2026
 
 Deze privacyverklaring legt uit welke gegevens de app HomeStock ("de app") verwerkt, waarom, en welke rechten je hebt. HomeStock is een app voor het bijhouden van een gedeelde voorraad en boodschappenlijst binnen een huishouden.
 
@@ -11,47 +11,75 @@ Contact: info@dennistraas.dev
 1. WELKE GEGEVENS VERZAMELEN WE
 
 1.1 Account
-De app maakt gebruik van Firebase Authentication met anonieme aanmelding. Er wordt geen naam, e-mailadres of wachtwoord gevraagd. Elk toestel krijgt automatisch een uniek, anoniem identificatienummer.
+De app maakt standaard gebruik van Firebase Authentication met anonieme aanmelding: elk toestel krijgt automatisch een uniek, anoniem identificatienummer, zonder dat een naam, e-mailadres of wachtwoord wordt gevraagd. Optioneel kun je dit anonieme account koppelen aan een Google-account (via Google Sign-In), bijvoorbeeld om je huishouden terug te vinden na een nieuwe installatie. In dat geval ontvangen en bewaren we het e-mailadres van dat Google-account.
 
-1.2 Huishoudengegevens (opgeslagen in de cloud, via Google Firebase/Firestore)
+1.2 Huishoudengegevens (opgeslagen in de cloud, via Google Firebase)
 Zodra je een huishouden aanmaakt of met een code aansluit, worden de volgende gegevens opgeslagen op servers van Google Firebase, gedeeld met alle apparaten die dezelfde huishoudencode gebruiken:
-  - Productinformatie die je scant of toevoegt (naam, merk, categorie, barcode, eventuele voedings- en Eco-Score-gegevens)
-  - Voorraaditems (aantal, houdbaarheidsdatum, minimumvoorraad, persoonlijke notitie)
-  - Boodschappenlijstitems (naam, categorie, winkel, aantal, notitie)
-  - Een activiteitenlogboek van wijzigingen (bijv. "toegevoegd", "aantal gewijzigd"), inclusief een optioneel zelfgekozen weergavenaam als je die hebt ingesteld
+  - Productinformatie die je scant of toevoegt (naam, merk, categorie, barcode, eventuele voedings- en Eco-Score-gegevens, prijsgeschiedenis)
+  - Voorraaditems (aantal, houdbaarheidsdatum, minimumvoorraad, locatie binnen huis, persoonlijke notitie)
+  - Boodschappenlijstitems (naam, categorie, winkel, aantal, notitie, prijs)
+  - Maaltijdplanning (geplande maaltijden per dag/moment, of een geplande maaltijd is opgegeten of weggegooid)
+  - Eigen en favoriete recepten die je opslaat, inclusief zelf toegevoegde labels
+  - Een activiteitenlogboek van wijzigingen (bijv. "gescand", "toegevoegd", "weggegooid"), inclusief een optioneel zelfgekozen weergavenaam en profielfoto als je die hebt ingesteld
   - Scangeschiedenis (welke barcodes wanneer gescand zijn)
+  - Allergenen/dieetwensen die een huisgenoot voor zichzelf instelt, zichtbaar voor de rest van het huishouden zodat recepten daar rekening mee kunnen houden
+  - Statusinformatie van het huishouden zelf (bijv. of het huishouden een actief Premium-abonnement heeft)
 
-1.3 Gegevens die alleen lokaal op je toestel blijven
+1.3 Profielfoto en (Premium) productfoto's
+Als je een profielfoto instelt, wordt die geüpload naar Firebase Storage en gedeeld met je huisgenoten, zodat zij die naast je naam zien staan (bijv. bij Huishouden → Leden en in het activiteitenlogboek). Premium-gebruikers kunnen daarnaast een eigen foto aan een product toevoegen; ook die wordt naar Firebase Storage geüpload en is zichtbaar voor het hele huishouden. Verwijder je een foto, dan wordt het bestand uit Firebase Storage verwijderd.
+
+1.4 Gegevens die alleen lokaal op je toestel blijven
 De volgende gegevens worden **niet** naar de cloud verstuurd en blijven op je eigen toestel:
-  - De huishoudencode waarmee dit toestel verbonden is
-  - Je voorkeur voor houdbaarheidsmeldingen (aan/uit)
-  - Je gekozen weergavenaam en profielfoto (de foto wordt lokaal opgeslagen; alleen de naam die je instelt wordt, indien je die instelt, zichtbaar voor huisgenoten via het activiteitenlogboek)
-  - Je voorkeur voor donker/licht thema en app-taal
+  - De huishoudencode(s) waarmee dit toestel verbonden is (geweest)
+  - Je voorkeuren voor meldingen (houdbaarheid, voorraad en verspilling, huisgenoot-activiteit, Premium)
+  - Je gekozen weergavenaam (die naam wordt, als je die instelt, wel gedeeld met huisgenoten — zie 1.2)
+  - Je voorkeur voor donker/licht thema, groot lettertype/hoog contrast en app-taal
 
-1.4 Camera
-De app gebruikt je camera om barcodes te scannen. Deze herkenning gebeurt volledig op je eigen toestel (via Google's ML Kit). Er worden geen foto's, video's of camerabeelden opgeslagen of verzonden — alleen het herkende barcodenummer wordt gebruikt om productinformatie op te zoeken.
+1.5 Camera en foto's die je maakt
+De app gebruikt je camera voor drie doeleinden:
+  - Barcodes scannen: deze herkenning gebeurt volledig op je eigen toestel (via Google's ML Kit). Er wordt geen foto opgeslagen of verzonden — alleen het herkende barcodenummer wordt gebruikt om productinformatie op te zoeken.
+  - Producten of bonnetjes herkennen met AI: een foto die je hiervoor maakt wordt naar onze server (Google Cloud Functions) en van daaruit naar Anthropic (de maker van het Claude AI-model) gestuurd om de inhoud te herkennen (bijv. productnaam, of de regels op een kassabon). Zie punt 3.3 hieronder voor meer over deze verwerking.
+  - Een eigen productfoto toevoegen (Premium): zie 1.3.
 
-1.5 Feedback
+1.6 Feedback
 Als je vrijwillig feedback stuurt via Instellingen (een sterbeoordeling en/of tekstbericht), wordt dit los van je huishouden opgeslagen zodat we de app kunnen verbeteren. Vul geen persoonsgegevens in je feedbackbericht in die je niet met ons wilt delen.
 
-1.6 Wat we niet verzamelen
-HomeStock bevat geen advertenties, geen trackingscookies en geen analytics- of crashrapportage-SDK's van derden. We volgen je niet buiten de app en verkopen geen gegevens.
+1.7 Abonnementen (Premium)
+Een Premium-abonnement wordt afgehandeld door Google Play; wij zien nooit je betaalgegevens (zoals een kaartnummer). We ontvangen van Google Play wel of je een actief abonnement hebt, om Premium-functies voor jouw huishouden te ontgrendelen.
+
+1.8 Meldingen (pushberichten)
+Als je apparaat-meldingen aan hebt staan, ontvangt je toestel een technisch pushtoken van Firebase Cloud Messaging, gekoppeld aan je huishouden, zodat we je een melding kunnen sturen (bijv. wanneer een huisgenoot iets scant, of een product bijna over datum is).
+
+1.9 Gebruiksstatistieken (Firebase Analytics)
+De app gebruikt Firebase Analytics om te meten hoe functies worden gebruikt (bijv. hoe vaak wordt gescand, of een aankoop van een abonnement is gelukt), zodat we de app kunnen verbeteren. Deze gegevens zijn gekoppeld aan een technisch, niet-herleidbaar app-installatie-ID, niet aan je naam of e-mailadres.
+
+1.10 Wat we niet verzamelen
+HomeStock bevat geen advertenties en geen trackingscookies, en verkoopt nooit gegevens aan derden voor advertentiedoeleinden. We volgen je niet buiten de app.
 
 
 2. WAAROM VERWERKEN WE DEZE GEGEVENS
 
-We verwerken deze gegevens om de kernfunctionaliteit van de app mogelijk te maken: een gedeelde voorraad en boodschappenlijst tussen huisgenoten. De rechtsgrondslag hiervoor is de uitvoering van de overeenkomst die ontstaat doordat je de app gebruikt (art. 6 lid 1 sub b AVG), en voor optionele onderdelen (zoals feedback) je uitdrukkelijke, vrijwillige handeling.
+We verwerken deze gegevens om de kernfunctionaliteit van de app mogelijk te maken: een gedeelde voorraad, boodschappenlijst en maaltijdplanning tussen huisgenoten, en de optionele AI- en Premium-functies die je zelf activeert. De rechtsgrondslag hiervoor is de uitvoering van de overeenkomst die ontstaat doordat je de app gebruikt (art. 6 lid 1 sub b AVG), en voor optionele onderdelen (zoals feedback, foto's, AI-herkenning, Premium) je uitdrukkelijke, vrijwillige handeling.
 
 
 3. MET WIE DELEN WE GEGEVENS
 
 3.1 Google Firebase
-Huishoudengegevens en feedback worden opgeslagen bij Google Firebase (Google Cloud). Google kan hierbij als verwerker optreden en gegevens verwerken op servers die zich (mede) buiten de Europese Economische Ruimte kunnen bevinden. Google heeft passende waarborgen (zoals modelcontractbepalingen) voor internationale doorgifte.
+Huishoudengegevens, foto's, pushtokens en feedback worden opgeslagen bij Google Firebase (Google Cloud). Google kan hierbij als verwerker optreden en gegevens verwerken op servers die zich (mede) buiten de Europese Economische Ruimte kunnen bevinden. Google heeft passende waarborgen (zoals modelcontractbepalingen) voor internationale doorgifte.
 
 3.2 Open Food Facts
 Wanneer je een product scant, stuurt de app het gescande barcodenummer naar Open Food Facts (world.openfoodfacts.org), een open, non-profit productendatabase, om productinformatie op te halen. Dit betreft geen persoonsgegevens van jou — alleen het productnummer. Productgegevens die op deze manier worden opgehaald zijn afkomstig van Open Food Facts en beschikbaar onder de Open Database License (ODbL).
 
-3.3 Google Play Services (lettertypen)
+3.3 Anthropic (Claude AI)
+Voor AI-productherkenning, bonnetje-herkenning, AI-gegenereerde receptsuggesties en receptvertalingen stuurt de app (via onze eigen server) tekst en/of een foto naar Anthropic's Claude-model. Anthropic gebruikt deze via de API verzonden gegevens standaard niet om hun modellen te trainen. Raadpleeg het privacybeleid van Anthropic (anthropic.com/privacy) voor meer details over hun eigen verwerking.
+
+3.4 Spoonacular
+Voor het zoeken naar en tonen van recepten (tabblad Recepten) stuurt de app (via onze eigen server) je zoekopdracht en eventuele filters (zoals allergenen) naar Spoonacular (spoonacular.com). Recept- en voedingswaarde-gegevens die op deze manier worden getoond zijn afkomstig van Spoonacular.
+
+3.5 Google Play (Facturering)
+Aankopen van een Premium-abonnement worden volledig afgehandeld door Google Play; wij ontvangen alleen de abonnementsstatus, nooit je betaalgegevens.
+
+3.6 Google Play Services (lettertypen)
 De app haalt op de achtergrond lettertypen op via Google Play Services (Downloadable Fonts). Hierbij wordt een standaard, niet-persoonlijk verzoek gedaan aan Google's lettertypedienst.
 
 We verkopen jouw gegevens nooit aan derden en gebruiken ze niet voor advertentiedoeleinden.
@@ -59,7 +87,7 @@ We verkopen jouw gegevens nooit aan derden en gebruiken ze niet voor advertentie
 
 4. HOE LANG BEWAREN WE GEGEVENS
 
-Huishoudengegevens blijven bewaard zolang het huishouden actief is. De knop "Huishouden verlaten" koppelt alléén jouw toestel los van het huishouden — de gedeelde gegevens van het huishouden zelf blijven daarna bewaard (zodat huisgenoten er niet per ongeluk toegang toe verliezen). Wil je de gegevens van een heel huishouden permanent laten verwijderen, gebruik dan de knop "Huishouden verwijderen" in Instellingen → Huishouden. Dit verwijdert alle gedeelde gegevens definitief voor iedereen in dat huishouden en kan niet ongedaan worden gemaakt. Lukt dit om wat voor reden dan ook niet, neem dan contact met ons op via het e-mailadres hierboven.
+Huishoudengegevens blijven bewaard zolang het huishouden actief is. De knop "Huishouden verlaten" koppelt alléén jouw toestel los van het huishouden — de gedeelde gegevens van het huishouden zelf blijven daarna bewaard (zodat huisgenoten er niet per ongeluk toegang toe verliezen). Wil je de gegevens van een heel huishouden permanent laten verwijderen, gebruik dan de knop "Huishouden verwijderen" in Instellingen → Huishouden. Dit verwijdert alle gedeelde gegevens definitief voor iedereen in dat huishouden, inclusief geüploade foto's, en kan niet ongedaan worden gemaakt. Lukt dit om wat voor reden dan ook niet, neem dan contact met ons op via het e-mailadres hierboven.
 
 
 5. BEVEILIGING

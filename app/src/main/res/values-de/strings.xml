@@ -167,16 +167,13 @@
         <item quantity="one">%1$d Mitglied · Code: %2$s</item>
         <item quantity="other">%1$d Mitglieder · Code: %2$s</item>
     </plurals>
-    <string name="more_household_row_title">Konfiguration</string>
+    <string name="more_household_row_title">Zusammensetzung</string>
     <string name="more_household_default_name">Mein Haushalt</string>
     <string name="more_household_members_title">Mitglieder</string>
     <string name="household_members_title_with_limit_format">Mitglieder (%1$d/%2$d)</string>
     <string name="more_household_member_unnamed">Namenloses Mitglied</string>
     <string name="more_household_member_you">Du</string>
     <string name="household_allergens_menu_cd">Meine Allergene und Ernährungswünsche</string>
-    <string name="household_photo_cd">Foto des Haushalts</string>
-    <string name="household_photo_remove_cd">Foto entfernen</string>
-    <string name="household_photo_error">Foto konnte nicht aktualisiert werden, bitte erneut versuchen</string>
     <string name="household_member_allergens_format">Vermeidet: %1$s</string>
     <string name="more_rename_household_error">Der Name konnte nicht geändert werden. Bitte versuche es erneut.</string>
     <string name="more_premium_title">HomeStock Premium</string>

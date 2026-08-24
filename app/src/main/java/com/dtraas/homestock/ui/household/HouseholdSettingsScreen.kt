@@ -2,12 +2,7 @@ package com.dtraas.homestock.ui.household
 
 import android.app.Activity
 import android.content.Intent
-import android.net.Uri
 import androidx.activity.compose.BackHandler
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -91,7 +86,6 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
     val householdId by householdSession.householdId.collectAsState()
     val householdRepository = application.container.householdRepository
     val householdName by householdRepository.observeHouseholdName().collectAsState(initial = null)
-    val householdPhotoUrl by householdRepository.observeHouseholdPhoto().collectAsState(initial = null)
     val householdMembersRepository = application.container.householdMembersRepository
     val members by householdMembersRepository.observeMembers().collectAsState(initial = emptyList())
     val capacityInfo by householdMembersRepository.observeCapacityInfo().collectAsState(
@@ -108,7 +102,6 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
     val deleteErrorMessage = stringResource(R.string.more_delete_household_error)
     val switchFullMessage = stringResource(R.string.household_join_full_error)
     val switchNotFoundMessage = stringResource(R.string.household_switch_not_found_error)
-    val photoErrorMessage = stringResource(R.string.household_photo_error)
 
     // Re-seeds from the live household name whenever it changes (e.g. this screen reopening,
     // or a housemate renaming it on their own device) — but not on every keystroke, since
@@ -232,23 +225,6 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                     isDeleting = isDeleting,
                     onLeaveClick = { showLeaveConfirm = true },
                     onDeleteClick = { showDeleteConfirm = true },
-                    photoUrl = householdPhotoUrl,
-                    onPhotoPicked = { uri ->
-                        householdId?.let { id ->
-                            coroutineScope.launch {
-                                householdRepository.uploadHouseholdPhoto(id, uri)
-                                    .onFailure { snackbarHostState.showSnackbar(photoErrorMessage, duration = SnackbarDuration.Short) }
-                            }
-                        }
-                    },
-                    onRemovePhoto = {
-                        householdId?.let { id ->
-                            coroutineScope.launch {
-                                householdRepository.removeHouseholdPhoto(id)
-                                    .onFailure { snackbarHostState.showSnackbar(photoErrorMessage, duration = SnackbarDuration.Short) }
-                            }
-                        }
-                    },
                 )
 
                 if (otherHouseholds.isNotEmpty()) {
@@ -391,64 +367,6 @@ private fun CodeSection(householdCode: String?) {
 }
 
 /**
- * A shared photo for the whole household — any member can set/replace/remove it (see
- * [HouseholdRepository.uploadHouseholdPhoto]/[HouseholdRepository.removeHouseholdPhoto]), unlike
- * [DeviceProfile]'s own per-device photo. Same circular-avatar-with-picker shape as
- * [com.dtraas.homestock.ui.components.ProfileEditDialog]'s photo control, just backed by a
- * remote [photoUrl] (Firebase Storage download URL) instead of a local file path.
- */
-@Composable
-private fun HouseholdPhotoPicker(photoUrl: String?, onPhotoPicked: (Uri) -> Unit, onRemovePhoto: () -> Unit) {
-    val pickPhoto = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia(),
-    ) { uri: Uri? -> uri?.let(onPhotoPicked) }
-
-    Box(modifier = Modifier.padding(bottom = 4.dp)) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier
-                .size(72.dp)
-                .clickable { pickPhoto.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)) },
-        ) {
-            if (photoUrl != null) {
-                AsyncImage(
-                    model = photoUrl,
-                    contentDescription = stringResource(R.string.household_photo_cd),
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        imageVector = Icons.Filled.AccountCircle,
-                        contentDescription = stringResource(R.string.household_photo_cd),
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                        modifier = Modifier.size(40.dp),
-                    )
-                }
-            }
-        }
-        if (photoUrl != null) {
-            IconButton(
-                onClick = onRemovePhoto,
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .size(24.dp)
-                    .background(MaterialTheme.colorScheme.errorContainer, CircleShape),
-            ) {
-                Icon(
-                    imageVector = Icons.Filled.Close,
-                    contentDescription = stringResource(R.string.household_photo_remove_cd),
-                    tint = MaterialTheme.colorScheme.onErrorContainer,
-                    modifier = Modifier.size(14.dp),
-                )
-            }
-        }
-    }
-}
-
-/**
  * Naam, Leden, and the leave/delete actions all in one card rather than three separate ones —
  * they're all "manage this household" actions on the same object, and splitting them into
  * their own cards mostly just added visual weight without actually separating unrelated
@@ -469,15 +387,8 @@ private fun HouseholdSection(
     isDeleting: Boolean,
     onLeaveClick: () -> Unit,
     onDeleteClick: () -> Unit,
-    photoUrl: String?,
-    onPhotoPicked: (Uri) -> Unit,
-    onRemovePhoto: () -> Unit,
 ) {
     SectionCard {
-        Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            HouseholdPhotoPicker(photoUrl = photoUrl, onPhotoPicked = onPhotoPicked, onRemovePhoto = onRemovePhoto)
-        }
-
         Text(stringResource(R.string.household_name_label), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
         OutlinedTextField(
             value = nameInput,
