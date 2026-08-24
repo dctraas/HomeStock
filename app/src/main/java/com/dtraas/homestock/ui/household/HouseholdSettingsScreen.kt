@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +17,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
@@ -25,6 +27,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -55,6 +58,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -69,6 +73,9 @@ import com.dtraas.homestock.data.repository.HouseholdMembersRepository
 import com.dtraas.homestock.data.repository.HouseholdRepository
 import com.dtraas.homestock.data.repository.RecentHousehold
 import com.dtraas.homestock.ui.theme.SoftCardShape
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import kotlinx.coroutines.launch
 
 /**
@@ -91,6 +98,15 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
     val capacityInfo by householdMembersRepository.observeCapacityInfo().collectAsState(
         initial = HouseholdCapacityInfo(memberCount = 0, limit = HouseholdMembersRepository.FREE_MEMBER_LIMIT, isPremium = false),
     )
+    val isPremium by householdMembersRepository.observeHouseholdIsPremium().collectAsState(initial = false)
+    // Matched by exact display name, same reasoning as NotificationsViewModel.photoUrlFor and
+    // StatisticsViewModel's MemberScanEntry — activity log entries only ever stamp a plain
+    // name, not a uid, so that's the only join key available here too.
+    val recentActivity by application.container.activityLogRepository.observeRecent().collectAsState(initial = emptyList())
+    val lastActiveByName = remember(recentActivity) {
+        recentActivity.groupBy { it.actorName }.mapValues { (_, entries) -> entries.maxOf { it.timestamp } }
+    }
+    val inviteExpiresAt by householdRepository.observeInviteExpiresAt().collectAsState(initial = null)
     val recentHouseholds by householdSession.recentHouseholds.collectAsState()
     // Switching to the current household would be a no-op, and it's already shown above as
     // "this" household — only *other* previously-joined households belong in the switcher.
@@ -181,16 +197,23 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                         enabled = code != null,
                         onClick = {
                             if (code != null) {
-                                val message = context.getString(
-                                    R.string.household_share_invite_text_format,
-                                    HouseholdInviteLink.build(code),
-                                    code,
-                                )
-                                val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                                    type = "text/plain"
-                                    putExtra(Intent.EXTRA_TEXT, message)
+                                // Pushes the invite's expiry back out to a fresh
+                                // INVITE_VALIDITY_DAYS window before the link is actually
+                                // shared, so a link handed out just now is never already
+                                // stale — see HouseholdRepository.refreshInviteExpiry.
+                                coroutineScope.launch {
+                                    householdRepository.refreshInviteExpiry(code)
+                                    val message = context.getString(
+                                        R.string.household_share_invite_text_format,
+                                        HouseholdInviteLink.build(code),
+                                        code,
+                                    )
+                                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                                        type = "text/plain"
+                                        putExtra(Intent.EXTRA_TEXT, message)
+                                    }
+                                    context.startActivity(Intent.createChooser(sendIntent, null))
                                 }
-                                context.startActivity(Intent.createChooser(sendIntent, null))
                             }
                         },
                     ) {
@@ -220,7 +243,9 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                 HouseholdSection(
                     nameInput = nameInput,
                     onNameInputChange = { if (it.length <= HouseholdRepository.HOUSEHOLD_NAME_MAX_LENGTH) nameInput = it },
+                    isPremium = isPremium,
                     members = members,
+                    lastActiveByName = lastActiveByName,
                     capacityInfo = capacityInfo,
                     isDeleting = isDeleting,
                     onLeaveClick = { showLeaveConfirm = true },
@@ -237,7 +262,14 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                 }
             }
 
-            CodeSection(householdCode = householdId)
+            CodeSection(
+                householdCode = householdId,
+                inviteExpiresAt = inviteExpiresAt,
+                onRefreshInvite = {
+                    val code = householdId ?: return@CodeSection
+                    coroutineScope.launch { householdRepository.refreshInviteExpiry(code) }
+                },
+            )
         }
     }
 
@@ -353,18 +385,46 @@ private fun SectionCard(content: @Composable ColumnScope.() -> Unit) {
  * bar (see [HouseholdSettingsScreen]) so this is just the code, centered.
  */
 @Composable
-private fun CodeSection(householdCode: String?) {
-    Text(
-        text = stringResource(R.string.more_household_code_format, householdCode ?: "—"),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = TextAlign.Center,
+private fun CodeSection(householdCode: String?, inviteExpiresAt: Long?, onRefreshInvite: () -> Unit) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
             .padding(bottom = 16.dp),
-    )
+    ) {
+        Text(
+            text = stringResource(R.string.more_household_code_format, householdCode ?: "—"),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+        )
+        // Only shown once an invite link has actually been shared at least once (see
+        // HouseholdRepository.observeInviteExpiresAt's doc) — a household that's never used
+        // "Deel uitnodiging" has nothing to show here, same as before this existed.
+        if (inviteExpiresAt != null) {
+            val isExpired = inviteExpiresAt < System.currentTimeMillis()
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                Text(
+                    text = if (isExpired) {
+                        stringResource(R.string.household_invite_expired)
+                    } else {
+                        stringResource(R.string.household_invite_expiry_format, inviteExpiryFormatter.format(Date(inviteExpiresAt)))
+                    },
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (isExpired) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                TextButton(onClick = onRefreshInvite, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
+                    Text(stringResource(R.string.household_invite_refresh_action), style = MaterialTheme.typography.labelSmall)
+                }
+            }
+        }
+    }
 }
+
+// A plain day-month-year is enough here — this is a soft "share again soon" nudge, not a
+// precise-to-the-minute deadline, so the hour doesn't need to be shown.
+private val inviteExpiryFormatter = SimpleDateFormat("d MMM yyyy", Locale.getDefault())
 
 /**
  * Naam, Leden, and the leave/delete actions all in one card rather than three separate ones —
@@ -382,14 +442,24 @@ private fun CodeSection(householdCode: String?) {
 private fun HouseholdSection(
     nameInput: String,
     onNameInputChange: (String) -> Unit,
+    isPremium: Boolean,
     members: List<HouseholdMember>,
+    lastActiveByName: Map<String?, Long>,
     capacityInfo: HouseholdCapacityInfo,
     isDeleting: Boolean,
     onLeaveClick: () -> Unit,
     onDeleteClick: () -> Unit,
 ) {
     SectionCard {
-        Text(stringResource(R.string.household_name_label), style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.primary)
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = stringResource(R.string.household_name_label),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(1f),
+            )
+            if (isPremium) PremiumBadge()
+        }
         OutlinedTextField(
             value = nameInput,
             onValueChange = onNameInputChange,
@@ -408,7 +478,7 @@ private fun HouseholdSection(
             modifier = Modifier.padding(top = 4.dp),
         )
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            members.forEach { member -> HouseholdMemberRow(member) }
+            members.forEach { member -> HouseholdMemberRow(member, lastActiveAt = lastActiveByName[member.displayName]) }
         }
 
         ActionButtonsRow(
@@ -526,8 +596,43 @@ private fun ActionButtonsRow(isDeleting: Boolean, onLeaveClick: () -> Unit, onDe
     }
 }
 
+/** Small "Premium" pill — same [Icons.Filled.WorkspacePremium] mark MoreScreen's own Premium
+ *  card and rows use, just shrunk down to fit inline next to the "Naam" label. */
 @Composable
-private fun HouseholdMemberRow(member: HouseholdMember) {
+private fun PremiumBadge() {
+    Surface(shape = RoundedCornerShape(percent = 50), color = MaterialTheme.colorScheme.tertiaryContainer) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+        ) {
+            Icon(
+                imageVector = Icons.Filled.WorkspacePremium,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.size(14.dp),
+            )
+            Text(
+                // Just "Premium" — unlike MoreScreen's PremiumCard, this pill has no
+                // "HomeStock Premium" title alongside it to say what's active, so
+                // more_premium_active ("Actief") alone would read as unclear here.
+                text = stringResource(R.string.premium_title),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.padding(start = 4.dp),
+            )
+        }
+    }
+}
+
+/**
+ * [lastActiveAt] is the most recent activity-log timestamp matched to this member's display
+ * name (see [HouseholdSettingsScreen]'s `lastActiveByName`) — null for a member who hasn't
+ * logged any activity yet (e.g. joined but hasn't scanned/added anything) or has no name set
+ * at all, in which case nothing extra is shown, same as before this existed.
+ */
+@Composable
+private fun HouseholdMemberRow(member: HouseholdMember, lastActiveAt: Long?) {
     Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
         Surface(
             shape = CircleShape,
@@ -556,6 +661,13 @@ private fun HouseholdMemberRow(member: HouseholdMember) {
                 text = member.displayName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.more_household_member_unnamed),
                 style = MaterialTheme.typography.bodyMedium,
             )
+            if (lastActiveAt != null) {
+                Text(
+                    text = lastActiveLabel(lastActiveAt),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
             // Visible to the whole household — the filter button this app used to offer here to
             // set your own allergens is gone (removed per explicit request), but a member who
             // already had some set before that removal still shows them, so the household can
@@ -579,6 +691,21 @@ private fun HouseholdMemberRow(member: HouseholdMember) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+/** "Nu actief" / "12 min. geleden" / "3 uur geleden" / … — coarsens as the gap grows, since
+ *  precision stops being useful (and starts looking odd, e.g. "127 uur geleden") past a
+ *  certain point; caps out at weeks, plenty granular for "does anyone still use this app". */
+@Composable
+private fun lastActiveLabel(timestampMillis: Long): String {
+    val minutes = (System.currentTimeMillis() - timestampMillis) / 60_000
+    return when {
+        minutes < 1 -> stringResource(R.string.household_last_active_now)
+        minutes < 60 -> stringResource(R.string.household_last_active_minutes_format, minutes.toInt())
+        minutes < 60 * 24 -> stringResource(R.string.household_last_active_hours_format, (minutes / 60).toInt())
+        minutes < 60 * 24 * 7 -> stringResource(R.string.household_last_active_days_format, (minutes / (60 * 24)).toInt())
+        else -> stringResource(R.string.household_last_active_weeks_format, (minutes / (60 * 24 * 7)).toInt())
     }
 }
 

@@ -131,6 +131,15 @@
     <string name="household_name_char_count_format">%1$d/%2$d tekens</string>
     <string name="household_share_invite_cd">Deel uitnodiging</string>
     <string name="household_share_invite_text_format">Doe mee met mijn huishouden in HomeStock! Tik op de link om aan te sluiten: %1$s\n\n(Heb je de app nog niet? Installeer HomeStock en voer dan code %2$s in.)</string>
+    <string name="household_invite_expiry_format">Uitnodigingslink geldig tot %1$s</string>
+    <string name="household_invite_expired">Uitnodigingslink verlopen</string>
+    <string name="household_invite_refresh_action">Vernieuwen</string>
+    <string name="household_invite_expired_error">Deze uitnodigingslink is verlopen. Vraag een huisgenoot om een nieuwe link te delen.</string>
+    <string name="household_last_active_now">Nu actief</string>
+    <string name="household_last_active_minutes_format">%1$d min. geleden</string>
+    <string name="household_last_active_hours_format">%1$d u. geleden</string>
+    <string name="household_last_active_days_format">%1$d d. geleden</string>
+    <string name="household_last_active_weeks_format">%1$d w. geleden</string>
     <string name="household_switch_section_title">Eerdere huishoudens</string>
     <string name="household_switch_unnamed_format">Huishouden %1$s</string>
     <string name="household_switch_unnamed_fallback">dit huishouden</string>

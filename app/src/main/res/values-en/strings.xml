@@ -127,6 +127,15 @@
     <string name="household_name_char_count_format">%1$d/%2$d characters</string>
     <string name="household_share_invite_cd">Share invite</string>
     <string name="household_share_invite_text_format">Join my household in HomeStock! Tap the link to join: %1$s\n\n(Don\'t have the app yet? Install HomeStock and enter code %2$s.)</string>
+    <string name="household_invite_expiry_format">Invite link valid until %1$s</string>
+    <string name="household_invite_expired">Invite link expired</string>
+    <string name="household_invite_refresh_action">Refresh</string>
+    <string name="household_invite_expired_error">This invite link has expired. Ask a housemate to share a new one.</string>
+    <string name="household_last_active_now">Active now</string>
+    <string name="household_last_active_minutes_format">%1$d min ago</string>
+    <string name="household_last_active_hours_format">%1$d h ago</string>
+    <string name="household_last_active_days_format">%1$d d ago</string>
+    <string name="household_last_active_weeks_format">%1$d w ago</string>
     <string name="household_switch_section_title">Previous households</string>
     <string name="household_switch_unnamed_format">Household %1$s</string>
     <string name="household_switch_unnamed_fallback">this household</string>

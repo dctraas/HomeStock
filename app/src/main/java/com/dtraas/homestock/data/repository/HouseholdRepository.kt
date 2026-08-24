@@ -16,6 +16,12 @@ import kotlinx.coroutines.tasks.await
 /** Something went wrong that isn't a plain network/Firestore exception. */
 class HouseholdNotFoundException(message: String) : Exception(message)
 
+/** The code/link used to join no longer works — see [HouseholdRepository.refreshInviteExpiry]
+ *  and [HouseholdRepository.joinHousehold]'s expiry check. Doesn't apply to a device that's
+ *  already a member (e.g. reinstalling, or switching back via [HouseholdRepository.joinHousehold]
+ *  from the household switcher) — only to a *new* join attempted after the invite went stale. */
+class HouseholdInviteExpiredException(message: String) : Exception(message)
+
 /**
  * Creates and joins households — the mechanism by which multiple devices share the
  * same Firestore data. A household is just a document at `households/{code}`; knowing
@@ -99,12 +105,61 @@ class HouseholdRepository(
             if (normalized.isEmpty() || normalized.length != CODE_LENGTH || normalized.any { it !in CODE_CHARS }) {
                 return Result.failure(HouseholdNotFoundException(context.getString(R.string.household_not_found_format, normalized)))
             }
-            val snapshot = firestore.collection(HOUSEHOLDS_COLLECTION).document(normalized).get().await()
+            val household = firestore.collection(HOUSEHOLDS_COLLECTION).document(normalized)
+            val snapshot = household.get().await()
             if (!snapshot.exists()) {
-                Result.failure(HouseholdNotFoundException(context.getString(R.string.household_not_found_format, normalized)))
-            } else {
-                Result.success(normalized)
+                return Result.failure(HouseholdNotFoundException(context.getString(R.string.household_not_found_format, normalized)))
             }
+
+            // A stale invite only blocks a *new* member — a device that's already registered
+            // (reinstalling, or the household switcher rejoining a household this device left
+            // and came back to) always gets back in, exactly as before this check existed.
+            val inviteExpiresAt = snapshot.getLong(FIELD_INVITE_EXPIRES_AT)
+            if (inviteExpiresAt != null && inviteExpiresAt < System.currentTimeMillis()) {
+                val uid = auth.currentUser?.uid
+                val alreadyMember = uid != null && household.collection("members").document(uid).get().await().exists()
+                if (!alreadyMember) {
+                    return Result.failure(HouseholdInviteExpiredException(context.getString(R.string.household_invite_expired_error)))
+                }
+            }
+
+            Result.success(normalized)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Live "geldig tot" timestamp for the current household's invite link (Instellingen >
+     * Huishouden) — millis since epoch, or null once no invite has ever been shared (a
+     * household created before this existed, or one that's never tapped "Deel uitnodiging"),
+     * in which case there's nothing to enforce and its code works to join with indefinitely,
+     * exactly as it always has.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeInviteExpiresAt(): Flow<Long?> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(null)
+            } else {
+                firestore.collection(HOUSEHOLDS_COLLECTION).document(householdId).observeSnapshot()
+                    .map { it.getLong(FIELD_INVITE_EXPIRES_AT) }
+            }
+        }
+
+    /**
+     * Pushes the invite link's expiry [INVITE_VALIDITY_DAYS] days out from now — called right
+     * before the "Deel uitnodiging" share sheet opens (so a freshly shared link is never already
+     * stale) and by the "Vernieuwen" affordance shown once one has gone stale. Doesn't change the
+     * household's code itself (that stays permanent, see the class doc) — only how long a *new*
+     * join with it keeps working; see [joinHousehold].
+     */
+    suspend fun refreshInviteExpiry(householdId: String): Result<Long> {
+        val expiresAt = System.currentTimeMillis() + INVITE_VALIDITY_DAYS * 24L * 60 * 60 * 1000
+        return try {
+            firestore.collection(HOUSEHOLDS_COLLECTION).document(householdId)
+                .update(FIELD_INVITE_EXPIRES_AT, expiresAt).await()
+            Result.success(expiresAt)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -161,6 +216,11 @@ class HouseholdRepository(
         const val HOUSEHOLD_NAME_MAX_LENGTH = 24
 
         private const val FIELD_NAME = "name"
+        private const val FIELD_INVITE_EXPIRES_AT = "inviteExpiresAt"
+
+        /** How long a freshly (re)shared invite link keeps working for a new join — see
+         *  [refreshInviteExpiry]. */
+        const val INVITE_VALIDITY_DAYS = 7
 
         // The code is the household's only access control (see firestore.rules), so it's
         // generated with a CSPRNG rather than Kotlin's non-cryptographic default Random.

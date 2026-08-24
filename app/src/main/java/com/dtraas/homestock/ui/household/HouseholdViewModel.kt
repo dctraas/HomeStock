@@ -3,6 +3,7 @@ package com.dtraas.homestock.ui.household
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.homestock.data.repository.DeviceProfile
+import com.dtraas.homestock.data.repository.HouseholdInviteExpiredException
 import com.dtraas.homestock.data.repository.HouseholdJoinResult
 import com.dtraas.homestock.data.repository.HouseholdMembersRepository
 import com.dtraas.homestock.data.repository.HouseholdNotFoundException
@@ -157,12 +158,13 @@ class HouseholdViewModel(
     }
 
     /**
-     * [HouseholdNotFoundException] already carries a specific, localized message; anything
-     * else (network failure, unexpected Firestore/Auth error) doesn't, so the UI falls back
-     * to a generic translated string rather than the raw exception text.
+     * [HouseholdNotFoundException] and [HouseholdInviteExpiredException] already carry a
+     * specific, localized message; anything else (network failure, unexpected Firestore/Auth
+     * error) doesn't, so the UI falls back to a generic translated string rather than the raw
+     * exception text.
      */
     private fun HouseholdUiState.withError(error: Throwable): HouseholdUiState =
-        if (error is HouseholdNotFoundException) {
+        if (error is HouseholdNotFoundException || error is HouseholdInviteExpiredException) {
             copy(errorMessage = error.message, hasGenericError = false)
         } else {
             copy(errorMessage = null, hasGenericError = true)

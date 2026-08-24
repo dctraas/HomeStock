@@ -33,10 +33,16 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.dtraas.homestock.R
 import java.io.File
+
+// Matches HouseholdRepository.HOUSEHOLD_NAME_MAX_LENGTH — there's no shared constant between
+// the two (a member's own display name and a household's name are unrelated concepts that
+// just happen to want the same limit), so this is its own small local cap for the counter below.
+private const val DISPLAY_NAME_MAX_LENGTH = 24
 
 /** Shared name + photo editor, used both by the Home-screen profile button and Instellingen. */
 @Composable
@@ -109,10 +115,21 @@ fun ProfileEditDialog(
                 }
                 OutlinedTextField(
                     value = nameInput,
-                    onValueChange = { nameInput = it },
+                    onValueChange = { if (it.length <= DISPLAY_NAME_MAX_LENGTH) nameInput = it },
                     label = { Text(stringResource(R.string.more_profile_title)) },
                     placeholder = { Text(stringResource(R.string.more_profile_name_placeholder)) },
                     singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    // Reuses the same "%1$d/%2$d tekens" format the household-name step of
+                    // onboarding already uses for its own char counter (see HouseholdScreen's
+                    // HouseholdNameContent) — same shape of value, no need for a near-duplicate
+                    // string across all 5 locales.
+                    text = stringResource(R.string.household_name_char_count_format, nameInput.length, DISPLAY_NAME_MAX_LENGTH),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.End,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
