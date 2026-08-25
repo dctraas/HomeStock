@@ -247,12 +247,22 @@
     <string name="more_auto_restock_subtitle">si le stock passe sous le minimum</string>
     <string name="more_notifications_row_title">Péremption</string>
     <string name="more_inventory_insight_notifications_title">Stock et gaspillage</string>
-    <string name="more_inventory_insight_notifications_subtitle">Notifications sur le stock faible et le gaspillage alimentaire hebdomadaire</string>
-    <string name="more_household_activity_notifications_title">Activité du foyer</string>
+    <string name="more_inventory_insight_notifications_subtitle">Chaque semaine, le dimanche soir</string>
+    <string name="more_household_activity_notifications_title">Colocataires</string>
     <string name="more_household_activity_notifications_subtitle">Notifications lorsqu\'un colocataire modifie quelque chose, ou que le foyer change</string>
-    <string name="more_premium_notifications_title">Premium</string>
+    <string name="more_premium_notifications_title">Essai &amp; abonnement</string>
     <string name="more_premium_notifications_subtitle">Notification lorsque votre période d\'essai touche à sa fin</string>
     <string name="more_notifications_menu_title">Notifications</string>
+    <string name="more_notifications_hero_subtitle">La notification la plus importante de HomeStock</string>
+    <string name="more_notifications_lead_time_label">Avertir</string>
+    <string name="more_notifications_time_label">Heure</string>
+    <string name="more_notifications_time_format">%1$02d:%2$02d</string>
+    <string name="more_notifications_also_section">Aussi me prévenir pour</string>
+    <string name="more_household_activity_notifications_subtitle_named_format">Quand %1$s coche ou ajoute quelque chose</string>
+    <plurals name="more_notifications_lead_time_days_format">
+        <item quantity="one">%1$d jour</item>
+        <item quantity="other">%1$d jours</item>
+    </plurals>
     <plurals name="more_notifications_menu_subtitle_format">
         <item quantity="one">%1$d sur %2$d activée</item>
         <item quantity="other">%1$d sur %2$d activées</item>
@@ -299,6 +309,7 @@
     <string name="more_section_features">Outils intelligents</string>
     <string name="more_beta_recipes">Recettes</string>
     <string name="more_beta_receipt_scan">Scanner un ticket</string>
+    <string name="more_beta_receipt_scan_subtitle">Tout le ticket de caisse en une fois</string>
     <string name="more_section_debug">Débogage</string>
     <string name="more_debug_premium_title">Simuler Premium</string>
 
@@ -323,7 +334,10 @@
     <string name="inventory_add_menu_cd">Scanner</string>
     <string name="inventory_add_menu_title">Ajouter un produit</string>
     <string name="inventory_add_menu_barcode">Scanner un code-barres</string>
+    <string name="inventory_add_menu_barcode_subtitle">Le plus rapide · la caméra s\'ouvre aussitôt</string>
     <string name="inventory_add_menu_search">Rechercher par nom</string>
+    <string name="inventory_add_menu_search_subtitle">Pas de code-barres sous la main</string>
+    <string name="inventory_add_menu_premium_divider">Avec Premium</string>
     <string name="inventory_removed_snackbar_format">%1$s supprimé</string>
     <plurals name="inventory_bulk_removed_snackbar_format">
         <item quantity="one">%1$d produit supprimé</item>
@@ -505,10 +519,24 @@
     <!-- Liste de courses -->
     <string name="shopping_list_title">Liste de courses</string>
     <string name="shopping_list_clear_checked_cd">Effacer les articles cochés</string>
+    <plurals name="shopping_list_item_count_format">
+        <item quantity="one">%1$d article</item>
+        <item quantity="other">%1$d articles</item>
+    </plurals>
+    <plurals name="shopping_list_open_items_format">
+        <item quantity="one">%1$d article restant</item>
+        <item quantity="other">%1$d articles restants</item>
+    </plurals>
+    <plurals name="shopping_list_clear_checked_subtitle_format">
+        <item quantity="one">%1$d article · irréversible</item>
+        <item quantity="other">%1$d articles · irréversible</item>
+    </plurals>
+    <string name="shopping_list_options_this_list_section">Cette liste</string>
     <string name="shopping_list_check_all_cd">Tout cocher</string>
     <string name="shopping_list_sort_cd">Trier</string>
     <string name="shopping_list_sort_active_cd_format">Trier (actif : %1$s)</string>
     <string name="shopping_list_sort_manual">Ordre manuel</string>
+    <string name="shopping_list_sort_manual_short">Manuel</string>
     <string name="shopping_list_sort_aisle">Disposition du magasin</string>
     <string name="shopping_list_share_cd">Partager la liste de courses</string>
     <string name="shopping_list_share_title">Liste de courses</string>
@@ -543,8 +571,12 @@
     <string name="shopping_list_item_edit_title">Modifier l\'article</string>
     <string name="shopping_list_add_confirm">Ajouter</string>
     <string name="shopping_list_save_confirm">Enregistrer</string>
+    <string name="shopping_list_item_add_confirm_full">Ajouter à la liste</string>
     <string name="shopping_list_note_label">Note</string>
     <string name="shopping_list_note_placeholder">Ex. marque ou taille</string>
+    <string name="shopping_list_item_guess_format">Reconnu comme %1$s · %2$s</string>
+    <string name="shopping_list_item_details_toggle">Catégorie, unité et note</string>
+    <string name="shopping_list_item_more_suggestions">Peut-être aussi</string>
     <string name="shopping_list_price_placeholder">0,00</string>
     <string name="shopping_list_switch_list_cd">Changer de liste</string>
     <string name="shopping_list_total_format">Total : %1$s</string>
@@ -681,14 +713,33 @@
     <string name="recipes_translated_badge">Traduit par IA</string>
     <string name="recipes_generate_ai_button">Générer une recette avec l\'IA</string>
     <string name="recipes_generate_fab">Recette IA</string>
-    <string name="recipes_generate_ai_title">Générer une recette avec l\'IA</string>
+    <string name="recipes_generate_ai_title">Imaginer une recette</string>
     <string name="recipes_generate_ai_hint">Nous inventons une recette à partir de votre stock actuel. Une envie particulière ?</string>
-    <string name="recipes_generate_ai_placeholder">Ex. \'quelque chose avec du poulet et du riz\' (facultatif)</string>
-    <string name="recipes_generate_ai_action">Générer</string>
+    <string name="recipes_generate_ai_placeholder">Ou tape toi-même une envie…</string>
+    <string name="recipes_generate_ai_action">Imaginer une recette</string>
     <string name="recipes_generate_ai_loading">Invention d\'une recette…</string>
     <string name="recipes_generate_ai_failed_no_connection">Pas de connexion. Vérifiez votre connexion internet et réessayez.</string>
     <string name="recipes_generate_ai_failed_premium">Cette fonctionnalité est uniquement disponible avec Premium.</string>
     <string name="recipes_generate_ai_failed_unknown">Impossible de générer une recette. Réessayez.</string>
+    <string name="recipes_generate_ai_sending_title">Voici ce que l\'IA va utiliser</string>
+    <string name="recipes_generate_ai_use_expiring_label">Utiliser ce qui va bientôt périmer</string>
+    <string name="recipes_generate_wish_section_title">De quoi as-tu envie ?</string>
+    <string name="recipes_generate_ai_chip_format">%1$s · %2$s</string>
+    <string name="recipes_generate_ai_expiring_hint_format">Privilégie ces produits qui vont bientôt périmer : %1$s.</string>
+    <string name="recipes_generate_wish_preset_fast">Rapide (&lt;20 min)</string>
+    <string name="recipes_generate_wish_preset_vegetarian">Végétarien</string>
+    <string name="recipes_generate_wish_preset_comfort">Comfort food</string>
+    <string name="recipes_generate_wish_preset_bake">Gratin</string>
+    <string name="recipes_generate_wish_preset_asian">Asiatique</string>
+    <string name="recipes_generate_wish_preset_two">Pour 2</string>
+    <plurals name="recipes_generate_ai_more_chips_format">
+        <item quantity="one">+ %1$d de plus</item>
+        <item quantity="other">+ %1$d de plus</item>
+    </plurals>
+    <plurals name="recipes_generate_ai_chip_days_format">
+        <item quantity="one">%1$d jour</item>
+        <item quantity="other">%1$d jours</item>
+    </plurals>
     <string name="recipes_import_url_button">Importer depuis une URL</string>
     <string name="recipes_import_url_title">Importer une recette depuis une URL</string>
     <string name="recipes_import_url_hint">Colle le lien d\'une page de recette — nous en extrairons les ingrédients et la préparation. Tu pourras tout modifier avant d\'enregistrer.</string>
@@ -765,8 +816,11 @@
     <string name="meal_plan_clear_cd">Retirer le repas</string>
     <string name="meal_plan_delete_cd">Supprimer</string>
     <string name="meal_plan_removed_format">%1$s supprimé</string>
-    <string name="meal_plan_picker_title_format">Ajouter un repas pour %1$s</string>
+    <string name="meal_plan_picker_title_format">%1$s · %2$s</string>
     <string name="meal_plan_picker_empty">Aucune suggestion trouvée. Ajoute plus de produits à ton stock.</string>
+    <string name="meal_plan_recipe_match_format">%1$d ingrédients sur %2$d déjà chez vous</string>
+
+    <string name="meal_plan_picker_no_matches">Rien trouvé avec ces filtres.</string>
     <string name="meal_plan_manual_entry_label">Saisir votre propre repas</string>
     <string name="meal_plan_manual_entry_placeholder">Ex. Pâtes à la sauce tomate</string>
     <string name="meal_plan_manual_entry_add">Ajouter</string>
@@ -810,6 +864,7 @@
 
     <!-- Reconnaissance de produit par IA (Bêta) -->
     <string name="ai_recognize_title">Reconnaissance par IA</string>
+    <string name="ai_recognize_subtitle">Une photo du produit, pas besoin de code-barres</string>
     <string name="ai_recognize_hint">Prenez une photo du produit</string>
     <string name="ai_recognize_capture_cd">Prendre une photo</string>
     <string name="ai_recognize_analyzing">Reconnaissance du produit…</string>

@@ -251,12 +251,22 @@
     <string name="more_auto_restock_subtitle">bij voorraad onder minimum</string>
     <string name="more_notifications_row_title">Houdbaarheid</string>
     <string name="more_inventory_insight_notifications_title">Voorraad en verspilling</string>
-    <string name="more_inventory_insight_notifications_subtitle">Meldingen over lage voorraad en wekelijkse voedselverspilling</string>
-    <string name="more_household_activity_notifications_title">Huisgenoot-activiteit</string>
+    <string name="more_inventory_insight_notifications_subtitle">Wekelijks, zondagavond</string>
+    <string name="more_household_activity_notifications_title">Huisgenoten</string>
     <string name="more_household_activity_notifications_subtitle">Meldingen wanneer een huisgenoot iets wijzigt, of het huishouden verandert</string>
-    <string name="more_premium_notifications_title">Premium</string>
+    <string name="more_premium_notifications_title">Proefperiode &amp; abonnement</string>
     <string name="more_premium_notifications_subtitle">Melding wanneer je proefperiode bijna afloopt</string>
     <string name="more_notifications_menu_title">Meldingen</string>
+    <string name="more_notifications_hero_subtitle">De belangrijkste melding van HomeStock</string>
+    <string name="more_notifications_lead_time_label">Waarschuw</string>
+    <string name="more_notifications_time_label">Tijdstip</string>
+    <string name="more_notifications_time_format">%1$02d:%2$02d</string>
+    <string name="more_notifications_also_section">Ook melden</string>
+    <string name="more_household_activity_notifications_subtitle_named_format">Als %1$s iets afvinkt of toevoegt</string>
+    <plurals name="more_notifications_lead_time_days_format">
+        <item quantity="one">%1$d dag</item>
+        <item quantity="other">%1$d dagen</item>
+    </plurals>
     <plurals name="more_notifications_menu_subtitle_format">
         <item quantity="one">%1$d van %2$d aan</item>
         <item quantity="other">%1$d van %2$d aan</item>
@@ -303,6 +313,7 @@
     <string name="more_section_features">Slimme Tools</string>
     <string name="more_beta_recipes">Recepten</string>
     <string name="more_beta_receipt_scan">Bonnetje scannen</string>
+    <string name="more_beta_receipt_scan_subtitle">Hele kassabon in één keer erin</string>
     <string name="more_section_debug">Debug</string>
     <string name="more_debug_premium_title">Premium simuleren</string>
 
@@ -327,7 +338,10 @@
     <string name="inventory_add_menu_cd">Scan</string>
     <string name="inventory_add_menu_title">Product toevoegen</string>
     <string name="inventory_add_menu_barcode">Barcode scannen</string>
+    <string name="inventory_add_menu_barcode_subtitle">Snelste manier · camera opent direct</string>
     <string name="inventory_add_menu_search">Zoeken op naam</string>
+    <string name="inventory_add_menu_search_subtitle">Geen barcode bij de hand</string>
+    <string name="inventory_add_menu_premium_divider">Met Premium</string>
     <string name="inventory_removed_snackbar_format">%1$s verwijderd</string>
     <plurals name="inventory_bulk_removed_snackbar_format">
         <item quantity="one">%1$d product verwijderd</item>
@@ -509,10 +523,24 @@
     <!-- Boodschappenlijst -->
     <string name="shopping_list_title">Boodschappenlijst</string>
     <string name="shopping_list_clear_checked_cd">Wis afgevinkte items</string>
+    <plurals name="shopping_list_item_count_format">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <plurals name="shopping_list_open_items_format">
+        <item quantity="one">%1$d openstaand item</item>
+        <item quantity="other">%1$d openstaande items</item>
+    </plurals>
+    <plurals name="shopping_list_clear_checked_subtitle_format">
+        <item quantity="one">%1$d item · kan niet terug</item>
+        <item quantity="other">%1$d items · kan niet terug</item>
+    </plurals>
+    <string name="shopping_list_options_this_list_section">Deze lijst</string>
     <string name="shopping_list_check_all_cd">Alles afvinken</string>
     <string name="shopping_list_sort_cd">Sorteren</string>
     <string name="shopping_list_sort_active_cd_format">Sorteren (actief: %1$s)</string>
     <string name="shopping_list_sort_manual">Handmatige volgorde</string>
+    <string name="shopping_list_sort_manual_short">Handmatig</string>
     <string name="shopping_list_sort_aisle">Winkelindeling</string>
     <string name="shopping_list_share_cd">Boodschappenlijst delen</string>
     <string name="shopping_list_share_title">Boodschappenlijst</string>
@@ -547,8 +575,12 @@
     <string name="shopping_list_item_edit_title">Item bewerken</string>
     <string name="shopping_list_add_confirm">Toevoegen</string>
     <string name="shopping_list_save_confirm">Opslaan</string>
+    <string name="shopping_list_item_add_confirm_full">Toevoegen aan lijst</string>
     <string name="shopping_list_note_label">Opmerking</string>
     <string name="shopping_list_note_placeholder">Bijv. merk of maat</string>
+    <string name="shopping_list_item_guess_format">Herkend als %1$s · %2$s</string>
+    <string name="shopping_list_item_details_toggle">Categorie, eenheid en notitie</string>
+    <string name="shopping_list_item_more_suggestions">Misschien ook</string>
     <string name="shopping_list_price_placeholder">0,00</string>
     <string name="shopping_list_switch_list_cd">Wissel van lijst</string>
     <string name="shopping_list_total_format">Totaal: %1$s</string>
@@ -685,14 +717,33 @@
     <string name="recipes_translated_badge">Vertaald met AI</string>
     <string name="recipes_generate_ai_button">Genereer recept met AI</string>
     <string name="recipes_generate_fab">AI-recept</string>
-    <string name="recipes_generate_ai_title">Recept genereren met AI</string>
+    <string name="recipes_generate_ai_title">Recept bedenken</string>
     <string name="recipes_generate_ai_hint">Wij bedenken een recept op basis van je huidige voorraad. Heb je nog een specifieke wens?</string>
-    <string name="recipes_generate_ai_placeholder">Bijv. \'iets met kip en rijst\' (optioneel)</string>
-    <string name="recipes_generate_ai_action">Genereer</string>
+    <string name="recipes_generate_ai_placeholder">Of typ zelf een wens…</string>
+    <string name="recipes_generate_ai_action">Bedenk een recept</string>
     <string name="recipes_generate_ai_loading">Recept bedenken…</string>
     <string name="recipes_generate_ai_failed_no_connection">Geen verbinding. Controleer je internetverbinding en probeer het opnieuw.</string>
     <string name="recipes_generate_ai_failed_premium">Deze functie is alleen beschikbaar met Premium.</string>
     <string name="recipes_generate_ai_failed_unknown">Kon geen recept genereren. Probeer het opnieuw.</string>
+    <string name="recipes_generate_ai_sending_title">Hiermee gaat AI aan de slag</string>
+    <string name="recipes_generate_ai_use_expiring_label">Gebruik wat bijna verloopt</string>
+    <string name="recipes_generate_wish_section_title">Waar heb je zin in?</string>
+    <string name="recipes_generate_ai_chip_format">%1$s · %2$s</string>
+    <string name="recipes_generate_ai_expiring_hint_format">Gebruik het liefst deze producten die bijna over datum zijn: %1$s.</string>
+    <string name="recipes_generate_wish_preset_fast">Snel (&lt;20 min)</string>
+    <string name="recipes_generate_wish_preset_vegetarian">Vegetarisch</string>
+    <string name="recipes_generate_wish_preset_comfort">Comfort food</string>
+    <string name="recipes_generate_wish_preset_bake">Ovenschotel</string>
+    <string name="recipes_generate_wish_preset_asian">Aziatisch</string>
+    <string name="recipes_generate_wish_preset_two">Voor 2</string>
+    <plurals name="recipes_generate_ai_more_chips_format">
+        <item quantity="one">+ %1$d meer</item>
+        <item quantity="other">+ %1$d meer</item>
+    </plurals>
+    <plurals name="recipes_generate_ai_chip_days_format">
+        <item quantity="one">%1$d dag</item>
+        <item quantity="other">%1$d dgn</item>
+    </plurals>
     <string name="recipes_import_url_button">Importeer van URL</string>
     <string name="recipes_import_url_title">Recept importeren van URL</string>
     <string name="recipes_import_url_hint">Plak de link naar een receptenpagina — wij halen de ingrediënten en bereidingswijze eruit. Je kunt alles nog aanpassen voordat je het opslaat.</string>
@@ -769,8 +820,11 @@
     <string name="meal_plan_clear_cd">Maaltijd verwijderen</string>
     <string name="meal_plan_delete_cd">Verwijderen</string>
     <string name="meal_plan_removed_format">%1$s verwijderd</string>
-    <string name="meal_plan_picker_title_format">Maaltijd toevoegen voor %1$s</string>
+    <string name="meal_plan_picker_title_format">%1$s · %2$s</string>
     <string name="meal_plan_picker_empty">Geen suggesties gevonden. Voeg meer producten toe aan je voorraad.</string>
+    <string name="meal_plan_recipe_match_format">%1$d van %2$d ingrediënten in huis</string>
+
+    <string name="meal_plan_picker_no_matches">Niets gevonden met deze filters.</string>
     <string name="meal_plan_manual_entry_label">Zelf een maaltijd invoeren</string>
     <string name="meal_plan_manual_entry_placeholder">Bijv. Pasta met tomatensaus</string>
     <string name="meal_plan_manual_entry_add">Toevoegen</string>
@@ -814,6 +868,7 @@
 
     <!-- AI-productherkenning (Premium) -->
     <string name="ai_recognize_title">AI-productherkenning</string>
+    <string name="ai_recognize_subtitle">Foto van het product, geen barcode nodig</string>
     <string name="ai_recognize_hint">Maak een foto van het product</string>
     <string name="ai_recognize_capture_cd">Foto maken</string>
     <string name="ai_recognize_analyzing">Product herkennen…</string>

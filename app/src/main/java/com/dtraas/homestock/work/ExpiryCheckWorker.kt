@@ -22,8 +22,10 @@ import com.dtraas.homestock.MainActivity
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import kotlinx.coroutines.flow.first
+import java.time.Duration
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.time.temporal.ChronoUnit
 import java.util.concurrent.TimeUnit
@@ -52,12 +54,13 @@ class ExpiryCheckWorker(
             return Result.success()
         }
 
+        val leadTimeDays = container.notificationPreferences.expiryLeadTimeDays.first()
         val today = LocalDate.now(ZoneOffset.UTC)
         val expiringSoon = container.inventoryRepository.observeInventoryWithProduct().first()
             .filter { item ->
                 val expirationDate = item.expirationDate ?: return@filter false
                 val date = Instant.ofEpochMilli(expirationDate).atZone(ZoneOffset.UTC).toLocalDate()
-                ChronoUnit.DAYS.between(today, date) <= EXPIRY_THRESHOLD_DAYS
+                ChronoUnit.DAYS.between(today, date) <= leadTimeDays
             }
 
         if (expiringSoon.isNotEmpty()) {
@@ -150,7 +153,6 @@ class ExpiryCheckWorker(
     }
 
     companion object {
-        private const val EXPIRY_THRESHOLD_DAYS = 3L
         private const val NOTIFICATION_ID = 1001
         private const val WORK_NAME = "expiry_check"
         const val CHANNEL_ID = "expiry_reminders"
@@ -167,16 +169,31 @@ class ExpiryCheckWorker(
         }
 
         /**
-         * Arms the daily check. Idempotent (KEEP) and safe to call unconditionally on every
-         * app start — [doWork] itself no-ops when the user has the setting turned off.
+         * Arms the daily check so its first run lands on the next occurrence of [hour]:[minute]
+         * (device-local wall-clock time — Instellingen > Meldingen's "Tijdstip" control), then
+         * repeats every 24h from there. Safe to call unconditionally on every app start (and
+         * again whenever the household changes the time) — [ExistingPeriodicWorkPolicy.UPDATE]
+         * replaces the pending request's schedule without losing the periodic work's identity,
+         * and [doWork] itself no-ops when the user has the setting turned off.
          */
-        fun schedule(context: Context) {
-            val request = PeriodicWorkRequestBuilder<ExpiryCheckWorker>(1, TimeUnit.DAYS).build()
+        fun schedule(context: Context, hour: Int = 18, minute: Int = 0) {
+            val request = PeriodicWorkRequestBuilder<ExpiryCheckWorker>(1, TimeUnit.DAYS)
+                .setInitialDelay(initialDelayMillis(hour, minute), TimeUnit.MILLISECONDS)
+                .build()
             WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                 WORK_NAME,
-                ExistingPeriodicWorkPolicy.KEEP,
+                ExistingPeriodicWorkPolicy.UPDATE,
                 request,
             )
+        }
+
+        /** Milliseconds until the next [hour]:[minute] in the device's own time zone — today if
+         *  that moment hasn't passed yet, tomorrow otherwise. */
+        private fun initialDelayMillis(hour: Int, minute: Int): Long {
+            val now = LocalDateTime.now()
+            var target = now.withHour(hour).withMinute(minute).withSecond(0).withNano(0)
+            if (!target.isAfter(now)) target = target.plusDays(1)
+            return Duration.between(now, target).toMillis()
         }
 
         /** Runs a single check right away, e.g. for instant feedback when the user enables the setting. */

@@ -50,6 +50,7 @@ import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PrivacyTip
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarRate
@@ -63,6 +64,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -77,6 +79,8 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimePicker
+import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -98,6 +102,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import coil.compose.AsyncImage
@@ -112,7 +117,11 @@ import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.MeasurementUnit
 import com.dtraas.homestock.data.repository.HouseholdMember
 import com.dtraas.homestock.data.repository.ThemeMode
+import com.dtraas.homestock.ui.components.HomeStockBottomSheet
 import com.dtraas.homestock.ui.components.ProfileEditDialog
+import com.dtraas.homestock.ui.components.SheetEyebrow
+import com.dtraas.homestock.ui.components.SheetTitle
+import com.dtraas.homestock.ui.components.sheetContentPadding
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnSageGreenPrimaryContainer
@@ -162,6 +171,9 @@ fun MoreScreen(
     val application = context.applicationContext as HomeStockApplication
     val notificationPreferences = application.container.notificationPreferences
     val notificationsEnabled by notificationPreferences.expiryNotificationsEnabled.collectAsState()
+    val expiryLeadTimeDays by notificationPreferences.expiryLeadTimeDays.collectAsState()
+    val expiryNotifyHour by notificationPreferences.expiryNotifyHour.collectAsState()
+    val expiryNotifyMinute by notificationPreferences.expiryNotifyMinute.collectAsState()
     val inventoryInsightNotificationsEnabled by notificationPreferences.inventoryInsightNotificationsEnabled.collectAsState()
     val premiumNotificationsEnabled by notificationPreferences.premiumNotificationsEnabled.collectAsState()
     val householdActivityNotificationsEnabled by notificationPreferences.householdActivityNotificationsEnabled.collectAsState()
@@ -251,6 +263,17 @@ fun MoreScreen(
     fun setHouseholdActivityNotificationsEnabled(enabled: Boolean) {
         notificationPreferences.setHouseholdActivityNotificationsEnabled(enabled)
         if (enabled) requestNotificationPermissionIfNeeded()
+    }
+
+    fun setExpiryLeadTimeDays(days: Int) {
+        notificationPreferences.setExpiryLeadTimeDays(days)
+    }
+
+    /** Also re-arms [ExpiryCheckWorker] right away, at the freshly chosen time — see its
+     *  `schedule`'s doc for why that's safe to call again here. */
+    fun setExpiryNotifyTime(hour: Int, minute: Int) {
+        notificationPreferences.setExpiryNotifyTime(hour, minute)
+        ExpiryCheckWorker.schedule(context, hour, minute)
     }
 
     // CSV export (Voorraad) — moved verbatim from the now-gone MoreOptionsScreen.kt: the CSV
@@ -649,10 +672,18 @@ fun MoreScreen(
         NotificationsSettingsDialog(
             expiryEnabled = notificationsEnabled,
             onExpiryChange = ::setNotificationsEnabled,
+            expiryLeadTimeDays = expiryLeadTimeDays,
+            onExpiryLeadTimeChange = ::setExpiryLeadTimeDays,
+            expiryNotifyHour = expiryNotifyHour,
+            expiryNotifyMinute = expiryNotifyMinute,
+            onExpiryNotifyTimeChange = ::setExpiryNotifyTime,
             inventoryInsightEnabled = inventoryInsightNotificationsEnabled,
             onInventoryInsightChange = ::setInventoryInsightNotificationsEnabled,
             householdActivityEnabled = householdActivityNotificationsEnabled,
             onHouseholdActivityChange = ::setHouseholdActivityNotificationsEnabled,
+            // The first other device in the household — "Als <naam> iets afvinkt of toevoegt"
+            // names someone real instead of the generic "een huisgenoot" the old copy said.
+            housemateName = members.firstOrNull { !it.isCurrentDevice }?.displayName?.takeIf { it.isNotBlank() },
             premiumEnabled = premiumNotificationsEnabled,
             onPremiumChange = ::setPremiumNotificationsEnabled,
             onDismiss = { showNotificationsDialog = false },
@@ -723,56 +754,220 @@ private fun notificationsSubtitle(vararg enabled: Boolean): String {
 private fun NotificationsSettingsDialog(
     expiryEnabled: Boolean,
     onExpiryChange: (Boolean) -> Unit,
+    expiryLeadTimeDays: Int,
+    onExpiryLeadTimeChange: (Int) -> Unit,
+    expiryNotifyHour: Int,
+    expiryNotifyMinute: Int,
+    onExpiryNotifyTimeChange: (Int, Int) -> Unit,
     inventoryInsightEnabled: Boolean,
     onInventoryInsightChange: (Boolean) -> Unit,
     householdActivityEnabled: Boolean,
     onHouseholdActivityChange: (Boolean) -> Unit,
+    housemateName: String?,
     premiumEnabled: Boolean,
     onPremiumChange: (Boolean) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.more_notifications_menu_title)) },
-        text = {
-            Column(
-                modifier = Modifier.verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
+    var showTimePicker by remember { mutableStateOf(false) }
+
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(sheetContentPadding),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            SheetTitle(title = stringResource(R.string.more_notifications_menu_title))
+
+            // Hero card: Houdbaarheid is the one notification most people actually want, so it
+            // gets top billing with its own switch plus, once on, the two knobs that decide
+            // exactly when it fires — rather than being just another row among the others below.
+            Surface(
+                shape = SoftCardShape,
+                color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                SwitchRow(
-                    icon = Icons.Filled.Notifications,
-                    title = stringResource(R.string.more_notifications_row_title),
-                    subtitle = stringResource(R.string.more_expiry_notifications_description),
-                    checked = expiryEnabled,
-                    onCheckedChange = onExpiryChange,
-                )
-                SwitchRow(
-                    icon = Icons.Filled.Inventory2,
-                    title = stringResource(R.string.more_inventory_insight_notifications_title),
-                    subtitle = stringResource(R.string.more_inventory_insight_notifications_subtitle),
-                    checked = inventoryInsightEnabled,
-                    onCheckedChange = onInventoryInsightChange,
-                )
-                SwitchRow(
-                    icon = Icons.Filled.Groups,
-                    title = stringResource(R.string.more_household_activity_notifications_title),
-                    subtitle = stringResource(R.string.more_household_activity_notifications_subtitle),
-                    checked = householdActivityEnabled,
-                    onCheckedChange = onHouseholdActivityChange,
-                )
-                SwitchRow(
-                    icon = Icons.Filled.WorkspacePremium,
-                    title = stringResource(R.string.more_premium_notifications_title),
-                    subtitle = stringResource(R.string.more_premium_notifications_subtitle),
-                    checked = premiumEnabled,
-                    onCheckedChange = onPremiumChange,
-                )
+                Column(modifier = Modifier.padding(18.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .background(MaterialTheme.colorScheme.surfaceContainerHighest, RoundedCornerShape(16.dp)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Notifications,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(22.dp),
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f).padding(start = 14.dp)) {
+                            Text(
+                                text = stringResource(R.string.more_notifications_row_title),
+                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            )
+                            Text(
+                                text = stringResource(R.string.more_notifications_hero_subtitle),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        Switch(checked = expiryEnabled, onCheckedChange = onExpiryChange)
+                    }
+
+                    if (expiryEnabled) {
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(stringResource(R.string.more_notifications_lead_time_label), style = MaterialTheme.typography.bodyMedium)
+                            LeadTimeSegmentedControl(selected = expiryLeadTimeDays, onSelected = onExpiryLeadTimeChange)
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(stringResource(R.string.more_notifications_time_label), style = MaterialTheme.typography.bodyMedium)
+                            Surface(
+                                onClick = { showTimePicker = true },
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Filled.Schedule,
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(16.dp),
+                                    )
+                                    Text(
+                                        text = stringResource(R.string.more_notifications_time_format, expiryNotifyHour, expiryNotifyMinute),
+                                        style = MaterialTheme.typography.labelLarge,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(start = 6.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_close)) }
-        },
-    )
+
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SheetEyebrow(text = stringResource(R.string.more_notifications_also_section), modifier = Modifier.padding(start = 4.dp))
+                Surface(shape = SoftCardShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.fillMaxWidth()) {
+                    Column {
+                        SwitchRow(
+                            icon = Icons.Filled.Inventory2,
+                            title = stringResource(R.string.more_inventory_insight_notifications_title),
+                            subtitle = stringResource(R.string.more_inventory_insight_notifications_subtitle),
+                            checked = inventoryInsightEnabled,
+                            onCheckedChange = onInventoryInsightChange,
+                        )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(horizontal = 16.dp))
+                        SwitchRow(
+                            icon = Icons.Filled.Groups,
+                            title = stringResource(R.string.more_household_activity_notifications_title),
+                            subtitle = housemateName
+                                ?.let { stringResource(R.string.more_household_activity_notifications_subtitle_named_format, it) }
+                                ?: stringResource(R.string.more_household_activity_notifications_subtitle),
+                            checked = householdActivityEnabled,
+                            onCheckedChange = onHouseholdActivityChange,
+                        )
+                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant, modifier = Modifier.padding(horizontal = 16.dp))
+                        SwitchRow(
+                            icon = Icons.Filled.WorkspacePremium,
+                            title = stringResource(R.string.more_premium_notifications_title),
+                            subtitle = stringResource(R.string.more_premium_notifications_subtitle),
+                            checked = premiumEnabled,
+                            onCheckedChange = onPremiumChange,
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showTimePicker) {
+        HomeStockTimePickerDialog(
+            initialHour = expiryNotifyHour,
+            initialMinute = expiryNotifyMinute,
+            onConfirm = { hour, minute ->
+                onExpiryNotifyTimeChange(hour, minute)
+                showTimePicker = false
+            },
+            onDismiss = { showTimePicker = false },
+        )
+    }
+}
+
+/** 1/2/3-dagen picker for the Houdbaarheid hero card's "Waarschuw" row — same pill-segmented
+ *  shape as [SortSegmentedControl] in ShoppingListScreen, just with a fixed 3-value int domain
+ *  instead of an enum. */
+@Composable
+private fun LeadTimeSegmentedControl(selected: Int, onSelected: (Int) -> Unit) {
+    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHighest) {
+        Row(modifier = Modifier.padding(3.dp)) {
+            (1..3).forEach { days ->
+                val isSelected = days == selected
+                Surface(
+                    onClick = { onSelected(days) },
+                    shape = CircleShape,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                ) {
+                    Text(
+                        text = pluralStringResource(R.plurals.more_notifications_lead_time_days_format, days, days),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** Material3 [TimePicker] wrapped in a plain [Dialog] — the sheet's "Tijdstip" pill opens this
+ *  rather than a full second bottom sheet, since a time picker is already a self-contained,
+ *  short-lived choice with its own OK/Annuleren, not another scrollable list of options. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HomeStockTimePickerDialog(
+    initialHour: Int,
+    initialMinute: Int,
+    onConfirm: (Int, Int) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    val state = rememberTimePickerState(initialHour = initialHour, initialMinute = initialMinute, is24Hour = true)
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(shape = SoftCardShape, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp),
+            ) {
+                Text(
+                    text = stringResource(R.string.more_notifications_time_label),
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                )
+                TimePicker(state = state)
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+                    TextButton(onClick = { onConfirm(state.hour, state.minute) }) { Text(stringResource(R.string.common_ok)) }
+                }
+            }
+        }
+    }
 }
 
 @Composable

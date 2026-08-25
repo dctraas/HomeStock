@@ -19,6 +19,19 @@ class NotificationPreferences(context: Context) {
     private val _expiryNotificationsEnabled = MutableStateFlow(prefs.getBoolean(KEY_EXPIRY_ENABLED, false))
     val expiryNotificationsEnabled: StateFlow<Boolean> = _expiryNotificationsEnabled
 
+    /** How many days out [com.dtraas.homestock.work.ExpiryCheckWorker] starts warning about an
+     *  item — Instellingen > Meldingen's "Waarschuw" control (1/2/3 dagen). */
+    private val _expiryLeadTimeDays = MutableStateFlow(prefs.getInt(KEY_EXPIRY_LEAD_DAYS, DEFAULT_EXPIRY_LEAD_DAYS))
+    val expiryLeadTimeDays: StateFlow<Int> = _expiryLeadTimeDays
+
+    /** Wall-clock hour/minute (device-local time) [com.dtraas.homestock.work.ExpiryCheckWorker]'s
+     *  daily check aims to fire at — Instellingen > Meldingen's "Tijdstip" control. */
+    private val _expiryNotifyHour = MutableStateFlow(prefs.getInt(KEY_EXPIRY_NOTIFY_HOUR, DEFAULT_EXPIRY_NOTIFY_HOUR))
+    val expiryNotifyHour: StateFlow<Int> = _expiryNotifyHour
+
+    private val _expiryNotifyMinute = MutableStateFlow(prefs.getInt(KEY_EXPIRY_NOTIFY_MINUTE, DEFAULT_EXPIRY_NOTIFY_MINUTE))
+    val expiryNotifyMinute: StateFlow<Int> = _expiryNotifyMinute
+
     /** Governs [com.dtraas.homestock.work.LowStockCheckWorker]'s "lage voorraad" reminder and
      *  [com.dtraas.homestock.work.WasteSummaryWorker]'s weekly verspilling-samenvatting — grouped
      *  under one toggle since both are periodic voorraad-inzichten, not urgent-per-item pings. */
@@ -43,6 +56,20 @@ class NotificationPreferences(context: Context) {
         _expiryNotificationsEnabled.value = enabled
     }
 
+    fun setExpiryLeadTimeDays(days: Int) {
+        prefs.edit().putInt(KEY_EXPIRY_LEAD_DAYS, days).apply()
+        _expiryLeadTimeDays.value = days
+    }
+
+    /** Also re-arms [com.dtraas.homestock.work.ExpiryCheckWorker] at the new time — see its
+     *  `schedule`'s doc; the caller (Instellingen > Meldingen) is expected to do that right after
+     *  calling this, same as it already does for the other toggles here. */
+    fun setExpiryNotifyTime(hour: Int, minute: Int) {
+        prefs.edit().putInt(KEY_EXPIRY_NOTIFY_HOUR, hour).putInt(KEY_EXPIRY_NOTIFY_MINUTE, minute).apply()
+        _expiryNotifyHour.value = hour
+        _expiryNotifyMinute.value = minute
+    }
+
     fun setInventoryInsightNotificationsEnabled(enabled: Boolean) {
         prefs.edit().putBoolean(KEY_INVENTORY_INSIGHT_ENABLED, enabled).apply()
         _inventoryInsightNotificationsEnabled.value = enabled
@@ -64,5 +91,11 @@ class NotificationPreferences(context: Context) {
         const val KEY_INVENTORY_INSIGHT_ENABLED = "inventory_insight_notifications_enabled"
         const val KEY_PREMIUM_ENABLED = "premium_notifications_enabled"
         const val KEY_HOUSEHOLD_ACTIVITY_ENABLED = "household_activity_notifications_enabled"
+        const val KEY_EXPIRY_LEAD_DAYS = "expiry_lead_time_days"
+        const val KEY_EXPIRY_NOTIFY_HOUR = "expiry_notify_hour"
+        const val KEY_EXPIRY_NOTIFY_MINUTE = "expiry_notify_minute"
+        const val DEFAULT_EXPIRY_LEAD_DAYS = 2
+        const val DEFAULT_EXPIRY_NOTIFY_HOUR = 18
+        const val DEFAULT_EXPIRY_NOTIFY_MINUTE = 0
     }
 }

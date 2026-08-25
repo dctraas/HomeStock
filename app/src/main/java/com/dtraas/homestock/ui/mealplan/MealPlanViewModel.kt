@@ -6,11 +6,13 @@ import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.local.entity.MealCompletionStatus
 import com.dtraas.homestock.data.local.entity.PlannedMeal
 import com.dtraas.homestock.data.model.MealSlot
+import com.dtraas.homestock.data.repository.GenerateRecipeResult
 import com.dtraas.homestock.data.repository.InventoryRepository
 import com.dtraas.homestock.data.repository.MealPlanRepository
 import com.dtraas.homestock.data.repository.RecipeDetail
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
+import com.dtraas.homestock.ui.recipes.GenerateRecipeError
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.util.UUID
@@ -26,22 +28,37 @@ import kotlinx.coroutines.launch
 /** Result of [MealPlanViewModel.addProductToShoppingList], for the screen's confirmation popup — [alreadyOnList] is true when [RecipeRepository.addIngredientsToShoppingList] skipped it as a dedup (an already-open line by that name), not a failure. */
 data class ShoppingListAddResult(val name: String, val alreadyOnList: Boolean)
 
+/** Which half of the merged "add to a slot" sheet (see [MealPickerDialog]) is showing — one
+ *  sheet, not two dialogs, per the 2026-08 dialog review ("the single '+' opens this sheet
+ *  directly; picking a plain product is the 'product' filter chip inside it"). */
+enum class MealPickerMode { RECIPE, PRODUCT }
+
 data class MealPlanUiState(
     val date: LocalDate = LocalDate.now(),
     val plan: Map<MealSlot, List<PlannedMeal>> = emptyMap(),
-    /** Non-null while the "Maaltijd toevoegen" dialog is open — offers both a recipe picker and manual entry. */
+    /** Non-null while the "add to slot" sheet is open — see [MealPlanViewModel.openPicker]. Both
+     *  [MealPickerMode]s share this one slot/loading lifecycle; only which list is showing and
+     *  which text field is live differs. */
     val pickerSlot: MealSlot? = null,
+    val pickerMode: MealPickerMode = MealPickerMode.RECIPE,
     val manualEntryText: String = "",
     val isPickerLoading: Boolean = false,
     val pickerSuggestions: List<RecipeSuggestion> = emptyList(),
-    /** Non-null while the "Product toevoegen" dialog is open — see [MealPlanViewModel.openProductPicker]. */
-    val productPickerSlot: MealSlot? = null,
+    /** Ids of [pickerSuggestions] that are also in the household's favorites — backs the sheet's
+     *  "Favorieten" filter chip. Favorites not already among [pickerSuggestions] are merged in
+     *  (see [openPicker]), so the filter never hides a favorite the plain suggestion list missed. */
+    val pickerFavoriteIds: Set<String> = emptySet(),
     val productEntryText: String = "",
     val isProductPickerLoading: Boolean = false,
-    /** The household's current voorraad, fetched fresh each time the dialog opens — both what
-     *  the picker's live-filtered suggestion list narrows down and what [addManualProduct]
-     *  checks a typed name against. */
+    /** The household's current voorraad, fetched fresh each time the sheet opens — both what the
+     *  product-mode live-filtered list narrows down and what [addManualProduct] checks a typed
+     *  name against. */
     val inventoryItems: List<InventoryItemWithProduct> = emptyList(),
+    /** Non-null while [generateAiMeal] is running or has just failed — the sheet's "Bedenk een
+     *  recept" footer shows a spinner/inline error off this, same pattern as RecipesScreen's own
+     *  AI-generate sheet (see [com.dtraas.homestock.ui.recipes.RecipesViewModel.generateRecipe]). */
+    val isGeneratingAiMeal: Boolean = false,
+    val aiMealError: GenerateRecipeError? = null,
     /** The 7 days in [date]'s week (Monday-start), each with its full per-slot plan — feeds the
      *  week day-strip's dots, the header's "N van 7 avonden gepland" count, and (combined with
      *  [missingIngredientsForWeek]) the "op lijst" bottom bar. See
@@ -186,20 +203,72 @@ class MealPlanViewModel(
         if (newWeekStart != previousWeekStart) loadWeekPlan()
     }
 
-    /** Opens the "add a meal" dialog for [slot] — recipe suggestions load fresh every time, inventory may have changed since it was last opened. */
+    /**
+     * Opens the merged "add to slot" sheet for [slot], in [MealPickerMode.RECIPE] — recipe
+     * suggestions, favorites, and voorraad all load fresh every time (any of the three may have
+     * changed since it was last opened), so switching to the "Product" filter chip mid-sheet
+     * never needs a second fetch. Favorites are fetched first, then merged into whatever
+     * [RecipeRepository.suggestRecipes] returns — sequential rather than parallel so there's no
+     * race between the two updates landing in [MealPlanUiState.pickerSuggestions] in either
+     * order (see the merge below).
+     */
     fun openPicker(slot: MealSlot) {
         _uiState.update {
-            it.copy(pickerSlot = slot, manualEntryText = "", isPickerLoading = true, pickerSuggestions = emptyList())
+            it.copy(
+                pickerSlot = slot,
+                pickerMode = MealPickerMode.RECIPE,
+                manualEntryText = "",
+                productEntryText = "",
+                isPickerLoading = true,
+                isProductPickerLoading = true,
+                pickerSuggestions = emptyList(),
+                pickerFavoriteIds = emptySet(),
+                inventoryItems = emptyList(),
+                aiMealError = null,
+            )
         }
         viewModelScope.launch {
+            val favorites = runCatching { recipeRepository.observeFavoriteRecipes().first() }.getOrDefault(emptyList())
+            val favoriteIds = favorites.map { it.meal.id }.toSet()
             recipeRepository.suggestRecipes()
-                .onSuccess { suggestions -> _uiState.update { it.copy(isPickerLoading = false, pickerSuggestions = suggestions) } }
-                .onFailure { _uiState.update { it.copy(isPickerLoading = false, pickerSuggestions = emptyList()) } }
+                .onSuccess { suggestions ->
+                    val merged = LinkedHashMap<String, RecipeSuggestion>()
+                    suggestions.forEach { merged[it.meal.id] = it }
+                    favorites.forEach { fav -> merged.putIfAbsent(fav.meal.id, fav) }
+                    _uiState.update {
+                        it.copy(isPickerLoading = false, pickerSuggestions = merged.values.toList(), pickerFavoriteIds = favoriteIds)
+                    }
+                }
+                .onFailure {
+                    _uiState.update { it.copy(isPickerLoading = false, pickerSuggestions = favorites, pickerFavoriteIds = favoriteIds) }
+                }
+        }
+        viewModelScope.launch {
+            val items = inventoryRepository.observeInventoryWithProduct().first()
+            _uiState.update { it.copy(isProductPickerLoading = false, inventoryItems = items) }
         }
     }
 
+    fun setPickerMode(mode: MealPickerMode) {
+        _uiState.update { it.copy(pickerMode = mode) }
+    }
+
     fun dismissPicker() {
-        _uiState.update { it.copy(pickerSlot = null, manualEntryText = "", isPickerLoading = false, pickerSuggestions = emptyList()) }
+        _uiState.update {
+            it.copy(
+                pickerSlot = null,
+                pickerMode = MealPickerMode.RECIPE,
+                manualEntryText = "",
+                isPickerLoading = false,
+                pickerSuggestions = emptyList(),
+                pickerFavoriteIds = emptySet(),
+                productEntryText = "",
+                isProductPickerLoading = false,
+                inventoryItems = emptyList(),
+                isGeneratingAiMeal = false,
+                aiMealError = null,
+            )
+        }
     }
 
     fun onManualEntryTextChange(text: String) {
@@ -264,32 +333,13 @@ class MealPlanViewModel(
         viewModelScope.launch { mealPlanRepository.addMeal(date, slot, meal) }
     }
 
-    /** Opens the "Product toevoegen" dialog for [slot] — voorraad is fetched fresh every time,
-     *  same reasoning as [openPicker]'s recipe suggestions: it may have changed since it was
-     *  last opened. */
-    fun openProductPicker(slot: MealSlot) {
-        _uiState.update {
-            it.copy(productPickerSlot = slot, productEntryText = "", isProductPickerLoading = true, inventoryItems = emptyList())
-        }
-        viewModelScope.launch {
-            val items = inventoryRepository.observeInventoryWithProduct().first()
-            _uiState.update { it.copy(isProductPickerLoading = false, inventoryItems = items) }
-        }
-    }
-
-    fun dismissProductPicker() {
-        _uiState.update {
-            it.copy(productPickerSlot = null, productEntryText = "", isProductPickerLoading = false, inventoryItems = emptyList())
-        }
-    }
-
     fun onProductEntryTextChange(text: String) {
         _uiState.update { it.copy(productEntryText = text) }
     }
 
     /** Adds [item] — already confirmed to exist in voorraad, since it came from [MealPlanUiState.inventoryItems] — as a planned product. */
     fun pickProduct(item: InventoryItemWithProduct) {
-        val slot = _uiState.value.productPickerSlot ?: return
+        val slot = _uiState.value.pickerSlot ?: return
         val date = _uiState.value.date
         val meal = PlannedMeal(
             id = UUID.randomUUID().toString(),
@@ -299,7 +349,7 @@ class MealPlanViewModel(
             isProduct = true,
         )
         viewModelScope.launch { mealPlanRepository.addMeal(date, slot, meal) }
-        dismissProductPicker()
+        dismissPicker()
     }
 
     /**
@@ -313,7 +363,7 @@ class MealPlanViewModel(
      * than silently deciding on the household's behalf whether it belongs there.
      */
     fun addManualProduct() {
-        val slot = _uiState.value.productPickerSlot ?: return
+        val slot = _uiState.value.pickerSlot ?: return
         val name = _uiState.value.productEntryText.trim()
         if (name.isEmpty()) return
         val match = _uiState.value.inventoryItems.firstOrNull { it.name.equals(name, ignoreCase = true) }
@@ -324,7 +374,42 @@ class MealPlanViewModel(
         val date = _uiState.value.date
         val meal = PlannedMeal(id = UUID.randomUUID().toString(), name = name, isProduct = true)
         viewModelScope.launch { mealPlanRepository.addMeal(date, slot, meal) }
-        dismissProductPicker()
+        dismissPicker()
+    }
+
+    /**
+     * "Bedenk een recept" — asks Claude (via [RecipeRepository.generateRecipe], the same call
+     * RecipesScreen's own AI-generate sheet uses) to invent one recipe from the household's
+     * current inventory, then plans the result straight into [MealPlanUiState.pickerSlot] and
+     * closes the sheet — no intermediate "here's what I made, add it?" step, since the sheet was
+     * already mid-picking-a-meal-for-this-slot when this was tapped. A failure leaves the sheet
+     * open with [MealPlanUiState.aiMealError] set instead, so the household can just try again
+     * or fall back to a suggestion/manual entry without losing their place.
+     */
+    fun generateAiMeal(languageTag: String?) {
+        val slot = _uiState.value.pickerSlot ?: return
+        val date = _uiState.value.date
+        viewModelScope.launch {
+            _uiState.update { it.copy(isGeneratingAiMeal = true, aiMealError = null) }
+            when (val result = recipeRepository.generateRecipe(wish = null, languageTag = languageTag)) {
+                is GenerateRecipeResult.Success -> {
+                    val meal = PlannedMeal(
+                        id = result.detail.id,
+                        name = result.detail.name,
+                        thumbnailUrl = result.detail.thumbnailUrl,
+                        recipeId = result.detail.id,
+                    )
+                    mealPlanRepository.addMeal(date, slot, meal)
+                    dismissPicker()
+                }
+                GenerateRecipeResult.PremiumRequired ->
+                    _uiState.update { it.copy(isGeneratingAiMeal = false, aiMealError = GenerateRecipeError.PREMIUM_REQUIRED) }
+                GenerateRecipeResult.NoConnection ->
+                    _uiState.update { it.copy(isGeneratingAiMeal = false, aiMealError = GenerateRecipeError.NO_CONNECTION) }
+                GenerateRecipeResult.Failed ->
+                    _uiState.update { it.copy(isGeneratingAiMeal = false, aiMealError = GenerateRecipeError.UNKNOWN) }
+            }
+        }
     }
 
     /** Called from [CompactPlannedRow]'s persistent "toevoegen aan boodschappenlijst" button — only

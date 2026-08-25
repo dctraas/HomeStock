@@ -6,6 +6,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -27,22 +29,27 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircleOutline
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Cookie
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.DinnerDining
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FreeBreakfast
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LunchDining
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SwapHoriz
-import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.filled.WifiOff
+import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -54,6 +61,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -90,6 +98,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -106,6 +115,11 @@ import com.dtraas.homestock.data.local.entity.PlannedMeal
 import com.dtraas.homestock.data.model.MealSlot
 import com.dtraas.homestock.data.repository.RecipeDetail
 import com.dtraas.homestock.data.repository.RecipeSuggestion
+import com.dtraas.homestock.ui.components.HomeStockBottomSheet
+import com.dtraas.homestock.ui.components.SheetChip
+import com.dtraas.homestock.ui.components.SheetTitle
+import com.dtraas.homestock.ui.components.sheetContentPadding
+import com.dtraas.homestock.ui.recipes.GenerateRecipeError
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
@@ -269,8 +283,7 @@ fun MealPlanScreen(
                     allInStock = uiState.dinnerAllIngredientsInStock,
                     onOpenRecipe = onRecipeClick,
                     onOpenProduct = onProductClick,
-                    onAddProductClick = { viewModel.openProductPicker(MealSlot.DINNER) },
-                    onAddMealClick = { viewModel.openPicker(MealSlot.DINNER) },
+                    onAddClick = { viewModel.openPicker(MealSlot.DINNER) },
                     onSwap = { meal ->
                         removeWithUndo(MealSlot.DINNER, meal)
                         viewModel.openPicker(MealSlot.DINNER)
@@ -286,8 +299,7 @@ fun MealPlanScreen(
                         slot = slot,
                         label = stringResource(slot.labelRes),
                         planned = uiState.plan[slot].orEmpty(),
-                        onAddProductClick = { viewModel.openProductPicker(slot) },
-                        onAddMealClick = { viewModel.openPicker(slot) },
+                        onAddClick = { viewModel.openPicker(slot) },
                         onOpenRecipe = onRecipeClick,
                         onOpenProduct = onProductClick,
                         onRemove = { meal -> removeWithUndo(slot, meal) },
@@ -303,28 +315,26 @@ fun MealPlanScreen(
     val pickerSlot = uiState.pickerSlot
     if (pickerSlot != null) {
         MealPickerDialog(
-            titleText = stringResource(R.string.meal_plan_picker_title_format, stringResource(pickerSlot.labelRes)),
+            titleText = stringResource(R.string.meal_plan_picker_title_format, stringResource(pickerSlot.labelRes), selectedDayLabel),
+            mode = uiState.pickerMode,
+            onModeChange = viewModel::setPickerMode,
             manualEntryText = uiState.manualEntryText,
             onManualEntryTextChange = viewModel::onManualEntryTextChange,
             onManualEntryAdd = viewModel::addManualMeal,
             isLoading = uiState.isPickerLoading,
             suggestions = uiState.pickerSuggestions,
-            onSelect = viewModel::pickMeal,
-            onDismiss = viewModel::dismissPicker,
-        )
-    }
-
-    val productPickerSlot = uiState.productPickerSlot
-    if (productPickerSlot != null) {
-        ProductPickerDialog(
-            titleText = stringResource(R.string.meal_plan_product_picker_title_format, stringResource(productPickerSlot.labelRes)),
-            entryText = uiState.productEntryText,
-            onEntryTextChange = viewModel::onProductEntryTextChange,
-            onEntryAdd = viewModel::addManualProduct,
-            isLoading = uiState.isProductPickerLoading,
+            favoriteIds = uiState.pickerFavoriteIds,
+            onSelectRecipe = viewModel::pickMeal,
+            productEntryText = uiState.productEntryText,
+            onProductEntryTextChange = viewModel::onProductEntryTextChange,
+            onProductEntryAdd = viewModel::addManualProduct,
+            isProductLoading = uiState.isProductPickerLoading,
             inventoryItems = uiState.inventoryItems,
-            onSelect = viewModel::pickProduct,
-            onDismiss = viewModel::dismissProductPicker,
+            onSelectProduct = viewModel::pickProduct,
+            isGeneratingAiMeal = uiState.isGeneratingAiMeal,
+            aiMealError = uiState.aiMealError,
+            onGenerateAiMeal = { viewModel.generateAiMeal(locale.language) },
+            onDismiss = viewModel::dismissPicker,
         )
     }
 }
@@ -477,8 +487,7 @@ private fun DinnerCard(
     allInStock: Boolean,
     onOpenRecipe: (String) -> Unit,
     onOpenProduct: (String) -> Unit,
-    onAddProductClick: () -> Unit,
-    onAddMealClick: () -> Unit,
+    onAddClick: () -> Unit,
     onSwap: (PlannedMeal) -> Unit,
     onRemove: (PlannedMeal) -> Unit,
     onAddToShoppingList: (PlannedMeal) -> Unit,
@@ -600,7 +609,7 @@ private fun DinnerCard(
                     onMarkWasted = { onMarkWasted(meal) },
                 )
             }
-            EmptySlotAddButton(onAddProductClick, onAddMealClick, contentDescription = stringResource(R.string.meal_plan_add_cd))
+            EmptySlotAddButton(onAddClick, contentDescription = stringResource(R.string.meal_plan_add_cd))
         } else if (planned.isNotEmpty()) {
             planned.forEach { meal ->
                 CompactPlannedRow(
@@ -617,9 +626,9 @@ private fun DinnerCard(
                     onMarkWasted = { onMarkWasted(meal) },
                 )
             }
-            EmptySlotAddButton(onAddProductClick, onAddMealClick, contentDescription = stringResource(R.string.meal_plan_add_cd))
+            EmptySlotAddButton(onAddClick, contentDescription = stringResource(R.string.meal_plan_add_cd))
         } else {
-            EmptySlotAddButton(onAddProductClick, onAddMealClick, contentDescription = stringResource(R.string.meal_plan_add_cd))
+            EmptySlotAddButton(onAddClick, contentDescription = stringResource(R.string.meal_plan_add_cd))
         }
     }
 }
@@ -631,8 +640,7 @@ private fun CompactSlotCard(
     slot: MealSlot,
     label: String,
     planned: List<PlannedMeal>,
-    onAddProductClick: () -> Unit,
-    onAddMealClick: () -> Unit,
+    onAddClick: () -> Unit,
     onOpenRecipe: (String) -> Unit,
     onOpenProduct: (String) -> Unit,
     onRemove: (PlannedMeal) -> Unit,
@@ -665,23 +673,24 @@ private fun CompactSlotCard(
                 onMarkWasted = { onMarkWasted(meal) },
             )
         }
-        EmptySlotAddButton(onAddProductClick, onAddMealClick, contentDescription = stringResource(R.string.meal_plan_add_cd))
+        EmptySlotAddButton(onAddClick, contentDescription = stringResource(R.string.meal_plan_add_cd))
     }
 }
 
 /** A single 1dp-dashed, 24dp-icon "add" affordance — one plus per slot instead of the old
- *  side-by-side "+ Product"/"+ Recept" pair repeated in every slot. Tapping it opens
- *  [AddChooserDialog] to pick which of the two flows this tap actually meant. */
+ *  side-by-side "+ Product"/"+ Recept" pair repeated in every slot. Opens [MealPickerDialog]
+ *  directly (in [MealPickerMode.RECIPE]) — the "product or recept?" choice this used to open a
+ *  second dialog for is now just the sheet's own "Product" filter chip, per the 2026-08 dialog
+ *  review. */
 @Composable
-private fun EmptySlotAddButton(onAddProductClick: () -> Unit, onAddMealClick: () -> Unit, contentDescription: String) {
-    var showChooser by remember { mutableStateOf(false) }
+private fun EmptySlotAddButton(onClick: () -> Unit, contentDescription: String) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .height(44.dp)
             .dashedBorder(MaterialTheme.colorScheme.outlineVariant, cornerRadius = 12.dp)
             .clip(RoundedCornerShape(12.dp))
-            .clickable { showChooser = true },
+            .clickable(onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
         Icon(
@@ -691,44 +700,6 @@ private fun EmptySlotAddButton(onAddProductClick: () -> Unit, onAddMealClick: ()
             modifier = Modifier.size(24.dp),
         )
     }
-    if (showChooser) {
-        AddChooserDialog(
-            onPickProduct = { showChooser = false; onAddProductClick() },
-            onPickRecipe = { showChooser = false; onAddMealClick() },
-            onDismiss = { showChooser = false },
-        )
-    }
-}
-
-/** Two labeled, icon-led rows — same shape as MoreScreen's Importeren/Exporteren dialog and
- *  ProductDetailScreen's PhotoDialog — for the one-plus-per-slot button's "product or recept?" choice. */
-@Composable
-private fun AddChooserDialog(onPickProduct: () -> Unit, onPickRecipe: () -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.meal_plan_add_chooser_title)) },
-        text = {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth().clickable(onClick = onPickProduct).padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Filled.Inventory2, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Text(stringResource(R.string.meal_plan_add_product), modifier = Modifier.padding(start = 12.dp))
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth().clickable(onClick = onPickRecipe).padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Filled.Restaurant, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Text(stringResource(R.string.meal_plan_add_recipe), modifier = Modifier.padding(start = 12.dp))
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
-        },
-    )
 }
 
 /**
@@ -902,86 +873,229 @@ private fun Modifier.dashedBorder(color: Color, cornerRadius: Dp, strokeWidth: D
     drawRoundRect(color = color, style = stroke, cornerRadius = CornerRadius(cornerRadius.toPx()))
 }
 
-/** Offers both ways to add a meal to a slot: typing one by hand, or picking from recipe suggestions below it. */
+/**
+ * The merged "add to slot" sheet — one search field doing double duty (live-filters
+ * [suggestions]/[inventoryItems] as it's typed, and its own "Toevoegen" submits whatever's typed
+ * as a manual/plain entry), a two-way "Recept"/"Product" mode toggle up top (the old
+ * AddChooserDialog's job — see [EmptySlotAddButton]'s doc), and, in Recept mode, three filter
+ * chips backed by data the app already has (matched-inventory count, favorites, cook time — see
+ * [RecipeSuggestion]) plus a pinned "Bedenk een recept" footer that hands the slot straight to
+ * [MealPlanViewModel.generateAiMeal] rather than opening yet another sheet.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun MealPickerDialog(
     titleText: String,
+    mode: MealPickerMode,
+    onModeChange: (MealPickerMode) -> Unit,
     manualEntryText: String,
     onManualEntryTextChange: (String) -> Unit,
     onManualEntryAdd: () -> Unit,
     isLoading: Boolean,
     suggestions: List<RecipeSuggestion>,
-    onSelect: (RecipeSuggestion) -> Unit,
+    favoriteIds: Set<String>,
+    onSelectRecipe: (RecipeSuggestion) -> Unit,
+    productEntryText: String,
+    onProductEntryTextChange: (String) -> Unit,
+    onProductEntryAdd: () -> Unit,
+    isProductLoading: Boolean,
+    inventoryItems: List<InventoryItemWithProduct>,
+    onSelectProduct: (InventoryItemWithProduct) -> Unit,
+    isGeneratingAiMeal: Boolean,
+    aiMealError: GenerateRecipeError?,
+    onGenerateAiMeal: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(titleText) },
-        text = {
-            Column {
-                Text(
-                    text = stringResource(R.string.meal_plan_manual_entry_label),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
+    var stockOnly by remember { mutableStateOf(false) }
+    var favoritesOnly by remember { mutableStateOf(false) }
+    var quickOnly by remember { mutableStateOf(false) }
+
+    val filteredSuggestions = remember(suggestions, manualEntryText, stockOnly, favoritesOnly, quickOnly, favoriteIds) {
+        val query = manualEntryText.trim()
+        suggestions.filter { suggestion ->
+            (query.isEmpty() || suggestion.meal.name.contains(query, ignoreCase = true)) &&
+                (!stockOnly || (suggestion.matchCount ?: 0) > 0) &&
+                (!favoritesOnly || suggestion.meal.id in favoriteIds) &&
+                (!quickOnly || (suggestion.readyInMinutes != null && suggestion.readyInMinutes <= 20))
+        }
+    }
+    val filteredProducts = remember(productEntryText, inventoryItems) {
+        val query = productEntryText.trim()
+        if (query.isEmpty()) inventoryItems else inventoryItems.filter { it.name.contains(query, ignoreCase = true) }
+    }
+
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(sheetContentPadding),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            SheetTitle(title = titleText)
+            MealPickerModeToggle(mode = mode, onModeChange = onModeChange)
+
+            when (mode) {
+                MealPickerMode.RECIPE -> {
                     OutlinedTextField(
                         value = manualEntryText,
                         onValueChange = onManualEntryTextChange,
                         placeholder = { Text(stringResource(R.string.meal_plan_manual_entry_placeholder)) },
                         singleLine = true,
-                        modifier = Modifier.weight(1f),
+                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                        trailingIcon = if (manualEntryText.isNotBlank()) {
+                            { TextButton(onClick = onManualEntryAdd) { Text(stringResource(R.string.meal_plan_manual_entry_add)) } }
+                        } else {
+                            null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
                     )
-                    TextButton(
-                        onClick = onManualEntryAdd,
-                        enabled = manualEntryText.isNotBlank(),
-                        modifier = Modifier.padding(start = 8.dp),
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        SheetChip(
+                            label = stringResource(R.string.recipes_tab_inventory),
+                            selected = stockOnly,
+                            onClick = { stockOnly = !stockOnly },
+                        )
+                        SheetChip(
+                            label = stringResource(R.string.recipes_tab_favorites),
+                            selected = favoritesOnly,
+                            onClick = { favoritesOnly = !favoritesOnly },
+                        )
+                        SheetChip(
+                            label = stringResource(R.string.recipes_generate_wish_preset_fast),
+                            selected = quickOnly,
+                            onClick = { quickOnly = !quickOnly },
+                        )
+                    }
+                    when {
+                        isLoading -> Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                        suggestions.isEmpty() -> Text(
+                            text = stringResource(R.string.meal_plan_picker_empty),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        filteredSuggestions.isEmpty() -> Text(
+                            text = stringResource(R.string.meal_plan_picker_no_matches),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        else -> LazyColumn(
+                            modifier = Modifier.heightIn(max = 340.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            items(filteredSuggestions, key = { it.meal.id }) { suggestion ->
+                                RecipeSuggestionRow(
+                                    suggestion = suggestion,
+                                    isFavorite = suggestion.meal.id in favoriteIds,
+                                    onClick = { onSelectRecipe(suggestion) },
+                                )
+                            }
+                        }
+                    }
+
+                    HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+                    if (aiMealError != null) {
+                        val (icon, messageRes) = when (aiMealError) {
+                            GenerateRecipeError.PREMIUM_REQUIRED -> Icons.Filled.WorkspacePremium to R.string.recipes_generate_ai_failed_premium
+                            GenerateRecipeError.NO_CONNECTION -> Icons.Filled.CloudOff to R.string.recipes_generate_ai_failed_no_connection
+                            GenerateRecipeError.UNKNOWN -> Icons.Filled.WifiOff to R.string.recipes_generate_ai_failed_unknown
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
+                            Text(stringResource(messageRes), style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                    OutlinedButton(
+                        onClick = onGenerateAiMeal,
+                        enabled = !isGeneratingAiMeal,
+                        shape = RoundedCornerShape(26.dp),
+                        modifier = Modifier.fillMaxWidth().height(52.dp),
                     ) {
-                        Text(stringResource(R.string.meal_plan_manual_entry_add))
+                        if (isGeneratingAiMeal) {
+                            CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                        } else {
+                            Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text(stringResource(R.string.recipes_generate_ai_action), modifier = Modifier.padding(start = 8.dp))
+                        }
                     }
                 }
 
-                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-                Text(
-                    text = stringResource(R.string.meal_plan_suggestions_label),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
-                when {
-                    isLoading -> Box(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                    suggestions.isEmpty() -> Text(
-                        text = stringResource(R.string.meal_plan_picker_empty),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                MealPickerMode.PRODUCT -> {
+                    OutlinedTextField(
+                        value = productEntryText,
+                        onValueChange = onProductEntryTextChange,
+                        placeholder = { Text(stringResource(R.string.meal_plan_product_entry_placeholder)) },
+                        singleLine = true,
+                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                        trailingIcon = if (productEntryText.isNotBlank()) {
+                            { TextButton(onClick = onProductEntryAdd) { Text(stringResource(R.string.meal_plan_manual_entry_add)) } }
+                        } else {
+                            null
+                        },
+                        modifier = Modifier.fillMaxWidth(),
                     )
-                    else -> LazyColumn(
-                        modifier = Modifier.heightIn(max = 300.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        items(suggestions, key = { it.meal.id }) { suggestion ->
-                            PickerRow(suggestion = suggestion, onClick = { onSelect(suggestion) })
+                    when {
+                        isProductLoading -> Box(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            CircularProgressIndicator()
+                        }
+                        filteredProducts.isEmpty() -> Text(
+                            text = stringResource(R.string.meal_plan_product_picker_empty),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        else -> LazyColumn(
+                            modifier = Modifier.heightIn(max = 340.dp),
+                            verticalArrangement = Arrangement.spacedBy(4.dp),
+                        ) {
+                            items(filteredProducts, key = { it.barcode }) { item ->
+                                ProductPickerRow(item = item, onClick = { onSelectProduct(item) })
+                            }
                         }
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
-        },
-    )
+        }
+    }
 }
 
+/** Full-width two-way "Recept"/"Product" pill toggle — same shape as [SortSegmentedControl] in
+ *  ShoppingListScreen, just a fixed 2-value domain instead of an enum with more entries. */
 @Composable
-private fun PickerRow(suggestion: RecipeSuggestion, onClick: () -> Unit) {
+private fun MealPickerModeToggle(mode: MealPickerMode, onModeChange: (MealPickerMode) -> Unit) {
+    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.padding(3.dp)) {
+            MealPickerMode.entries.forEach { candidate ->
+                val isSelected = candidate == mode
+                Surface(
+                    onClick = { onModeChange(candidate) },
+                    shape = CircleShape,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Text(
+                        text = stringResource(if (candidate == MealPickerMode.RECIPE) R.string.meal_plan_add_recipe else R.string.meal_plan_add_product),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** A recipe suggestion row — same thumbnail-plus-name shape the old PickerRow had, with a real
+ *  in-stock/missing-ingredient (or, failing that, cook-time) meta line underneath the name (see
+ *  [recipeSuggestionMetaText]) and a small heart mark for anything already in [isFavorite]. */
+@Composable
+private fun RecipeSuggestionRow(suggestion: RecipeSuggestion, isFavorite: Boolean, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -996,103 +1110,58 @@ private fun PickerRow(suggestion: RecipeSuggestion, onClick: () -> Unit) {
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.size(40.dp).clip(SoftImageShape),
             )
+        } else {
+            Surface(shape = RoundedCornerShape(8.dp), color = MaterialTheme.colorScheme.tertiaryContainer, modifier = Modifier.size(40.dp)) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = Icons.Filled.Restaurant,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+            }
         }
-        Text(
-            text = suggestion.meal.name,
-            style = MaterialTheme.typography.bodyMedium,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).padding(start = 12.dp),
-        )
+        Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+            Text(
+                text = suggestion.meal.name,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+            )
+            val metaText = recipeSuggestionMetaText(suggestion)
+            if (metaText != null) {
+                Text(
+                    text = metaText,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+        }
+        if (isFavorite) {
+            Icon(
+                imageVector = Icons.Filled.Favorite,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 8.dp).size(16.dp),
+            )
+        }
     }
 }
 
-/**
- * Offers both ways to add a product to a slot: typing a name (checked against voorraad on
- * submit — see [MealPlanViewModel.addManualProduct]), or picking one straight from the list
- * below, which is [inventoryItems] filtered live by whatever's typed so far — typing "melk"
- * narrows to matching voorraad items as a live preview of whether that exact product exists,
- * before even tapping "Toevoegen".
- */
+/** The row's real meta line, in priority order: matched/total ingredients when this suggestion
+ *  came from an inventory match (see [RecipeSuggestion.totalIngredientCount]'s doc), else cook
+ *  time when known (cuisine-matched or favorited suggestions carry it — see
+ *  [RecipeSuggestion.readyInMinutes]'s doc), else nothing rather than a guess. */
 @Composable
-private fun ProductPickerDialog(
-    titleText: String,
-    entryText: String,
-    onEntryTextChange: (String) -> Unit,
-    onEntryAdd: () -> Unit,
-    isLoading: Boolean,
-    inventoryItems: List<InventoryItemWithProduct>,
-    onSelect: (InventoryItemWithProduct) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    val matches = remember(entryText, inventoryItems) {
-        val query = entryText.trim()
-        if (query.isEmpty()) inventoryItems else inventoryItems.filter { it.name.contains(query, ignoreCase = true) }
-    }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(titleText) },
-        text = {
-            Column {
-                Text(
-                    text = stringResource(R.string.meal_plan_product_entry_label),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    OutlinedTextField(
-                        value = entryText,
-                        onValueChange = onEntryTextChange,
-                        placeholder = { Text(stringResource(R.string.meal_plan_product_entry_placeholder)) },
-                        singleLine = true,
-                        modifier = Modifier.weight(1f),
-                    )
-                    TextButton(
-                        onClick = onEntryAdd,
-                        enabled = entryText.isNotBlank(),
-                        modifier = Modifier.padding(start = 8.dp),
-                    ) {
-                        Text(stringResource(R.string.meal_plan_manual_entry_add))
-                    }
-                }
-
-                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
-                Text(
-                    text = stringResource(R.string.meal_plan_product_suggestions_label),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(bottom = 8.dp),
-                )
-                when {
-                    isLoading -> Box(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 32.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        CircularProgressIndicator()
-                    }
-                    matches.isEmpty() -> Text(
-                        text = stringResource(R.string.meal_plan_product_picker_empty),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    else -> LazyColumn(
-                        modifier = Modifier.heightIn(max = 300.dp),
-                        verticalArrangement = Arrangement.spacedBy(4.dp),
-                    ) {
-                        items(matches, key = { it.barcode }) { item ->
-                            ProductPickerRow(item = item, onClick = { onSelect(item) })
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
-        },
-    )
+private fun recipeSuggestionMetaText(suggestion: RecipeSuggestion): String? = when {
+    suggestion.totalIngredientCount != null && suggestion.missingIngredients.isEmpty() ->
+        stringResource(R.string.meal_plan_all_in_stock)
+    suggestion.totalIngredientCount != null ->
+        stringResource(R.string.meal_plan_recipe_match_format, suggestion.matchCount ?: 0, suggestion.totalIngredientCount)
+    suggestion.readyInMinutes != null -> stringResource(R.string.recipes_ready_in_minutes_format, suggestion.readyInMinutes)
+    else -> null
 }
 
 @Composable

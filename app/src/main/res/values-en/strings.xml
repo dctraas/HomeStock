@@ -247,12 +247,22 @@
     <string name="more_auto_restock_subtitle">when stock is below minimum</string>
     <string name="more_notifications_row_title">Expiry</string>
     <string name="more_inventory_insight_notifications_title">Inventory and waste</string>
-    <string name="more_inventory_insight_notifications_subtitle">Notifications about low stock and weekly food waste</string>
-    <string name="more_household_activity_notifications_title">Household activity</string>
+    <string name="more_inventory_insight_notifications_subtitle">Weekly, Sunday evening</string>
+    <string name="more_household_activity_notifications_title">Housemates</string>
     <string name="more_household_activity_notifications_subtitle">Notifications when a housemate changes something, or the household changes</string>
-    <string name="more_premium_notifications_title">Premium</string>
+    <string name="more_premium_notifications_title">Trial &amp; subscription</string>
     <string name="more_premium_notifications_subtitle">Notification when your trial is about to end</string>
     <string name="more_notifications_menu_title">Notifications</string>
+    <string name="more_notifications_hero_subtitle">HomeStock\'s most important notification</string>
+    <string name="more_notifications_lead_time_label">Warn</string>
+    <string name="more_notifications_time_label">Time</string>
+    <string name="more_notifications_time_format">%1$02d:%2$02d</string>
+    <string name="more_notifications_also_section">Also notify me about</string>
+    <string name="more_household_activity_notifications_subtitle_named_format">When %1$s checks off or adds something</string>
+    <plurals name="more_notifications_lead_time_days_format">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
     <plurals name="more_notifications_menu_subtitle_format">
         <item quantity="one">%1$d of %2$d on</item>
         <item quantity="other">%1$d of %2$d on</item>
@@ -299,6 +309,7 @@
     <string name="more_section_features">Smart Tools</string>
     <string name="more_beta_recipes">Recipes</string>
     <string name="more_beta_receipt_scan">Scan receipt</string>
+    <string name="more_beta_receipt_scan_subtitle">The whole receipt in one go</string>
     <string name="more_section_debug">Debug</string>
     <string name="more_debug_premium_title">Simulate Premium</string>
 
@@ -323,7 +334,10 @@
     <string name="inventory_add_menu_cd">Scan</string>
     <string name="inventory_add_menu_title">Add product</string>
     <string name="inventory_add_menu_barcode">Scan barcode</string>
+    <string name="inventory_add_menu_barcode_subtitle">Fastest way · camera opens instantly</string>
     <string name="inventory_add_menu_search">Search by name</string>
+    <string name="inventory_add_menu_search_subtitle">No barcode at hand</string>
+    <string name="inventory_add_menu_premium_divider">With Premium</string>
     <string name="inventory_removed_snackbar_format">%1$s removed</string>
     <plurals name="inventory_bulk_removed_snackbar_format">
         <item quantity="one">%1$d product removed</item>
@@ -505,10 +519,24 @@
     <!-- Shopping list -->
     <string name="shopping_list_title">Shopping list</string>
     <string name="shopping_list_clear_checked_cd">Clear checked items</string>
+    <plurals name="shopping_list_item_count_format">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <plurals name="shopping_list_open_items_format">
+        <item quantity="one">%1$d item to buy</item>
+        <item quantity="other">%1$d items to buy</item>
+    </plurals>
+    <plurals name="shopping_list_clear_checked_subtitle_format">
+        <item quantity="one">%1$d item · can\'t be undone</item>
+        <item quantity="other">%1$d items · can\'t be undone</item>
+    </plurals>
+    <string name="shopping_list_options_this_list_section">This list</string>
     <string name="shopping_list_check_all_cd">Check all</string>
     <string name="shopping_list_sort_cd">Sort</string>
     <string name="shopping_list_sort_active_cd_format">Sort (active: %1$s)</string>
     <string name="shopping_list_sort_manual">Manual order</string>
+    <string name="shopping_list_sort_manual_short">Manual</string>
     <string name="shopping_list_sort_aisle">Store layout</string>
     <string name="shopping_list_share_cd">Share shopping list</string>
     <string name="shopping_list_share_title">Shopping list</string>
@@ -543,8 +571,12 @@
     <string name="shopping_list_item_edit_title">Edit item</string>
     <string name="shopping_list_add_confirm">Add</string>
     <string name="shopping_list_save_confirm">Save</string>
+    <string name="shopping_list_item_add_confirm_full">Add to list</string>
     <string name="shopping_list_note_label">Note</string>
     <string name="shopping_list_note_placeholder">E.g. brand or size</string>
+    <string name="shopping_list_item_guess_format">Recognized as %1$s · %2$s</string>
+    <string name="shopping_list_item_details_toggle">Category, unit and note</string>
+    <string name="shopping_list_item_more_suggestions">You might also need</string>
     <string name="shopping_list_price_placeholder">0.00</string>
     <string name="shopping_list_switch_list_cd">Switch list</string>
     <string name="shopping_list_total_format">Total: %1$s</string>
@@ -681,14 +713,33 @@
     <string name="recipes_translated_badge">Translated with AI</string>
     <string name="recipes_generate_ai_button">Generate recipe with AI</string>
     <string name="recipes_generate_fab">AI recipe</string>
-    <string name="recipes_generate_ai_title">Generate a recipe with AI</string>
+    <string name="recipes_generate_ai_title">Come up with a recipe</string>
     <string name="recipes_generate_ai_hint">We invent a recipe based on your current inventory. Any specific wish?</string>
-    <string name="recipes_generate_ai_placeholder">E.g. \'something with chicken and rice\' (optional)</string>
-    <string name="recipes_generate_ai_action">Generate</string>
+    <string name="recipes_generate_ai_placeholder">Or type your own wish…</string>
+    <string name="recipes_generate_ai_action">Come up with a recipe</string>
     <string name="recipes_generate_ai_loading">Inventing a recipe…</string>
     <string name="recipes_generate_ai_failed_no_connection">No connection. Check your internet connection and try again.</string>
     <string name="recipes_generate_ai_failed_premium">This feature is only available with Premium.</string>
     <string name="recipes_generate_ai_failed_unknown">Couldn\'t generate a recipe. Please try again.</string>
+    <string name="recipes_generate_ai_sending_title">This is what AI will use</string>
+    <string name="recipes_generate_ai_use_expiring_label">Use what\'s about to expire</string>
+    <string name="recipes_generate_wish_section_title">What are you in the mood for?</string>
+    <string name="recipes_generate_ai_chip_format">%1$s · %2$s</string>
+    <string name="recipes_generate_ai_expiring_hint_format">Please prioritize these products that are about to expire: %1$s.</string>
+    <string name="recipes_generate_wish_preset_fast">Fast (&lt;20 min)</string>
+    <string name="recipes_generate_wish_preset_vegetarian">Vegetarian</string>
+    <string name="recipes_generate_wish_preset_comfort">Comfort food</string>
+    <string name="recipes_generate_wish_preset_bake">Casserole</string>
+    <string name="recipes_generate_wish_preset_asian">Asian</string>
+    <string name="recipes_generate_wish_preset_two">For 2</string>
+    <plurals name="recipes_generate_ai_more_chips_format">
+        <item quantity="one">+ %1$d more</item>
+        <item quantity="other">+ %1$d more</item>
+    </plurals>
+    <plurals name="recipes_generate_ai_chip_days_format">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
     <string name="recipes_import_url_button">Import from URL</string>
     <string name="recipes_import_url_title">Import a recipe from a URL</string>
     <string name="recipes_import_url_hint">Paste the link to a recipe page — we\'ll pull out the ingredients and instructions. You can still edit everything before saving.</string>
@@ -765,8 +816,11 @@
     <string name="meal_plan_clear_cd">Remove meal</string>
     <string name="meal_plan_delete_cd">Delete</string>
     <string name="meal_plan_removed_format">%1$s removed</string>
-    <string name="meal_plan_picker_title_format">Add a meal for %1$s</string>
+    <string name="meal_plan_picker_title_format">%1$s · %2$s</string>
     <string name="meal_plan_picker_empty">No suggestions found. Add more products to your inventory.</string>
+    <string name="meal_plan_recipe_match_format">%1$d of %2$d ingredients in stock</string>
+
+    <string name="meal_plan_picker_no_matches">Nothing found with these filters.</string>
     <string name="meal_plan_manual_entry_label">Type your own meal</string>
     <string name="meal_plan_manual_entry_placeholder">E.g. Pasta with tomato sauce</string>
     <string name="meal_plan_manual_entry_add">Add</string>
@@ -810,6 +864,7 @@
 
     <!-- AI product recognition (Beta) -->
     <string name="ai_recognize_title">AI product recognition</string>
+    <string name="ai_recognize_subtitle">A photo of the product, no barcode needed</string>
     <string name="ai_recognize_hint">Take a photo of the product</string>
     <string name="ai_recognize_capture_cd">Take photo</string>
     <string name="ai_recognize_analyzing">Recognizing product…</string>

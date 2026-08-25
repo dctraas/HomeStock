@@ -39,6 +39,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -49,6 +50,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PhotoCamera
@@ -61,7 +63,6 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.outlined.StarBorder
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
@@ -74,6 +75,7 @@ import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -89,7 +91,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -123,11 +124,16 @@ import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.InventoryStockStatus
 import com.dtraas.homestock.data.model.Location
+import com.dtraas.homestock.ui.components.HomeStockBottomSheet
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.ProductImage
 import com.dtraas.homestock.ui.components.ProfileEditDialog
 import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.components.SearchField
+import com.dtraas.homestock.ui.components.SheetActionRow
+import com.dtraas.homestock.ui.components.SheetEyebrow
+import com.dtraas.homestock.ui.components.SheetTitle
+import com.dtraas.homestock.ui.components.sheetContentPadding
 import com.dtraas.homestock.ui.components.color
 import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.components.onColor
@@ -710,10 +716,11 @@ private fun AddFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
 }
 
 /**
- * The four ways to add a product, opened by tapping "Scannen": barcode scannen and zoeken op
- * naam are free, bonnetje scannen and AI-herkenning are premium-gated (falling back to
- * [onNavigateToPremium] when not premium). A 2x2 grid of [AddMenuTile]s, same shape as before
- * the redesign.
+ * The four ways to add a product, opened by tapping "Scannen" — four ranked rows rather than an
+ * equal-weight 2×2 grid: barcode scannen is ~90% of real use, so it's the one filled, primary-
+ * colored row that carries the sheet's visual weight; zoeken op naam is the free fallback;
+ * bonnetje scannen/AI-herkenning are premium-gated (falling back to [onNavigateToPremium] when
+ * not premium), set apart under a "MET PREMIUM" divider.
  */
 @Composable
 private fun AddMenuDialog(
@@ -725,105 +732,84 @@ private fun AddMenuDialog(
     onNavigateToPremium: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = {
-            Text(
-                text = stringResource(R.string.inventory_add_menu_title),
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(sheetContentPadding),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            SheetTitle(title = stringResource(R.string.inventory_add_menu_title))
+            Spacer(modifier = Modifier.height(2.dp))
+            SheetActionRow(
+                icon = Icons.Filled.QrCodeScanner,
+                title = stringResource(R.string.inventory_add_menu_barcode),
+                subtitle = stringResource(R.string.inventory_add_menu_barcode_subtitle),
+                onClick = { onDismiss(); onBarcodeScan() },
+                containerColor = MaterialTheme.colorScheme.primary,
+                iconTileColor = Color.White.copy(alpha = 0.16f),
+                iconTint = Color.White,
+                titleColor = Color.White,
+                subtitleColor = MaterialTheme.colorScheme.primaryContainer,
+                trailing = {
+                    Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = Color.White)
+                },
             )
-        },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AddMenuTile(
-                        icon = Icons.Filled.QrCodeScanner,
-                        label = stringResource(R.string.inventory_add_menu_barcode),
-                        onClick = { onDismiss(); onBarcodeScan() },
-                        modifier = Modifier.weight(1f),
-                    )
-                    AddMenuTile(
-                        icon = Icons.Filled.Search,
-                        label = stringResource(R.string.inventory_add_menu_search),
-                        onClick = { onDismiss(); onSearchByName() },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    AddMenuTile(
-                        icon = Icons.Filled.Receipt,
-                        label = stringResource(R.string.more_beta_receipt_scan),
-                        premiumLocked = !isPremium,
-                        onClick = { onDismiss(); if (isPremium) onReceiptScan() else onNavigateToPremium() },
-                        modifier = Modifier.weight(1f),
-                    )
-                    AddMenuTile(
-                        icon = Icons.Filled.AutoAwesome,
-                        label = stringResource(R.string.ai_recognize_title),
-                        premiumLocked = !isPremium,
-                        onClick = { onDismiss(); if (isPremium) onAiRecognize() else onNavigateToPremium() },
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-        },
-        confirmButton = {
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
-            }
-        },
-    )
-}
-
-/** One tile of [AddMenuDialog] — a large icon with its description underneath. */
-@Composable
-private fun AddMenuTile(
-    icon: ImageVector,
-    label: String,
-    premiumLocked: Boolean = false,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    Column(
-        modifier = modifier
-            .clip(SoftCardShapeCompact)
-            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
-            .clickable(onClick = onClick)
-            .padding(vertical = 16.dp, horizontal = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Box {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(36.dp),
+            SheetActionRow(
+                icon = Icons.Filled.Search,
+                title = stringResource(R.string.inventory_add_menu_search),
+                subtitle = stringResource(R.string.inventory_add_menu_search_subtitle),
+                onClick = { onDismiss(); onSearchByName() },
+                containerColor = MaterialTheme.colorScheme.surface,
+                borderColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             )
-            if (premiumLocked) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+            ) {
+                HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.surfaceContainerHigh)
                 Icon(
                     imageVector = Icons.Filled.WorkspacePremium,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.align(Alignment.TopEnd).size(14.dp),
+                    tint = MaterialTheme.colorScheme.tertiary,
+                    modifier = Modifier.size(14.dp),
                 )
+                SheetEyebrow(text = stringResource(R.string.inventory_add_menu_premium_divider), color = MaterialTheme.colorScheme.tertiary)
+                HorizontalDivider(modifier = Modifier.weight(1f), color = MaterialTheme.colorScheme.surfaceContainerHigh)
             }
-        }
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 10.dp),
-        )
-        if (premiumLocked) {
-            Text(
-                text = stringResource(R.string.more_premium_locked_subtitle),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.primary,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 2.dp),
+            SheetActionRow(
+                icon = Icons.Filled.Receipt,
+                title = stringResource(R.string.more_beta_receipt_scan),
+                subtitle = stringResource(R.string.more_beta_receipt_scan_subtitle),
+                onClick = { onDismiss(); if (isPremium) onReceiptScan() else onNavigateToPremium() },
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f),
+                borderColor = MaterialTheme.colorScheme.tertiaryContainer,
+                iconTileColor = MaterialTheme.colorScheme.tertiaryContainer,
+                iconTint = MaterialTheme.colorScheme.tertiary,
+                trailing = { PremiumLockOrChevron(isPremium) },
+            )
+            SheetActionRow(
+                icon = Icons.Filled.AutoAwesome,
+                title = stringResource(R.string.ai_recognize_title),
+                subtitle = stringResource(R.string.ai_recognize_subtitle),
+                onClick = { onDismiss(); if (isPremium) onAiRecognize() else onNavigateToPremium() },
+                containerColor = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f),
+                borderColor = MaterialTheme.colorScheme.tertiaryContainer,
+                iconTileColor = MaterialTheme.colorScheme.tertiaryContainer,
+                iconTint = MaterialTheme.colorScheme.tertiary,
+                trailing = { PremiumLockOrChevron(isPremium) },
             )
         }
+    }
+}
+
+/** A premium-gated [SheetActionRow]'s trailing control: a lock while gated, the row's normal
+ *  chevron once the household actually has Premium (the row still works then, just isn't gated). */
+@Composable
+private fun PremiumLockOrChevron(isPremium: Boolean) {
+    if (isPremium) {
+        Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    } else {
+        Icon(Icons.Filled.Lock, contentDescription = null, tint = MaterialTheme.colorScheme.tertiary)
     }
 }
 

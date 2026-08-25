@@ -3,8 +3,11 @@ package com.dtraas.homestock.ui.recipes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -68,12 +71,14 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -100,7 +105,13 @@ import com.dtraas.homestock.R
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
+import com.dtraas.homestock.ui.components.HomeStockBottomSheet
 import com.dtraas.homestock.ui.components.SearchField
+import com.dtraas.homestock.ui.components.SheetChip
+import com.dtraas.homestock.ui.components.SheetEyebrow
+import com.dtraas.homestock.ui.components.SheetPrimaryButton
+import com.dtraas.homestock.ui.components.SheetTitle
+import com.dtraas.homestock.ui.components.sheetContentPadding
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
@@ -135,6 +146,10 @@ fun RecipesScreen(
         },
     )
     val uiState by viewModel.uiState.collectAsState()
+    // Only actually needed while [showGenerateDialog] is open (see its call site below) — kept
+    // subscribed at screen level regardless since [RecipesScreen] already recomposes on
+    // household changes and this avoids a subscribe/unsubscribe blip every time the sheet opens.
+    val inventoryItems by application.container.inventoryRepository.observeInventoryWithProduct().collectAsState(initial = emptyList())
     val languageTag = LocalConfiguration.current.locales[0].language
     var showGenerateDialog by remember { mutableStateOf(false) }
     var generateWish by remember { mutableStateOf("") }
@@ -365,12 +380,20 @@ fun RecipesScreen(
     }
 
     if (showGenerateDialog) {
+        val nowMillis = remember { System.currentTimeMillis() }
+        val inventoryChips = remember(inventoryItems, nowMillis) {
+            inventoryItems.map { item ->
+                val days = item.expirationDate?.let { expiry -> ((expiry - nowMillis) / 86_400_000L).toInt() }
+                InventoryWishChip(item.name, days)
+            }
+        }
         GenerateRecipeDialog(
             wish = generateWish,
             onWishChange = { generateWish = it },
+            inventoryChips = inventoryChips,
             isGenerating = uiState.isGenerating,
             error = uiState.generateError,
-            onGenerate = { viewModel.generateRecipe(generateWish) },
+            onGenerate = { composedWish -> viewModel.generateRecipe(composedWish) },
             onDismiss = {
                 if (!uiState.isGenerating) {
                     showGenerateDialog = false
@@ -406,79 +429,196 @@ private enum class RecipesViewMode {
     fun toggled(): RecipesViewMode = if (this == LIST) GRID else LIST
 }
 
-/** Lets the user optionally steer [RecipesViewModel.generateRecipe] with a free-text wish (e.g. "iets met kip en rijst"), then shows its loading/error state inline instead of navigating away before it's done. */
+/** One row of the "HIERMEE GAAT AI AAN DE SLAG" card — an inventory item [name] and, when it has
+ *  a houdbaarheidsdatum set, [daysUntilExpiry] (negative once already past it, still shown so an
+ *  overdue item isn't silently dropped from the "use this soon" nudge). */
+private data class InventoryWishChip(val name: String, val daysUntilExpiry: Int?)
+
+/** The six preset "waar heb je zin in" chips — their label text doubles as the phrase sent to
+ *  Claude when selected (see [GenerateRecipeDialog]'s composeWish), so there's no separate
+ *  internal-only prompt string to keep in sync with the display label. */
+private enum class RecipeWishPreset(@StringRes val labelRes: Int) {
+    FAST(R.string.recipes_generate_wish_preset_fast),
+    VEGETARIAN(R.string.recipes_generate_wish_preset_vegetarian),
+    COMFORT(R.string.recipes_generate_wish_preset_comfort),
+    BAKE(R.string.recipes_generate_wish_preset_bake),
+    ASIAN(R.string.recipes_generate_wish_preset_asian),
+    TWO_PEOPLE(R.string.recipes_generate_wish_preset_two),
+}
+
+/**
+ * Shows exactly what [RecipesViewModel.generateRecipe] is about to send instead of leaving it
+ * implicit: the inventory ingredients (expiring-soonest first), a switch to bias the prompt
+ * toward those, and six one-tap wish presets above the free-text field — see the 2026-08 dialog
+ * review. [onGenerate] receives the fully composed wish string (presets + free text + the
+ * expiring-items hint, each optional), not just the raw text field.
+ */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun GenerateRecipeDialog(
     wish: String,
     onWishChange: (String) -> Unit,
+    inventoryChips: List<InventoryWishChip>,
     isGenerating: Boolean,
     error: GenerateRecipeError?,
-    onGenerate: () -> Unit,
+    onGenerate: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.recipes_generate_ai_title)) },
-        text = {
-            Column {
-                Text(
-                    text = stringResource(R.string.recipes_generate_ai_hint),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
+    var useExpiringSoon by remember { mutableStateOf(true) }
+    val selectedPresets = remember { mutableStateListOf<RecipeWishPreset>() }
+
+    val expiringChips = remember(inventoryChips) {
+        inventoryChips.filter { it.daysUntilExpiry != null }.sortedBy { it.daysUntilExpiry }
+    }
+    val plainChips = remember(inventoryChips) { inventoryChips.filter { it.daysUntilExpiry == null } }
+    val orderedChips = expiringChips + plainChips
+    val shownChips = orderedChips.take(8)
+    val moreCount = orderedChips.size - shownChips.size
+
+    val presetLabels = mapOf(
+        RecipeWishPreset.FAST to stringResource(RecipeWishPreset.FAST.labelRes),
+        RecipeWishPreset.VEGETARIAN to stringResource(RecipeWishPreset.VEGETARIAN.labelRes),
+        RecipeWishPreset.COMFORT to stringResource(RecipeWishPreset.COMFORT.labelRes),
+        RecipeWishPreset.BAKE to stringResource(RecipeWishPreset.BAKE.labelRes),
+        RecipeWishPreset.ASIAN to stringResource(RecipeWishPreset.ASIAN.labelRes),
+        RecipeWishPreset.TWO_PEOPLE to stringResource(RecipeWishPreset.TWO_PEOPLE.labelRes),
+    )
+    val expiringHint = stringResource(
+        R.string.recipes_generate_ai_expiring_hint_format,
+        expiringChips.take(5).joinToString(", ") { it.name },
+    )
+
+    fun composeWish(): String {
+        val parts = mutableListOf<String>()
+        selectedPresets.mapNotNullTo(parts) { presetLabels[it] }
+        wish.trim().takeIf { it.isNotEmpty() }?.let(parts::add)
+        if (useExpiringSoon && expiringChips.isNotEmpty()) parts += expiringHint
+        return parts.joinToString(". ")
+    }
+
+    HomeStockBottomSheet(onDismissRequest = { if (!isGenerating) onDismiss() }) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(sheetContentPadding),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(Icons.Filled.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.secondary)
+                SheetTitle(title = stringResource(R.string.recipes_generate_ai_title))
+            }
+
+            if (inventoryChips.isNotEmpty()) {
+                Surface(shape = SoftCardShapeCompact, color = MaterialTheme.colorScheme.surfaceContainerLow) {
+                    Column(modifier = Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        SheetEyebrow(text = stringResource(R.string.recipes_generate_ai_sending_title))
+                        FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                            shownChips.forEach { chip ->
+                                if (chip.daysUntilExpiry != null) {
+                                    InfoChip(
+                                        text = stringResource(
+                                            R.string.recipes_generate_ai_chip_format,
+                                            chip.name,
+                                            pluralStringResource(R.plurals.recipes_generate_ai_chip_days_format, chip.daysUntilExpiry, chip.daysUntilExpiry),
+                                        ),
+                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                                    )
+                                } else {
+                                    InfoChip(
+                                        text = chip.name,
+                                        containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
+                            }
+                            if (moreCount > 0) {
+                                InfoChip(
+                                    text = pluralStringResource(R.plurals.recipes_generate_ai_more_chips_format, moreCount, moreCount),
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+                                    contentColor = MaterialTheme.colorScheme.outline,
+                                )
+                            }
+                        }
+                        if (expiringChips.isNotEmpty()) {
+                            HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.recipes_generate_ai_use_expiring_label),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Switch(checked = useExpiringSoon, onCheckedChange = { useExpiringSoon = it })
+                            }
+                        }
+                    }
+                }
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                SheetEyebrow(text = stringResource(R.string.recipes_generate_wish_section_title))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    RecipeWishPreset.entries.forEach { preset ->
+                        SheetChip(
+                            label = presetLabels.getValue(preset),
+                            selected = preset in selectedPresets,
+                            onClick = {
+                                if (preset in selectedPresets) selectedPresets.remove(preset) else selectedPresets.add(preset)
+                            },
+                        )
+                    }
+                }
                 OutlinedTextField(
                     value = wish,
                     onValueChange = onWishChange,
                     placeholder = { Text(stringResource(R.string.recipes_generate_ai_placeholder)) },
                     singleLine = true,
                     enabled = !isGenerating,
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                    modifier = Modifier.fillMaxWidth(),
                 )
-                if (isGenerating) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 16.dp),
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        Text(
-                            text = stringResource(R.string.recipes_generate_ai_loading),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(start = 12.dp),
-                        )
-                    }
+            }
+
+            if (error != null) {
+                val (icon, messageRes) = when (error) {
+                    GenerateRecipeError.PREMIUM_REQUIRED -> Icons.Filled.WorkspacePremium to R.string.recipes_generate_ai_failed_premium
+                    GenerateRecipeError.NO_CONNECTION -> Icons.Filled.CloudOff to R.string.recipes_generate_ai_failed_no_connection
+                    GenerateRecipeError.UNKNOWN -> Icons.Filled.WifiOff to R.string.recipes_generate_ai_failed_unknown
                 }
-                if (error != null) {
-                    val (icon, messageRes) = when (error) {
-                        GenerateRecipeError.PREMIUM_REQUIRED -> Icons.Filled.WorkspacePremium to R.string.recipes_generate_ai_failed_premium
-                        GenerateRecipeError.NO_CONNECTION -> Icons.Filled.CloudOff to R.string.recipes_generate_ai_failed_no_connection
-                        GenerateRecipeError.UNKNOWN -> Icons.Filled.WifiOff to R.string.recipes_generate_ai_failed_unknown
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 16.dp),
-                    ) {
-                        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
-                        Text(
-                            text = stringResource(messageRes),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(start = 12.dp),
-                        )
-                    }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                    Text(
+                        text = stringResource(messageRes),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error,
+                        modifier = Modifier.padding(start = 12.dp),
+                    )
                 }
             }
-        },
-        confirmButton = {
-            Button(onClick = onGenerate, enabled = !isGenerating) {
-                Text(stringResource(R.string.recipes_generate_ai_action))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !isGenerating) {
-                Text(stringResource(R.string.common_cancel))
-            }
-        },
-    )
+
+            SheetPrimaryButton(
+                text = if (isGenerating) stringResource(R.string.recipes_generate_ai_loading) else stringResource(R.string.recipes_generate_ai_action),
+                onClick = { onGenerate(composeWish()) },
+                loading = isGenerating,
+                containerColor = MaterialTheme.colorScheme.secondary,
+                contentColor = MaterialTheme.colorScheme.onSecondary,
+            )
+        }
+    }
+}
+
+/** Small display-only pill — not a [SheetChip], since these represent facts ("what's being
+ *  sent"), not a selectable option. */
+@Composable
+private fun InfoChip(text: String, containerColor: Color, contentColor: Color) {
+    Surface(shape = CircleShape, color = containerColor) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            color = contentColor,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+        )
+    }
 }
 
 /** Lets the user paste a recipe page's URL for [RecipesViewModel.importRecipeFromUrl] to parse —

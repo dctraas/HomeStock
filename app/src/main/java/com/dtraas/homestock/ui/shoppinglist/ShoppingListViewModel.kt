@@ -252,4 +252,37 @@ class ShoppingListViewModel(
     fun checkAll() {
         viewModelScope.launch { shoppingListRepository.checkAll() }
     }
+
+    // Household inventory, keyed by lowercase name — the source [guessFor] matches a freshly
+    // typed item name against. Real, if simple: the household's own inventory is the one durable
+    // per-product record this app has (a shopping list item is deleted once bought, so there's no
+    // separate "history" to match against instead — see [historySuggestions]'s doc).
+    private val inventoryCategoryByName: StateFlow<Map<String, Category>> =
+        inventoryRepository.observeInventoryWithProduct()
+            .map { items -> items.associate { it.name.trim().lowercase() to Category.fromStorageKey(it.category) } }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    /**
+     * "Herkend als …" guess for [ItemFormDialog]'s name field (see the 2026-08 dialog review) —
+     * an exact (case-insensitive) match against [inventoryCategoryByName], paired with
+     * [defaultUnitFor]'s per-category default unit. Inventory items don't carry a
+     * [MeasurementUnit] of their own to match against ([com.dtraas.homestock.data.local.entity.ProductEntity.unit]
+     * is a free-text packaging string like "500g", not this enum), so the unit half is a
+     * sensible default rather than a second lookup. Null — no guess line shown — when nothing in
+     * inventory has this exact name yet.
+     */
+    fun guessFor(name: String): Pair<Category, MeasurementUnit>? {
+        val category = inventoryCategoryByName.value[name.trim().lowercase()] ?: return null
+        return category to defaultUnitFor(category)
+    }
+
+    companion object {
+        /** A reasonable per-category default — weighed/measured categories default to the unit
+         *  they're actually sold in, everything else defaults to a piece count. */
+        private fun defaultUnitFor(category: Category): MeasurementUnit = when (category) {
+            Category.VLEES_VIS -> MeasurementUnit.GRAM
+            Category.DRANKEN -> MeasurementUnit.LITER
+            else -> MeasurementUnit.STUKS
+        }
+    }
 }

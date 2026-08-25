@@ -40,6 +40,13 @@ data class RecipeSuggestion(
     // is the only call that returns this used/missed breakdown at all.
     val totalIngredientCount: Int? = null,
     val missingIngredients: List<String> = emptyList(),
+    // Only ever known when this suggestion came with (or already had cached) a full RecipeDetail
+    // — the cuisine/area-boosted half of [RecipeRepository.suggestRecipes] and
+    // [RecipeRepository.observeFavoriteRecipes] both carry it, but a plain ingredient-match
+    // summary (Spoonacular's findByIngredients response) doesn't include it at all. Null means
+    // "unknown", not "not quick" — a "Snel (<20 min)" filter over these should exclude rather
+    // than assume for a null value, same reasoning as [matchCount]'s null/zero distinction above.
+    val readyInMinutes: Int? = null,
 )
 
 /** One page of [RecipeRepository.browseAllRecipes]/[RecipeRepository.searchRecipesByName] — [hasMore] mirrors Spoonacular's own `totalResults` for that exact query, so the caller knows whether a further [loadMore]-style call (same params, next `offset`) is worth making. */
@@ -165,6 +172,7 @@ class RecipeRepository(
                     matchesArea = true,
                     totalIngredientCount = existing?.totalIngredientCount,
                     missingIngredients = existing?.missingIngredients ?: emptyList(),
+                    readyInMinutes = detail.readyInMinutes,
                 )
             }
         }
@@ -348,7 +356,7 @@ class RecipeRepository(
                     snapshot.documents
                         .mapNotNull { mapFirestoreDocToDetail(it, isCustom = true) }
                         .sortedBy { it.name.lowercase() }
-                        .map { RecipeSuggestion(RecipeSummary(it.id, it.name, it.thumbnailUrl), tags = it.tags) }
+                        .map { RecipeSuggestion(RecipeSummary(it.id, it.name, it.thumbnailUrl), tags = it.tags, readyInMinutes = it.readyInMinutes) }
                 }
             }
         }
@@ -414,7 +422,7 @@ class RecipeRepository(
         observeFavoriteSnapshots().map { docs ->
             docs.mapNotNull { mapFirestoreDocToDetail(it) }
                 .sortedBy { it.name.lowercase() }
-                .map { RecipeSuggestion(RecipeSummary(it.id, it.name, it.thumbnailUrl), tags = it.tags) }
+                .map { RecipeSuggestion(RecipeSummary(it.id, it.name, it.thumbnailUrl), tags = it.tags, readyInMinutes = it.readyInMinutes) }
         }
 
     /** Cheap membership check for RecipeDetailScreen's favorite toggle — avoids mapping full detail just to know one id's state. */

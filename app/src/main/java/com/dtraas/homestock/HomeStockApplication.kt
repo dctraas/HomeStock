@@ -26,7 +26,11 @@ class HomeStockApplication : Application() {
         installAppCheck()
         container = AppContainer(this)
         ExpiryCheckWorker.createNotificationChannel(this)
-        ExpiryCheckWorker.schedule(this)
+        ExpiryCheckWorker.schedule(
+            this,
+            container.notificationPreferences.expiryNotifyHour.value,
+            container.notificationPreferences.expiryNotifyMinute.value,
+        )
         // Same idea as ExpiryCheckWorker above — channel creation is idempotent, scheduling is
         // KEEP-idempotent, and each worker no-ops in doWork() if its own preference is off.
         LowStockCheckWorker.createNotificationChannel(this)

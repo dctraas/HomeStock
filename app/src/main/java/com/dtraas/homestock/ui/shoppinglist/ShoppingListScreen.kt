@@ -42,6 +42,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
@@ -59,13 +60,10 @@ import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.ShoppingCart
-import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.TrendingDown
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -89,6 +87,7 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
@@ -130,13 +129,20 @@ import com.dtraas.homestock.data.local.entity.ShoppingListMeta
 import com.dtraas.homestock.data.local.entity.StoreEntity
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.MeasurementUnit
+import com.dtraas.homestock.ui.components.AddStoreDialog
 import com.dtraas.homestock.ui.components.CategoryDropdown
+import com.dtraas.homestock.ui.components.HomeStockBottomSheet
 import com.dtraas.homestock.ui.components.MeasurementUnitDropdown
 import com.dtraas.homestock.ui.components.ProductImage
 import com.dtraas.homestock.ui.components.QuantityStepper
-import com.dtraas.homestock.ui.components.StoreDropdown
+import com.dtraas.homestock.ui.components.SheetActionRow
+import com.dtraas.homestock.ui.components.SheetChip
+import com.dtraas.homestock.ui.components.SheetEyebrow
+import com.dtraas.homestock.ui.components.SheetPrimaryButton
+import com.dtraas.homestock.ui.components.SheetTitle
 import com.dtraas.homestock.ui.components.formatQuantityWithUnit
 import com.dtraas.homestock.ui.components.icon
+import com.dtraas.homestock.ui.components.sheetContentPadding
 import com.dtraas.homestock.ui.theme.LocalIsDarkTheme
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
@@ -492,16 +498,23 @@ fun ShoppingListScreen() {
 
         if (showMoreOptions) {
             ShoppingListMoreOptionsDialog(
+                listName = activeList.name,
+                itemCount = allItems.size,
+                storeCount = groupedByStore.keys.count { it.isNotBlank() },
+                canRename = activeList.id != null,
                 viewMode = viewMode,
                 onViewModeChange = { viewMode = it },
                 sortMode = sortMode,
                 onSortModeChange = viewModel::onSortModeChange,
                 canShare = groupedByStore.isNotEmpty(),
                 hasUncheckedItems = hasUncheckedItems,
+                uncheckedCount = allItems.count { !it.isChecked },
                 hasCheckedItems = hasCheckedItems,
+                checkedCount = allItems.count { it.isChecked },
                 onShare = ::shareList,
                 onCheckAll = viewModel::checkAll,
                 onClearChecked = ::clearCheckedWithUndo,
+                onRename = { listToRename = activeList },
                 onDismiss = { showMoreOptions = false },
             )
         }
@@ -509,11 +522,15 @@ fun ShoppingListScreen() {
         if (showAddDialog) {
             ItemFormDialog(
                 title = stringResource(R.string.shopping_list_item_add_title),
-                confirmLabel = stringResource(R.string.shopping_list_add_confirm),
+                confirmLabel = stringResource(R.string.shopping_list_item_add_confirm_full),
                 stores = stores,
                 onAddStore = viewModel::addStore,
                 onDismiss = { showAddDialog = false },
                 onVoiceInputUnavailable = onVoiceInputUnavailable,
+                guessFor = viewModel::guessFor,
+                historySuggestions = historySuggestions,
+                lowStockSuggestions = lowStockSuggestions,
+                onQuickAdd = { name, category -> viewModel.addItem(name, category, "", 1) },
                 onConfirm = { name, category, store, quantity, note, unit, price ->
                     viewModel.addItem(name, category, store, quantity, note.trim().ifBlank { null }, unit, price)
                     showAddDialog = false
@@ -596,53 +613,6 @@ fun ShoppingListScreen() {
                     TextButton(onClick = { listToDelete = null }) { Text(stringResource(R.string.common_cancel)) }
                 },
             )
-        }
-    }
-}
-
-/** Handmatige volgorde (drag-to-reorder) vs. Winkelindeling (supermarket-aisle order) —
- *  see [ShoppingListSortMode]. Mirrors InventoryScreen's SortMenuButton shape. */
-@Composable
-private fun ShoppingListSortMenuButton(
-    selected: ShoppingListSortMode,
-    onSelected: (ShoppingListSortMode) -> Unit,
-) {
-    var menuExpanded by remember { mutableStateOf(false) }
-    val isCustomSort = selected != ShoppingListSortMode.MANUAL
-    Box {
-        IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(56.dp)) {
-            if (isCustomSort) {
-                val activeFormat = stringResource(R.string.shopping_list_sort_active_cd_format)
-                BadgedBox(badge = { Badge() }) {
-                    Icon(
-                        Icons.Filled.Sort,
-                        contentDescription = activeFormat.format(stringResource(selected.labelRes)),
-                        modifier = Modifier.size(28.dp),
-                    )
-                }
-            } else {
-                Icon(
-                    Icons.Filled.Sort,
-                    contentDescription = stringResource(R.string.shopping_list_sort_cd),
-                    modifier = Modifier.size(28.dp),
-                )
-            }
-        }
-        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-            ShoppingListSortMode.entries.forEach { option ->
-                DropdownMenuItem(
-                    text = { Text(stringResource(option.labelRes)) },
-                    trailingIcon = {
-                        if (option == selected) {
-                            Icon(Icons.Filled.Check, contentDescription = null)
-                        }
-                    },
-                    onClick = {
-                        onSelected(option)
-                        menuExpanded = false
-                    },
-                )
-            }
         }
     }
 }
@@ -1596,89 +1566,137 @@ private fun ShoppingListBottomBar(
 
 /**
  * Everything that used to live in the always-visible icon row (delen/alles afvinken/
- * afgevinkte wissen/sorteren/weergave) — folded into one overflow sheet, same pattern as
- * InventoryScreen's MoreOptionsDialog. [ShoppingListSortMenuButton] is reused as-is.
+ * afgevinkte wissen/sorteren/weergave) — one overflow sheet, two labelled groups: WEERGAVE
+ * (sort mode + tile view, both apply instantly) and the active list's own actions, headed by
+ * its name and a live item/store count so this doubles as "which list am I even looking at".
  */
 @Composable
 private fun ShoppingListMoreOptionsDialog(
+    listName: String,
+    itemCount: Int,
+    storeCount: Int,
+    canRename: Boolean,
     viewMode: ShoppingListViewMode,
     onViewModeChange: (ShoppingListViewMode) -> Unit,
     sortMode: ShoppingListSortMode,
     onSortModeChange: (ShoppingListSortMode) -> Unit,
     canShare: Boolean,
     hasUncheckedItems: Boolean,
+    uncheckedCount: Int,
     hasCheckedItems: Boolean,
+    checkedCount: Int,
     onShare: () -> Unit,
     onCheckAll: () -> Unit,
     onClearChecked: () -> Unit,
+    onRename: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.shopping_list_more_options_title)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                ShoppingOptionRow(label = stringResource(R.string.shopping_list_sort_cd)) {
-                    ShoppingListSortMenuButton(selected = sortMode, onSelected = onSortModeChange)
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(sheetContentPadding),
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+        ) {
+            SheetTitle(
+                title = listName,
+                subtitle = pluralStringResource(R.plurals.shopping_list_item_count_format, itemCount, itemCount) +
+                    " · " + pluralStringResource(R.plurals.shopping_list_store_count_format, storeCount, storeCount),
+            )
+
+            Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                SheetEyebrow(text = stringResource(R.string.inventory_view_mode_title))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(stringResource(R.string.shopping_list_sort_cd), style = MaterialTheme.typography.bodyLarge)
+                    SortSegmentedControl(selected = sortMode, onSelected = onSortModeChange)
                 }
-                ShoppingOptionRow(label = stringResource(R.string.inventory_show_as_tiles_cd)) {
-                    IconButton(
-                        onClick = {
-                            onViewModeChange(if (viewMode == ShoppingListViewMode.LIST) ShoppingListViewMode.GRID else ShoppingListViewMode.LIST)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(stringResource(R.string.inventory_show_as_tiles_cd), style = MaterialTheme.typography.bodyLarge)
+                    Switch(
+                        checked = viewMode == ShoppingListViewMode.GRID,
+                        onCheckedChange = { checked ->
+                            onViewModeChange(if (checked) ShoppingListViewMode.GRID else ShoppingListViewMode.LIST)
                         },
-                        modifier = Modifier.size(48.dp),
-                    ) {
-                        Icon(
-                            imageVector = if (viewMode == ShoppingListViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
-                            contentDescription = null,
-                            modifier = Modifier.size(24.dp),
+                    )
+                }
+            }
+
+            if (canShare || hasUncheckedItems || hasCheckedItems || canRename) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    SheetEyebrow(text = stringResource(R.string.shopping_list_options_this_list_section))
+                    if (canShare) {
+                        SheetActionRow(
+                            icon = Icons.Filled.Share,
+                            title = stringResource(R.string.shopping_list_share_cd),
+                            onClick = { onDismiss(); onShare() },
+                        )
+                    }
+                    if (hasUncheckedItems) {
+                        SheetActionRow(
+                            icon = Icons.Filled.DoneAll,
+                            title = stringResource(R.string.shopping_list_check_all_cd),
+                            subtitle = pluralStringResource(R.plurals.shopping_list_open_items_format, uncheckedCount, uncheckedCount),
+                            onClick = { onDismiss(); onCheckAll() },
+                            trailing = null,
+                        )
+                    }
+                    if (canRename) {
+                        SheetActionRow(
+                            icon = Icons.Filled.Edit,
+                            title = stringResource(R.string.shopping_list_rename_list_action),
+                            onClick = { onDismiss(); onRename() },
+                        )
+                    }
+                    if (hasCheckedItems) {
+                        SheetActionRow(
+                            icon = Icons.Filled.DeleteSweep,
+                            title = stringResource(R.string.shopping_list_clear_checked_cd),
+                            subtitle = pluralStringResource(R.plurals.shopping_list_clear_checked_subtitle_format, checkedCount, checkedCount),
+                            onClick = { onDismiss(); onClearChecked() },
+                            titleColor = MaterialTheme.colorScheme.error,
+                            subtitleColor = MaterialTheme.colorScheme.error,
+                            iconTileColor = MaterialTheme.colorScheme.errorContainer,
+                            iconTint = MaterialTheme.colorScheme.error,
+                            trailing = null,
                         )
                     }
                 }
-                if (canShare || hasUncheckedItems || hasCheckedItems) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                }
-                if (canShare) {
-                    ShoppingOptionRow(label = stringResource(R.string.shopping_list_share_cd)) {
-                        IconButton(onClick = { onDismiss(); onShare() }, modifier = Modifier.size(48.dp)) {
-                            Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(24.dp))
-                        }
-                    }
-                }
-                if (hasUncheckedItems) {
-                    ShoppingOptionRow(label = stringResource(R.string.shopping_list_check_all_cd)) {
-                        IconButton(onClick = { onDismiss(); onCheckAll() }, modifier = Modifier.size(48.dp)) {
-                            Icon(Icons.Filled.DoneAll, contentDescription = null, modifier = Modifier.size(24.dp))
-                        }
-                    }
-                }
-                if (hasCheckedItems) {
-                    ShoppingOptionRow(label = stringResource(R.string.shopping_list_clear_checked_cd)) {
-                        IconButton(onClick = { onDismiss(); onClearChecked() }, modifier = Modifier.size(48.dp)) {
-                            Icon(Icons.Filled.DeleteSweep, contentDescription = null, modifier = Modifier.size(24.dp))
-                        }
-                    }
-                }
             }
-        },
-        confirmButton = {
-            Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-                TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_close)) }
-            }
-        },
-    )
+        }
+    }
 }
 
-/** One row of [ShoppingListMoreOptionsDialog]: a label on the left, the control on the right. */
+/** Two-way "Winkelindeling / Handmatig" toggle for [ShoppingListSortMode] — the only two real
+ *  modes the app has (see [ShoppingListSortMode]'s own doc); a plain pill pair rather than
+ *  Material3's [androidx.compose.material3.SegmentedButton] keeps this in the same visual
+ *  language as every chip/pill elsewhere in these sheets. */
 @Composable
-private fun ShoppingOptionRow(label: String, trailing: @Composable () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(text = label, style = MaterialTheme.typography.bodyMedium)
-        trailing()
+private fun SortSegmentedControl(selected: ShoppingListSortMode, onSelected: (ShoppingListSortMode) -> Unit) {
+    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+        Row(modifier = Modifier.padding(3.dp)) {
+            ShoppingListSortMode.entries.forEach { mode ->
+                val isSelected = mode == selected
+                Surface(
+                    onClick = { onSelected(mode) },
+                    shape = CircleShape,
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent,
+                ) {
+                    Text(
+                        text = stringResource(if (mode == ShoppingListSortMode.MANUAL) R.string.shopping_list_sort_manual_short else mode.labelRes),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -1715,6 +1733,13 @@ private fun EmptyShoppingList(isFiltered: Boolean, modifier: Modifier = Modifier
     }
 }
 
+/**
+ * Add/edit a shopping list line — one-line-first: the name field carries initial focus, a guess
+ * line underneath infers category+unit from what's already in the household's inventory (see
+ * [ShoppingListViewModel.guessFor]) so those two dropdowns stay collapsed until someone actually
+ * wants to correct them, and a suggestion-chip row at the very bottom (create mode only) means
+ * adding several items in a row doesn't cost several sheets — see the 2026-08 dialog review.
+ */
 @Composable
 private fun ItemFormDialog(
     title: String,
@@ -1731,6 +1756,10 @@ private fun ItemFormDialog(
     onAddStore: (String) -> Unit,
     onDismiss: () -> Unit,
     onVoiceInputUnavailable: () -> Unit = {},
+    guessFor: (String) -> Pair<Category, MeasurementUnit>? = { null },
+    historySuggestions: List<String> = emptyList(),
+    lowStockSuggestions: List<LowStockSuggestion> = emptyList(),
+    onQuickAdd: (name: String, category: Category) -> Unit = { _, _ -> },
     onConfirm: (
         name: String,
         category: Category,
@@ -1741,17 +1770,35 @@ private fun ItemFormDialog(
         price: Double?,
     ) -> Unit,
 ) {
+    // No guess line, and no "add another" chip row, once editing an item that already has an
+    // explicit category/unit the household chose deliberately — both only make sense while
+    // typing a brand new name.
+    val isCreateMode = initialName.isBlank()
+
     var name by remember { mutableStateOf(initialName) }
     var category by remember { mutableStateOf(initialCategory) }
     var store by remember { mutableStateOf(initialStore) }
     var quantity by remember { mutableIntStateOf(initialQuantity) }
     var note by remember { mutableStateOf(initialNote) }
     var unit by remember { mutableStateOf(initialUnit) }
-    // Neither Opmerking nor Prijs have an input in this form anymore (removed on request) — this
-    // just carries whatever an item already had straight through to onConfirm unchanged, so
-    // editing an item that has one from before (e.g. from a receipt scan) doesn't silently wipe
-    // it. Formatted the same way the field itself used to parse it, so that round-trip is exact.
+    var detailsExpanded by remember { mutableStateOf(!isCreateMode) }
+    var showAddStoreDialog by remember { mutableStateOf(false) }
+    // Price still has no input in this form (removed on request) — this just carries whatever an
+    // item already had straight through to onConfirm unchanged, so editing an item that has one
+    // from before (e.g. from a receipt scan) doesn't silently wipe it.
     val priceText = initialPrice?.let { formatPrice(it).removePrefix("€") } ?: ""
+
+    val guess = remember(name, isCreateMode) { if (isCreateMode) guessFor(name) else null }
+    // The guess is applied, not just displayed — "merely confirmed, not asked" (see the dialog
+    // review) — but only while the household hasn't already opened the details section to pick
+    // something themselves; re-typing the name after that wouldn't silently overwrite a
+    // deliberate correction.
+    LaunchedEffect(guess) {
+        if (guess != null && !detailsExpanded) {
+            category = guess.first
+            unit = guess.second
+        }
+    }
 
     // Pre-fills the name field with the transcription — never auto-submits, same reasoning as
     // the AI product-recognition camera: speech recognition can mishear, so the household still
@@ -1768,26 +1815,31 @@ private fun ItemFormDialog(
     }
     val voicePrompt = stringResource(R.string.shopping_list_voice_input_prompt)
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        shape = RoundedCornerShape(28.dp),
-        title = null,
-        text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
-                ItemFormAvatar(imageUrl = imageUrl, category = category)
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(top = 12.dp, bottom = 20.dp),
+    fun confirm() {
+        val price = priceText.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it >= 0 }
+        onConfirm(name, category, store, quantity, note, unit, price)
+    }
+
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(sheetContentPadding),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            SheetTitle(title = title)
+            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                ProductImage(
+                    imageUrl = imageUrl,
+                    fallbackIcon = category.icon,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.size(44.dp).padding(top = 2.dp),
                 )
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
+                Column(modifier = Modifier.weight(1f)) {
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it },
-                        label = { Text(stringResource(R.string.common_name)) },
+                        singleLine = true,
+                        textStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                        placeholder = { Text(stringResource(R.string.common_name)) },
                         trailingIcon = {
                             IconButton(
                                 onClick = {
@@ -1805,70 +1857,172 @@ private fun ItemFormDialog(
                                 Icon(Icons.Filled.Mic, contentDescription = stringResource(R.string.shopping_list_voice_input_cd))
                             }
                         },
+                        shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.fillMaxWidth(),
                     )
-                    CategoryDropdown(
-                        selected = category,
-                        onSelected = { category = it },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    StoreDropdown(
-                        selected = store,
-                        stores = stores,
-                        onSelected = { store = it },
-                        onAddStore = onAddStore,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    MeasurementUnitDropdown(
-                        selected = unit,
-                        onSelected = { unit = it },
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(stringResource(R.string.common_quantity), style = MaterialTheme.typography.bodyLarge)
-                        QuantityStepper(
-                            quantity = quantity,
-                            onDecrease = { quantity = (quantity - unit.step).coerceAtLeast(1) },
-                            onIncrease = { quantity += unit.step },
-                            minQuantity = 1,
-                            displayText = formatQuantityWithUnit(quantity, unit),
-                        )
+                    if (guess != null) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            modifier = Modifier
+                                .padding(start = 4.dp, top = 6.dp)
+                                .clickable { detailsExpanded = true },
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.AutoAwesome,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(15.dp),
+                            )
+                            Text(
+                                text = stringResource(
+                                    R.string.shopping_list_item_guess_format,
+                                    stringResource(guess.first.displayNameRes),
+                                    stringResource(guess.second.shortLabelRes),
+                                ),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary,
+                            )
+                        }
                     }
-                    // Opmerking and Prijs (and the "Meer opties" toggle that used to hold them)
-                    // are gone from this form on request — see the priceText comment above for
-                    // what still happens to an item that already has one of these set.
                 }
             }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = {
-                    val price = priceText.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it >= 0 }
-                    onConfirm(name, category, store, quantity, note, unit, price)
-                },
-                enabled = name.isNotBlank(),
-            ) {
-                Text(confirmLabel)
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
-        },
-    )
-}
 
-@Composable
-private fun ItemFormAvatar(imageUrl: String?, category: Category) {
-    ProductImage(
-        imageUrl = imageUrl,
-        fallbackIcon = category.icon,
-        shape = RoundedCornerShape(24.dp),
-        modifier = Modifier.size(88.dp),
-    )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                SheetEyebrow(text = stringResource(R.string.common_quantity))
+                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                    QuantityStepper(
+                        quantity = quantity,
+                        onDecrease = { quantity = (quantity - unit.step).coerceAtLeast(1) },
+                        onIncrease = { quantity += unit.step },
+                        minQuantity = 1,
+                        displayText = formatQuantityWithUnit(quantity, unit),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
+                }
+            }
+
+            Column {
+                SheetEyebrow(text = stringResource(R.string.store_dropdown_label), modifier = Modifier.padding(bottom = 8.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item {
+                        SheetChip(label = stringResource(R.string.store_geen), selected = store.isBlank(), onClick = { store = "" })
+                    }
+                    items(stores) { entity ->
+                        SheetChip(
+                            label = entity.name,
+                            selected = store == entity.name,
+                            onClick = { store = entity.name },
+                            leadingIcon = {
+                                Icon(Icons.Filled.Storefront, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize))
+                            },
+                        )
+                    }
+                    item {
+                        SheetChip(
+                            label = stringResource(R.string.store_add_menu_item),
+                            selected = false,
+                            onClick = { showAddStoreDialog = true },
+                            leadingIcon = {
+                                Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize))
+                            },
+                        )
+                    }
+                }
+            }
+
+            Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(SoftCardShapeCompact)
+                        .clickable { detailsExpanded = !detailsExpanded }
+                        .padding(vertical = 10.dp, horizontal = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(stringResource(R.string.shopping_list_item_details_toggle), style = MaterialTheme.typography.bodyLarge)
+                    Icon(
+                        imageVector = if (detailsExpanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                if (detailsExpanded) {
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 4.dp)) {
+                        CategoryDropdown(
+                            selected = category,
+                            onSelected = { category = it },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        MeasurementUnitDropdown(
+                            selected = unit,
+                            onSelected = { unit = it },
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        OutlinedTextField(
+                            value = note,
+                            onValueChange = { note = it },
+                            label = { Text(stringResource(R.string.shopping_list_note_label)) },
+                            placeholder = { Text(stringResource(R.string.shopping_list_note_placeholder)) },
+                            minLines = 2,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+            }
+
+            SheetPrimaryButton(
+                text = confirmLabel,
+                enabled = name.isNotBlank(),
+                onClick = ::confirm,
+            )
+
+            if (isCreateMode && (historySuggestions.isNotEmpty() || lowStockSuggestions.isNotEmpty())) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.surfaceContainerHigh)
+                SheetEyebrow(text = stringResource(R.string.shopping_list_item_more_suggestions))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    items(lowStockSuggestions) { suggestion ->
+                        SheetChip(
+                            label = suggestion.name,
+                            selected = false,
+                            onClick = { onQuickAdd(suggestion.name, suggestion.category) },
+                            leadingIcon = {
+                                Box(
+                                    modifier = Modifier
+                                        .size(8.dp)
+                                        .background(MaterialTheme.colorScheme.tertiary, CircleShape),
+                                )
+                            },
+                        )
+                    }
+                    items(historySuggestions) { suggestionName ->
+                        SheetChip(
+                            label = suggestionName,
+                            selected = false,
+                            onClick = { onQuickAdd(suggestionName, guessFor(suggestionName)?.first ?: Category.OVERIG) },
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showAddStoreDialog) {
+        AddStoreDialog(
+            onConfirm = { newStoreName ->
+                onAddStore(newStoreName)
+                store = newStoreName
+                showAddStoreDialog = false
+            },
+            onDismiss = { showAddStoreDialog = false },
+        )
+    }
 }
 
 /**

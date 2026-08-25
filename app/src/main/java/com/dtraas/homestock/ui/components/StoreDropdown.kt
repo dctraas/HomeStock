@@ -94,8 +94,10 @@ fun StoreDropdown(
     }
 }
 
+/** Also used directly by ShoppingListScreen's `ItemFormDialog` (2026-08 dialog review) — its
+ *  store-chip row's "+" chip opens this same small dialog rather than duplicating it. */
 @Composable
-private fun AddStoreDialog(onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
+fun AddStoreDialog(onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
     var name by remember { mutableStateOf("") }
 
     AlertDialog(
