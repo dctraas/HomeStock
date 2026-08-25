@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
@@ -24,6 +25,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -44,13 +46,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Accessibility
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.DragIndicator
@@ -59,7 +61,6 @@ import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.ImportExport
 import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
@@ -69,6 +70,7 @@ import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.StarRate
 import androidx.compose.material.icons.filled.Storefront
+import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.filled.WorkspacePremium
@@ -146,12 +148,20 @@ import com.dtraas.homestock.data.repository.FeedbackCategory
 import com.dtraas.homestock.data.repository.HouseholdMember
 import com.dtraas.homestock.data.repository.ThemeMode
 import com.dtraas.homestock.ui.components.HomeStockBottomSheet
+import com.dtraas.homestock.ui.components.HomeStockTopAppBar
+import com.dtraas.homestock.ui.components.ProductImage
 import com.dtraas.homestock.ui.components.ProfileEditDialog
+import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.components.SheetChip
 import com.dtraas.homestock.ui.components.SheetEyebrow
 import com.dtraas.homestock.ui.components.SheetPrimaryButton
 import com.dtraas.homestock.ui.components.SheetTitle
+import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.components.sheetContentPadding
+import com.dtraas.homestock.ui.theme.LinenBackground
+import com.dtraas.homestock.ui.theme.LinenBackgroundDark
+import com.dtraas.homestock.ui.theme.LinenInk
+import com.dtraas.homestock.ui.theme.LinenInkDark
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnSageGreenPrimaryContainer
@@ -207,6 +217,7 @@ fun MoreScreen(
     onNavigateToStatistics: () -> Unit = {},
     onNavigateToPremium: () -> Unit = {},
     onNavigateToHousehold: () -> Unit = {},
+    onNavigateToApp: () -> Unit = {},
     onNavigateToAccountLink: () -> Unit = {},
     onNavigateToPrivacyPolicy: () -> Unit = {},
     onNavigateToLicenses: () -> Unit = {},
@@ -223,8 +234,6 @@ fun MoreScreen(
     val householdActivityNotificationsEnabled by notificationPreferences.householdActivityNotificationsEnabled.collectAsState()
     val themePreferences = application.container.themePreferences
     val themeMode by themePreferences.themeMode.collectAsState()
-    val largeText by themePreferences.largeText.collectAsState()
-    val highContrast by themePreferences.highContrast.collectAsState()
     val inventoryPreferences = application.container.inventoryPreferences
     val autoRestockEnabled by inventoryPreferences.autoRestockEnabled.collectAsState()
     val householdSession = application.container.householdSession
@@ -273,10 +282,7 @@ fun MoreScreen(
     val feedbackErrorMessage = stringResource(R.string.more_feedback_error)
 
     var showProfileDialog by remember { mutableStateOf(false) }
-    var showThemeDialog by remember { mutableStateOf(false) }
-    var showLanguageDialog by remember { mutableStateOf(false) }
     var showStoresDialog by remember { mutableStateOf(false) }
-    var showAccessibilityDialog by remember { mutableStateOf(false) }
     var showNotificationsDialog by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
     var showImportExportDialog by remember { mutableStateOf(false) }
@@ -600,8 +606,8 @@ fun MoreScreen(
                             // The four notification toggles used to live inline here, one row
                             // each — folded into their own submenu (per design review) since
                             // that's four full icon+title+subtitle rows just for one App
-                            // sub-topic, same "group it behind one row" treatment Toegankelijkheid
-                            // already gets for its two toggles below.
+                            // sub-topic, same "group it behind one row" treatment the App row
+                            // below gets for Weergave/Taal/Toegankelijkheid.
                             SettingsRow(
                                 icon = Icons.Filled.Notifications,
                                 title = stringResource(R.string.more_notifications_menu_title),
@@ -615,27 +621,20 @@ fun MoreScreen(
                             )
                         },
                         {
+                            // Weergave, Taal en Toegankelijkheid used to be three separate rows,
+                            // each opening its own small AlertDialog — collapsed into this one
+                            // row (2026-08 dialog review) since together they're one coherent
+                            // "how the app looks and reads" topic, better served by a real
+                            // screen (with a live preview) than three disconnected popups.
                             SettingsRow(
-                                icon = Icons.Filled.Language,
-                                title = stringResource(R.string.more_language_title),
-                                subtitle = stringResource(currentLanguage.labelRes),
-                                onClick = { showLanguageDialog = true },
-                            )
-                        },
-                        {
-                            SettingsRow(
-                                icon = Icons.Filled.DarkMode,
-                                title = stringResource(R.string.more_theme_title),
-                                subtitle = stringResource(themeMode.labelRes()),
-                                onClick = { showThemeDialog = true },
-                            )
-                        },
-                        {
-                            SettingsRow(
-                                icon = Icons.Filled.Accessibility,
-                                title = stringResource(R.string.more_accessibility_title),
-                                subtitle = accessibilitySubtitle(largeText, highContrast),
-                                onClick = { showAccessibilityDialog = true },
+                                icon = Icons.Filled.Tune,
+                                title = stringResource(R.string.more_app_settings_title),
+                                subtitle = stringResource(
+                                    R.string.more_app_settings_subtitle_format,
+                                    stringResource(themeMode.labelRes()),
+                                    "${currentLanguage.flag} ${stringResource(currentLanguage.labelRes)}",
+                                ),
+                                onClick = onNavigateToApp,
                             )
                         },
                     ),
@@ -751,24 +750,6 @@ fun MoreScreen(
         )
     }
 
-    if (showThemeDialog) {
-        ThemeDialog(
-            selected = themeMode,
-            onSelect = { themePreferences.setThemeMode(it) },
-            onDismiss = { showThemeDialog = false },
-        )
-    }
-
-    if (showLanguageDialog) {
-        LanguageDialog(
-            selected = currentLanguage,
-            onSelect = { language ->
-                AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(language.tag))
-            },
-            onDismiss = { showLanguageDialog = false },
-        )
-    }
-
     if (showStoresDialog) {
         StoresDialog(
             stores = stores,
@@ -782,16 +763,6 @@ fun MoreScreen(
             },
             onMove = { store, previous, next -> coroutineScope.launch { storeRepository.moveStore(store, previous, next) } },
             onDismiss = { showStoresDialog = false },
-        )
-    }
-
-    if (showAccessibilityDialog) {
-        AccessibilityDialog(
-            largeText = largeText,
-            onLargeTextChange = { themePreferences.setLargeText(it) },
-            highContrast = highContrast,
-            onHighContrastChange = { themePreferences.setHighContrast(it) },
-            onDismiss = { showAccessibilityDialog = false },
         )
     }
 
@@ -867,18 +838,6 @@ private fun openPlayStoreListing(context: Context) {
             Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}")),
         )
     }
-}
-
-/** Subtitle for the Toegankelijkheid row — "Uit" when neither toggle is on, otherwise the
- *  enabled option(s) joined so the row itself already shows current state without opening
- *  the dialog. */
-@Composable
-private fun accessibilitySubtitle(largeText: Boolean, highContrast: Boolean): String {
-    val enabled = listOfNotNull(
-        stringResource(R.string.more_accessibility_large_text_title).takeIf { largeText },
-        stringResource(R.string.more_accessibility_high_contrast_title).takeIf { highContrast },
-    )
-    return if (enabled.isEmpty()) stringResource(R.string.common_off) else enabled.joinToString(", ")
 }
 
 /** Subtitle for the Meldingen row — how many of the four toggles are on, same "summarize before
@@ -1114,54 +1073,6 @@ private fun HomeStockTimePickerDialog(
     }
 }
 
-@Composable
-private fun AccessibilityDialog(
-    largeText: Boolean,
-    onLargeTextChange: (Boolean) -> Unit,
-    highContrast: Boolean,
-    onHighContrastChange: (Boolean) -> Unit,
-    onDismiss: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.more_accessibility_title)) },
-        text = {
-            Column {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.more_accessibility_large_text_title), style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            text = stringResource(R.string.more_accessibility_large_text_description),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(checked = largeText, onCheckedChange = onLargeTextChange)
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.more_accessibility_high_contrast_title), style = MaterialTheme.typography.titleSmall)
-                        Text(
-                            text = stringResource(R.string.more_accessibility_high_contrast_description),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    Switch(checked = highContrast, onCheckedChange = onHighContrastChange)
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) }
-        },
-    )
-}
 
 /**
  * "Data overzetten" — two cards of unequal weight (2026-08 dialog review): Exporteren carries
@@ -1942,75 +1853,204 @@ private fun DebugPremiumRow(checked: Boolean, onCheckedChange: (Boolean) -> Unit
     }
 }
 
-private fun ThemeMode.labelRes(): Int = when (this) {
+/** Not private — [AppSettingsScreen]'s WEERGAVE preview tiles use this same label set. */
+fun ThemeMode.labelRes(): Int = when (this) {
     ThemeMode.SYSTEM -> R.string.more_theme_option_system
     ThemeMode.LIGHT -> R.string.more_theme_option_light
     ThemeMode.DARK -> R.string.more_theme_option_dark
 }
 
+/**
+ * Instellingen > App — Weergave, Taal and Toegankelijkheid merged into one screen (2026-08
+ * dialog review), replacing three separate small `AlertDialog`s that each opened over the other.
+ * Every control here writes straight through to the live [ThemePreferences]/locale — the whole
+ * app (via [com.dtraas.homestock.ui.theme.HomeStockTheme] in MainActivity) recomposes the moment
+ * a setting changes, so the "Voorbeeld" card at the bottom needs no theming logic of its own: by
+ * the time it renders, it's already under whatever was just picked above, live.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ThemeDialog(selected: ThemeMode, onSelect: (ThemeMode) -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.more_theme_title)) },
-        text = {
-            Column {
-                ThemeMode.entries.forEach { mode ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onSelect(mode)
-                                onDismiss()
-                            }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        RadioButton(selected = mode == selected, onClick = { onSelect(mode); onDismiss() })
-                        Text(stringResource(mode.labelRes()), modifier = Modifier.padding(start = 8.dp))
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
-        },
-    )
-}
+fun AppSettingsScreen(onBack: () -> Unit) {
+    val context = LocalContext.current
+    val application = context.applicationContext as HomeStockApplication
+    val themePreferences = application.container.themePreferences
+    val themeMode by themePreferences.themeMode.collectAsState()
+    val largeText by themePreferences.largeText.collectAsState()
+    val highContrast by themePreferences.highContrast.collectAsState()
+    val currentLanguage = AppLanguage.entries.find { it.tag == LocalConfiguration.current.locales[0].language } ?: AppLanguage.NL
 
-@Composable
-private fun LanguageDialog(selected: AppLanguage, onSelect: (AppLanguage) -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.more_language_title)) },
-        text = {
-            Column {
-                AppLanguage.entries.forEach { language ->
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable {
-                                onSelect(language)
-                                onDismiss()
-                            }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        RadioButton(selected = language == selected, onClick = { onSelect(language); onDismiss() })
-                        // Flag ahead of the name — a quick visual anchor per language on top of
-                        // the text, per explicit request.
-                        Text(
-                            text = "${language.flag}  ${stringResource(language.labelRes)}",
-                            modifier = Modifier.padding(start = 8.dp),
+    Scaffold(
+        topBar = {
+            HomeStockTopAppBar(
+                title = { Text(stringResource(R.string.more_app_settings_title)) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
+                    }
+                },
+            )
+        },
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(22.dp),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // "Weergave" — more_theme_title's own meaning already, reused rather than a
+                // near-duplicate key (this row used to open ThemeDialog under that exact title).
+                SectionHeader(stringResource(R.string.more_theme_title))
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                    ThemeMode.entries.forEach { mode ->
+                        ThemePreviewTile(
+                            mode = mode,
+                            selected = mode == themeMode,
+                            onClick = { themePreferences.setThemeMode(mode) },
+                            modifier = Modifier.weight(1f),
                         )
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
-        },
-    )
+
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                SectionHeader(stringResource(R.string.more_language_title))
+                FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    AppLanguage.entries.forEach { language ->
+                        SheetChip(
+                            label = "${language.flag} ${stringResource(language.labelRes)}",
+                            selected = language == currentLanguage,
+                            onClick = { AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(language.tag)) },
+                        )
+                    }
+                }
+            }
+
+            Column {
+                SectionHeader(stringResource(R.string.more_accessibility_title))
+                SettingsGroup(
+                    rows = listOf(
+                        {
+                            SwitchRow(
+                                icon = Icons.Filled.Accessibility,
+                                title = stringResource(R.string.more_accessibility_large_text_title),
+                                subtitle = stringResource(R.string.more_accessibility_large_text_description),
+                                checked = largeText,
+                                onCheckedChange = { themePreferences.setLargeText(it) },
+                            )
+                        },
+                        {
+                            SwitchRow(
+                                icon = Icons.Filled.Accessibility,
+                                title = stringResource(R.string.more_accessibility_high_contrast_title),
+                                subtitle = stringResource(R.string.more_accessibility_high_contrast_description),
+                                checked = highContrast,
+                                onCheckedChange = { themePreferences.setHighContrast(it) },
+                            )
+                        },
+                    ),
+                )
+            }
+
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                // "Voorbeeld" — more_import_preview_title's own meaning, reused rather than a
+                // near-duplicate key.
+                SectionHeader(stringResource(R.string.more_import_preview_title))
+                AppPreviewCard()
+            }
+        }
+    }
+}
+
+/** One WEERGAVE tile — a miniature mock of what that theme actually looks like (a light or dark
+ *  swatch with two text-line bars) rather than a plain radio row, so the choice is visible, not
+ *  just named. "Systeem" splits the swatch in half to show it isn't committing to either. */
+@Composable
+private fun ThemePreviewTile(mode: ThemeMode, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.clip(SoftCardShapeCompact).clickable(onClick = onClick),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(64.dp)
+                .clip(SoftCardShapeCompact)
+                .border(
+                    width = if (selected) 2.dp else 1.dp,
+                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
+                    shape = SoftCardShapeCompact,
+                ),
+        ) {
+            when (mode) {
+                ThemeMode.LIGHT -> ThemeSwatch(background = LinenBackground, ink = LinenInk, modifier = Modifier.fillMaxSize())
+                ThemeMode.DARK -> ThemeSwatch(background = LinenBackgroundDark, ink = LinenInkDark, modifier = Modifier.fillMaxSize())
+                ThemeMode.SYSTEM -> Row(Modifier.fillMaxSize()) {
+                    ThemeSwatch(background = LinenBackground, ink = LinenInk, modifier = Modifier.weight(1f).fillMaxHeight())
+                    ThemeSwatch(background = LinenBackgroundDark, ink = LinenInkDark, modifier = Modifier.weight(1f).fillMaxHeight())
+                }
+            }
+        }
+        Text(
+            text = stringResource(mode.labelRes()),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun ThemeSwatch(background: Color, ink: Color, modifier: Modifier = Modifier) {
+    Box(modifier = modifier.background(background), contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(3.dp)) {
+            Box(Modifier.width(26.dp).height(4.dp).background(ink, RoundedCornerShape(2.dp)))
+            Box(Modifier.width(18.dp).height(4.dp).background(ink.copy(alpha = 0.5f), RoundedCornerShape(2.dp)))
+        }
+    }
+}
+
+/**
+ * The "Voorbeeld" card — a real inventory row (same [ProductImage]/[QuantityStepper] components
+ * InventoryScreen's own rows use, not a lookalike) with made-up but realistic content, so
+ * Weergave/Toegankelijkheid choices above are judged against something that actually looks like
+ * the rest of the app rather than an abstract swatch.
+ */
+@Composable
+private fun AppPreviewCard() {
+    var previewQuantity by remember { mutableStateOf(3) }
+    Surface(
+        shape = SoftCardShapeCompact,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(modifier = Modifier.padding(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            ProductImage(
+                imageUrl = null,
+                fallbackIcon = Category.ZUIVEL.icon,
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier.size(36.dp),
+            )
+            Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
+                Text(stringResource(R.string.more_app_settings_preview_product_name), style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    text = stringResource(R.string.more_app_settings_preview_product_meta),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            QuantityStepper(
+                quantity = previewQuantity,
+                onDecrease = { if (previewQuantity > 0) previewQuantity-- },
+                onIncrease = { previewQuantity++ },
+                dense = true,
+            )
+        }
+    }
 }
 
 /**

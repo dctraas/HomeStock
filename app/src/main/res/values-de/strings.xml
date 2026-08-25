@@ -261,6 +261,10 @@
     <string name="more_theme_option_system">Systemstandard</string>
     <string name="more_theme_option_light">Hell</string>
     <string name="more_theme_option_dark">Dunkel</string>
+    <string name="more_app_settings_title">App</string>
+    <string name="more_app_settings_subtitle_format">%1$s · %2$s</string>
+    <string name="more_app_settings_preview_product_name">Milch</string>
+    <string name="more_app_settings_preview_product_meta">Noch 4 Tage · 1 L</string>
     <string name="more_accessibility_title">Barrierefreiheit</string>
     <string name="more_accessibility_large_text_title">Große Schrift</string>
     <string name="more_accessibility_large_text_description">Vergrößert den Text in der gesamten App.</string>

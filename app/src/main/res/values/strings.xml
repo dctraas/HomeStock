@@ -265,6 +265,10 @@
     <string name="more_theme_option_system">Systeem standaard</string>
     <string name="more_theme_option_light">Licht</string>
     <string name="more_theme_option_dark">Donker</string>
+    <string name="more_app_settings_title">App</string>
+    <string name="more_app_settings_subtitle_format">%1$s · %2$s</string>
+    <string name="more_app_settings_preview_product_name">Melk</string>
+    <string name="more_app_settings_preview_product_meta">Nog 4 dagen · 1 L</string>
     <string name="more_accessibility_title">Toegankelijkheid</string>
     <string name="more_accessibility_large_text_title">Groot lettertype</string>
     <string name="more_accessibility_large_text_description">Vergroot de tekst in de hele app.</string>

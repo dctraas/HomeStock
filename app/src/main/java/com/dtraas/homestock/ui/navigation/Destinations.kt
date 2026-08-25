@@ -56,6 +56,7 @@ sealed class Destination(val route: String) {
     data object MealPlan : Destination("meal_plan")
     data object Premium : Destination("premium")
     data object Household : Destination("household")
+    data object AppSettings : Destination("app_settings")
     data object AccountLink : Destination("account_link")
     data object PrivacyPolicy : Destination("privacy_policy")
     data object Licenses : Destination("licenses")
