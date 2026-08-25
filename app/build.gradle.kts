@@ -7,7 +7,10 @@ plugins {
 
 android {
     namespace = "com.dtraas.homestock"
-    compileSdk = 34
+    // 35, not 34 — androidx.core:core-splashscreen 1.2.0 (see the splash-screen dependency
+    // below) requires compiling against API 35+. This only changes what's visible at compile
+    // time; targetSdk/minSdk below are untouched, so runtime behavior doesn't change.
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.dtraas.homestock"
