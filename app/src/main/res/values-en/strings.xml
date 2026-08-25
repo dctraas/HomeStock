@@ -680,6 +680,10 @@
     <string name="shopping_list_item_more_suggestions">You might also need</string>
     <string name="shopping_list_price_placeholder">0.00</string>
     <string name="shopping_list_switch_list_cd">Switch list</string>
+    <plurals name="shopping_list_switcher_item_count_format">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
     <string name="shopping_list_total_format">Total: %1$s</string>
     <string name="shopping_list_list_options_cd">List options</string>
     <string name="shopping_list_new_list_action">New list</string>
@@ -687,6 +691,11 @@
     <string name="shopping_list_new_list_confirm">Create</string>
     <string name="shopping_list_rename_list_action">Rename</string>
     <string name="shopping_list_rename_list_title">Rename list</string>
+    <string name="shopping_list_name_suggestion_weekly">Weekly shop</string>
+    <string name="shopping_list_name_suggestion_party">Party</string>
+    <string name="shopping_list_name_suggestion_bbq">BBQ</string>
+    <string name="shopping_list_name_suggestion_birthday">Birthday</string>
+    <string name="shopping_list_name_suggestion_camping">Camping</string>
     <string name="shopping_list_delete_list_action">Delete</string>
     <string name="shopping_list_delete_list_title">Delete list</string>
     <string name="shopping_list_delete_list_text_format">Are you sure you want to delete \'%1$s\'? All items on this list will also be deleted.</string>

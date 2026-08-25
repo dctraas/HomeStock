@@ -79,6 +79,14 @@ class ShoppingListViewModel(
             allLists.firstOrNull { it.id == activeId } ?: defaultListMeta
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), defaultListMeta)
 
+    /** Every list's own item count (checked + unchecked), keyed by [ShoppingListMeta.id] — null
+     *  is the default list's key, same convention [ShoppingListItemEntity.listId] already uses.
+     *  Lets the list-switcher sheet show "3 items" per list instead of just names. */
+    val itemCountByListId: StateFlow<Map<String?, Int>> =
+        shoppingListRepository.observeShoppingList()
+            .map { items -> items.groupingBy { it.listId }.eachCount() }
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
     // Grouped and ordered by each store's sortOrder (custom store list), with any store
     // name no longer in that list falling after the known ones and "no store" always last.
     val groupedByStore: StateFlow<Map<String, List<ShoppingListItemEntity>>> =

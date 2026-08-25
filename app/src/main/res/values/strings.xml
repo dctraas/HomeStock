@@ -684,6 +684,10 @@
     <string name="shopping_list_item_more_suggestions">Misschien ook</string>
     <string name="shopping_list_price_placeholder">0,00</string>
     <string name="shopping_list_switch_list_cd">Wissel van lijst</string>
+    <plurals name="shopping_list_switcher_item_count_format">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
     <string name="shopping_list_total_format">Totaal: %1$s</string>
     <string name="shopping_list_list_options_cd">Lijstopties</string>
     <string name="shopping_list_new_list_action">Nieuwe lijst</string>
@@ -691,6 +695,11 @@
     <string name="shopping_list_new_list_confirm">Aanmaken</string>
     <string name="shopping_list_rename_list_action">Hernoemen</string>
     <string name="shopping_list_rename_list_title">Lijst hernoemen</string>
+    <string name="shopping_list_name_suggestion_weekly">Weekboodschappen</string>
+    <string name="shopping_list_name_suggestion_party">Feestje</string>
+    <string name="shopping_list_name_suggestion_bbq">BBQ</string>
+    <string name="shopping_list_name_suggestion_birthday">Verjaardag</string>
+    <string name="shopping_list_name_suggestion_camping">Camping</string>
     <string name="shopping_list_delete_list_action">Verwijderen</string>
     <string name="shopping_list_delete_list_title">Lijst verwijderen</string>
     <string name="shopping_list_delete_list_text_format">Weet je zeker dat je \'%1$s\' wilt verwijderen? Alle items op deze lijst worden ook verwijderd.</string>

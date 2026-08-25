@@ -14,6 +14,8 @@ import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -213,6 +215,7 @@ fun ShoppingListScreen() {
     val sortMode by viewModel.sortModeState.collectAsState()
     val lists by viewModel.lists.collectAsState()
     val activeList by viewModel.activeList.collectAsState()
+    val itemCountByListId by viewModel.itemCountByListId.collectAsState()
     val totalPrice by viewModel.totalPrice.collectAsState()
     val allItems = groupedByStore.values.flatten()
     val hasCheckedItems = allItems.any { it.isChecked }
@@ -333,6 +336,7 @@ fun ShoppingListScreen() {
                 listMenuExpanded = showListMenu,
                 lists = lists,
                 activeListId = activeList.id,
+                itemCountByListId = itemCountByListId,
                 onDismissListMenu = { showListMenu = false },
                 onSelectList = viewModel::selectList,
                 onCreateNewList = { showCreateListDialog = true },
@@ -1265,6 +1269,7 @@ private fun ShoppingListHeader(
     listMenuExpanded: Boolean,
     lists: List<ShoppingListMeta>,
     activeListId: String?,
+    itemCountByListId: Map<String?, Int>,
     onDismissListMenu: () -> Unit,
     onSelectList: (String?) -> Unit,
     onCreateNewList: () -> Unit,
@@ -1311,10 +1316,12 @@ private fun ShoppingListHeader(
                         tint = contentColor,
                     )
                 }
-                ShoppingListSwitcherMenu(
-                    expanded = listMenuExpanded,
+            }
+            if (listMenuExpanded) {
+                ShoppingListSwitcherSheet(
                     lists = lists,
                     activeListId = activeListId,
+                    itemCountByListId = itemCountByListId,
                     onDismiss = onDismissListMenu,
                     onSelect = onSelectList,
                     onCreateNew = onCreateNewList,
@@ -2028,80 +2035,112 @@ private fun ItemFormDialog(
 }
 
 /**
- * The list-switcher dropdown, anchored to the title in the top app bar — every list the
- * household has (default first, see [ShoppingListViewModel.lists]), a checkmark on the active
- * one, and "+ Nieuwe lijst" at the bottom. The default list has no rename/delete menu (it isn't
- * a document [com.dtraas.homestock.data.repository.ShoppingListsRepository] manages, see
- * [ShoppingListMeta]'s doc) — only named lists get the "…" overflow.
+ * The list-switcher — every list the household has (default first, see
+ * [ShoppingListViewModel.lists]), each with its own real item count (see
+ * [ShoppingListViewModel.itemCountByListId]), a checkmark on the active one, and one full-width
+ * "+ Nieuwe lijst" button at the bottom. A bottom sheet (2026-08 dialog review) rather than a
+ * `DropdownMenu`, so item counts actually have room to show instead of being one more thing
+ * squeezed into a cramped menu row. The default list has no rename/delete "…" menu (it isn't a
+ * document [com.dtraas.homestock.data.repository.ShoppingListsRepository] manages, see
+ * [ShoppingListMeta]'s doc) — only named lists get it.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ShoppingListSwitcherMenu(
-    expanded: Boolean,
+private fun ShoppingListSwitcherSheet(
     lists: List<ShoppingListMeta>,
     activeListId: String?,
+    itemCountByListId: Map<String?, Int>,
     onDismiss: () -> Unit,
     onSelect: (String?) -> Unit,
     onCreateNew: () -> Unit,
     onRename: (ShoppingListMeta) -> Unit,
     onDelete: (ShoppingListMeta) -> Unit,
 ) {
-    DropdownMenu(expanded = expanded, onDismissRequest = onDismiss) {
-        lists.forEach { list ->
-            DropdownMenuItem(
-                text = { Text(list.name) },
-                leadingIcon = {
-                    if (list.id == activeListId) Icon(Icons.Filled.Check, contentDescription = null)
-                },
-                trailingIcon = if (list.id != null) {
-                    {
-                        var itemMenuExpanded by remember { mutableStateOf(false) }
-                        Box {
-                            IconButton(onClick = { itemMenuExpanded = true }, modifier = Modifier.size(24.dp)) {
-                                Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.shopping_list_list_options_cd))
-                            }
-                            DropdownMenu(expanded = itemMenuExpanded, onDismissRequest = { itemMenuExpanded = false }) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.shopping_list_rename_list_action)) },
-                                    leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
-                                    onClick = {
-                                        itemMenuExpanded = false
-                                        onDismiss()
-                                        onRename(list)
-                                    },
-                                )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.shopping_list_delete_list_action)) },
-                                    leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
-                                    onClick = {
-                                        itemMenuExpanded = false
-                                        onDismiss()
-                                        onDelete(list)
-                                    },
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    null
-                },
-                onClick = {
-                    onSelect(list.id)
-                    onDismiss()
-                },
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.padding(sheetContentPadding),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            SheetTitle(title = stringResource(R.string.shopping_list_switch_list_cd))
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                lists.forEach { list ->
+                    ShoppingListSwitcherRow(
+                        list = list,
+                        selected = list.id == activeListId,
+                        itemCount = itemCountByListId[list.id] ?: 0,
+                        onClick = { onSelect(list.id); onDismiss() },
+                        onRename = { onDismiss(); onRename(list) },
+                        onDelete = { onDismiss(); onDelete(list) },
+                    )
+                }
+            }
+            SheetPrimaryButton(
+                text = stringResource(R.string.shopping_list_new_list_action),
+                leadingIcon = Icons.Filled.Add,
+                onClick = { onDismiss(); onCreateNew() },
             )
         }
-        DropdownMenuItem(
-            text = { Text(stringResource(R.string.shopping_list_new_list_action)) },
-            leadingIcon = { Icon(Icons.Filled.Add, contentDescription = null) },
-            onClick = {
-                onDismiss()
-                onCreateNew()
-            },
-        )
     }
 }
 
-/** Shared by "nieuwe lijst" and "lijst hernoemen" — same single-field form either way. */
+@Composable
+private fun ShoppingListSwitcherRow(
+    list: ShoppingListMeta,
+    selected: Boolean,
+    itemCount: Int,
+    onClick: () -> Unit,
+    onRename: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Surface(
+        onClick = onClick,
+        shape = SoftCardShapeCompact,
+        color = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(modifier = Modifier.size(22.dp), contentAlignment = Alignment.Center) {
+                if (selected) {
+                    Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                }
+            }
+            Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
+                Text(list.name, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                Text(
+                    text = pluralStringResource(R.plurals.shopping_list_switcher_item_count_format, itemCount, itemCount),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (list.id != null) {
+                var itemMenuExpanded by remember { mutableStateOf(false) }
+                Box {
+                    IconButton(onClick = { itemMenuExpanded = true }, modifier = Modifier.size(32.dp)) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.shopping_list_list_options_cd))
+                    }
+                    DropdownMenu(expanded = itemMenuExpanded, onDismissRequest = { itemMenuExpanded = false }) {
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.shopping_list_rename_list_action)) },
+                            leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                            onClick = { itemMenuExpanded = false; onRename() },
+                        )
+                        DropdownMenuItem(
+                            text = { Text(stringResource(R.string.shopping_list_delete_list_action)) },
+                            leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
+                            onClick = { itemMenuExpanded = false; onDelete() },
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Shared by "nieuwe lijst" and "lijst hernoemen" — same single-field form either way. A bottom
+ *  sheet (2026-08 dialog review) rather than an `AlertDialog`, with a row of common list-name
+ *  suggestions underneath the field — tapping one just fills the field, it's still freely
+ *  editable afterward, same as picking a suggestion anywhere else in the app never locks it in. */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun ListNameDialog(
     title: String,
@@ -2111,10 +2150,12 @@ private fun ListNameDialog(
     onConfirm: (String) -> Unit,
 ) {
     var name by remember { mutableStateOf(initialName) }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(title) },
-        text = {
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.padding(sheetContentPadding),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            SheetTitle(title = title)
             OutlinedTextField(
                 value = name,
                 onValueChange = { name = it },
@@ -2122,13 +2163,22 @@ private fun ListNameDialog(
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
             )
-        },
-        confirmButton = {
-            TextButton(onClick = { onConfirm(name) }, enabled = name.isNotBlank()) { Text(confirmLabel) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
-        },
-    )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                listNameSuggestionRes.forEach { suggestionRes ->
+                    val suggestion = stringResource(suggestionRes)
+                    SheetChip(label = suggestion, selected = name == suggestion, onClick = { name = suggestion })
+                }
+            }
+            SheetPrimaryButton(text = confirmLabel, onClick = { onConfirm(name) }, enabled = name.isNotBlank())
+        }
+    }
 }
+
+private val listNameSuggestionRes = listOf(
+    R.string.shopping_list_name_suggestion_weekly,
+    R.string.shopping_list_name_suggestion_party,
+    R.string.shopping_list_name_suggestion_bbq,
+    R.string.shopping_list_name_suggestion_birthday,
+    R.string.shopping_list_name_suggestion_camping,
+)
 
