@@ -1868,7 +1868,7 @@ fun ThemeMode.labelRes(): Int = when (this) {
  * a setting changes, so the "Voorbeeld" card at the bottom needs no theming logic of its own: by
  * the time it renders, it's already under whatever was just picked above, live.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun AppSettingsScreen(onBack: () -> Unit) {
     val context = LocalContext.current
