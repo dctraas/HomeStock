@@ -13,6 +13,7 @@
     <string name="common_no">Nee</string>
     <string name="common_quantity">Aantal</string>
     <string name="common_save">Opslaan</string>
+    <string name="common_now">Nu</string>
     <string name="common_undo">Ongedaan maken</string>
     <string name="quantity_decrease_cd">Minder</string>
     <string name="quantity_increase_cd">Meer</string>
@@ -208,6 +209,13 @@
     <string name="more_profile_dialog_title">Naam instellen</string>
     <string name="more_profile_name_placeholder">Bijv. Mama, Jip</string>
     <string name="more_profile_remove_photo_cd">Foto verwijderen</string>
+    <string name="more_profile_subtitle">Zo zien je huisgenoten wie iets toevoegt of afvinkt.</string>
+
+    <string name="more_profile_helper">Tik op de foto om er een te kiezen</string>
+
+    <string name="more_profile_preview_section">Zo ziet het eruit</string>
+
+    <string name="more_profile_preview_product">Bananen</string>
     <string name="more_expiry_notifications_description">Krijg een melding als een product bijna over de datum is</string>
     <string name="more_settings_title">Instellingen</string>
     <string name="account_link_row_title">Account koppelen</string>

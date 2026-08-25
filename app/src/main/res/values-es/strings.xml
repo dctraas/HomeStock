@@ -13,6 +13,7 @@
     <string name="common_no">No</string>
     <string name="common_quantity">Cantidad</string>
     <string name="common_save">Guardar</string>
+    <string name="common_now">Ahora</string>
     <string name="common_undo">Deshacer</string>
     <string name="quantity_decrease_cd">Menos</string>
     <string name="quantity_increase_cd">Más</string>
@@ -204,6 +205,13 @@
     <string name="more_profile_dialog_title">Establecer tu nombre</string>
     <string name="more_profile_name_placeholder">P. ej. Mamá, Alex</string>
     <string name="more_profile_remove_photo_cd">Eliminar foto</string>
+    <string name="more_profile_subtitle">Así ven tus compañeros de casa quién añadió o marcó algo.</string>
+
+    <string name="more_profile_helper">Toca la foto para elegir una</string>
+
+    <string name="more_profile_preview_section">Así se verá</string>
+
+    <string name="more_profile_preview_product">Plátanos</string>
     <string name="more_expiry_notifications_description">Recibe un aviso cuando un producto esté a punto de caducar</string>
     <string name="more_settings_title">Configuración</string>
     <string name="account_link_row_title">Vincular cuenta</string>

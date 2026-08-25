@@ -13,6 +13,7 @@
     <string name="common_no">Non</string>
     <string name="common_quantity">Quantité</string>
     <string name="common_save">Enregistrer</string>
+    <string name="common_now">Maintenant</string>
     <string name="common_undo">Annuler</string>
     <string name="quantity_decrease_cd">Diminuer</string>
     <string name="quantity_increase_cd">Augmenter</string>
@@ -204,6 +205,13 @@
     <string name="more_profile_dialog_title">Définir ton nom</string>
     <string name="more_profile_name_placeholder">P. ex. Maman, Alex</string>
     <string name="more_profile_remove_photo_cd">Supprimer la photo</string>
+    <string name="more_profile_subtitle">C\'est ainsi que tes colocataires voient qui a ajouté ou coché quelque chose.</string>
+
+    <string name="more_profile_helper">Touche la photo pour en choisir une</string>
+
+    <string name="more_profile_preview_section">Voici à quoi ça ressemblera</string>
+
+    <string name="more_profile_preview_product">Bananes</string>
     <string name="more_expiry_notifications_description">Recevez une notification quand un produit est bientôt périmé</string>
     <string name="more_settings_title">Paramètres</string>
     <string name="account_link_row_title">Lier le compte</string>
