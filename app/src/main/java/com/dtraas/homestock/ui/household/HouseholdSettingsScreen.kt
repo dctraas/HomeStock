@@ -3,6 +3,10 @@ package com.dtraas.homestock.ui.household
 import android.app.Activity
 import android.content.Intent
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,8 +29,13 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteForever
+import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapHoriz
+import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -55,16 +64,32 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
+import com.dtraas.homestock.data.export.CsvExporter
+import com.dtraas.homestock.data.export.InventoryCsvHeaders
+import com.dtraas.homestock.data.export.ShoppingListCsvHeaders
+import com.dtraas.homestock.data.model.Category
+import com.dtraas.homestock.data.model.MeasurementUnit
+import com.dtraas.homestock.ui.components.HomeStockBottomSheet
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
+import com.dtraas.homestock.ui.components.SheetActionRow
+import com.dtraas.homestock.ui.components.SheetEyebrow
+import com.dtraas.homestock.ui.components.SheetPrimaryButton
+import com.dtraas.homestock.ui.components.SheetTitle
+import com.dtraas.homestock.ui.components.sheetContentPadding
 import com.dtraas.homestock.data.repository.HouseholdCapacityInfo
 import com.dtraas.homestock.data.repository.HouseholdInviteLink
 import com.dtraas.homestock.data.repository.HouseholdJoinResult
@@ -73,9 +98,13 @@ import com.dtraas.homestock.data.repository.HouseholdMembersRepository
 import com.dtraas.homestock.data.repository.HouseholdRepository
 import com.dtraas.homestock.data.repository.RecentHousehold
 import com.dtraas.homestock.ui.theme.SoftCardShape
+import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 /**
@@ -112,12 +141,108 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
     // "this" household — only *other* previously-joined households belong in the switcher.
     val otherHouseholds = recentHouseholds.filter { it.id != householdId }
 
+    // Real counts for the delete-confirmation sheet's "Dit verdwijnt" card (cross-cutting rule
+    // #4 of the 2026-08 dialog review: "put the app's knowledge in the sheet") — the same
+    // repositories MoreScreen's own Data-overzetten sheet reads from.
+    val inventoryRepository = application.container.inventoryRepository
+    val inventoryItemCount by remember {
+        inventoryRepository.observeInventoryWithProduct().map { it.size }
+    }.collectAsState(initial = 0)
+    val shoppingListRepository = application.container.shoppingListRepository
+    val shoppingListItemCount by remember {
+        shoppingListRepository.observeShoppingList().map { it.size }
+    }.collectAsState(initial = 0)
+    val shoppingListsRepository = application.container.shoppingListsRepository
+    val namedListCount by remember {
+        shoppingListsRepository.observeLists().map { it.size }
+    }.collectAsState(initial = 0)
+    val householdCreatedAt by householdRepository.observeHouseholdCreatedAt().collectAsState(initial = null)
+    val historyMonths = householdCreatedAt?.let { created ->
+        val elapsedDays = (System.currentTimeMillis() - created).coerceAtLeast(0L) / TimeUnit.DAYS.toMillis(1)
+        (elapsedDays / 30L).toInt().coerceAtLeast(1)
+    }
+
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
     val deleteSuccessMessage = stringResource(R.string.more_delete_household_success)
     val deleteErrorMessage = stringResource(R.string.more_delete_household_error)
     val switchFullMessage = stringResource(R.string.household_join_full_error)
     val switchNotFoundMessage = stringResource(R.string.household_switch_not_found_error)
+
+    // "Eerst exporteren als CSV" in the delete sheet — a full Voorraad + Boodschappenlijst
+    // export, same CsvExporter this app's Data-overzetten sheet uses, just always "Alles"
+    // scope here since the household (and everything in it) is about to be gone either way.
+    val exportPreferences = application.container.exportPreferences
+    var pendingExportCsv by remember { mutableStateOf<String?>(null) }
+    val exportErrorMessage = stringResource(R.string.more_export_error)
+    val exportSuccessMessage = stringResource(R.string.more_export_success)
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv"),
+    ) { uri ->
+        val csv = pendingExportCsv
+        pendingExportCsv = null
+        if (uri == null || csv == null) return@rememberLauncherForActivityResult
+        coroutineScope.launch {
+            val message = try {
+                context.contentResolver.openOutputStream(uri)?.use { it.write(csv.toByteArray(Charsets.UTF_8)) }
+                exportPreferences.recordExportNow()
+                exportSuccessMessage
+            } catch (e: Exception) {
+                exportErrorMessage
+            }
+            snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Short)
+        }
+    }
+    val categoryLabels = Category.entries.associate { it.storageKey to stringResource(it.displayNameRes) }
+    val unitLabels = MeasurementUnit.entries.associate { it.storageKey to stringResource(it.shortLabelRes) }
+    val csvYes = stringResource(R.string.common_yes)
+    val csvNo = stringResource(R.string.common_no)
+    val inventoryCsvHeaders = InventoryCsvHeaders(
+        name = stringResource(R.string.common_name),
+        brand = stringResource(R.string.product_detail_field_brand),
+        category = stringResource(R.string.category_dropdown_label),
+        quantity = stringResource(R.string.common_quantity),
+        unit = stringResource(R.string.product_detail_field_unit),
+        expiration = stringResource(R.string.product_detail_expiration_label),
+        minQuantity = stringResource(R.string.product_detail_min_quantity_label),
+        favorite = stringResource(R.string.more_export_header_favorite),
+        note = stringResource(R.string.shopping_list_note_label),
+    )
+    val shoppingListCsvHeaders = ShoppingListCsvHeaders(
+        name = stringResource(R.string.common_name),
+        category = stringResource(R.string.category_dropdown_label),
+        store = stringResource(R.string.store_dropdown_label),
+        quantity = stringResource(R.string.common_quantity),
+        unit = stringResource(R.string.product_detail_field_unit),
+        note = stringResource(R.string.shopping_list_note_label),
+        price = stringResource(R.string.more_export_header_price),
+        checked = stringResource(R.string.more_export_header_checked),
+    )
+    val inventorySectionTitle = stringResource(R.string.inventory_title)
+    val shoppingListSectionTitle = stringResource(R.string.shopping_list_title)
+
+    fun exportAllBeforeDelete() {
+        coroutineScope.launch {
+            val inventoryCsv = CsvExporter.inventoryToCsv(
+                inventoryRepository.observeInventoryWithProduct().first(),
+                inventoryCsvHeaders,
+                categoryLabel = { key -> categoryLabels[key] ?: key },
+                unitLabel = { key -> unitLabels[key] ?: (key ?: "") },
+                yesLabel = csvYes,
+                noLabel = csvNo,
+            )
+            val listCsv = CsvExporter.shoppingListToCsv(
+                shoppingListRepository.observeShoppingList().first(),
+                shoppingListCsvHeaders,
+                categoryLabel = { key -> categoryLabels[key] ?: key },
+                unitLabel = { key -> unitLabels[key] ?: key },
+                yesLabel = csvYes,
+                noLabel = csvNo,
+            )
+            pendingExportCsv = CsvExporter.combinedToCsv(inventoryCsv, listCsv, inventorySectionTitle, shoppingListSectionTitle)
+            exportLauncher.launch("homestock-data.csv")
+        }
+    }
 
     // Re-seeds from the live household name whenever it changes (e.g. this screen reopening,
     // or a housemate renaming it on their own device) — but not on every keystroke, since
@@ -296,42 +421,37 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
     }
 
     if (showDeleteConfirm) {
-        AlertDialog(
-            onDismissRequest = { if (!isDeleting) showDeleteConfirm = false },
-            title = { Text(stringResource(R.string.more_delete_household_dialog_title)) },
-            text = { Text(stringResource(R.string.more_delete_household_dialog_text)) },
-            confirmButton = {
-                TextButton(
-                    enabled = !isDeleting,
-                    onClick = {
-                        val idToDelete = householdId ?: return@TextButton
-                        isDeleting = true
-                        coroutineScope.launch {
-                            try {
-                                householdRepository.deleteHousehold(idToDelete)
-                                showDeleteConfirm = false
-                                // Shown while this screen (and its SnackbarHost) still exist —
-                                // leaveHousehold() below flips householdId to null, which
-                                // MainActivity reacts to by swapping to HouseholdScreen and
-                                // tearing this composition down, so the snackbar must finish
-                                // first or it would never be seen.
-                                snackbarHostState.showSnackbar(deleteSuccessMessage, duration = SnackbarDuration.Short)
-                                householdSession.leaveHousehold()
-                            } catch (e: Exception) {
-                                snackbarHostState.showSnackbar(deleteErrorMessage, duration = SnackbarDuration.Short)
-                            } finally {
-                                isDeleting = false
-                            }
-                        }
-                    },
-                ) { Text(stringResource(R.string.more_delete_household_confirm)) }
+        DeleteHouseholdSheet(
+            householdName = householdName,
+            inventoryItemCount = inventoryItemCount,
+            shoppingListCount = namedListCount,
+            shoppingListItemCount = shoppingListItemCount,
+            historyMonths = historyMonths,
+            memberCount = members.size,
+            isDeleting = isDeleting,
+            onExportFirst = ::exportAllBeforeDelete,
+            onConfirm = {
+                val idToDelete = householdId ?: return@DeleteHouseholdSheet
+                isDeleting = true
+                coroutineScope.launch {
+                    try {
+                        householdRepository.deleteHousehold(idToDelete)
+                        showDeleteConfirm = false
+                        // Shown while this screen (and its SnackbarHost) still exist —
+                        // leaveHousehold() below flips householdId to null, which
+                        // MainActivity reacts to by swapping to HouseholdScreen and
+                        // tearing this composition down, so the snackbar must finish
+                        // first or it would never be seen.
+                        snackbarHostState.showSnackbar(deleteSuccessMessage, duration = SnackbarDuration.Short)
+                        householdSession.leaveHousehold()
+                    } catch (e: Exception) {
+                        snackbarHostState.showSnackbar(deleteErrorMessage, duration = SnackbarDuration.Short)
+                    } finally {
+                        isDeleting = false
+                    }
+                }
             },
-            dismissButton = {
-                TextButton(
-                    enabled = !isDeleting,
-                    onClick = { showDeleteConfirm = false },
-                ) { Text(stringResource(R.string.common_cancel)) }
-            },
+            onDismiss = { showDeleteConfirm = false },
         )
     }
 
@@ -558,10 +678,10 @@ private fun RecentHouseholdRow(
 }
 
 /**
- * Leave/delete as two plain, right-aligned, labeled buttons, side by side on one row. A
- * neutral (theme-aware "black") tint rather than the error color keeps them from reading as
- * loud/alarming at a glance; the actual warning is the confirmation dialog each one opens (see
- * [HouseholdSettingsScreen]'s showLeaveConfirm/showDeleteConfirm), not the button color.
+ * Leave/delete as two plain, right-aligned, labeled buttons, side by side on one row. "Verlaten"
+ * stays a neutral (theme-aware "black") tint — leaving is reversible, you can always rejoin by
+ * code. "Verwijderen" is not: the row itself now carries an error tint, so the danger reads at a
+ * glance instead of living only in [DeleteHouseholdSheet]'s copy (2026-08 dialog review).
  */
 @Composable
 private fun ActionButtonsRow(isDeleting: Boolean, onLeaveClick: () -> Unit, onDeleteClick: () -> Unit) {
@@ -584,7 +704,8 @@ private fun ActionButtonsRow(isDeleting: Boolean, onLeaveClick: () -> Unit, onDe
         OutlinedButton(
             onClick = onDeleteClick,
             enabled = !isDeleting,
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
         ) {
             Icon(
                 imageVector = Icons.Filled.DeleteForever,
@@ -593,6 +714,150 @@ private fun ActionButtonsRow(isDeleting: Boolean, onLeaveClick: () -> Unit, onDe
             )
             Text(stringResource(R.string.more_delete_household), modifier = Modifier.padding(start = 6.dp))
         }
+    }
+}
+
+/**
+ * "Make delete unmistakably destructive" (2026-08 dialog review) — a coral/error icon badge, the
+ * household's own name in the question, a bolded reminder that every housemate loses access, a
+ * "Dit verdwijnt" card with real counts (not vague "your data"), an escape hatch that actually
+ * exports before anything is lost, and type-to-confirm so the final button can't be an idle tap.
+ * [historyMonths] is null for a household created before `createdAt` existed — that row is just
+ * omitted rather than showing a wrong or zero count.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DeleteHouseholdSheet(
+    householdName: String?,
+    inventoryItemCount: Int,
+    shoppingListCount: Int,
+    shoppingListItemCount: Int,
+    historyMonths: Int?,
+    memberCount: Int,
+    isDeleting: Boolean,
+    onExportFirst: () -> Unit,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var confirmInput by remember { mutableStateOf("") }
+    val confirmKeyword = stringResource(R.string.more_delete_household_confirm_keyword)
+    val isConfirmed = confirmInput.trim().equals(confirmKeyword, ignoreCase = true)
+
+    HomeStockBottomSheet(onDismissRequest = { if (!isDeleting) onDismiss() }) {
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(sheetContentPadding),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.DeleteForever,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+            SheetTitle(
+                title = stringResource(
+                    R.string.more_delete_household_sheet_title_format,
+                    householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.more_household_default_name),
+                ),
+            )
+            Text(
+                text = buildAnnotatedString {
+                    append(stringResource(R.string.more_delete_household_sheet_body_prefix))
+                    withStyle(SpanStyle(fontWeight = FontWeight.Bold)) {
+                        append(stringResource(R.string.more_delete_household_sheet_body_bold))
+                    }
+                    append(stringResource(R.string.more_delete_household_sheet_body_suffix))
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Surface(
+                shape = SoftCardShapeCompact,
+                color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.secondaryContainer),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    SheetEyebrow(text = stringResource(R.string.more_delete_household_disappears_eyebrow), color = MaterialTheme.colorScheme.error)
+                    DisappearsRow(
+                        icon = Icons.Filled.Inventory,
+                        text = pluralStringResource(R.plurals.more_export_subtitle_inventory_format, inventoryItemCount, inventoryItemCount),
+                    )
+                    DisappearsRow(
+                        icon = Icons.Filled.ViewList,
+                        text = stringResource(R.string.more_delete_household_lists_format, shoppingListCount, shoppingListItemCount),
+                    )
+                    if (historyMonths != null) {
+                        DisappearsRow(
+                            icon = Icons.Filled.Schedule,
+                            text = pluralStringResource(R.plurals.more_delete_household_months_format, historyMonths, historyMonths),
+                        )
+                    }
+                    DisappearsRow(
+                        icon = Icons.Filled.Groups,
+                        text = pluralStringResource(R.plurals.more_delete_household_members_format, memberCount, memberCount),
+                    )
+                }
+            }
+            SheetActionRow(
+                icon = Icons.Filled.Download,
+                title = stringResource(R.string.more_delete_household_export_first_action),
+                onClick = onExportFirst,
+                enabled = !isDeleting,
+                containerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.3f),
+                borderColor = MaterialTheme.colorScheme.primaryContainer,
+                iconTileColor = MaterialTheme.colorScheme.primaryContainer,
+                iconTint = MaterialTheme.colorScheme.primary,
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = stringResource(R.string.more_delete_household_type_to_confirm_label_format, confirmKeyword),
+                    style = MaterialTheme.typography.labelLarge,
+                )
+                OutlinedTextField(
+                    value = confirmInput,
+                    onValueChange = { confirmInput = it },
+                    singleLine = true,
+                    enabled = !isDeleting,
+                    placeholder = { Text(confirmKeyword) },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+            SheetPrimaryButton(
+                text = stringResource(R.string.more_delete_household_final_confirm),
+                onClick = onConfirm,
+                enabled = isConfirmed && !isDeleting,
+                loading = isDeleting,
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError,
+            )
+        }
+    }
+}
+
+@Composable
+private fun DisappearsRow(icon: ImageVector, text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.error,
+            modifier = Modifier.size(18.dp),
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(start = 10.dp),
+        )
     }
 }
 

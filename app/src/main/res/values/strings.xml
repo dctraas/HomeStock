@@ -200,11 +200,26 @@
     <string name="more_leave_dialog_title">Huishouden verlaten?</string>
     <string name="more_leave_dialog_text">Je ziet de gedeelde voorraad en boodschappenlijst dan niet meer op dit toestel. Je kunt op elk moment weer aansluiten met de code.</string>
     <string name="more_delete_household">Verwijderen</string>
-    <string name="more_delete_household_dialog_title">Huishouden permanent verwijderen?</string>
-    <string name="more_delete_household_dialog_text">Alle voorraad, boodschappenlijst en geschiedenis van dit huishouden worden definitief verwijderd voor alle huisgenoten. Dit kan niet ongedaan worden gemaakt.</string>
-    <string name="more_delete_household_confirm">Verwijderen</string>
     <string name="more_delete_household_success">Huishouden verwijderd</string>
     <string name="more_delete_household_error">Kon huishouden niet verwijderen. Probeer het opnieuw.</string>
+    <string name="more_delete_household_sheet_title_format">%1$s permanent verwijderen?</string>
+    <string name="more_delete_household_sheet_body_prefix">Al je voorraad, lijsten en geschiedenis worden verwijderd. Ook </string>
+    <string name="more_delete_household_sheet_body_bold">alle huisgenoten</string>
+    <string name="more_delete_household_sheet_body_suffix"> verliezen meteen toegang. Dit kan niet ongedaan worden gemaakt.</string>
+    <string name="more_delete_household_disappears_eyebrow">Dit verdwijnt</string>
+    <string name="more_delete_household_lists_format">%1$d lijsten, %2$d items</string>
+    <string name="more_delete_household_export_first_action">Eerst exporteren als CSV</string>
+    <string name="more_delete_household_type_to_confirm_label_format">Typ %1$s om te bevestigen</string>
+    <string name="more_delete_household_confirm_keyword">VERWIJDER</string>
+    <string name="more_delete_household_final_confirm">Definitief verwijderen</string>
+    <plurals name="more_delete_household_months_format">
+        <item quantity="one">%1$d maand geschiedenis</item>
+        <item quantity="other">%1$d maanden geschiedenis</item>
+    </plurals>
+    <plurals name="more_delete_household_members_format">
+        <item quantity="one">%1$d huisgenoot verliest toegang</item>
+        <item quantity="other">%1$d huisgenoten verliezen toegang</item>
+    </plurals>
     <string name="more_profile_title">Jouw naam</string>
     <string name="more_profile_dialog_title">Naam instellen</string>
     <string name="more_profile_name_placeholder">Bijv. Mama, Jip</string>

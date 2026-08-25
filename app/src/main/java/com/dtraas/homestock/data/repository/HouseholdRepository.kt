@@ -89,6 +89,22 @@ class HouseholdRepository(
             }
         }
 
+    /**
+     * When this household was created — the delete-confirmation sheet's "DIT VERDWIJNT" card
+     * turns this into "X maanden geschiedenis" so the count is real, not a guess. Households
+     * created before `createdAt` existed have no such field, hence the nullable return.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeHouseholdCreatedAt(): Flow<Long?> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(null)
+            } else {
+                firestore.collection(HOUSEHOLDS_COLLECTION).document(householdId).observeSnapshot()
+                    .map { it.getLong("createdAt") }
+            }
+        }
+
     /** Joins an existing household by its code, failing if no such household exists. */
     suspend fun joinHousehold(code: String): Result<String> {
         return try {

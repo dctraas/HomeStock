@@ -196,11 +196,26 @@
     <string name="more_leave_dialog_title">Leave household?</string>
     <string name="more_leave_dialog_text">You\'ll no longer see the shared inventory and shopping list on this device. You can rejoin at any time with the code.</string>
     <string name="more_delete_household">Remove</string>
-    <string name="more_delete_household_dialog_title">Permanently delete this household?</string>
-    <string name="more_delete_household_dialog_text">All inventory, shopping list and history for this household will be permanently deleted for everyone in it. This can\'t be undone.</string>
-    <string name="more_delete_household_confirm">Delete</string>
     <string name="more_delete_household_success">Household deleted</string>
     <string name="more_delete_household_error">Couldn\'t delete the household. Please try again.</string>
+    <string name="more_delete_household_sheet_title_format">Permanently delete %1$s?</string>
+    <string name="more_delete_household_sheet_body_prefix">All your stock, lists, and history will be deleted. </string>
+    <string name="more_delete_household_sheet_body_bold">every housemate</string>
+    <string name="more_delete_household_sheet_body_suffix"> lose access immediately. This can’t be undone.</string>
+    <string name="more_delete_household_disappears_eyebrow">This disappears</string>
+    <string name="more_delete_household_lists_format">%1$d lists, %2$d items</string>
+    <string name="more_delete_household_export_first_action">Export as CSV first</string>
+    <string name="more_delete_household_type_to_confirm_label_format">Type %1$s to confirm</string>
+    <string name="more_delete_household_confirm_keyword">DELETE</string>
+    <string name="more_delete_household_final_confirm">Permanently delete</string>
+    <plurals name="more_delete_household_months_format">
+        <item quantity="one">%1$d month of history</item>
+        <item quantity="other">%1$d months of history</item>
+    </plurals>
+    <plurals name="more_delete_household_members_format">
+        <item quantity="one">%1$d housemate loses access</item>
+        <item quantity="other">%1$d housemates lose access</item>
+    </plurals>
     <string name="more_profile_title">Your name</string>
     <string name="more_profile_dialog_title">Set your name</string>
     <string name="more_profile_name_placeholder">E.g. Mom, Alex</string>

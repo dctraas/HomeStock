@@ -196,11 +196,26 @@
     <string name="more_leave_dialog_title">¿Abandonar el hogar?</string>
     <string name="more_leave_dialog_text">Dejarás de ver el inventario y la lista de la compra compartidos en este dispositivo. Puedes volver a unirte en cualquier momento con el código.</string>
     <string name="more_delete_household">Eliminar</string>
-    <string name="more_delete_household_dialog_title">¿Eliminar este hogar permanentemente?</string>
-    <string name="more_delete_household_dialog_text">Todo el inventario, la lista de la compra y el historial de este hogar se eliminarán permanentemente para todos sus miembros. Esta acción no se puede deshacer.</string>
-    <string name="more_delete_household_confirm">Eliminar</string>
     <string name="more_delete_household_success">Hogar eliminado</string>
     <string name="more_delete_household_error">No se pudo eliminar el hogar. Inténtalo de nuevo.</string>
+    <string name="more_delete_household_sheet_title_format">¿Eliminar %1$s permanentemente?</string>
+    <string name="more_delete_household_sheet_body_prefix">Se eliminarán todo tu inventario, tus listas y tu historial. </string>
+    <string name="more_delete_household_sheet_body_bold">todos los miembros del hogar</string>
+    <string name="more_delete_household_sheet_body_suffix"> pierden el acceso de inmediato. Esto no se puede deshacer.</string>
+    <string name="more_delete_household_disappears_eyebrow">Esto desaparece</string>
+    <string name="more_delete_household_lists_format">%1$d listas, %2$d artículos</string>
+    <string name="more_delete_household_export_first_action">Exportar primero como CSV</string>
+    <string name="more_delete_household_type_to_confirm_label_format">Escribe %1$s para confirmar</string>
+    <string name="more_delete_household_confirm_keyword">ELIMINAR</string>
+    <string name="more_delete_household_final_confirm">Eliminar definitivamente</string>
+    <plurals name="more_delete_household_months_format">
+        <item quantity="one">%1$d mes de historial</item>
+        <item quantity="other">%1$d meses de historial</item>
+    </plurals>
+    <plurals name="more_delete_household_members_format">
+        <item quantity="one">%1$d miembro del hogar pierde el acceso</item>
+        <item quantity="other">%1$d miembros del hogar pierden el acceso</item>
+    </plurals>
     <string name="more_profile_title">Tu nombre</string>
     <string name="more_profile_dialog_title">Establecer tu nombre</string>
     <string name="more_profile_name_placeholder">P. ej. Mamá, Alex</string>

@@ -196,11 +196,26 @@
     <string name="more_leave_dialog_title">Haushalt verlassen?</string>
     <string name="more_leave_dialog_text">Du siehst den geteilten Vorrat und die Einkaufsliste dann nicht mehr auf diesem Gerät. Du kannst jederzeit mit dem Code wieder beitreten.</string>
     <string name="more_delete_household">Entfernen</string>
-    <string name="more_delete_household_dialog_title">Haushalt endgültig löschen?</string>
-    <string name="more_delete_household_dialog_text">Der gesamte Vorrat, die Einkaufsliste und der Verlauf dieses Haushalts werden für alle Mitglieder endgültig gelöscht. Dies kann nicht rückgängig gemacht werden.</string>
-    <string name="more_delete_household_confirm">Löschen</string>
     <string name="more_delete_household_success">Haushalt gelöscht</string>
     <string name="more_delete_household_error">Haushalt konnte nicht gelöscht werden. Bitte versuche es erneut.</string>
+    <string name="more_delete_household_sheet_title_format">%1$s endgültig löschen?</string>
+    <string name="more_delete_household_sheet_body_prefix">Dein gesamter Bestand, deine Listen und deine Verlaufsdaten werden gelöscht. </string>
+    <string name="more_delete_household_sheet_body_bold">alle Mitbewohner</string>
+    <string name="more_delete_household_sheet_body_suffix"> verlieren sofort den Zugriff. Das lässt sich nicht rückgängig machen.</string>
+    <string name="more_delete_household_disappears_eyebrow">Das verschwindet</string>
+    <string name="more_delete_household_lists_format">%1$d Listen, %2$d Artikel</string>
+    <string name="more_delete_household_export_first_action">Zuerst als CSV exportieren</string>
+    <string name="more_delete_household_type_to_confirm_label_format">Gib %1$s ein, um zu bestätigen</string>
+    <string name="more_delete_household_confirm_keyword">LÖSCHEN</string>
+    <string name="more_delete_household_final_confirm">Endgültig löschen</string>
+    <plurals name="more_delete_household_months_format">
+        <item quantity="one">%1$d Monat Verlauf</item>
+        <item quantity="other">%1$d Monate Verlauf</item>
+    </plurals>
+    <plurals name="more_delete_household_members_format">
+        <item quantity="one">%1$d Mitbewohner verliert den Zugriff</item>
+        <item quantity="other">%1$d Mitbewohner verlieren den Zugriff</item>
+    </plurals>
     <string name="more_profile_title">Dein Name</string>
     <string name="more_profile_dialog_title">Namen einstellen</string>
     <string name="more_profile_name_placeholder">Z. B. Mama, Alex</string>

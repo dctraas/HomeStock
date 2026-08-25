@@ -196,11 +196,26 @@
     <string name="more_leave_dialog_title">Quitter le foyer ?</string>
     <string name="more_leave_dialog_text">Vous ne verrez plus le stock et la liste de courses partagés sur cet appareil. Vous pouvez rejoindre le foyer à tout moment avec le code.</string>
     <string name="more_delete_household">Supprimer</string>
-    <string name="more_delete_household_dialog_title">Supprimer définitivement ce foyer ?</string>
-    <string name="more_delete_household_dialog_text">Tout le stock, la liste de courses et l\'historique de ce foyer seront définitivement supprimés pour tous ses membres. Cette action est irréversible.</string>
-    <string name="more_delete_household_confirm">Supprimer</string>
     <string name="more_delete_household_success">Foyer supprimé</string>
     <string name="more_delete_household_error">Impossible de supprimer le foyer. Réessayez.</string>
+    <string name="more_delete_household_sheet_title_format">Supprimer %1$s définitivement ?</string>
+    <string name="more_delete_household_sheet_body_prefix">Tout ton stock, tes listes et ton historique seront supprimés. </string>
+    <string name="more_delete_household_sheet_body_bold">tous les colocataires</string>
+    <string name="more_delete_household_sheet_body_suffix"> perdent l’accès immédiatement. Cette action est irréversible.</string>
+    <string name="more_delete_household_disappears_eyebrow">Ce qui disparaît</string>
+    <string name="more_delete_household_lists_format">%1$d listes, %2$d articles</string>
+    <string name="more_delete_household_export_first_action">Exporter d’abord en CSV</string>
+    <string name="more_delete_household_type_to_confirm_label_format">Tape %1$s pour confirmer</string>
+    <string name="more_delete_household_confirm_keyword">SUPPRIMER</string>
+    <string name="more_delete_household_final_confirm">Supprimer définitivement</string>
+    <plurals name="more_delete_household_months_format">
+        <item quantity="one">%1$d mois d’historique</item>
+        <item quantity="other">%1$d mois d’historique</item>
+    </plurals>
+    <plurals name="more_delete_household_members_format">
+        <item quantity="one">%1$d colocataire perd l’accès</item>
+        <item quantity="other">%1$d colocataires perdent l’accès</item>
+    </plurals>
     <string name="more_profile_title">Ton nom</string>
     <string name="more_profile_dialog_title">Définir ton nom</string>
     <string name="more_profile_name_placeholder">P. ex. Maman, Alex</string>
