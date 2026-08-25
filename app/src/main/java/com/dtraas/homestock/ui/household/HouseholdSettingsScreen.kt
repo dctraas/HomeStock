@@ -41,6 +41,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -288,6 +289,7 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                     }
             } finally {
                 isSwitching = false
+                switchTarget = null
             }
         }
     }
@@ -469,13 +471,19 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                 )
             },
             confirmButton = {
+                // Stays open with a spinner while the switch is in flight — it used to close
+                // immediately on tap, so a slow join (or the offline case) gave no feedback at
+                // all until the snackbar showed up seconds later.
                 TextButton(
                     enabled = !isSwitching,
-                    onClick = {
-                        switchToHousehold(target)
-                        switchTarget = null
-                    },
-                ) { Text(stringResource(R.string.household_switch_confirm)) }
+                    onClick = { switchToHousehold(target) },
+                ) {
+                    if (isSwitching) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                    } else {
+                        Text(stringResource(R.string.household_switch_confirm))
+                    }
+                }
             },
             dismissButton = {
                 TextButton(enabled = !isSwitching, onClick = { switchTarget = null }) {

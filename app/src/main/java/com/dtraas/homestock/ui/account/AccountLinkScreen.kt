@@ -1,5 +1,6 @@
 package com.dtraas.homestock.ui.account
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,11 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -48,7 +51,11 @@ import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.BuildConfig
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.repository.RecoverableHousehold
+import com.dtraas.homestock.ui.components.HomeStockBottomSheet
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
+import com.dtraas.homestock.ui.components.SheetPrimaryButton
+import com.dtraas.homestock.ui.components.SheetTitle
+import com.dtraas.homestock.ui.components.sheetContentPadding
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
@@ -247,21 +254,10 @@ fun AccountLinkScreen(onBack: () -> Unit) {
     }
 
     if (showUnlinkConfirm) {
-        AlertDialog(
-            onDismissRequest = { if (!isUnlinking) showUnlinkConfirm = false },
-            title = { Text(stringResource(R.string.account_link_unlink_dialog_title)) },
-            text = { Text(stringResource(R.string.account_link_unlink_dialog_text)) },
-            confirmButton = {
-                TextButton(enabled = !isUnlinking, onClick = ::unlinkAccount) {
-                    Text(stringResource(R.string.account_link_unlink_button))
-                }
-            },
-            dismissButton = {
-                TextButton(
-                    enabled = !isUnlinking,
-                    onClick = { showUnlinkConfirm = false },
-                ) { Text(stringResource(R.string.common_cancel)) }
-            },
+        AccountUnlinkSheet(
+            isUnlinking = isUnlinking,
+            onConfirm = ::unlinkAccount,
+            onDismiss = { showUnlinkConfirm = false },
         )
     }
 
@@ -467,6 +463,50 @@ private fun LinkedState(email: String?, isUnlinking: Boolean, errorMessage: Stri
             CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
         } else {
             Text(stringResource(R.string.account_link_unlink_button), color = MaterialTheme.colorScheme.error)
+        }
+    }
+}
+
+/**
+ * "Account ontkoppelen" — same destructive-sheet treatment as [com.dtraas.homestock.ui.household]'s
+ * delete-household sheet (2026-08 dialog review), minus the type-to-confirm: there's no household
+ * data actually being deleted here, just this device's recovery path, so a real count-of-what's-
+ * lost card would have nothing concrete to show — the body text already states the actual risk.
+ * No dismiss button either (cross-cutting rule #2) — the sheet's own drag/scrim cancels.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun AccountUnlinkSheet(isUnlinking: Boolean, onConfirm: () -> Unit, onDismiss: () -> Unit) {
+    HomeStockBottomSheet(onDismissRequest = { if (!isUnlinking) onDismiss() }) {
+        Column(
+            modifier = Modifier.padding(sheetContentPadding),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(MaterialTheme.colorScheme.secondaryContainer, CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.Link,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.error,
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+            SheetTitle(
+                title = stringResource(R.string.account_link_unlink_dialog_title),
+                subtitle = stringResource(R.string.account_link_unlink_dialog_text),
+            )
+            SheetPrimaryButton(
+                text = stringResource(R.string.account_link_unlink_button),
+                onClick = onConfirm,
+                enabled = !isUnlinking,
+                loading = isUnlinking,
+                containerColor = MaterialTheme.colorScheme.error,
+                contentColor = MaterialTheme.colorScheme.onError,
+            )
         }
     }
 }
