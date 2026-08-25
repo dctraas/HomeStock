@@ -285,6 +285,37 @@
     <string name="more_stores_count_format">%1$d Geschäfte</string>
     <string name="more_stores_empty">Noch keine Geschäfte hinzugefügt.</string>
     <string name="more_stores_remove_format">%1$s entfernen</string>
+    <string name="more_stores_subtitle">Deine Einkaufsliste wird nach Geschäft gruppiert, in dieser Reihenfolge.</string>
+
+    <string name="more_stores_add_section">Hinzufügen</string>
+
+    <string name="more_stores_other_placeholder">Anderes Geschäft…</string>
+
+    <string name="more_stores_unused">Nicht in Gebrauch</string>
+
+    <string name="more_stores_row_options_cd">Weitere Optionen für %1$s</string>
+
+    <string name="more_stores_delete_title_format">%1$s löschen?</string>
+
+    <string name="more_stores_delete_message_empty">Dieses Geschäft wird gelöscht.</string>
+
+    <string name="more_stores_delete_confirm">Löschen</string>
+
+    <plurals name="more_stores_item_count_format">
+
+        <item quantity="one">%1$d Artikel auf der Liste</item>
+
+        <item quantity="other">%1$d Artikel auf der Liste</item>
+
+    </plurals>
+
+    <plurals name="more_stores_delete_message_format">
+
+        <item quantity="one">%1$d Artikel auf der Einkaufsliste verliert sein Geschäft.</item>
+
+        <item quantity="other">%1$d Artikel auf der Einkaufsliste verlieren ihr Geschäft.</item>
+
+    </plurals>
     <string name="more_statistics_title">Statistiken</string>
     <string name="more_statistics_subtitle">Vorrat, Verschwendung und Scans pro Haushaltsmitglied</string>
     <string name="more_section_household">Haushalt</string>

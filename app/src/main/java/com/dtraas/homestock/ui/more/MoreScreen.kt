@@ -11,11 +11,15 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -44,6 +48,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Groups
@@ -51,6 +56,7 @@ import androidx.compose.material.icons.filled.ImportExport
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Language
 import androidx.compose.material.icons.filled.Lightbulb
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Schedule
@@ -64,6 +70,8 @@ import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
@@ -84,8 +92,11 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -95,7 +106,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -103,8 +116,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
 import coil.compose.AsyncImage
@@ -122,6 +137,7 @@ import com.dtraas.homestock.data.repository.HouseholdMember
 import com.dtraas.homestock.data.repository.ThemeMode
 import com.dtraas.homestock.ui.components.HomeStockBottomSheet
 import com.dtraas.homestock.ui.components.ProfileEditDialog
+import com.dtraas.homestock.ui.components.SheetChip
 import com.dtraas.homestock.ui.components.SheetEyebrow
 import com.dtraas.homestock.ui.components.SheetPrimaryButton
 import com.dtraas.homestock.ui.components.SheetTitle
@@ -140,7 +156,9 @@ import com.dtraas.homestock.work.PremiumTrialCheckWorker
 import com.dtraas.homestock.work.WasteSummaryWorker
 import java.io.File
 import java.util.UUID
+import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 
 private enum class AppLanguage(val tag: String, val labelRes: Int, val flag: String) {
@@ -202,6 +220,15 @@ fun MoreScreen(
     val debugPremiumOverride by billingRepository.debugPremiumOverride.collectAsState()
     val storeRepository = application.container.storeRepository
     val stores by storeRepository.observeStores().collectAsState(initial = emptyList())
+    val shoppingListRepository = application.container.shoppingListRepository
+    // Unchecked-only: a store's "N items op de lijst" count in the Winkels sheet is about what
+    // still needs a visit, not what's already in the cart — same reasoning as the shopping list
+    // screen's own "openstaande items" count elsewhere in the app.
+    val shoppingListItemCountByStore by remember {
+        shoppingListRepository.observeShoppingList().map { items ->
+            items.filter { !it.isChecked }.groupingBy { it.store }.eachCount()
+        }
+    }.collectAsState(initial = emptyMap())
     val feedbackRepository = application.container.feedbackRepository
     val accountLinkRepository = application.container.accountLinkRepository
     val isAccountLinked by accountLinkRepository.observeIsLinked().collectAsState(initial = accountLinkRepository.linkedEmail != null)
@@ -656,8 +683,15 @@ fun MoreScreen(
     if (showStoresDialog) {
         StoresDialog(
             stores = stores,
+            itemCountByStore = shoppingListItemCountByStore,
             onAdd = { name -> coroutineScope.launch { storeRepository.addStore(name) } },
-            onRemove = { id -> coroutineScope.launch { storeRepository.removeStore(id) } },
+            onRemove = { store ->
+                coroutineScope.launch {
+                    shoppingListRepository.clearStoreFromItems(store.name)
+                    storeRepository.removeStore(store.id)
+                }
+            },
+            onMove = { store, previous, next -> coroutineScope.launch { storeRepository.moveStore(store, previous, next) } },
             onDismiss = { showStoresDialog = false },
         )
     }
@@ -1696,90 +1730,78 @@ private fun LanguageDialog(selected: AppLanguage, onSelect: (AppLanguage) -> Uni
     )
 }
 
+/**
+ * Rebuilt as a bottom sheet (2026-08 dialog review): a subtitle stating what the order is
+ * actually for (it's the shopping list's own store-section order), rows the household can
+ * drag to reorder instead of a fixed list, a real "N items op de lijst" count per store instead
+ * of a bare name, and delete moved off an instant rim `close` button into a per-row overflow
+ * that asks first — see [pendingDelete] below.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun StoresDialog(
     stores: List<StoreEntity>,
+    itemCountByStore: Map<String, Int>,
     onAdd: (String) -> Unit,
-    onRemove: (String) -> Unit,
+    onRemove: (StoreEntity) -> Unit,
+    onMove: (store: StoreEntity, previous: StoreEntity?, next: StoreEntity?) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var newStoreName by remember { mutableStateOf("") }
+    var pendingDelete by remember { mutableStateOf<StoreEntity?>(null) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.more_stores_title)) },
-        text = {
+    val existingNames = remember(stores) { stores.map { it.name.lowercase() }.toSet() }
+    val suggestedChains = remember(existingNames) {
+        listOf("Aldi", "Plus", "Dirk", "Coop", "Markt").filter { it.lowercase() !in existingNames }
+    }
+
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(sheetContentPadding),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            SheetTitle(
+                title = stringResource(R.string.more_stores_title),
+                subtitle = stringResource(R.string.more_stores_subtitle),
+            )
+
+            if (stores.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.more_stores_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            } else {
+                ReorderableStoreList(
+                    stores = stores,
+                    itemCountByStore = itemCountByStore,
+                    onMove = onMove,
+                    onDeleteRequest = { pendingDelete = it },
+                )
+            }
+
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                if (stores.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.more_stores_empty),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                } else {
-                    Column(
-                        modifier = Modifier.heightIn(max = 280.dp).verticalScroll(rememberScrollState()),
-                        verticalArrangement = Arrangement.spacedBy(6.dp),
-                    ) {
-                        stores.forEach { store ->
-                            // Each store as its own soft-rounded row — same card language as the
-                            // rest of the app's lists — rather than plain text lines, per "deel
-                            // het pop up scherm Winkels wat mooier in".
-                            Surface(
-                                shape = SoftCardShapeCompact,
-                                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                                modifier = Modifier.fillMaxWidth(),
-                            ) {
-                                Row(
-                                    modifier = Modifier.fillMaxWidth().padding(start = 12.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
-                                    verticalAlignment = Alignment.CenterVertically,
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Storefront,
-                                        contentDescription = null,
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(20.dp),
-                                    )
-                                    Text(
-                                        text = store.name,
-                                        style = MaterialTheme.typography.bodyLarge,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        modifier = Modifier.weight(1f).padding(start = 10.dp),
-                                    )
-                                    IconButton(onClick = { onRemove(store.id) }) {
-                                        Icon(
-                                            Icons.Filled.Close,
-                                            contentDescription = stringResource(R.string.more_stores_remove_format, store.name),
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        )
-                                    }
-                                }
-                            }
+                SheetEyebrow(text = stringResource(R.string.more_stores_add_section))
+                if (suggestedChains.isNotEmpty()) {
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        suggestedChains.forEach { chain ->
+                            SheetChip(label = "+ $chain", selected = false, onClick = { onAdd(chain) })
                         }
                     }
                 }
-                // Add-new-store row moved into its own filled-pill affordance, matching the
-                // "voeg toe"-style rows elsewhere in the app, instead of a plain field + text
-                // button — same "mooier" request as the list rows above.
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = newStoreName,
                         onValueChange = { newStoreName = it },
-                        label = { Text(stringResource(R.string.store_add_dialog_title)) },
+                        placeholder = { Text(stringResource(R.string.more_stores_other_placeholder)) },
                         singleLine = true,
+                        shape = RoundedCornerShape(16.dp),
                         modifier = Modifier.weight(1f),
                     )
                     FilledIconButton(
-                        onClick = {
-                            onAdd(newStoreName.trim())
-                            newStoreName = ""
-                        },
+                        onClick = { onAdd(newStoreName.trim()); newStoreName = "" },
                         enabled = newStoreName.isNotBlank(),
+                        modifier = Modifier.size(50.dp),
                         colors = IconButtonDefaults.filledIconButtonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -1789,10 +1811,185 @@ private fun StoresDialog(
                     }
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_ok)) }
-        },
-    )
+        }
+    }
+
+    val deleteTarget = pendingDelete
+    if (deleteTarget != null) {
+        val count = itemCountByStore[deleteTarget.name] ?: 0
+        AlertDialog(
+            onDismissRequest = { pendingDelete = null },
+            title = { Text(stringResource(R.string.more_stores_delete_title_format, deleteTarget.name)) },
+            text = {
+                Text(
+                    if (count > 0) {
+                        pluralStringResource(R.plurals.more_stores_delete_message_format, count, count)
+                    } else {
+                        stringResource(R.string.more_stores_delete_message_empty)
+                    },
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = { onRemove(deleteTarget); pendingDelete = null }) {
+                    Text(stringResource(R.string.more_stores_delete_confirm), color = MaterialTheme.colorScheme.error)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingDelete = null }) { Text(stringResource(R.string.common_cancel)) }
+            },
+        )
+    }
+}
+
+/**
+ * A flat, freely-swappable drag-to-reorder list — same median-sortOrder swap mechanics as
+ * ShoppingListScreen's `ReorderableShoppingList`, simplified since stores have no
+ * checked/unchecked or cross-store-boundary rules to respect: any row can swap with any
+ * neighbor. [onDeleteRequest] routes into the confirm-first dialog rather than deleting inline.
+ */
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun ReorderableStoreList(
+    stores: List<StoreEntity>,
+    itemCountByStore: Map<String, Int>,
+    onMove: (StoreEntity, StoreEntity?, StoreEntity?) -> Unit,
+    onDeleteRequest: (StoreEntity) -> Unit,
+) {
+    val orderedStores = remember { mutableStateListOf<StoreEntity>() }
+    var draggingId by remember { mutableStateOf<String?>(null) }
+    var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+    var draggingRowHeightPx by remember { mutableFloatStateOf(0f) }
+
+    if (draggingId == null) {
+        LaunchedEffect(stores) {
+            orderedStores.clear()
+            orderedStores.addAll(stores)
+        }
+    }
+
+    fun handleDrag(deltaY: Float) {
+        val id = draggingId ?: return
+        dragOffsetPx += deltaY
+        val rowHeight = draggingRowHeightPx.takeIf { it > 0f } ?: return
+        while (true) {
+            val index = orderedStores.indexOfFirst { it.id == id }
+            if (index < 0) break
+            if (dragOffsetPx > rowHeight / 2f && index < orderedStores.lastIndex) {
+                orderedStores.add(index, orderedStores.removeAt(index + 1))
+                dragOffsetPx -= rowHeight
+            } else if (dragOffsetPx < -rowHeight / 2f && index > 0) {
+                orderedStores.add(index - 1, orderedStores.removeAt(index))
+                dragOffsetPx += rowHeight
+            } else {
+                break
+            }
+        }
+    }
+
+    fun commitDrag() {
+        val id = draggingId
+        val index = if (id != null) orderedStores.indexOfFirst { it.id == id } else -1
+        if (index >= 0) {
+            val store = orderedStores[index]
+            val previous = orderedStores.getOrNull(index - 1)
+            val next = orderedStores.getOrNull(index + 1)
+            if (previous != null || next != null) onMove(store, previous, next)
+        }
+        draggingId = null
+        dragOffsetPx = 0f
+        draggingRowHeightPx = 0f
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        orderedStores.forEach { store ->
+            val isDragging = store.id == draggingId
+            val count = itemCountByStore[store.name] ?: 0
+            val inUse = count > 0
+            Surface(
+                shape = SoftCardShapeCompact,
+                color = if (inUse) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLow,
+                tonalElevation = if (isDragging) 3.dp else 0.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .zIndex(if (isDragging) 1f else 0f)
+                    .offset { IntOffset(0, if (isDragging) dragOffsetPx.roundToInt() else 0) },
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onGloballyPositioned { if (isDragging) draggingRowHeightPx = it.size.height.toFloat() }
+                        .padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.DragIndicator,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier
+                            .size(32.dp)
+                            .padding(4.dp)
+                            .pointerInput(store.id) {
+                                detectDragGesturesAfterLongPress(
+                                    onDragStart = { draggingId = store.id; dragOffsetPx = 0f },
+                                    onDragEnd = { commitDrag() },
+                                    onDragCancel = { commitDrag() },
+                                    onDrag = { change, dragAmount -> change.consume(); handleDrag(dragAmount.y) },
+                                )
+                            },
+                    )
+                    Surface(
+                        shape = RoundedCornerShape(12.dp),
+                        color = if (inUse) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surfaceContainer,
+                        modifier = Modifier.size(36.dp),
+                    ) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Icon(
+                                imageVector = Icons.Filled.Storefront,
+                                contentDescription = null,
+                                tint = if (inUse) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                    }
+                    Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
+                        Text(
+                            text = store.name,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            text = if (inUse) {
+                                pluralStringResource(R.plurals.more_stores_item_count_format, count, count)
+                            } else {
+                                stringResource(R.string.more_stores_unused)
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    var menuExpanded by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { menuExpanded = true }) {
+                            Icon(
+                                imageVector = Icons.Filled.MoreVert,
+                                contentDescription = stringResource(R.string.more_stores_row_options_cd, store.name),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                            DropdownMenuItem(
+                                text = {
+                                    Text(stringResource(R.string.more_stores_remove_format, store.name), color = MaterialTheme.colorScheme.error)
+                                },
+                                onClick = { menuExpanded = false; onDeleteRequest(store) },
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 

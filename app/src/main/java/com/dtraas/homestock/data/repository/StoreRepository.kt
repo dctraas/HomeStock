@@ -46,4 +46,20 @@ class StoreRepository(
         val householdId = householdSession.householdId.value ?: return
         storesCollection(householdId).document(id).delete().await()
     }
+
+    /** Drag-to-reorder — same median-sortOrder swap as ShoppingListRepository.moveItem, just
+     *  over the household's own store list instead of one list's items. Reorders the shopping
+     *  list's store sections (see StoreHeader/groupedByStore), not anything about the stores
+     *  screen's own presentation order alone. */
+    suspend fun moveStore(store: StoreEntity, previous: StoreEntity?, next: StoreEntity?) {
+        val householdId = householdSession.householdId.value ?: return
+        val newSortOrder = when {
+            previous != null && next != null -> (previous.sortOrder + next.sortOrder) / 2.0
+            previous != null -> previous.sortOrder - 1.0
+            next != null -> next.sortOrder + 1.0
+            else -> return
+        }
+        if (newSortOrder == store.sortOrder) return
+        storesCollection(householdId).document(store.id).update("sortOrder", newSortOrder).await()
+    }
 }

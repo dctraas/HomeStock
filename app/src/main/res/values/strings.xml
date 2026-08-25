@@ -289,6 +289,37 @@
     <string name="more_stores_count_format">%1$d winkels</string>
     <string name="more_stores_empty">Nog geen winkels toegevoegd.</string>
     <string name="more_stores_remove_format">%1$s verwijderen</string>
+    <string name="more_stores_subtitle">Je boodschappenlijst wordt per winkel gegroepeerd, in deze volgorde.</string>
+
+    <string name="more_stores_add_section">Toevoegen</string>
+
+    <string name="more_stores_other_placeholder">Andere winkel…</string>
+
+    <string name="more_stores_unused">Niet in gebruik</string>
+
+    <string name="more_stores_row_options_cd">Meer opties voor %1$s</string>
+
+    <string name="more_stores_delete_title_format">%1$s verwijderen?</string>
+
+    <string name="more_stores_delete_message_empty">Deze winkel wordt verwijderd.</string>
+
+    <string name="more_stores_delete_confirm">Verwijderen</string>
+
+    <plurals name="more_stores_item_count_format">
+
+        <item quantity="one">%1$d item op de lijst</item>
+
+        <item quantity="other">%1$d items op de lijst</item>
+
+    </plurals>
+
+    <plurals name="more_stores_delete_message_format">
+
+        <item quantity="one">%1$d item op de boodschappenlijst krijgt geen winkel meer.</item>
+
+        <item quantity="other">%1$d items op de boodschappenlijst krijgen geen winkel meer.</item>
+
+    </plurals>
     <string name="more_statistics_title">Statistieken</string>
     <string name="more_statistics_subtitle">Voorraad, verspilling en scans per huisgenoot</string>
     <string name="more_section_household">Huishouden</string>

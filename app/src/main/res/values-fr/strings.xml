@@ -285,6 +285,37 @@
     <string name="more_stores_count_format">%1$d magasins</string>
     <string name="more_stores_empty">Aucun magasin ajouté pour l\'instant.</string>
     <string name="more_stores_remove_format">Supprimer %1$s</string>
+    <string name="more_stores_subtitle">Ta liste de courses est groupée par magasin, dans cet ordre.</string>
+
+    <string name="more_stores_add_section">Ajouter</string>
+
+    <string name="more_stores_other_placeholder">Autre magasin…</string>
+
+    <string name="more_stores_unused">Non utilisé</string>
+
+    <string name="more_stores_row_options_cd">Plus d\'options pour %1$s</string>
+
+    <string name="more_stores_delete_title_format">Supprimer %1$s ?</string>
+
+    <string name="more_stores_delete_message_empty">Ce magasin sera supprimé.</string>
+
+    <string name="more_stores_delete_confirm">Supprimer</string>
+
+    <plurals name="more_stores_item_count_format">
+
+        <item quantity="one">%1$d article sur la liste</item>
+
+        <item quantity="other">%1$d articles sur la liste</item>
+
+    </plurals>
+
+    <plurals name="more_stores_delete_message_format">
+
+        <item quantity="one">%1$d article de la liste de courses perdra son magasin.</item>
+
+        <item quantity="other">%1$d articles de la liste de courses perdront leur magasin.</item>
+
+    </plurals>
     <string name="more_statistics_title">Statistiques</string>
     <string name="more_statistics_subtitle">Stock, gaspillage et scans par membre du foyer</string>
     <string name="more_section_household">Foyer</string>

@@ -197,6 +197,22 @@ class ShoppingListRepository(
         refreshWidget()
     }
 
+    /**
+     * Reassigns every item currently on [storeName] to "Geen winkel" (empty string) — called
+     * right before that store itself is deleted (see MoreScreen's Winkels sheet), so items don't
+     * keep pointing at a store that no longer exists in the household's own list. A no-op if
+     * nothing's currently on that store.
+     */
+    suspend fun clearStoreFromItems(storeName: String) {
+        val householdId = householdSession.householdId.value ?: return
+        val docs = shoppingListCollection(householdId).whereEqualTo("store", storeName).get().await()
+        if (docs.isEmpty) return
+        val batch = firestore.batch()
+        docs.documents.forEach { batch.update(it.reference, "store", "") }
+        batch.commit().await()
+        refreshWidget()
+    }
+
     suspend fun checkAll() {
         val householdId = householdSession.householdId.value ?: return
         val uncheckedDocs = shoppingListCollection(householdId).whereEqualTo("isChecked", false).get().await()

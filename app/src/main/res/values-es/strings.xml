@@ -285,6 +285,37 @@
     <string name="more_stores_count_format">%1$d tiendas</string>
     <string name="more_stores_empty">Aún no se han añadido tiendas.</string>
     <string name="more_stores_remove_format">Eliminar %1$s</string>
+    <string name="more_stores_subtitle">Tu lista de la compra se agrupa por tienda, en este orden.</string>
+
+    <string name="more_stores_add_section">Añadir</string>
+
+    <string name="more_stores_other_placeholder">Otra tienda…</string>
+
+    <string name="more_stores_unused">No se usa</string>
+
+    <string name="more_stores_row_options_cd">Más opciones para %1$s</string>
+
+    <string name="more_stores_delete_title_format">¿Eliminar %1$s?</string>
+
+    <string name="more_stores_delete_message_empty">Esta tienda se eliminará.</string>
+
+    <string name="more_stores_delete_confirm">Eliminar</string>
+
+    <plurals name="more_stores_item_count_format">
+
+        <item quantity="one">%1$d artículo en la lista</item>
+
+        <item quantity="other">%1$d artículos en la lista</item>
+
+    </plurals>
+
+    <plurals name="more_stores_delete_message_format">
+
+        <item quantity="one">%1$d artículo de la lista de la compra se quedará sin tienda.</item>
+
+        <item quantity="other">%1$d artículos de la lista de la compra se quedarán sin tienda.</item>
+
+    </plurals>
     <string name="more_statistics_title">Estadísticas</string>
     <string name="more_statistics_subtitle">Inventario, desperdicio y escaneos por miembro del hogar</string>
     <string name="more_section_household">Hogar</string>
