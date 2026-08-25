@@ -59,8 +59,10 @@ firebase functions:secrets:set ANTHROPIC_API_KEY
 
 firebase functions:secrets:set SPOONACULAR_API_KEY
 # paste your Spoonacular key when prompted — sign up at spoonacular.com/food-api
-# (free tier: 150 points/day, plenty for personal/household use; complexSearch and
-# findByIngredients cost a handful of points per call, recipe detail costs ~1)
+# Free-tier daily point budget varies by when the key was issued (older keys got 150
+# points/day; keys issued more recently are commonly capped at 50/day instead — check
+# spoonacular.com/food-api/console for your key's actual limit). See the Cost section
+# below for what that budget actually buys.
 ```
 
 ## Deploy
@@ -135,7 +137,7 @@ any direct access; only these functions, via the Admin SDK, ever touch them):
 | Collection | Written by | TTL | What it saves |
 | --- | --- | --- | --- |
 | `recipeDetailCache/{spoonacularId}` | `searchRecipes` (backfill), `getRecipeInformation` | 30 days | A Spoonacular `recipes/{id}/information` call, the second+ time *any* household opens that recipe. |
-| `recipeSearchCache/{browseParams}` | `searchRecipes` ("browse" mode only) | 24 hours | A full `complexSearch` call for the filterless "browse popular recipes" list every Recepten screen opens with — by far the most repeated query. Keyed per 100-recipe chunk (`offset` is part of the cache key); the plain (no cuisine, no query) browse eagerly fetches and caches all nine chunks — the whole ~900-recipe, popularity-sorted catalog Spoonacular's own offset cap allows — the first time any of it is missing, so every further "load more" page for the next 24h comes back from cache with no Spoonacular call at all. The much smaller cuisine-boosted call (page 1 only, 8 recipes) still caches lazily, one page at a time. |
+| `recipeSearchCache/{browseParams}` | `searchRecipes` ("browse" mode only) | 24 hours | A full `complexSearch` call for the filterless "browse popular recipes" list every Recepten screen opens with — by far the most repeated query. Keyed per 100-recipe chunk (`offset` is part of the cache key); the plain (no cuisine, no query) browse fetches and caches one chunk at a time, lazily, only when that particular chunk's cache entry is missing or stale — so "load more" paging past chunk 1 costs a live call only the first time anyone reaches that far in a given 24h window. (An earlier version eagerly pre-fetched all nine chunks — the whole ~900-recipe catalog Spoonacular's own offset cap allows — the moment any one of them went stale; that cost ~63 points in a single call, which alone exceeds a 50-point/day key's entire daily budget. See `fetchAndCacheBrowseChunk`'s doc comment in `src/index.ts`.) The much smaller cuisine-boosted call (page 1 only, 8 recipes) also caches lazily, one page at a time. |
 | `recipeTranslations/{spoonacularId}_{locale}` | `translateRecipe` | 90 days | A Claude translation call, the second+ time *any* household opens/lists that recipe in that language. AI-generated and hand-entered recipes are deliberately excluded (private, household-specific content — see `isCacheableRecipeId`). |
 
 All three are best-effort: a cache read/write failure is logged and swallowed, never thrown —
@@ -166,16 +168,33 @@ no secret key and is already called directly from the app.
   cost to `generateRecipe`, roughly **$0.001–0.002 per import**) when a page has no usable
   JSON-LD.
 
-**Spoonacular**: free tier is 150 points/day. `complexSearch`/`findByIngredients` cost a handful
-of points per call (more with `addRecipeInformation=true`, used for browse/search so opening a
-result doesn't need a second call, and `addRecipeNutrition=true`/`includeNutrition=true`, used
-everywhere full detail is fetched so RecipeDetailScreen can show per-serving calories/macros —
-each adds roughly another point per call), `recipes/{id}/information` costs ~1 point plus that
-nutrition surcharge. The caching above
-means the single most common call (browsing with no filters) only actually hits Spoonacular once
-per 12 hours total, not once per household per screen-open — this is what determines how many
-active households the free tier can support before needing a paid plan (starting around
-$10/month for a much higher quota).
+**Spoonacular**: free-tier daily point budget is **50 or 150 points/day depending on the key**
+(Spoonacular has shrunk the free tier over time — check spoonacular.com/food-api/console for what
+a given key actually has). The exact per-call cost, from Spoonacular's own pricing:
+
+- `complexSearch`/`findByIngredients` base cost: 1 point, + 0.01 point per recipe returned.
+- `addRecipeInformation=true` (used everywhere search/browse results need full detail so opening
+  one doesn't need a second call): +0.025 point per recipe returned.
+- `addRecipeNutrition=true`/`includeNutrition=true` (used everywhere full detail is fetched so
+  RecipeDetailScreen can show per-serving calories/macros; also auto-enables
+  `addRecipeInformation`): +0.025 point per recipe returned.
+- `recipes/{id}/information`: ~1 point, plus the same nutrition surcharge.
+
+So a single `complexSearch` call for 100 recipes with both flags on costs `1 + 100 × (0.01 + 0.025
++ 0.025)` ≈ **7 points** — and the browse-cache warm-up used to eagerly chain nine of those
+(fetching the whole ~900-recipe catalog up front) for ≈63 points in one shot, comfortably
+exceeding even the smaller key's entire daily budget in a single call. `searchRecipes` now fetches
+one 100-recipe chunk at a time, lazily, only for the chunk actually requested (see the Caching
+section above and `fetchAndCacheBrowseChunk`'s doc comment in `src/index.ts`), so a cache-cold
+household's first "Recepten" open costs ~7 points instead of ~63. Combined with the 24h browse
+cache, this is what determines how many active households (and how many distinct
+allergen/intolerance filter combos among them — each combo gets its own cache entry) a given daily
+budget can support before needing a paid plan (starting around $10/month for a much higher quota).
+On a 50-point/day key, a handful of active households sharing the default (no-filter) browse cache
+should fit comfortably; several households each with a *different* intolerance combo, or heavy
+`query`/`ingredients`-mode searching (neither of those is cached per-result the way plain browse
+is), can still exhaust the day faster — watch for `"Spoonacular quota/rate limit hit"` in the
+Cloud Functions logs (`spoonacularGet`'s warning) to tell which case is happening.
 
 Cloud Functions itself has a generous free tier and every function's own compute cost is
 negligible next to the external API calls.

@@ -1110,9 +1110,8 @@ const RECIPE_DETAIL_CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
 // "Popular recipes" ranking (the filterless browse call, by far the most common one — every
 // household's Recepten screen hits this on open) can shift day to day, so this stays much
-// shorter than the detail cache above. 24h rather than the old 12h now that a cache miss here
-// means re-fetching the whole ~900-recipe catalog (see warmBrowseCache), not just one page —
-// popularity ranking doesn't move fast enough to justify paying that cost twice a day.
+// shorter than the detail cache above — popularity ranking doesn't move fast enough to justify
+// re-fetching more than once a day.
 const RECIPE_BROWSE_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 type RecipeDetailPayload = ReturnType<typeof toRecipeDetail>;
@@ -1174,13 +1173,23 @@ async function spoonacularGet<T>(path: string, params: Record<string, string>, a
 // divides evenly into every page size the app itself requests (currently 20), so a client page
 // never straddles a chunk boundary — one chunk always fully covers one app-side page.
 const RECIPE_BROWSE_CHUNK_SIZE = 100;
-const RECIPE_BROWSE_CHUNK_OFFSETS = [0, 100, 200, 300, 400, 500, 600, 700, 800];
 
 /** Fetches and caches one 100-recipe "browse" chunk (no query, popularity-sorted) for a given
  *  intolerances combo — a cache hit if [RECIPE_BROWSE_CACHE_TTL_MS] hasn't elapsed, a live
  *  Spoonacular call otherwise. Decoupled from whatever page size a client actually requested —
- *  see [RECIPE_BROWSE_CHUNK_SIZE]'s doc — so this is the one place chunk fetching happens,
- *  shared by both [warmBrowseCache]'s eager pre-fetch and a plain cache-miss fallback. */
+ *  see [RECIPE_BROWSE_CHUNK_SIZE]'s doc.
+ *
+ *  Deliberately lazy — only the one chunk a client actually asked for is ever fetched here, not
+ *  the whole ~900-recipe catalog up front. An earlier version eagerly pre-warmed all nine chunks
+ *  the moment any of them went stale (see git history's `warmBrowseCache`), reasoning that
+ *  popularity ranking barely moves so paying once per [RECIPE_BROWSE_CACHE_TTL_MS] window beat
+ *  paying per page. That reasoning assumed a ~150-point/day Spoonacular budget; on the 50-point/
+ *  day tier this app has actually been issued, one such eager warm-up (9 chunks ×
+ *  `addRecipeInformation`+`addRecipeNutrition` surcharge on 100 results apiece ≈ 63 points) blew
+ *  through an entire day's quota in a single household's first "Recepten" open — see
+ *  functions/README.md's Caching section for the full point-cost math. Paging deep enough to
+ *  actually touch multiple chunks in one day is rare, so the occasional extra live call beats
+ *  guaranteeing the worst case every time. */
 async function fetchAndCacheBrowseChunk(
   intolerances: string[] | undefined,
   chunkOffset: number,
@@ -1215,22 +1224,6 @@ async function fetchAndCacheBrowseChunk(
   return payload;
 }
 
-/**
- * Eagerly fetches every "browse" chunk that isn't already fresh in cache, sequentially — not
- * in parallel, to stay gentle on Spoonacular's rate limit; this genuinely only runs once per
- * [RECIPE_BROWSE_CACHE_TTL_MS] window per intolerances combo (see [searchRecipes]'s "browse"
- * branch, the only caller), not on every request. The by-far-common trigger is a household's
- * first "Recepten" open since the last TTL expiry asking for offset 0, which is also the
- * slowest single request this function ever serves (up to nine sequential Spoonacular calls)
- * — the trade-off the household is asking for in exchange for every further page in this
- * window coming back instantly from cache instead.
- */
-async function warmBrowseCache(intolerances: string[] | undefined, apiKey: string): Promise<void> {
-  for (const chunkOffset of RECIPE_BROWSE_CHUNK_OFFSETS) {
-    await fetchAndCacheBrowseChunk(intolerances, chunkOffset, apiKey);
-  }
-}
-
 interface SearchRecipesRequest {
   householdId: string;
   /** "browse" (no filters, popular first), "query" (free-text name search), or "ingredients" (what-can-I-cook). */
@@ -1256,9 +1249,7 @@ interface SearchRecipesRequest {
  * ingredient count — [getRecipeInformation] fetches the rest on demand if one gets opened.
  */
 export const searchRecipes = onCall(
-  // 60s (not the usual 20) — a cache-cold plain browse request below can chain up to nine
-  // sequential Spoonacular calls (see warmBrowseCache) before it can respond at all.
-  { secrets: [spoonacularApiKey], cors: false, timeoutSeconds: 60, invoker: "public" },
+  { secrets: [spoonacularApiKey], cors: false, timeoutSeconds: 20, invoker: "public" },
   async (request) => {
     const uid = requireUid(request.auth);
     const data = request.data as Partial<SearchRecipesRequest> | undefined;
@@ -1300,21 +1291,15 @@ export const searchRecipes = onCall(
     }
 
     // The plain browse (no cuisine boost, no query) is by far the most common call — every
-    // household's Recepten screen hits this on open — and popularity ranking barely moves
-    // page to page, so instead of caching/fetching exactly one page at a time, this eagerly
-    // fetches and caches the whole ~900-recipe catalog the first time any of it is missing
-    // (see warmBrowseCache), then serves every further "load more" out of cache for the rest
-    // of RECIPE_BROWSE_CACHE_TTL_MS. The much smaller cuisine-boosted call (only 8 recipes, only
-    // page 1) falls through to the old per-page cache-or-fetch logic below instead, same as
-    // "query" — neither is worth pre-warming a whole catalog for.
+    // household's Recepten screen hits this on open. Requests land on one of nine 100-recipe
+    // chunks (see RECIPE_BROWSE_CHUNK_SIZE); fetchAndCacheBrowseChunk itself checks the cache
+    // first, so this is just "get me the one chunk this offset falls in" — see that function's
+    // doc for why this stays lazy (one chunk at a time) rather than eagerly warming all nine.
+    // The much smaller cuisine-boosted call (only 8 recipes, only page 1) falls through to the
+    // per-page cache-or-fetch logic below instead, same as "query".
     if (data?.mode === "browse" && !data.cuisine) {
       const chunkOffset = Math.min(Math.floor(offset / RECIPE_BROWSE_CHUNK_SIZE) * RECIPE_BROWSE_CHUNK_SIZE, 800);
-      const chunkCacheKey = browseCacheKey(undefined, data?.intolerances, RECIPE_BROWSE_CHUNK_SIZE, chunkOffset);
-      let chunk = await getFreshCache<RecipeSearchCachePayload>("recipeSearchCache", chunkCacheKey, RECIPE_BROWSE_CACHE_TTL_MS);
-      if (!chunk) {
-        await warmBrowseCache(data?.intolerances, apiKey);
-        chunk = await fetchAndCacheBrowseChunk(data?.intolerances, chunkOffset, apiKey);
-      }
+      const chunk = await fetchAndCacheBrowseChunk(data?.intolerances, chunkOffset, apiKey);
       const startInChunk = offset - chunkOffset;
       const details = chunk.details.slice(startInChunk, startInChunk + number);
       const hasMore = offset + details.length < chunk.totalResults;
