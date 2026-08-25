@@ -8,6 +8,7 @@ import android.net.Uri
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -28,6 +29,8 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.filled.FlashOff
+import androidx.compose.material.icons.filled.FlashOn
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -313,6 +316,8 @@ private fun ExpirationScanCamera(
     val cameraExecutor = remember { Executors.newSingleThreadExecutor() }
     var imageCapture by remember { mutableStateOf<ImageCapture?>(null) }
     var isCapturing by remember { mutableStateOf(false) }
+    var camera by remember { mutableStateOf<Camera?>(null) }
+    var torchOn by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
         // Tracks only the use cases bound here so cleanup unbinds exactly those, never the
@@ -328,11 +333,12 @@ private fun ExpirationScanCamera(
             val capture = ImageCapture.Builder().build()
             boundPreview = preview
             boundCapture = capture
-            cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture)
+            camera = cameraProvider.bindToLifecycle(lifecycleOwner, CameraSelector.DEFAULT_BACK_CAMERA, preview, capture)
             imageCapture = capture
         }, ContextCompat.getMainExecutor(context))
 
         onDispose {
+            camera = null
             runCatching {
                 val useCases = listOfNotNull(boundPreview, boundCapture).toTypedArray()
                 if (useCases.isNotEmpty()) {
@@ -358,6 +364,27 @@ private fun ExpirationScanCamera(
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
             )
+        }
+
+        // Many THT-datums are printed in embossed or low-contrast ink that's hard for the
+        // model to read in dim kitchen/pantry lighting — a torch toggle here (same pattern as
+        // ScanScreen's barcode camera) turns "walk to better light" into one tap.
+        Surface(
+            onClick = {
+                torchOn = !torchOn
+                camera?.cameraControl?.enableTorch(torchOn)
+            },
+            modifier = Modifier.align(Alignment.TopEnd).padding(16.dp).size(44.dp),
+            shape = CircleShape,
+            color = Color.Black.copy(alpha = 0.6f),
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Icon(
+                    imageVector = if (torchOn) Icons.Filled.FlashOn else Icons.Filled.FlashOff,
+                    contentDescription = stringResource(R.string.scan_flash_cd),
+                    tint = Color.White,
+                )
+            }
         }
 
         Surface(

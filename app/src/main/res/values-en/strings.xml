@@ -854,6 +854,7 @@
     <string name="recipes_import_url_title">Import a recipe from a URL</string>
     <string name="recipes_import_url_hint">Paste the link to a recipe page — we\'ll pull out the ingredients and instructions. You can still edit everything before saving.</string>
     <string name="recipes_import_url_placeholder">https://…</string>
+    <string name="recipes_import_url_paste_action">Paste from clipboard</string>
     <string name="recipes_import_url_action">Import</string>
     <string name="recipes_import_url_loading">Fetching recipe…</string>
     <string name="recipes_import_url_failed_no_connection">No connection. Check your internet connection and try again.</string>

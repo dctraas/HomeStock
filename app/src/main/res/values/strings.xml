@@ -858,6 +858,7 @@
     <string name="recipes_import_url_title">Recept importeren van URL</string>
     <string name="recipes_import_url_hint">Plak de link naar een receptenpagina — wij halen de ingrediënten en bereidingswijze eruit. Je kunt alles nog aanpassen voordat je het opslaat.</string>
     <string name="recipes_import_url_placeholder">https://…</string>
+    <string name="recipes_import_url_paste_action">Plak uit klembord</string>
     <string name="recipes_import_url_action">Importeren</string>
     <string name="recipes_import_url_loading">Recept ophalen…</string>
     <string name="recipes_import_url_failed_no_connection">Geen verbinding. Controleer je internetverbinding en probeer het opnieuw.</string>

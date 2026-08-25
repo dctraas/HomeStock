@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Link
@@ -88,6 +89,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -635,6 +637,7 @@ private fun ImportRecipeDialog(
     onImport: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val clipboardManager = LocalClipboardManager.current
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(R.string.recipes_import_url_title)) },
@@ -654,6 +657,17 @@ private fun ImportRecipeDialog(
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 )
+                // A link is almost always shared into this flow from somewhere else (a browser,
+                // another app's share sheet), so it's already on the clipboard more often than
+                // not — one tap beats switching apps to copy it, then switching back to paste.
+                TextButton(
+                    onClick = { clipboardManager.getText()?.text?.let(onUrlChange) },
+                    enabled = !isImporting,
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    Icon(Icons.Filled.ContentPaste, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(stringResource(R.string.recipes_import_url_paste_action), modifier = Modifier.padding(start = 6.dp))
+                }
                 if (isImporting) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,

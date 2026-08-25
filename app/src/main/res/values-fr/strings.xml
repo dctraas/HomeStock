@@ -854,6 +854,7 @@
     <string name="recipes_import_url_title">Importer une recette depuis une URL</string>
     <string name="recipes_import_url_hint">Colle le lien d\'une page de recette — nous en extrairons les ingrédients et la préparation. Tu pourras tout modifier avant d\'enregistrer.</string>
     <string name="recipes_import_url_placeholder">https://…</string>
+    <string name="recipes_import_url_paste_action">Coller depuis le presse-papiers</string>
     <string name="recipes_import_url_action">Importer</string>
     <string name="recipes_import_url_loading">Récupération de la recette…</string>
     <string name="recipes_import_url_failed_no_connection">Pas de connexion. Vérifiez votre connexion internet et réessayez.</string>

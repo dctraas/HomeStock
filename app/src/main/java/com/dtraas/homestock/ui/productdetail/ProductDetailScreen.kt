@@ -112,9 +112,13 @@ import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.DietLabel
 import com.dtraas.homestock.ui.components.CategoryDropdown
+import com.dtraas.homestock.ui.components.HomeStockBottomSheet
 import com.dtraas.homestock.ui.components.LocationDropdown
 import com.dtraas.homestock.ui.components.QuantityStepper
+import com.dtraas.homestock.ui.components.SheetActionRow
+import com.dtraas.homestock.ui.components.SheetTitle
 import com.dtraas.homestock.ui.components.icon
+import com.dtraas.homestock.ui.components.sheetContentPadding
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
@@ -501,9 +505,11 @@ fun ProductDetailScreen(
     }
 }
 
-/** Choice dialog opened by the photo badge / overflow menu — mirrors MoreScreen's
- *  Importeren/Exporteren dialog shape (two labeled, icon-led rows) for a consistent
- *  "tap an icon, get a small menu of actions" pattern across the app. */
+/** Choice sheet opened by the photo badge / overflow menu (2026-08 dialog review: a bottom
+ *  sheet with two tappable rows — the row is the target, no separate icon button — rather than
+ *  the old centered `AlertDialog`). "Verwijder foto" only shows once there's an actual custom
+ *  photo to remove, and reads as destructive (error tint) since it can't be undone. */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun PhotoDialog(
     hasCustomPhoto: Boolean,
@@ -511,43 +517,31 @@ private fun PhotoDialog(
     onRemovePhoto: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.product_detail_edit_photo_title)) },
-        text = {
-            Column {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable(onClick = onPickPhoto)
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(Icons.Filled.Upload, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                    Text(stringResource(R.string.product_detail_choose_photo_action), modifier = Modifier.padding(start = 12.dp))
-                }
-                if (hasCustomPhoto) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable(onClick = onRemovePhoto)
-                            .padding(vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Icon(Icons.Filled.Delete, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                        Text(
-                            text = stringResource(R.string.product_detail_remove_photo_action),
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(start = 12.dp),
-                        )
-                    }
-                }
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.padding(sheetContentPadding),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            SheetTitle(title = stringResource(R.string.product_detail_edit_photo_title))
+            SheetActionRow(
+                icon = Icons.Filled.Upload,
+                title = stringResource(R.string.product_detail_choose_photo_action),
+                onClick = onPickPhoto,
+            )
+            if (hasCustomPhoto) {
+                SheetActionRow(
+                    icon = Icons.Filled.Delete,
+                    title = stringResource(R.string.product_detail_remove_photo_action),
+                    onClick = onRemovePhoto,
+                    containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f),
+                    borderColor = MaterialTheme.colorScheme.errorContainer,
+                    iconTileColor = MaterialTheme.colorScheme.errorContainer,
+                    iconTint = MaterialTheme.colorScheme.error,
+                    titleColor = MaterialTheme.colorScheme.error,
+                )
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
-        },
-    )
+        }
+    }
 }
 
 /**

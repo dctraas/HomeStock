@@ -854,6 +854,7 @@
     <string name="recipes_import_url_title">Importar receta desde una URL</string>
     <string name="recipes_import_url_hint">Pega el enlace a una página de recetas — extraeremos los ingredientes y la preparación. Podrás editarlo todo antes de guardarlo.</string>
     <string name="recipes_import_url_placeholder">https://…</string>
+    <string name="recipes_import_url_paste_action">Pegar desde el portapapeles</string>
     <string name="recipes_import_url_action">Importar</string>
     <string name="recipes_import_url_loading">Obteniendo receta…</string>
     <string name="recipes_import_url_failed_no_connection">Sin conexión. Comprueba tu conexión a internet e inténtalo de nuevo.</string>
