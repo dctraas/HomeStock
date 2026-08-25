@@ -193,7 +193,7 @@ class AppContainer(context: Context) {
     }
 
     val feedbackRepository: FeedbackRepository by lazy {
-        FeedbackRepository(firestore, BuildConfig.VERSION_NAME)
+        FeedbackRepository(firestore, BuildConfig.VERSION_NAME, appContext)
     }
 
     val recipeRepository: RecipeRepository by lazy {

@@ -38,16 +38,19 @@ import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
+import androidx.compose.material.icons.filled.BugReport
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.ImportExport
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Language
+import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PrivacyTip
 import androidx.compose.material.icons.filled.Schedule
@@ -58,7 +61,6 @@ import androidx.compose.material.icons.filled.Storefront
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.VerifiedUser
 import androidx.compose.material.icons.filled.WorkspacePremium
-import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -115,11 +117,13 @@ import com.dtraas.homestock.data.export.InventoryCsvHeaders
 import com.dtraas.homestock.data.local.entity.StoreEntity
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.MeasurementUnit
+import com.dtraas.homestock.data.repository.FeedbackCategory
 import com.dtraas.homestock.data.repository.HouseholdMember
 import com.dtraas.homestock.data.repository.ThemeMode
 import com.dtraas.homestock.ui.components.HomeStockBottomSheet
 import com.dtraas.homestock.ui.components.ProfileEditDialog
 import com.dtraas.homestock.ui.components.SheetEyebrow
+import com.dtraas.homestock.ui.components.SheetPrimaryButton
 import com.dtraas.homestock.ui.components.SheetTitle
 import com.dtraas.homestock.ui.components.sheetContentPadding
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
@@ -700,16 +704,17 @@ fun MoreScreen(
 
     if (showFeedbackDialog) {
         FeedbackDialog(
-            onSend = { rating, message ->
+            onSend = { category, message, includeDiagnostics ->
                 coroutineScope.launch {
                     try {
-                        feedbackRepository.submit(rating, message)
+                        feedbackRepository.submit(category, message, includeDiagnostics)
                         snackbarHostState.showSnackbar(feedbackSentMessage, duration = SnackbarDuration.Short)
                     } catch (e: Exception) {
                         snackbarHostState.showSnackbar(feedbackErrorMessage, duration = SnackbarDuration.Short)
                     }
                 }
             },
+            onRateApp = { openPlayStoreListing(context) },
             onDismiss = { showFeedbackDialog = false },
         )
     }
@@ -750,6 +755,7 @@ private fun notificationsSubtitle(vararg enabled: Boolean): String {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun NotificationsSettingsDialog(
     expiryEnabled: Boolean,
@@ -1083,52 +1089,159 @@ private fun ImportExportDialog(onImport: () -> Unit, onExport: () -> Unit, onDis
     )
 }
 
+/**
+ * A category first, not a star rating — "a category is what makes a report actionable" (2026-08
+ * dialog review). The message field's placeholder follows the chosen category so the household
+ * knows what's actually useful to write, rather than one generic hint for all three.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun FeedbackDialog(onSend: (rating: Int, message: String) -> Unit, onDismiss: () -> Unit) {
-    var rating by remember { mutableStateOf(0) }
+private fun FeedbackDialog(
+    onSend: (category: FeedbackCategory, message: String, includeDiagnostics: Boolean) -> Unit,
+    onRateApp: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var category by remember { mutableStateOf<FeedbackCategory?>(null) }
     var message by remember { mutableStateOf("") }
+    var includeDiagnostics by remember { mutableStateOf(true) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.more_about_feedback)) },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(
-                    horizontalArrangement = Arrangement.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    for (star in 1..5) {
-                        IconButton(onClick = { rating = star }) {
-                            Icon(
-                                imageVector = if (star <= rating) Icons.Filled.Star else Icons.Outlined.StarBorder,
-                                contentDescription = stringResource(R.string.more_feedback_star_cd, star),
-                                tint = MaterialTheme.colorScheme.primary,
-                            )
-                        }
-                    }
-                }
-                OutlinedTextField(
-                    value = message,
-                    onValueChange = { message = it },
-                    placeholder = { Text(stringResource(R.string.more_feedback_placeholder)) },
-                    minLines = 3,
-                    modifier = Modifier.fillMaxWidth(),
+    val placeholder = when (category) {
+        FeedbackCategory.BUG -> stringResource(R.string.more_feedback_placeholder_bug)
+        FeedbackCategory.IDEA -> stringResource(R.string.more_feedback_placeholder_idea)
+        FeedbackCategory.COMPLIMENT, null -> stringResource(R.string.more_feedback_placeholder)
+    }
+
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(sheetContentPadding),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            SheetTitle(
+                title = stringResource(R.string.more_about_feedback),
+                subtitle = stringResource(R.string.more_feedback_category_question),
+            )
+
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.fillMaxWidth()) {
+                FeedbackCategoryTile(
+                    icon = Icons.Filled.BugReport,
+                    label = stringResource(R.string.more_feedback_category_bug),
+                    accentColor = MaterialTheme.colorScheme.secondary,
+                    selected = category == FeedbackCategory.BUG,
+                    onClick = { category = FeedbackCategory.BUG },
+                    modifier = Modifier.weight(1f),
+                )
+                FeedbackCategoryTile(
+                    icon = Icons.Filled.Lightbulb,
+                    label = stringResource(R.string.more_feedback_category_idea),
+                    accentColor = MaterialTheme.colorScheme.primary,
+                    selected = category == FeedbackCategory.IDEA,
+                    onClick = { category = FeedbackCategory.IDEA },
+                    modifier = Modifier.weight(1f),
+                )
+                FeedbackCategoryTile(
+                    icon = Icons.Filled.Favorite,
+                    label = stringResource(R.string.more_feedback_category_compliment),
+                    accentColor = MaterialTheme.colorScheme.tertiary,
+                    selected = category == FeedbackCategory.COMPLIMENT,
+                    onClick = { category = FeedbackCategory.COMPLIMENT },
+                    modifier = Modifier.weight(1f),
                 )
             }
-        },
-        confirmButton = {
-            TextButton(
-                enabled = rating > 0,
+
+            OutlinedTextField(
+                value = message,
+                onValueChange = { message = it },
+                placeholder = { Text(placeholder) },
+                minLines = 4,
+                shape = RoundedCornerShape(18.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(stringResource(R.string.more_feedback_diagnostics_label), style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        text = stringResource(R.string.more_feedback_diagnostics_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(checked = includeDiagnostics, onCheckedChange = { includeDiagnostics = it })
+            }
+
+            SheetPrimaryButton(
+                text = stringResource(R.string.more_feedback_send),
+                enabled = category != null,
                 onClick = {
-                    onSend(rating, message)
+                    category?.let { onSend(it, message, includeDiagnostics) }
                     onDismiss()
                 },
-            ) { Text(stringResource(R.string.more_feedback_send)) }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
-        },
-    )
+            )
+
+            // Kept a distinct action from the feedback channel above — a 1-star complaint and an
+            // enthusiastic idea shouldn't share one funnel (see this dialog's own review notes).
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(12.dp))
+                    .clickable(onClick = onRateApp)
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    text = stringResource(R.string.more_feedback_rate_prompt),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Icon(
+                    imageVector = Icons.Filled.Star,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 6.dp, end = 4.dp).size(16.dp),
+                )
+                Text(
+                    text = stringResource(R.string.more_about_rate_app),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FeedbackCategoryTile(
+    icon: ImageVector,
+    label: String,
+    accentColor: Color,
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        onClick = onClick,
+        shape = SoftCardShapeCompact,
+        color = if (selected) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surface,
+        border = BorderStroke(if (selected) 2.dp else 1.dp, if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant),
+        modifier = modifier,
+    ) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp, horizontal = 6.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(imageVector = icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(24.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+            )
+        }
+    }
 }
 
 /** First letters of up to the first two words of [name], uppercased — "Jip de Vries" -> "JD".

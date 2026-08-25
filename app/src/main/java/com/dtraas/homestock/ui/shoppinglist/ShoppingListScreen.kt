@@ -1570,6 +1570,7 @@ private fun ShoppingListBottomBar(
  * (sort mode + tile view, both apply instantly) and the active list's own actions, headed by
  * its name and a live item/store count so this doubles as "which list am I even looking at".
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ShoppingListMoreOptionsDialog(
     listName: String,
@@ -1740,6 +1741,7 @@ private fun EmptyShoppingList(isFiltered: Boolean, modifier: Modifier = Modifier
  * wants to correct them, and a suggestion-chip row at the very bottom (create mode only) means
  * adding several items in a row doesn't cost several sheets — see the 2026-08 dialog review.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ItemFormDialog(
     title: String,

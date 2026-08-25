@@ -453,7 +453,7 @@ private enum class RecipeWishPreset(@StringRes val labelRes: Int) {
  * review. [onGenerate] receives the fully composed wish string (presets + free text + the
  * expiring-items hint, each optional), not just the raw text field.
  */
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun GenerateRecipeDialog(
     wish: String,

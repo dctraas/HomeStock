@@ -303,6 +303,23 @@
     <string name="more_about_licenses_subtitle">Open-source libraries used in this app</string>
     <string name="more_feedback_placeholder">Tell us what you think…</string>
     <string name="more_feedback_send">Send</string>
+    <string name="more_feedback_category_question">What\'s this about?</string>
+
+    <string name="more_feedback_category_bug">Something\'s broken</string>
+
+    <string name="more_feedback_category_idea">I have an idea</string>
+
+    <string name="more_feedback_category_compliment">Compliment</string>
+
+    <string name="more_feedback_placeholder_bug">What happened, and on which screen? The more detail, the faster we can fix it.</string>
+
+    <string name="more_feedback_placeholder_idea">What could HomeStock help you with?</string>
+
+    <string name="more_feedback_diagnostics_label">Include app info</string>
+
+    <string name="more_feedback_diagnostics_subtitle">Version, device and language — no inventory data</string>
+
+    <string name="more_feedback_rate_prompt">Want to rate HomeStock?</string>
     <string name="more_feedback_star_cd">Star %1$d</string>
     <string name="more_feedback_sent_confirmation">Thanks for your feedback!</string>
     <string name="more_feedback_error">Couldn\'t send feedback. Please try again later.</string>

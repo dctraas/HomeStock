@@ -882,7 +882,7 @@ private fun Modifier.dashedBorder(color: Color, cornerRadius: Dp, strokeWidth: D
  * [RecipeSuggestion]) plus a pinned "Bedenk een recept" footer that hands the slot straight to
  * [MealPlanViewModel.generateAiMeal] rather than opening yet another sheet.
  */
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 private fun MealPickerDialog(
     titleText: String,

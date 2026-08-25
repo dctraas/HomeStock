@@ -722,6 +722,7 @@ private fun AddFab(onClick: () -> Unit, modifier: Modifier = Modifier) {
  * bonnetje scannen/AI-herkenning are premium-gated (falling back to [onNavigateToPremium] when
  * not premium), set apart under a "MET PREMIUM" divider.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AddMenuDialog(
     isPremium: Boolean,
