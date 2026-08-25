@@ -19,6 +19,7 @@ guava = "32.1.3-android"
 workManager = "2.9.1"
 glance = "1.1.1"
 appcompat = "1.7.0"
+splashscreen = "1.2.0"
 billing = "7.1.1"
 credentials = "1.3.0"
 googleid = "1.1.1"
@@ -75,6 +76,7 @@ androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx"
 
 androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+androidx-core-splashscreen = { group = "androidx.core", name = "core-splashscreen", version.ref = "splashscreen" }
 billing-ktx = { group = "com.android.billingclient", name = "billing-ktx", version.ref = "billing" }
 
 # Sign in with Google, via the modern Credential Manager API rather than the deprecated

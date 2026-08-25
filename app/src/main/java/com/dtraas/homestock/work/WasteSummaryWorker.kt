@@ -77,7 +77,8 @@ class WasteSummaryWorker(
         )
 
         val builder = NotificationCompat.Builder(context, LowStockCheckWorker.CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_popup_reminder)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setColor(0xFF1F6F4A.toInt())
             .setContentTitle(context.getString(R.string.notification_waste_summary_title))
             .setContentText(contentText)
             .setStyle(NotificationCompat.BigTextStyle().bigText(contentText))

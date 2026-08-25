@@ -4,14 +4,15 @@
     android:viewportWidth="108" android:viewportHeight="108">
     <group android:scaleX="0.8" android:scaleY="0.8"
         android:translateX="10.8" android:translateY="10.8">
-        <path android:fillColor="@color/ic_launcher_mark"
+        <path android:strokeColor="#FFFFFF" android:strokeWidth="7"
+            android:fillColor="@android:color/transparent"
             android:pathData="M24,36 H76 L71,82 A6,6 0 0 1 65,88 H35 A6,6 0 0 1 29,82 Z" />
-        <path android:strokeColor="@color/ic_launcher_mark" android:strokeWidth="7"
+        <path android:strokeColor="#FFFFFF" android:strokeWidth="7"
             android:strokeLineCap="round" android:fillColor="@android:color/transparent"
             android:pathData="M37,36 V29 A13,13 0 0 1 63,29 V36" />
-        <path android:strokeColor="@color/ic_launcher_check" android:strokeWidth="9"
+        <path android:strokeColor="#FFFFFF" android:strokeWidth="9"
             android:strokeLineCap="round" android:strokeLineJoin="round"
             android:fillColor="@android:color/transparent"
-            android:pathData="M38,60 L47,69 L64,50" />
+            android:pathData="M38,62 L47,71 L64,52" />
     </group>
 </vector>

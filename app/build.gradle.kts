@@ -60,6 +60,9 @@ dependencies {
     // Backs AppCompatDelegate.setApplicationLocales for in-app language switching
     // (with autoStoreLocales handling persistence, see AndroidManifest.xml).
     implementation(libs.androidx.appcompat)
+    // Cold-start splash screen (see Theme.HomeStock.Starting + MainActivity.installSplashScreen)
+    // — the AndroidX shim brings the Android 12+ SplashScreen API back to minSdk 26.
+    implementation(libs.androidx.core.splashscreen)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.compose.ui)

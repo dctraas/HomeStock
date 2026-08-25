@@ -1,9 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp" android:height="108dp"
-    android:viewportWidth="108" android:viewportHeight="108">
-    <group android:scaleX="0.8" android:scaleY="0.8"
-        android:translateX="10.8" android:translateY="10.8">
+    android:width="288dp" android:height="288dp"
+    android:viewportWidth="100" android:viewportHeight="100">
         <path android:fillColor="@color/ic_launcher_mark"
             android:pathData="M24,36 H76 L71,82 A6,6 0 0 1 65,88 H35 A6,6 0 0 1 29,82 Z" />
         <path android:strokeColor="@color/ic_launcher_mark" android:strokeWidth="7"
@@ -13,5 +11,4 @@
             android:strokeLineCap="round" android:strokeLineJoin="round"
             android:fillColor="@android:color/transparent"
             android:pathData="M38,60 L47,69 L64,50" />
-    </group>
 </vector>

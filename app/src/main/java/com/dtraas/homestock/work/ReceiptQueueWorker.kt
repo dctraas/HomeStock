@@ -55,7 +55,8 @@ class ReceiptQueueWorker(
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val builder = NotificationCompat.Builder(context, ExpiryCheckWorker.CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.stat_sys_upload_done)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setColor(0xFF1F6F4A.toInt())
             .setContentTitle(context.getString(R.string.notification_receipt_queue_title))
             .setContentText(context.getString(R.string.notification_receipt_queue_body_format, addedItems))
             .setContentIntent(contentIntent)

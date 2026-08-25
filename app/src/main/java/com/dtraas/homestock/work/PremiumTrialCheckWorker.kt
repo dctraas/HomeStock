@@ -95,7 +95,8 @@ class PremiumTrialCheckWorker(
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_popup_reminder)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setColor(0xFF1F6F4A.toInt())
             .setContentTitle(context.getString(R.string.notification_premium_trial_title))
             .setContentText(context.getString(R.string.notification_premium_trial_body))
             .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(R.string.notification_premium_trial_body)))

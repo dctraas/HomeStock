@@ -5,4 +5,18 @@
          actual UI is all Compose/Material3 — this native theme only governs the
          window chrome before Compose takes over. -->
     <style name="Theme.HomeStock" parent="Theme.AppCompat.Light.NoActionBar" />
+
+    <!-- Cold-start splash, shown for the brief window before the first Compose frame is ready
+         — see MainActivity's installSplashScreen() call. Set as MainActivity's own theme in the
+         manifest (its per-activity override wins over the <application> default, which is set
+         to this too for consistency); postSplashScreenTheme is what switches the window back to
+         Theme.HomeStock once installSplashScreen() decides the splash is done (immediately, by
+         default — this app has no setKeepOnScreenCondition). Static brand colors, so this theme
+         is deliberately the same regardless of light/dark system theme (no values-night
+         override). -->
+    <style name="Theme.HomeStock.Starting" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.HomeStock</item>
+    </style>
 </resources>

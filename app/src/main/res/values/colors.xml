@@ -1,5 +1,10 @@
 <resources>
-    <color name="ic_launcher_background">#2FA84F</color>
+    <color name="ic_launcher_background">#1F6F4A</color>
+    <!-- Shopping-bag mark + its checkmark — shared between the launcher foreground and the
+         splash logo (see ic_launcher_foreground.xml/ic_splash_logo.xml), both drawing the same
+         "tas met vink" mark from the HomeStock logo handoff. -->
+    <color name="ic_launcher_mark">#F6EEE0</color>
+    <color name="ic_launcher_check">#D2703A</color>
 
     <!-- Home screen widget: day/night pair, referenced via ColorProvider(resId) since
          glance-material3's dynamic GlanceTheme isn't part of this project's dependencies. -->

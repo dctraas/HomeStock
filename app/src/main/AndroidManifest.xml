@@ -23,9 +23,9 @@
         android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
-        android:theme="@style/Theme.HomeStock">
+        android:theme="@style/Theme.HomeStock.Starting">
 
         <!-- Lets AppCompatDelegate.setApplicationLocales persist the per-app language
              choice (Instellingen > Algemeen > Taal) and restore it automatically on
@@ -39,7 +39,7 @@
             android:exported="true"
             android:launchMode="singleTop"
             android:screenOrientation="portrait"
-            android:theme="@style/Theme.HomeStock">
+            android:theme="@style/Theme.HomeStock.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />

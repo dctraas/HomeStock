@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.core.view.WindowCompat
 import com.dtraas.homestock.data.repository.HouseholdInviteLink
 import com.dtraas.homestock.data.repository.ThemeMode
@@ -58,6 +59,10 @@ class MainActivity : AppCompatActivity() {
     private var pendingJoinCode by mutableStateOf<String?>(null)
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Must run before super.onCreate() — this is what applies Theme.HomeStock.Starting's
+        // splash (see AndroidManifest.xml/themes.xml) and switches the window to
+        // postSplashScreenTheme (Theme.HomeStock) once the first frame is ready.
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         pendingRoute = shortcutRouteForIntent(intent)

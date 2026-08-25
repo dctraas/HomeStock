@@ -90,7 +90,8 @@ class ExpiryCheckWorker(
         )
 
         val builder = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_popup_reminder)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setColor(0xFF1F6F4A.toInt())
             .setContentTitle(context.getString(R.string.notification_expiry_title))
             .setContentText(contentText)
             .setStyle(NotificationCompat.BigTextStyle().bigText(groupedByDayText(items)))
