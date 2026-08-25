@@ -21,10 +21,12 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
@@ -32,7 +34,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -79,6 +84,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
@@ -128,7 +135,10 @@ import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.export.CsvExporter
 import com.dtraas.homestock.data.export.CsvImporter
+import com.dtraas.homestock.data.export.ImportedInventoryRow
 import com.dtraas.homestock.data.export.InventoryCsvHeaders
+import com.dtraas.homestock.data.export.InventoryImportResult
+import com.dtraas.homestock.data.export.ShoppingListCsvHeaders
 import com.dtraas.homestock.data.local.entity.StoreEntity
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.MeasurementUnit
@@ -155,11 +165,23 @@ import com.dtraas.homestock.work.LowStockCheckWorker
 import com.dtraas.homestock.work.PremiumTrialCheckWorker
 import com.dtraas.homestock.work.WasteSummaryWorker
 import java.io.File
+import java.text.DateFormat
+import java.util.Date
 import java.util.UUID
 import kotlin.math.roundToInt
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+
+/** The three-way choice in the Data-overzetten sheet's export card — which of the household's
+ *  own data ends up in the CSV. Distinct from [CsvExporter], which doesn't know about "scope"
+ *  at all — it just builds whichever CSV(s) it's asked for; this enum is purely UI/state. */
+private enum class ExportScope(val labelRes: Int) {
+    // "Voorraad" is exactly inventory_title's own meaning — reused rather than a near-duplicate key.
+    INVENTORY(R.string.inventory_title),
+    LISTS(R.string.more_data_scope_lists),
+    ALL(R.string.more_data_scope_all),
+}
 
 private enum class AppLanguage(val tag: String, val labelRes: Int, val flag: String) {
     NL("nl", R.string.more_language_option_nl, "🇳🇱"),
@@ -220,6 +242,8 @@ fun MoreScreen(
     val debugPremiumOverride by billingRepository.debugPremiumOverride.collectAsState()
     val storeRepository = application.container.storeRepository
     val stores by storeRepository.observeStores().collectAsState(initial = emptyList())
+    val exportPreferences = application.container.exportPreferences
+    val lastExportTimestamp by exportPreferences.lastExportTimestamp.collectAsState()
     val shoppingListRepository = application.container.shoppingListRepository
     // Unchecked-only: a store's "N items op de lijst" count in the Winkels sheet is about what
     // still needs a visit, not what's already in the cart — same reasoning as the shopping list
@@ -229,6 +253,15 @@ fun MoreScreen(
             items.filter { !it.isChecked }.groupingBy { it.store }.eachCount()
         }
     }.collectAsState(initial = emptyMap())
+    val inventoryRepository = application.container.inventoryRepository
+    // Live counts for Data overzetten's Exporteren card — "put the app's knowledge in the sheet"
+    // means the scope pills say what a household would actually get, not just their labels.
+    val inventoryItemCount by remember {
+        inventoryRepository.observeInventoryWithProduct().map { it.size }
+    }.collectAsState(initial = 0)
+    val shoppingListItemCount by remember {
+        shoppingListRepository.observeShoppingList().map { it.size }
+    }.collectAsState(initial = 0)
     val feedbackRepository = application.container.feedbackRepository
     val accountLinkRepository = application.container.accountLinkRepository
     val isAccountLinked by accountLinkRepository.observeIsLinked().collectAsState(initial = accountLinkRepository.linkedEmail != null)
@@ -247,6 +280,7 @@ fun MoreScreen(
     var showNotificationsDialog by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
     var showImportExportDialog by remember { mutableStateOf(false) }
+    var exportScope by remember { mutableStateOf(ExportScope.INVENTORY) }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission(),
@@ -307,11 +341,11 @@ fun MoreScreen(
         ExpiryCheckWorker.schedule(context, hour, minute)
     }
 
-    // CSV export (Voorraad) — moved verbatim from the now-gone MoreOptionsScreen.kt: the CSV
-    // content has to be built *before* the system's "save to..." picker is launched (it needs a
-    // filename up front, but only hands back a Uri once the user has actually picked a location,
-    // well after this composable has moved on), so it's held here and written once that callback
-    // fires.
+    // CSV export (Voorraad / Boodschappenlijst / Alles — see ExportScope) — moved+extended from
+    // the now-gone MoreOptionsScreen.kt: the CSV content has to be built *before* the system's
+    // "save to..." picker is launched (it needs a filename up front, but only hands back a Uri
+    // once the user has actually picked a location, well after this composable has moved on),
+    // so it's held here and written once that callback fires.
     var pendingExportCsv by remember { mutableStateOf<String?>(null) }
     val exportErrorMessage = stringResource(R.string.more_export_error)
     val exportSuccessMessage = stringResource(R.string.more_export_success)
@@ -324,6 +358,7 @@ fun MoreScreen(
         coroutineScope.launch {
             val message = try {
                 context.contentResolver.openOutputStream(uri)?.use { it.write(csv.toByteArray(Charsets.UTF_8)) }
+                exportPreferences.recordExportNow()
                 exportSuccessMessage
             } catch (e: Exception) {
                 exportErrorMessage
@@ -348,38 +383,82 @@ fun MoreScreen(
         favorite = stringResource(R.string.more_export_header_favorite),
         note = stringResource(R.string.shopping_list_note_label),
     )
+    val shoppingListCsvHeaders = ShoppingListCsvHeaders(
+        name = stringResource(R.string.common_name),
+        category = stringResource(R.string.category_dropdown_label),
+        store = stringResource(R.string.store_dropdown_label),
+        quantity = stringResource(R.string.common_quantity),
+        unit = stringResource(R.string.product_detail_field_unit),
+        note = stringResource(R.string.shopping_list_note_label),
+        price = stringResource(R.string.more_export_header_price),
+        checked = stringResource(R.string.more_export_header_checked),
+    )
+    val inventorySectionTitle = stringResource(R.string.inventory_title)
+    val shoppingListSectionTitle = stringResource(R.string.shopping_list_title)
 
-    fun exportInventory() {
+    fun exportData(scope: ExportScope) {
         coroutineScope.launch {
-            val items = application.container.inventoryRepository.observeInventoryWithProduct().first()
-            pendingExportCsv = CsvExporter.inventoryToCsv(
-                items,
-                inventoryCsvHeaders,
-                categoryLabel = { key -> categoryLabels[key] ?: key },
-                unitLabel = { key -> unitLabels[key] ?: (key ?: "") },
-                yesLabel = csvYes,
-                noLabel = csvNo,
-            )
-            exportLauncher.launch("voorraad.csv")
+            val inventoryCsv = if (scope != ExportScope.LISTS) {
+                val items = inventoryRepository.observeInventoryWithProduct().first()
+                CsvExporter.inventoryToCsv(
+                    items,
+                    inventoryCsvHeaders,
+                    categoryLabel = { key -> categoryLabels[key] ?: key },
+                    unitLabel = { key -> unitLabels[key] ?: (key ?: "") },
+                    yesLabel = csvYes,
+                    noLabel = csvNo,
+                )
+            } else {
+                null
+            }
+            val listCsv = if (scope != ExportScope.INVENTORY) {
+                val items = application.container.shoppingListRepository.observeShoppingList().first()
+                CsvExporter.shoppingListToCsv(
+                    items,
+                    shoppingListCsvHeaders,
+                    categoryLabel = { key -> categoryLabels[key] ?: key },
+                    unitLabel = { key -> unitLabels[key] ?: key },
+                    yesLabel = csvYes,
+                    noLabel = csvNo,
+                )
+            } else {
+                null
+            }
+            val (csv, filename) = when (scope) {
+                ExportScope.INVENTORY -> requireNotNull(inventoryCsv) to "voorraad.csv"
+                ExportScope.LISTS -> requireNotNull(listCsv) to "boodschappenlijst.csv"
+                ExportScope.ALL -> CsvExporter.combinedToCsv(
+                    requireNotNull(inventoryCsv),
+                    requireNotNull(listCsv),
+                    inventorySectionTitle,
+                    shoppingListSectionTitle,
+                ) to "homestock-data.csv"
+            }
+            pendingExportCsv = csv
+            exportLauncher.launch(filename)
         }
     }
 
-    // CSV import (Voorraad) — moved verbatim from the now-gone MoreOptionsScreen.kt: every
-    // imported row becomes a brand-new product (synthetic "csv-..." barcode, same convention
-    // AI-productherkenning uses for products with no real barcode) rather than trying to match it
-    // against an existing one, since a CSV has no barcode column to match on. restoreItem (not
-    // recordScan) writes the inventory row directly without logging it to Geschiedenis — a bulk
-    // import shouldn't flood the activity log with one entry per row.
+    // CSV import (Voorraad) — moved+extended from the now-gone MoreOptionsScreen.kt: picking a
+    // file now only *parses* it into pendingImportPreview — nothing is written to Voorraad until
+    // the household confirms in the preview sheet (see confirmImport below), matching "je ziet
+    // eerst een voorbeeld" from the settings row's own copy. Every confirmed row becomes a
+    // brand-new product (synthetic "csv-..." barcode, same convention AI-productherkenning uses
+    // for products with no real barcode) rather than trying to match it against an existing one,
+    // since a CSV has no barcode column to match on. restoreItem (not recordScan) writes the
+    // inventory row directly without logging it to Geschiedenis — a bulk import shouldn't flood
+    // the activity log with one entry per row.
     val importErrorMessage = stringResource(R.string.more_import_error)
     val importEmptyMessage = stringResource(R.string.more_import_empty)
     val importSuccessFormat = stringResource(R.string.more_import_success_format)
     val importSkippedFormat = stringResource(R.string.more_import_skipped_format)
+    var pendingImportPreview by remember { mutableStateOf<InventoryImportResult?>(null) }
     val importLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocument(),
     ) { uri ->
         if (uri == null) return@rememberLauncherForActivityResult
         coroutineScope.launch {
-            val message = try {
+            val errorMessage = try {
                 val csv = context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
                 if (csv == null) {
                     importErrorMessage
@@ -388,41 +467,51 @@ fun MoreScreen(
                     if (result.rows.isEmpty()) {
                         importEmptyMessage
                     } else {
-                        result.rows.forEach { row ->
-                            val barcode = "csv-${UUID.randomUUID()}"
-                            application.container.productRepository.saveManualProduct(
-                                barcode = barcode,
-                                name = row.name,
-                                category = Category.fromStorageKey(row.categoryKey),
-                                brand = row.brand,
-                                unit = row.unitKey,
-                            )
-                            application.container.inventoryRepository.restoreItem(
-                                barcode = barcode,
-                                quantity = row.quantity,
-                                expirationDate = row.expirationDate,
-                                minQuantity = row.minQuantity,
-                                note = row.note,
-                                isFavorite = row.isFavorite,
-                            )
-                        }
-                        val summary = String.format(importSuccessFormat, result.rows.size)
-                        if (result.skippedCount > 0) {
-                            summary + " " + String.format(importSkippedFormat, result.skippedCount)
-                        } else {
-                            summary
-                        }
+                        pendingImportPreview = result
+                        null
                     }
                 }
             } catch (e: Exception) {
                 importErrorMessage
             }
-            snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Short)
+            if (errorMessage != null) snackbarHostState.showSnackbar(errorMessage, duration = SnackbarDuration.Short)
         }
     }
 
-    fun importInventory() {
+    fun pickImportFile() {
         importLauncher.launch(arrayOf("text/csv", "text/comma-separated-values", "text/plain", "application/csv", "*/*"))
+    }
+
+    fun confirmImport() {
+        val result = pendingImportPreview ?: return
+        pendingImportPreview = null
+        coroutineScope.launch {
+            result.rows.forEach { row ->
+                val barcode = "csv-${UUID.randomUUID()}"
+                application.container.productRepository.saveManualProduct(
+                    barcode = barcode,
+                    name = row.name,
+                    category = Category.fromStorageKey(row.categoryKey),
+                    brand = row.brand,
+                    unit = row.unitKey,
+                )
+                inventoryRepository.restoreItem(
+                    barcode = barcode,
+                    quantity = row.quantity,
+                    expirationDate = row.expirationDate,
+                    minQuantity = row.minQuantity,
+                    note = row.note,
+                    isFavorite = row.isFavorite,
+                )
+            }
+            val summary = String.format(importSuccessFormat, result.rows.size)
+            val message = if (result.skippedCount > 0) {
+                summary + " " + String.format(importSkippedFormat, result.skippedCount)
+            } else {
+                summary
+            }
+            snackbarHostState.showSnackbar(message, duration = SnackbarDuration.Short)
+        }
     }
 
     Scaffold(
@@ -730,9 +819,24 @@ fun MoreScreen(
 
     if (showImportExportDialog) {
         ImportExportDialog(
-            onImport = ::importInventory,
-            onExport = ::exportInventory,
+            scope = exportScope,
+            onScopeChange = { exportScope = it },
+            inventoryItemCount = inventoryItemCount,
+            shoppingListItemCount = shoppingListItemCount,
+            lastExportTimestamp = lastExportTimestamp,
+            onExport = { exportData(exportScope) },
+            onPickImportFile = ::pickImportFile,
             onDismiss = { showImportExportDialog = false },
+        )
+    }
+
+    pendingImportPreview?.let { preview ->
+        ImportPreviewDialog(
+            result = preview,
+            categoryLabel = { key -> categoryLabels[key] ?: key },
+            unitLabel = { key -> key?.let { unitLabels[it] } ?: "" },
+            onConfirm = ::confirmImport,
+            onDismiss = { pendingImportPreview = null },
         )
     }
 
@@ -1060,67 +1164,246 @@ private fun AccessibilityDialog(
 }
 
 /**
- * Single entry point for Voorraad CSV import/export — replaces what used to be two separate
- * export-only rows (Voorraad, Boodschappenlijst) with one row that opens this choice.
- * [onImport]/[onExport] only kick off the picker flow — the actual file I/O runs in the
- * caller's launchers.
+ * "Data overzetten" — two cards of unequal weight (2026-08 dialog review): Exporteren carries
+ * the sheet's one full-width filled primary button (cross-cutting rule #2), Importeren a lighter
+ * outlined one, since picking a file is only the *start* of importing — [ImportPreviewDialog]
+ * is where that action actually commits. [onExport] fires with whatever [scope] is currently
+ * selected; [onPickImportFile] only launches the system file picker.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ImportExportDialog(onImport: () -> Unit, onExport: () -> Unit, onDismiss: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.more_data_csv_title)) },
-        text = {
-            Column {
-                // Only Voorraad has import/export today, but this dialog is meant to grow
-                // (Boodschappenlijst, etc.) — the heading labels which data these two actions
-                // apply to now, rather than implying "Data overzetten" only ever means Voorraad.
-                Text(
-                    text = stringResource(R.string.inventory_title),
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 4.dp),
-                )
-                Row(
+private fun ImportExportDialog(
+    scope: ExportScope,
+    onScopeChange: (ExportScope) -> Unit,
+    inventoryItemCount: Int,
+    shoppingListItemCount: Int,
+    lastExportTimestamp: Long?,
+    onExport: () -> Unit,
+    onPickImportFile: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .verticalScroll(rememberScrollState())
+                .padding(sheetContentPadding),
+            verticalArrangement = Arrangement.spacedBy(18.dp),
+        ) {
+            SheetTitle(
+                title = stringResource(R.string.more_data_csv_title),
+                subtitle = stringResource(R.string.more_data_sheet_subtitle),
+            )
+            ExportCard(
+                scope = scope,
+                onScopeChange = onScopeChange,
+                inventoryItemCount = inventoryItemCount,
+                shoppingListItemCount = shoppingListItemCount,
+                lastExportTimestamp = lastExportTimestamp,
+                onExport = { onExport(); onDismiss() },
+            )
+            ImportCard(onPickImportFile = { onPickImportFile(); onDismiss() })
+        }
+    }
+}
+
+/** The heavier of the two cards — outlined, primary/container-green tinted, ends on the sheet's
+ *  one filled primary button. The scope pills and the item counts underneath them are the same
+ *  number: picking "Lijsten" doesn't just relabel the button, [exportSubtitleFor] below actually
+ *  recomputes what's about to be exported. */
+@Composable
+private fun ExportCard(
+    scope: ExportScope,
+    onScopeChange: (ExportScope) -> Unit,
+    inventoryItemCount: Int,
+    shoppingListItemCount: Int,
+    lastExportTimestamp: Long?,
+    onExport: () -> Unit,
+) {
+    Surface(
+        shape = SoftCardShapeCompact,
+        color = MaterialTheme.colorScheme.surface,
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.surfaceContainerHigh),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            onImport()
-                            onDismiss()
-                        }
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = Icons.Filled.Upload,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(stringResource(R.string.more_csv_import_action), modifier = Modifier.padding(start = 12.dp))
-                }
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable {
-                            onExport()
-                            onDismiss()
-                        }
-                        .padding(vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                        .size(40.dp)
+                        .background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(14.dp)),
+                    contentAlignment = Alignment.Center,
                 ) {
                     Icon(
                         imageVector = Icons.Filled.Download,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp),
                     )
-                    Text(stringResource(R.string.more_csv_export_action), modifier = Modifier.padding(start = 12.dp))
+                }
+                Column(modifier = Modifier.padding(start = 12.dp)) {
+                    Text(
+                        text = stringResource(R.string.more_export_title),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    )
+                    Text(
+                        text = exportSubtitleFor(scope, inventoryItemCount, shoppingListItemCount),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
-        },
-        confirmButton = {
-            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
-        },
-    )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                ExportScope.entries.forEach { option ->
+                    SheetChip(
+                        label = stringResource(option.labelRes),
+                        selected = scope == option,
+                        onClick = { onScopeChange(option) },
+                    )
+                }
+            }
+            SheetPrimaryButton(text = stringResource(R.string.more_export_title), onClick = onExport)
+            Text(
+                text = lastExportTimestamp?.let { stringResource(R.string.more_export_last_format, formatExportDate(it)) }
+                    ?: stringResource(R.string.more_export_last_never),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+@Composable
+private fun exportSubtitleFor(scope: ExportScope, inventoryItemCount: Int, shoppingListItemCount: Int): String = when (scope) {
+    ExportScope.INVENTORY -> pluralStringResource(R.plurals.more_export_subtitle_inventory_format, inventoryItemCount, inventoryItemCount)
+    ExportScope.LISTS -> pluralStringResource(R.plurals.more_export_subtitle_lists_format, shoppingListItemCount, shoppingListItemCount)
+    ExportScope.ALL -> stringResource(R.string.more_export_subtitle_all_format, inventoryItemCount, shoppingListItemCount)
+}
+
+private fun formatExportDate(timestampMillis: Long): String =
+    DateFormat.getDateInstance(DateFormat.LONG).format(Date(timestampMillis))
+
+/** The lighter of the two cards — amber-tinted (same [MaterialTheme.colorScheme.tertiaryContainer]
+ *  treatment InventoryScreen's own premium rows use), ending on an outlined button rather than a
+ *  second filled one. Importing doesn't happen on tap here — this only opens the system file
+ *  picker; [ImportPreviewDialog] is the actual commit step. */
+@Composable
+private fun ImportCard(onPickImportFile: () -> Unit) {
+    Surface(
+        shape = SoftCardShapeCompact,
+        color = MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiaryContainer),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(MaterialTheme.colorScheme.tertiaryContainer, RoundedCornerShape(14.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.Upload,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.tertiary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                Column(modifier = Modifier.padding(start = 12.dp)) {
+                    Text(
+                        text = stringResource(R.string.more_import_title),
+                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                    )
+                    Text(
+                        text = stringResource(R.string.more_import_subtitle),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+            Text(
+                text = stringResource(R.string.more_import_info),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            OutlinedButton(
+                onClick = onPickImportFile,
+                shape = RoundedCornerShape(22.dp),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.tertiary),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.tertiary),
+                modifier = Modifier.fillMaxWidth().height(44.dp),
+            ) {
+                Icon(imageVector = Icons.Filled.Upload, contentDescription = null, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text(stringResource(R.string.more_import_choose_file_action))
+            }
+        }
+    }
+}
+
+/**
+ * The preview step the "Bestand kiezen" row's own copy promises — nothing from [result] has
+ * been written to Voorraad yet; [onConfirm] is the only thing that does, via MoreScreen's
+ * confirmImport(). Dismissing (drag, scrim, or system back) discards the parsed rows outright,
+ * same as picking a different file would.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ImportPreviewDialog(
+    result: InventoryImportResult,
+    categoryLabel: (String) -> String,
+    unitLabel: (String?) -> String,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .heightIn(max = 520.dp)
+                .padding(sheetContentPadding),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            SheetTitle(
+                title = stringResource(R.string.more_import_preview_title),
+                subtitle = if (result.skippedCount > 0) {
+                    pluralStringResource(R.plurals.more_import_preview_subtitle_format, result.rows.size, result.rows.size) +
+                        " " + stringResource(R.string.more_import_preview_skipped_format, result.skippedCount)
+                } else {
+                    pluralStringResource(R.plurals.more_import_preview_subtitle_format, result.rows.size, result.rows.size)
+                },
+            )
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.weight(1f, fill = false),
+            ) {
+                items(result.rows) { row ->
+                    ImportPreviewRow(row = row, categoryLabel = categoryLabel, unitLabel = unitLabel)
+                }
+            }
+            SheetPrimaryButton(text = stringResource(R.string.more_import_preview_confirm), onClick = onConfirm)
+        }
+    }
+}
+
+@Composable
+private fun ImportPreviewRow(row: ImportedInventoryRow, categoryLabel: (String) -> String, unitLabel: (String?) -> String) {
+    Surface(shape = SoftCardShapeCompact, color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.fillMaxWidth()) {
+        Row(modifier = Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(row.name, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold))
+                Text(
+                    text = categoryLabel(row.categoryKey),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            Text(
+                text = "${row.quantity} ${unitLabel(row.unitKey)}".trim(),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 /**

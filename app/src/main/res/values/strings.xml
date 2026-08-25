@@ -325,8 +325,6 @@
     <string name="more_section_household">Huishouden</string>
     <string name="more_data_csv_title">Data overzetten</string>
     <string name="more_data_csv_subtitle">Voorraad en boodschappenlijst exporteren of importeren als CSV</string>
-    <string name="more_csv_import_action">Importeren (CSV)</string>
-    <string name="more_csv_export_action">Exporteren (CSV)</string>
     <string name="more_export_header_favorite">Favoriet</string>
     <string name="more_export_success">Bestand opgeslagen</string>
     <string name="more_export_error">Exporteren mislukt</string>
@@ -334,6 +332,34 @@
     <string name="more_import_skipped_format">%1$d regels overgeslagen.</string>
     <string name="more_import_empty">Geen geldige regels gevonden in het bestand.</string>
     <string name="more_import_error">Importeren mislukt</string>
+    <string name="more_data_sheet_subtitle">Een CSV-bestand kun je openen in Excel of Numbers.</string>
+    <string name="more_export_title">Exporteren</string>
+    <string name="more_export_subtitle_all_format">%1$d producten in voorraad, %2$d items op je lijsten</string>
+    <string name="more_export_last_format">Laatste export: %1$s</string>
+    <string name="more_export_last_never">Nog niet geëxporteerd</string>
+    <string name="more_data_scope_lists">Lijsten</string>
+    <string name="more_data_scope_all">Alles</string>
+    <string name="more_export_header_price">Prijs</string>
+    <string name="more_export_header_checked">Afgevinkt</string>
+    <string name="more_import_title">Importeren</string>
+    <string name="more_import_subtitle">Voegt toe aan je huidige voorraad</string>
+    <string name="more_import_info">Je ziet eerst een voorbeeld van wat wordt toegevoegd. Bestaande producten blijven staan.</string>
+    <string name="more_import_choose_file_action">Bestand kiezen</string>
+    <string name="more_import_preview_title">Voorbeeld</string>
+    <string name="more_import_preview_confirm">Toevoegen aan voorraad</string>
+    <string name="more_import_preview_skipped_format">%1$d regels worden overgeslagen.</string>
+    <plurals name="more_export_subtitle_inventory_format">
+        <item quantity="one">%1$d product in voorraad</item>
+        <item quantity="other">%1$d producten in voorraad</item>
+    </plurals>
+    <plurals name="more_export_subtitle_lists_format">
+        <item quantity="one">%1$d item op je lijsten</item>
+        <item quantity="other">%1$d items op je lijsten</item>
+    </plurals>
+    <plurals name="more_import_preview_subtitle_format">
+        <item quantity="one">%1$d product wordt toegevoegd aan je voorraad.</item>
+        <item quantity="other">%1$d producten worden toegevoegd aan je voorraad.</item>
+    </plurals>
     <string name="more_section_support">Ondersteuning</string>
     <string name="more_about_version_format">App versie %1$s</string>
     <string name="more_about_feedback">Feedback geven</string>

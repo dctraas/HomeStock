@@ -322,8 +322,6 @@
     <string name="more_data_csv_title">Transfer data</string>
     <string name="more_data_csv_subtitle">Export or import your inventory and shopping list as CSV</string>
     <string name="more_section_support">Support</string>
-    <string name="more_csv_import_action">Import (CSV)</string>
-    <string name="more_csv_export_action">Export (CSV)</string>
     <string name="more_export_header_favorite">Favorite</string>
     <string name="more_export_success">File saved</string>
     <string name="more_export_error">Export failed</string>
@@ -331,6 +329,34 @@
     <string name="more_import_skipped_format">%1$d rows skipped.</string>
     <string name="more_import_empty">No valid rows found in the file.</string>
     <string name="more_import_error">Import failed</string>
+    <string name="more_data_sheet_subtitle">A CSV file opens in Excel or Numbers.</string>
+    <string name="more_export_title">Export</string>
+    <string name="more_export_subtitle_all_format">%1$d products in stock, %2$d items on your lists</string>
+    <string name="more_export_last_format">Last export: %1$s</string>
+    <string name="more_export_last_never">Not exported yet</string>
+    <string name="more_data_scope_lists">Lists</string>
+    <string name="more_data_scope_all">All</string>
+    <string name="more_export_header_price">Price</string>
+    <string name="more_export_header_checked">Checked</string>
+    <string name="more_import_title">Import</string>
+    <string name="more_import_subtitle">Adds to your current stock</string>
+    <string name="more_import_info">You’ll see a preview of what’s added first. Existing products stay as they are.</string>
+    <string name="more_import_choose_file_action">Choose file</string>
+    <string name="more_import_preview_title">Preview</string>
+    <string name="more_import_preview_confirm">Add to stock</string>
+    <string name="more_import_preview_skipped_format">%1$d rows will be skipped.</string>
+    <plurals name="more_export_subtitle_inventory_format">
+        <item quantity="one">%1$d product in stock</item>
+        <item quantity="other">%1$d products in stock</item>
+    </plurals>
+    <plurals name="more_export_subtitle_lists_format">
+        <item quantity="one">%1$d item on your lists</item>
+        <item quantity="other">%1$d items on your lists</item>
+    </plurals>
+    <plurals name="more_import_preview_subtitle_format">
+        <item quantity="one">%1$d product will be added to your stock.</item>
+        <item quantity="other">%1$d products will be added to your stock.</item>
+    </plurals>
     <string name="more_about_version_format">App version %1$s</string>
     <string name="more_about_feedback">Give feedback</string>
     <string name="more_about_feedback_subtitle">Send ideas or issues to the developer</string>

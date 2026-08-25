@@ -10,6 +10,7 @@ import com.dtraas.homestock.data.repository.AnalyticsRepository
 import com.dtraas.homestock.data.repository.BillingRepository
 import com.dtraas.homestock.data.repository.DeviceProfile
 import com.dtraas.homestock.data.repository.DismissedNoticesStore
+import com.dtraas.homestock.data.repository.ExportPreferences
 import com.dtraas.homestock.data.repository.FeedbackRepository
 import com.dtraas.homestock.data.repository.HouseholdMembersRepository
 import com.dtraas.homestock.data.repository.HouseholdRepository
@@ -61,6 +62,7 @@ class AppContainer(context: Context) {
     val deviceProfile: DeviceProfile = DeviceProfile(context)
     val dismissedNoticesStore: DismissedNoticesStore = DismissedNoticesStore(context)
     val themePreferences: ThemePreferences = ThemePreferences(context)
+    val exportPreferences: ExportPreferences = ExportPreferences(context)
     val inventoryPreferences: InventoryPreferences = InventoryPreferences(context)
     val analyticsRepository: AnalyticsRepository = AnalyticsRepository(context)
     val remoteConfigRepository: RemoteConfigRepository = RemoteConfigRepository(context)
