@@ -1,5 +1,6 @@
 package com.dtraas.homestock.ui.navigation
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
@@ -39,7 +40,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import com.dtraas.homestock.HomeStockApplication
-import com.dtraas.homestock.ui.account.AccountLinkPromptDialog
+import com.dtraas.homestock.ui.account.AccountLinkBanner
 import com.dtraas.homestock.ui.airecognize.AiRecognizeScreen
 import com.dtraas.homestock.ui.account.AccountLinkScreen
 import com.dtraas.homestock.ui.household.HouseholdSettingsScreen
@@ -138,10 +139,25 @@ fun HomeStockApp(
             }
         },
     ) { padding ->
-        NavHost(
-            navController = navController,
-            startDestination = Destination.Inventory.route,
-            modifier = Modifier.padding(padding),
+        Column(modifier = Modifier.padding(padding)) {
+            // Tour first, account-link nudge only once it's out of the way — showing both
+            // overlays at once (a brand new device that also just created/joined a household
+            // hits both conditions together) would just be two banners/screens fighting for
+            // attention on someone's very first screen. Sits above every screen's own top app
+            // bar, so it stays visible across navigation until dismissed or the account links.
+            if (showAccountLinkPrompt && !showOnboardingTour) {
+                AccountLinkBanner(
+                    onLinkNow = {
+                        showAccountLinkPrompt = false
+                        navController.navigate(Destination.AccountLink.route)
+                    },
+                    onDismiss = { showAccountLinkPrompt = false },
+                )
+            }
+            NavHost(
+                navController = navController,
+                startDestination = Destination.Inventory.route,
+                modifier = Modifier.weight(1f),
         ) {
             composable(Destination.Scan.route) {
                 ScanScreen(
@@ -382,20 +398,8 @@ fun HomeStockApp(
             composable(Destination.AccountLink.route) {
                 AccountLinkScreen(onBack = { navController.popBackStack() })
             }
+            }
         }
-    }
-
-    // Tour first, account-link nudge only once it's out of the way — showing both overlays at
-    // once (a brand new device that also just created/joined a household hits both conditions
-    // together) would just be two modals fighting for attention on someone's very first screen.
-    if (showAccountLinkPrompt && !showOnboardingTour) {
-        AccountLinkPromptDialog(
-            onLinkNow = {
-                showAccountLinkPrompt = false
-                navController.navigate(Destination.AccountLink.route)
-            },
-            onDismiss = { showAccountLinkPrompt = false },
-        )
     }
 
     if (showOnboardingTour) {
