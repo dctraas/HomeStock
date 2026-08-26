@@ -267,7 +267,8 @@ private fun PremiumHeader(
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.ExtraBold,
             color = contentColor,
-            modifier = Modifier.padding(top = 8.dp),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
         )
         Text(
             text = subtitle,

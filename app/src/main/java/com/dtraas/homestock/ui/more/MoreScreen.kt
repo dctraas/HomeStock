@@ -1508,6 +1508,8 @@ private fun MoreScreenHeader(
             text = stringResource(R.string.more_settings_title),
             style = MaterialTheme.typography.headlineSmall,
             color = contentColor,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
         )
         Row(
             modifier = Modifier

@@ -96,6 +96,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -869,12 +870,13 @@ private fun RecipesHeader(
             .padding(horizontal = 20.dp, vertical = 4.dp)
             .padding(bottom = 14.dp),
     ) {
-        Row(modifier = Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Column(modifier = Modifier.weight(1f)) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.align(Alignment.Center).padding(horizontal = 48.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     text = stringResource(R.string.recipes_title),
                     style = MaterialTheme.typography.titleLarge,
                     color = contentColor,
+                    textAlign = TextAlign.Center,
                 )
                 // Only on Uit je voorraad — the other tabs don't have a single natural "N of
                 // something" count to summarize (Ontdekken's page size isn't meaningful,
@@ -884,10 +886,11 @@ private fun RecipesHeader(
                         text = pluralStringResource(R.plurals.recipes_inventory_subtitle, subtitleCount, subtitleCount),
                         style = MaterialTheme.typography.labelMedium,
                         color = OnTopAppBarContainerAccent,
+                        textAlign = TextAlign.Center,
                     )
                 }
             }
-            Box {
+            Box(modifier = Modifier.align(Alignment.CenterEnd)) {
                 val hasActiveAllergenFilter = tab == RecipesTab.BROWSE && excludedAllergens.isNotEmpty()
                 IconButton(onClick = { menuExpanded = true }) {
                     if (hasActiveAllergenFilter) {

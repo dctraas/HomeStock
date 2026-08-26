@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.aspectRatio
@@ -1272,7 +1271,7 @@ private fun ShoppingListHeader(
     onMoreOptionsClick: () -> Unit,
 ) {
     val contentColor = LocalTopAppBarContentColor.current
-    Row(
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(LocalTopAppBarContainerColor.current)
@@ -1281,28 +1280,27 @@ private fun ShoppingListHeader(
             // A touch tighter than before (was 12.dp) — reclaims a little vertical room for
             // the item list below, per "iets meer boodschap items te kunnen tonen".
             .padding(bottom = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Box {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier
-                    .clickable(onClick = onListNameClick)
-                    .padding(vertical = 10.dp, horizontal = 4.dp),
-            ) {
-                Text(
-                    text = listName,
-                    style = MaterialTheme.typography.titleLarge,
-                    color = contentColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                Icon(
-                    Icons.Filled.ArrowDropDown,
-                    contentDescription = stringResource(R.string.shopping_list_switch_list_cd),
-                    tint = contentColor,
-                )
-            }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .align(Alignment.Center)
+                .padding(horizontal = 48.dp)
+                .clickable(onClick = onListNameClick)
+                .padding(vertical = 10.dp, horizontal = 4.dp),
+        ) {
+            Text(
+                text = listName,
+                style = MaterialTheme.typography.titleLarge,
+                color = contentColor,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Icon(
+                Icons.Filled.ArrowDropDown,
+                contentDescription = stringResource(R.string.shopping_list_switch_list_cd),
+                tint = contentColor,
+            )
         }
         if (listMenuExpanded) {
             ShoppingListSwitcherSheet(
@@ -1316,8 +1314,7 @@ private fun ShoppingListHeader(
                 onDelete = onDeleteList,
             )
         }
-        Spacer(modifier = Modifier.weight(1f))
-        IconButton(onClick = onMoreOptionsClick) {
+        IconButton(onClick = onMoreOptionsClick, modifier = Modifier.align(Alignment.CenterEnd)) {
             Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.shopping_list_more_options_cd), tint = contentColor)
         }
     }
