@@ -304,6 +304,17 @@ class RecipeRepository(
             // shouldn't stop the recipe from loading the usual way.
         }
 
+        // An AI-generated recipe not found above (not in [detailCache] — e.g. the app cold-
+        // started since it was generated — and never favorited) has nowhere left to come from.
+        // Spoonacular has never heard of this synthetic id and 404s on it every time (with a
+        // genuinely bizarre old-Tomcat error page as the body, logged loudly server-side) —
+        // fail cleanly here instead of spending a network round-trip finding that out again.
+        // A favorited AI recipe never reaches this point at all (returned above); this only
+        // affects one the household generated but didn't save anywhere durable.
+        if (mealId.startsWith(AI_ID_PREFIX)) {
+            return Result.failure(NoSuchElementException("AI recipe $mealId not found"))
+        }
+
         return try {
             val requestData = hashMapOf("householdId" to householdId, "id" to mealId)
             val result = functions.getHttpsCallable("getRecipeInformation").call(requestData).await()
@@ -898,7 +909,7 @@ class RecipeRepository(
         val steps = (map["instructions"] as? List<*>)?.mapNotNull { (it as? String)?.trim()?.takeIf { s -> s.isNotEmpty() } }.orEmpty()
         val instructions = steps.mapIndexed { index, step -> "${index + 1}. $step" }.joinToString("\n").takeIf { it.isNotBlank() }
         return RecipeDetail(
-            id = "ai-${UUID.randomUUID()}",
+            id = "$AI_ID_PREFIX${UUID.randomUUID()}",
             name = title,
             thumbnailUrl = null,
             category = null,
@@ -941,6 +952,11 @@ class RecipeRepository(
     companion object {
         /** Id prefix for hand-entered recipes (see [saveCustomRecipe]) — lets [getRecipeDetail] route straight to Firestore instead of guessing from a failed Spoonacular lookup. */
         const val CUSTOM_ID_PREFIX = "custom-"
+
+        /** Id prefix for AI-generated recipes (see [mapGeneratedRecipeToDetail]) — [getRecipeDetail]
+         *  uses this to recognize a synthetic id it must never pass to Spoonacular (which has never
+         *  heard of it and 404s), same reasoning as [CUSTOM_ID_PREFIX]. */
+        const val AI_ID_PREFIX = "ai-"
 
         /** Recipes per page for [browseAllRecipes]/[searchRecipesByName] — also what each "load more" call's `offset` advances by. */
         const val PAGE_SIZE = 20

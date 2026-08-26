@@ -1391,6 +1391,17 @@ export const getRecipeInformation = onCall(
     if (!id || typeof id !== "string") {
       throw new HttpsError("invalid-argument", "id is required.");
     }
+    // An "ai-"/"custom-"-prefixed id is this household's own AI-generated or hand-entered
+    // recipe — Spoonacular has never heard of it and reliably 404s (with a bizarre, unrelated
+    // old-Tomcat error page as the body — some quirk of Spoonacular's own infra, not anything
+    // this app does), which used to get logged as a scary-looking "Spoonacular API returned an
+    // error" on every occurrence. The client is now expected to never send one of these in the
+    // first place (see RecipeRepository.getRecipeDetail's own guard), but this stays as a clean
+    // failure for any client build that predates that fix, instead of the noisy Spoonacular
+    // round-trip.
+    if (!isCacheableRecipeId(id)) {
+      throw new HttpsError("not-found", "synthetic_recipe_id");
+    }
     await requirePremiumHousehold(uid, householdId);
 
     const cached = await getFreshCache<RecipeDetailPayload>("recipeDetailCache", id, RECIPE_DETAIL_CACHE_TTL_MS);

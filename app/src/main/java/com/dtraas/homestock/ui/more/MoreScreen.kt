@@ -52,7 +52,6 @@ import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
@@ -167,6 +166,7 @@ import com.dtraas.homestock.ui.components.ProductImage
 import com.dtraas.homestock.ui.components.ProfileEditDialog
 import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.components.SearchField
+import com.dtraas.homestock.ui.components.SheetActionRow
 import com.dtraas.homestock.ui.components.SheetChip
 import com.dtraas.homestock.ui.components.SheetEyebrow
 import com.dtraas.homestock.ui.components.SheetPrimaryButton
@@ -275,8 +275,6 @@ fun MoreScreen(
     val debugPremiumOverride by billingRepository.debugPremiumOverride.collectAsState()
     val storeRepository = application.container.storeRepository
     val stores by storeRepository.observeStores().collectAsState(initial = emptyList())
-    val aisleOrderRepository = application.container.aisleOrderRepository
-    val aisleOrder by aisleOrderRepository.observeAisleOrder().collectAsState(initial = aisleOrderRepository.defaultOrder)
     val exportPreferences = application.container.exportPreferences
     val lastExportTimestamp by exportPreferences.lastExportTimestamp.collectAsState()
     val shoppingListRepository = application.container.shoppingListRepository
@@ -1010,12 +1008,8 @@ fun MoreScreen(
 
     if (showAisleOrderDialog) {
         AisleOrderDialog(
-            order = aisleOrder,
-            onMove = { from, to ->
-                val reordered = aisleOrder.toMutableList().apply { add(to, removeAt(from)) }
-                coroutineScope.launch { aisleOrderRepository.setAisleOrder(reordered) }
-            },
-            onReset = { coroutineScope.launch { aisleOrderRepository.setAisleOrder(aisleOrderRepository.defaultOrder) } },
+            stores = stores,
+            onSetOrder = { store, order -> coroutineScope.launch { storeRepository.setAisleOrder(store, order) } },
             onDismiss = { showAisleOrderDialog = false },
         )
     }
@@ -2440,68 +2434,138 @@ private fun StoresDialog(
     }
 }
 
+/** [store]'s own custom [StoreEntity.aisleOrder] turned into a full, always-11-long [Category]
+ *  list — the explicitly ordered ones first, then every category the household hasn't placed
+ *  yet, appended in [Category]'s own fixed [Category.sortOrder] order (also the entire list, for
+ *  a store that's never been customized at all — [StoreEntity.aisleOrder] empty). Same fallback
+ *  merge as `ShoppingListViewModel`'s own AISLE-mode rank map, just materialized as an ordered
+ *  list here instead of a rank lookup, since this dialog needs an actual sequence to render and
+ *  reorder rather than just something to sort by. */
+private fun fullAisleOrderFor(store: StoreEntity): List<Category> {
+    val custom = store.aisleOrder.mapNotNull { key -> Category.entries.find { it.storageKey == key } }
+    val remaining = Category.entries.sortedBy { it.sortOrder }.filterNot { it in custom }
+    return custom + remaining
+}
+
 /**
- * Reorders the household's custom gangvolgorde (see [AisleOrderRepository]) — up/down arrows on
- * each of the (fixed, always-11) [Category] rows rather than [ReorderableStoreList]'s drag
- * gesture below: a short, fixed-length list is just as easy to reorder a step at a time, without
- * that machinery. [onMove] takes the row's current and target index directly (not a
- * previous/next-neighbor pair like [StoresDialog]'s own onMove) since there's no separate
- * sortOrder field here to compute a new value for — the whole list is simply rewritten in its
- * new order and persisted as one array.
+ * Picks which store to edit, then reorders that store's own gangvolgorde (see
+ * [StoreEntity.aisleOrder]) — up/down arrows on each of the (fixed, always-11) [Category] rows
+ * rather than [ReorderableStoreList]'s drag gesture below: a short, fixed-length list is just as
+ * easy to reorder a step at a time, without that machinery. Two steps, not a single combined
+ * screen, because a household with several stores needs to pick one before "up"/"down" means
+ * anything — same "pick, then edit" shape as [StoresDialog] itself picking a store to rename/
+ * delete, just one level deeper here.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AisleOrderDialog(
-    order: List<Category>,
-    onMove: (from: Int, to: Int) -> Unit,
-    onReset: () -> Unit,
+    stores: List<StoreEntity>,
+    onSetOrder: (StoreEntity, List<Category>) -> Unit,
     onDismiss: () -> Unit,
 ) {
+    var editingStore by remember { mutableStateOf<StoreEntity?>(null) }
+
     HomeStockBottomSheet(onDismissRequest = onDismiss) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .padding(sheetContentPadding),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-        ) {
-            SheetTitle(
-                title = stringResource(R.string.more_aisle_order_title),
-                subtitle = stringResource(R.string.more_aisle_order_subtitle),
-            )
-            Column {
-                order.forEachIndexed { index, category ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = (index + 1).toString(),
-                            style = MaterialTheme.typography.labelLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.width(22.dp),
-                        )
-                        Icon(
-                            imageVector = category.icon,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp),
-                        )
-                        Text(
-                            text = stringResource(category.displayNameRes),
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.weight(1f).padding(start = 12.dp),
-                        )
-                        IconButton(onClick = { onMove(index, index - 1) }, enabled = index > 0) {
-                            Icon(Icons.Filled.KeyboardArrowUp, contentDescription = stringResource(R.string.more_aisle_order_move_up_cd))
-                        }
-                        IconButton(onClick = { onMove(index, index + 1) }, enabled = index < order.lastIndex) {
-                            Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.more_aisle_order_move_down_cd))
+        val store = editingStore
+        if (store == null) {
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(sheetContentPadding),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                SheetTitle(
+                    title = stringResource(R.string.more_aisle_order_title),
+                    subtitle = stringResource(R.string.more_aisle_order_subtitle),
+                )
+                if (stores.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.more_aisle_order_no_stores),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                } else {
+                    Column {
+                        stores.forEach { entry ->
+                            SheetActionRow(
+                                icon = Icons.Filled.Storefront,
+                                title = entry.name,
+                                onClick = { editingStore = entry },
+                            )
                         }
                     }
                 }
             }
-            OutlinedButton(onClick = onReset, modifier = Modifier.fillMaxWidth()) {
-                Text(stringResource(R.string.more_aisle_order_reset))
+        } else {
+            var order by remember(store.id) { mutableStateOf(fullAisleOrderFor(store)) }
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .verticalScroll(rememberScrollState())
+                    .padding(sheetContentPadding),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = { editingStore = null }, modifier = Modifier.padding(end = 4.dp)) {
+                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
+                    }
+                    SheetTitle(
+                        title = store.name,
+                        subtitle = stringResource(R.string.more_aisle_order_store_subtitle),
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Column {
+                    order.forEachIndexed { index, category ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = (index + 1).toString(),
+                                style = MaterialTheme.typography.labelLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.width(22.dp),
+                            )
+                            Icon(
+                                imageVector = category.icon,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp),
+                            )
+                            Text(
+                                text = stringResource(category.displayNameRes),
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.weight(1f).padding(start = 12.dp),
+                            )
+                            IconButton(
+                                onClick = {
+                                    order = order.toMutableList().apply { add(index - 1, removeAt(index)) }
+                                    onSetOrder(store, order)
+                                },
+                                enabled = index > 0,
+                            ) {
+                                Icon(Icons.Filled.KeyboardArrowUp, contentDescription = stringResource(R.string.more_aisle_order_move_up_cd))
+                            }
+                            IconButton(
+                                onClick = {
+                                    order = order.toMutableList().apply { add(index + 1, removeAt(index)) }
+                                    onSetOrder(store, order)
+                                },
+                                enabled = index < order.lastIndex,
+                            ) {
+                                Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.more_aisle_order_move_down_cd))
+                            }
+                        }
+                    }
+                }
+                OutlinedButton(
+                    onClick = {
+                        order = Category.entries.sortedBy { it.sortOrder }
+                        onSetOrder(store, order)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(R.string.more_aisle_order_reset))
+                }
             }
         }
     }

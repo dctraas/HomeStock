@@ -204,7 +204,6 @@ fun ShoppingListScreen(onNavigateToShoppingMode: (String?) -> Unit = {}) {
                     application.container.shoppingListsRepository,
                     application.container.activityLogRepository,
                     application.container.inventoryRepository,
-                    application.container.aisleOrderRepository,
                     defaultListName,
                 )
             }

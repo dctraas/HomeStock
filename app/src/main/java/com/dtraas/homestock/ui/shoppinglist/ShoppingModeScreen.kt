@@ -114,19 +114,24 @@ fun ShoppingModeScreen(listId: String?, onClose: () -> Unit) {
                     application.container.shoppingListsRepository,
                     application.container.activityLogRepository,
                     application.container.inventoryRepository,
-                    application.container.aisleOrderRepository,
                     defaultListName,
                 )
             }
         },
     )
-    // Only needs to run once, on entry — selectList itself is a plain state write, not a
-    // reactive subscription, so there's nothing to keep re-applying on every recomposition.
-    LaunchedEffect(listId) { viewModel.selectList(listId) }
+    // Only needs to run once, on entry — selectList and onSortModeChange are both plain state
+    // writes, not reactive subscriptions, so there's nothing to keep re-applying on every
+    // recomposition. Forcing AISLE here — regardless of whatever sort mode ShoppingListScreen's
+    // own (separate) ShoppingListViewModel instance happens to be in — is what makes
+    // [groupedByStore] below already come back category-ordered per store; this screen has no
+    // sort-mode toggle of its own, walking the aisles is the entire point of being here.
+    LaunchedEffect(listId) {
+        viewModel.selectList(listId)
+        viewModel.onSortModeChange(ShoppingListSortMode.AISLE)
+    }
 
     val activeList by viewModel.activeList.collectAsState()
     val groupedByStore by viewModel.groupedByStore.collectAsState()
-    val aisleOrder by viewModel.aisleOrder.collectAsState()
     val allItems = remember(groupedByStore) { groupedByStore.values.flatten() }
     val checkedCount = allItems.count { it.isChecked }
     val totalCount = allItems.size
@@ -138,19 +143,20 @@ fun ShoppingModeScreen(listId: String?, onClose: () -> Unit) {
             .takeIf { it.isNotEmpty() }?.sum()
     }
 
-    // Category (aisle), not store — this screen is about walking one route through the shelves,
-    // the opposite axis from ShoppingListScreen's own store-first grouping. Ordered by the
-    // household's own custom gangvolgorde (see AisleOrderRepository), not Category's fixed
-    // sortOrder — aisleOrder above already falls back to that fixed order on its own whenever
-    // nothing's been customized, so this needs no separate default case.
-    val groupedByCategory = remember(allItems, aisleOrder) {
-        val rankByCategory = aisleOrder.withIndex().associate { (index, category) -> category to index }
-        allItems.groupBy { Category.fromStorageKey(it.category) }
-            .toSortedMap(compareBy { rankByCategory[it] ?: Int.MAX_VALUE })
+    // Store first, then category (aisle) within each store — the household's own per-store
+    // gangvolgorde (see StoreEntity.aisleOrder), not Category's fixed sortOrder. groupedByStore
+    // is already both store-grouped AND, thanks to forcing AISLE sort mode above, sorted within
+    // each store by exactly that per-store order — re-grouping each store's already-sorted list
+    // by category here is then just bucketing consecutive same-category runs, in the order
+    // they're already in (Kotlin's groupBy preserves first-seen key order), no separate rank
+    // lookup needed on this side at all.
+    val groupedByStoreThenCategory = remember(groupedByStore) {
+        groupedByStore.mapValues { (_, itemsInStore) -> itemsInStore.groupBy { Category.fromStorageKey(it.category) } }
     }
-    val aisleNumberByCategory = remember(groupedByCategory) {
-        groupedByCategory.keys.withIndex().associate { (index, category) -> category to (index + 1) }
-    }
+    // Only worth a store-level header when there's more than one store's worth of items on this
+    // trip — a single-store list (the common case) goes straight to category headers, since
+    // "Albert Heijn" repeated on every screen it's the only store on would just be noise.
+    val showStoreHeaders = groupedByStore.size > 1
     var checkedSectionExpanded by rememberSaveable { mutableStateOf(false) }
 
     // On for the whole time this screen is open by default (a shopping trip is exactly the
@@ -169,7 +175,11 @@ fun ShoppingModeScreen(listId: String?, onClose: () -> Unit) {
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             ShoppingModeHeader(
-                listName = activeList.name,
+                // The one store this trip is actually for, when there's only one — matches the
+                // per-store gangvolgorde these rows are already sorted by; falls back to the
+                // list's own name once more than one store is involved, since there's no single
+                // store left to name here.
+                listName = groupedByStore.keys.filter { it.isNotBlank() }.singleOrNull() ?: activeList.name,
                 checkedCount = checkedCount,
                 totalCount = totalCount,
                 plannedTotal = plannedTotal,
@@ -198,19 +208,27 @@ fun ShoppingModeScreen(listId: String?, onClose: () -> Unit) {
                         contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        groupedByCategory.forEach { (category, itemsInCategory) ->
-                            val unchecked = itemsInCategory.filterNot { it.isChecked }
-                            if (unchecked.isEmpty()) return@forEach
-                            item(key = "header_${category.storageKey}") {
-                                ShoppingModeCategoryHeader(
-                                    category = category,
-                                    aisleNumber = aisleNumberByCategory.getValue(category),
-                                    itemCount = itemsInCategory.size,
-                                    modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
-                                )
+                        groupedByStoreThenCategory.forEach { (storeName, categoriesInStore) ->
+                            if (categoriesInStore.values.all { it.all { item -> item.isChecked } }) return@forEach
+                            if (showStoreHeaders) {
+                                item(key = "store_${storeName}") {
+                                    ShoppingModeStoreHeader(storeName = storeName, modifier = Modifier.padding(top = 12.dp, bottom = 4.dp))
+                                }
                             }
-                            items(unchecked, key = { it.id }) { item ->
-                                ShoppingModeItemRow(item = item, onCheckedChange = { checked -> viewModel.setChecked(item.id, checked) })
+                            categoriesInStore.entries.forEachIndexed { index, (category, itemsInCategory) ->
+                                val unchecked = itemsInCategory.filterNot { it.isChecked }
+                                if (unchecked.isEmpty()) return@forEachIndexed
+                                item(key = "header_${storeName}_${category.storageKey}") {
+                                    ShoppingModeCategoryHeader(
+                                        category = category,
+                                        aisleNumber = index + 1,
+                                        itemCount = itemsInCategory.size,
+                                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                                    )
+                                }
+                                items(unchecked, key = { it.id }) { item ->
+                                    ShoppingModeItemRow(item = item, onCheckedChange = { checked -> viewModel.setChecked(item.id, checked) })
+                                }
                             }
                         }
                         val checkedItems = allItems.filter { it.isChecked }
@@ -361,8 +379,23 @@ private fun ShoppingModeHeader(
     }
 }
 
+/** Store name, bold — only shown at all once this trip spans more than one store (see
+ *  [ShoppingModeScreen]'s own `showStoreHeaders`); each store's own aisle groups follow
+ *  underneath, gang-numbered from 1 again per store. A local, simpler cousin of
+ *  [ShoppingListScreen]'s file-private `StoreHeader` (icon + live item count) — this one has no
+ *  count of its own to show, since the aisle headers underneath already carry that per category. */
+@Composable
+private fun ShoppingModeStoreHeader(storeName: String, modifier: Modifier = Modifier) {
+    Text(
+        text = storeName.ifBlank { stringResource(R.string.store_geen) },
+        style = MaterialTheme.typography.titleLarge,
+        fontWeight = FontWeight.Bold,
+        modifier = modifier.fillMaxWidth().padding(horizontal = 4.dp),
+    )
+}
+
 /** One aisle's section header: category icon + name, "gang N · M items" trailing — the walking-
- *  order equivalent of [StoreHeader] one axis over (category instead of store). */
+ *  order equivalent of [ShoppingModeStoreHeader] one axis over (category instead of store). */
 @Composable
 private fun ShoppingModeCategoryHeader(category: Category, aisleNumber: Int, itemCount: Int, modifier: Modifier = Modifier) {
     Row(

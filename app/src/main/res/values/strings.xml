@@ -306,9 +306,11 @@
     <string name="more_stores_title">Winkels</string>
     <string name="more_stores_menu_subtitle">Namen en volgorde van je winkels</string>
     <string name="more_aisle_order_row_title">Gangvolgorde</string>
-    <string name="more_aisle_order_row_subtitle">Volgorde van productcategorieën in Winkelmodus en Winkelindeling</string>
+    <string name="more_aisle_order_row_subtitle">Volgorde van productcategorieën per winkel in Winkelmodus en Winkelindeling</string>
     <string name="more_aisle_order_title">Gangvolgorde</string>
-    <string name="more_aisle_order_subtitle">Zet categorieën in de volgorde waarin je ze in de winkel tegenkomt — geldt voor alle winkels</string>
+    <string name="more_aisle_order_subtitle">Kies een winkel om de gangvolgorde aan te passen</string>
+    <string name="more_aisle_order_store_subtitle">Zet categorieën in de volgorde waarin je ze in deze winkel tegenkomt</string>
+    <string name="more_aisle_order_no_stores">Voeg eerst een winkel toe bij Winkels om er een gangvolgorde voor in te stellen</string>
     <string name="more_aisle_order_move_up_cd">Omhoog</string>
     <string name="more_aisle_order_move_down_cd">Omlaag</string>
     <string name="more_aisle_order_reset">Standaardvolgorde herstellen</string>

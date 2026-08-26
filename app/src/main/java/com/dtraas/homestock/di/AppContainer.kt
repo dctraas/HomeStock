@@ -6,7 +6,6 @@ import com.dtraas.homestock.data.remote.OpenFoodFactsApi
 import com.dtraas.homestock.data.repository.AccountLinkRepository
 import com.dtraas.homestock.data.repository.ActivityLogRepository
 import com.dtraas.homestock.data.repository.AiRecognitionRepository
-import com.dtraas.homestock.data.repository.AisleOrderRepository
 import com.dtraas.homestock.data.repository.AnalyticsRepository
 import com.dtraas.homestock.data.repository.BillingRepository
 import com.dtraas.homestock.data.repository.DeviceProfile
@@ -177,10 +176,6 @@ class AppContainer(context: Context) {
 
     val storeRepository: StoreRepository by lazy {
         StoreRepository(firestore, householdSession)
-    }
-
-    val aisleOrderRepository: AisleOrderRepository by lazy {
-        AisleOrderRepository(firestore, householdSession)
     }
 
     val shoppingListsRepository: ShoppingListsRepository by lazy {

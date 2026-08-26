@@ -302,9 +302,11 @@
     <string name="more_stores_title">Geschäfte</string>
     <string name="more_stores_menu_subtitle">Namen und Reihenfolge deiner Geschäfte</string>
     <string name="more_aisle_order_row_title">Gangreihenfolge</string>
-    <string name="more_aisle_order_row_subtitle">Reihenfolge der Produktkategorien im Einkaufsmodus und in der Gangansicht</string>
+    <string name="more_aisle_order_row_subtitle">Reihenfolge der Produktkategorien pro Geschäft im Einkaufsmodus und in der Gangansicht</string>
     <string name="more_aisle_order_title">Gangreihenfolge</string>
-    <string name="more_aisle_order_subtitle">Ordne die Kategorien in der Reihenfolge, in der du sie im Laden triffst — gilt für alle Geschäfte</string>
+    <string name="more_aisle_order_subtitle">Wähle ein Geschäft, um seine Gangreihenfolge anzupassen</string>
+    <string name="more_aisle_order_store_subtitle">Ordne die Kategorien in der Reihenfolge, in der du sie in diesem Geschäft triffst</string>
+    <string name="more_aisle_order_no_stores">Füge zuerst unter Geschäfte ein Geschäft hinzu, um dafür eine Gangreihenfolge festzulegen</string>
     <string name="more_aisle_order_move_up_cd">Nach oben</string>
     <string name="more_aisle_order_move_down_cd">Nach unten</string>
     <string name="more_aisle_order_reset">Standardreihenfolge wiederherstellen</string>

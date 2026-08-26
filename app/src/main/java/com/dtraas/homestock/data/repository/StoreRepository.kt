@@ -1,6 +1,7 @@
 package com.dtraas.homestock.data.repository
 
 import com.dtraas.homestock.data.local.entity.StoreEntity
+import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.remote.observeSnapshots
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -61,5 +62,12 @@ class StoreRepository(
         }
         if (newSortOrder == store.sortOrder) return
         storesCollection(householdId).document(store.id).update("sortOrder", newSortOrder).await()
+    }
+
+    /** Persists this store's own custom gangvolgorde — see [StoreEntity.aisleOrder]'s own doc
+     *  for the fallback merge that happens once this is read back. */
+    suspend fun setAisleOrder(store: StoreEntity, order: List<Category>) {
+        val householdId = householdSession.householdId.value ?: return
+        storesCollection(householdId).document(store.id).update("aisleOrder", order.map { it.storageKey }).await()
     }
 }

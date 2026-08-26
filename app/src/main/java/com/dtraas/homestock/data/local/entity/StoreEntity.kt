@@ -12,10 +12,21 @@ data class StoreEntity(
     val id: String,
     val name: String,
     val sortOrder: Double,
+    // The household's own walking order through THIS store's aisles, as an ordered list of
+    // Category storage keys — what decides the "gang N" order Winkelmodus (see
+    // ShoppingModeScreen) and the "Winkelindeling" sort mode (ShoppingListViewModel/
+    // ShoppingListSortMode.AISLE) group this store's products in, instead of Category's own
+    // fixed sortOrder. Empty (never customized, or a category the household added after
+    // customizing) means "fall back to Category's own sortOrder for that category" — see
+    // ShoppingListViewModel.groupedByStore's own AISLE-mode rank map for exactly how that
+    // fallback merge happens. Deliberately per-store, not one household-wide order: two real
+    // supermarkets rarely lay their aisles out the same way.
+    val aisleOrder: List<String> = emptyList(),
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
         "name" to name,
         "sortOrder" to sortOrder,
+        "aisleOrder" to aisleOrder,
     )
 
     companion object {
@@ -25,6 +36,7 @@ data class StoreEntity(
                 id = document.id,
                 name = name,
                 sortOrder = document.getDouble("sortOrder") ?: 0.0,
+                aisleOrder = (document.get("aisleOrder") as? List<*>)?.filterIsInstance<String>().orEmpty(),
             )
         }
     }
