@@ -48,10 +48,17 @@ class ReceiptQueueWorker(
 
     private fun postNotification(addedItems: Int) {
         val context = applicationContext
+        // Every item this queue adds goes through InventoryRepository.recordScan, which already
+        // logs its own "toegevoegd" entry (see activityLogRepository.logScanned) — so routing
+        // the tap to Meldingen (reusing the same action HomeStockMessagingService's household-
+        // activity push uses) surfaces exactly the products this notification is about, freshest
+        // first, instead of landing on whatever the app's default screen happens to be.
         val contentIntent = PendingIntent.getActivity(
             context,
             0,
-            Intent(context, MainActivity::class.java),
+            Intent(context, MainActivity::class.java).apply {
+                action = MainActivity.ACTION_SHOW_HOUSEHOLD_ACTIVITY
+            },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
         val builder = NotificationCompat.Builder(context, ExpiryCheckWorker.CHANNEL_ID)
