@@ -1,6 +1,7 @@
 package com.dtraas.homestock.data.repository
 
 import android.net.Uri
+import android.util.Log
 import com.android.billingclient.api.Purchase
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.remote.observeSnapshots
@@ -244,8 +245,12 @@ class HouseholdMembersRepository(
      * Unlike the name, this isn't synced reactively on every app start — re-uploading the
      * actual image file on every cold start would waste data for no benefit — so call this
      * explicitly right after [DeviceProfile.setPhotoFromUri] or [DeviceProfile.clearPhoto].
-     * A failed upload (e.g. no connection) is silently skipped; it'll simply be retried the
-     * next time the photo is changed.
+     * A failed upload (e.g. no connection, or the Storage bucket not actually provisioned in
+     * the Firebase console — a manual one-time setup step easy to miss) is logged (Logcat, tag
+     * [TAG]) rather than surfaced to the household — there's no obvious place in the profile
+     * dialog's flow to show an error for a background sync — but it used to be silently
+     * swallowed with no trace at all, which made "why does Activiteit show the wrong thing"
+     * impossible to actually diagnose. It'll simply be retried the next time the photo changes.
      */
     suspend fun syncCurrentDevicePhoto() {
         val householdId = householdSession.householdId.value ?: return
@@ -260,14 +265,14 @@ class HouseholdMembersRepository(
             runCatching {
                 membersCollection(householdId).document(uid)
                     .set(mapOf("photoUrl" to FieldValue.delete()), SetOptions.merge()).await()
-            }
+            }.onFailure { e -> Log.w(TAG, "syncCurrentDevicePhoto: clearing photoUrl failed", e) }
         } else {
             runCatching {
                 val uploadedUrl = photoRef(householdId, uid).putFile(Uri.fromFile(File(localPath))).await()
                     .storage.downloadUrl.await().toString()
                 membersCollection(householdId).document(uid)
                     .set(mapOf("photoUrl" to uploadedUrl), SetOptions.merge()).await()
-            }
+            }.onFailure { e -> Log.w(TAG, "syncCurrentDevicePhoto: upload/write failed", e) }
         }
     }
 
@@ -336,5 +341,6 @@ class HouseholdMembersRepository(
 
     companion object {
         const val FREE_MEMBER_LIMIT = 2
+        private const val TAG = "HouseholdMembersRepo"
     }
 }
