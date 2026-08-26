@@ -63,10 +63,13 @@ import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.ImportExport
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PrivacyTip
+import androidx.compose.material.icons.filled.Reorder
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
@@ -272,6 +275,8 @@ fun MoreScreen(
     val debugPremiumOverride by billingRepository.debugPremiumOverride.collectAsState()
     val storeRepository = application.container.storeRepository
     val stores by storeRepository.observeStores().collectAsState(initial = emptyList())
+    val aisleOrderRepository = application.container.aisleOrderRepository
+    val aisleOrder by aisleOrderRepository.observeAisleOrder().collectAsState(initial = aisleOrderRepository.defaultOrder)
     val exportPreferences = application.container.exportPreferences
     val lastExportTimestamp by exportPreferences.lastExportTimestamp.collectAsState()
     val shoppingListRepository = application.container.shoppingListRepository
@@ -313,6 +318,7 @@ fun MoreScreen(
     var showProfileDialog by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
     var showStoresDialog by remember { mutableStateOf(false) }
+    var showAisleOrderDialog by remember { mutableStateOf(false) }
     var showNotificationsDialog by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
     var showImportExportDialog by remember { mutableStateOf(false) }
@@ -697,6 +703,7 @@ fun MoreScreen(
         // calling stringResource(...) twice (once here, once inside the row itself) per entry.
         val householdRowTitle = stringResource(R.string.more_household_row_title)
         val storesTitle = stringResource(R.string.more_stores_title)
+        val aisleOrderTitle = stringResource(R.string.more_aisle_order_row_title)
         val statisticsTitle = stringResource(R.string.more_statistics_title)
         val autoRestockTitle = stringResource(R.string.more_auto_restock_title)
         val notificationsTitle = stringResource(R.string.more_notifications_menu_title)
@@ -760,6 +767,16 @@ fun MoreScreen(
                                 // not a live count — same reasoning as Meldingen's row above.
                                 subtitle = stringResource(R.string.more_stores_menu_subtitle),
                                 onClick = { showStoresDialog = true },
+                            )
+                        }
+                    } else null,
+                    if (matches(aisleOrderTitle)) {
+                        {
+                            SettingsRow(
+                                icon = Icons.Filled.Reorder,
+                                title = aisleOrderTitle,
+                                subtitle = stringResource(R.string.more_aisle_order_row_subtitle),
+                                onClick = { showAisleOrderDialog = true },
                             )
                         }
                     } else null,
@@ -988,6 +1005,18 @@ fun MoreScreen(
             },
             onMove = { store, previous, next -> coroutineScope.launch { storeRepository.moveStore(store, previous, next) } },
             onDismiss = { showStoresDialog = false },
+        )
+    }
+
+    if (showAisleOrderDialog) {
+        AisleOrderDialog(
+            order = aisleOrder,
+            onMove = { from, to ->
+                val reordered = aisleOrder.toMutableList().apply { add(to, removeAt(from)) }
+                coroutineScope.launch { aisleOrderRepository.setAisleOrder(reordered) }
+            },
+            onReset = { coroutineScope.launch { aisleOrderRepository.setAisleOrder(aisleOrderRepository.defaultOrder) } },
+            onDismiss = { showAisleOrderDialog = false },
         )
     }
 
@@ -1785,11 +1814,13 @@ private fun MoreScreenHeader(searchQuery: String, onSearchQueryChange: (String) 
 }
 
 /**
- * Profile identity row — 56dp squircle avatar (photo, or this device's initials), the device's
- * own name, and the household's name, so the one thing every household member sets up early
- * (their name) and the household they're in are both visible without opening anything. Used to
- * be pinned inside [MoreScreenHeader]'s green gradient; now the scrolling list's own first row
- * instead, on explicit request, once the header needed the room for a settings search field.
+ * Profile identity row — a 40dp avatar (photo, or this device's initials) standing in for the
+ * usual leading icon, the device's own name, and the household's name as subtitle. Flat row, no
+ * Card/background of its own — same [SettingsRow] structure/padding/typography every other
+ * settings row uses, per explicit request ("dezelfde layout als de overige menu items, niet
+ * hetzelfde als HomeStock Premium"): this is a row among rows, not a second promotional card.
+ * Used to be pinned inside [MoreScreenHeader]'s green gradient; now the scrolling list's own
+ * first row instead, once the header needed the room for a settings search field.
  */
 @Composable
 private fun ProfileRow(
@@ -1799,61 +1830,52 @@ private fun ProfileRow(
     onClick: () -> Unit,
 ) {
     val trimmedName = displayName?.trim().takeUnless { it.isNullOrEmpty() }
-    Card(
-        onClick = onClick,
-        shape = SoftCardShape,
-        modifier = Modifier.fillMaxWidth(),
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Surface(
+            shape = CircleShape,
+            color = SageGreenPrimaryContainer,
+            modifier = Modifier.size(40.dp),
         ) {
-            Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = SageGreenPrimaryContainer,
-                modifier = Modifier.size(56.dp),
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    if (photoPath != null) {
-                        AsyncImage(
-                            model = File(photoPath),
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize(),
-                        )
-                    } else if (trimmedName != null) {
-                        Text(
-                            text = initialsOf(trimmedName),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = OnSageGreenPrimaryContainer,
-                        )
-                    } else {
-                        Icon(
-                            imageVector = Icons.Filled.AccountCircle,
-                            contentDescription = null,
-                            tint = OnSageGreenPrimaryContainer,
-                            modifier = Modifier.size(32.dp),
-                        )
-                    }
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                if (photoPath != null) {
+                    AsyncImage(
+                        model = File(photoPath),
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else if (trimmedName != null) {
+                    Text(
+                        text = initialsOf(trimmedName),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = OnSageGreenPrimaryContainer,
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.AccountCircle,
+                        contentDescription = null,
+                        tint = OnSageGreenPrimaryContainer,
+                        modifier = Modifier.size(22.dp),
+                    )
                 }
             }
-            Column(modifier = Modifier.weight(1f).padding(start = 14.dp)) {
-                Text(
-                    text = trimmedName ?: stringResource(R.string.more_household_member_unnamed),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.more_household_default_name),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            Icon(
-                imageVector = Icons.Filled.ChevronRight,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+        }
+        Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
+            Text(
+                text = trimmedName ?: stringResource(R.string.more_household_member_unnamed),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            Text(
+                text = householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.more_household_default_name),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -2415,6 +2437,73 @@ private fun StoresDialog(
                 TextButton(onClick = { pendingDelete = null }) { Text(stringResource(R.string.common_cancel)) }
             },
         )
+    }
+}
+
+/**
+ * Reorders the household's custom gangvolgorde (see [AisleOrderRepository]) — up/down arrows on
+ * each of the (fixed, always-11) [Category] rows rather than [ReorderableStoreList]'s drag
+ * gesture below: a short, fixed-length list is just as easy to reorder a step at a time, without
+ * that machinery. [onMove] takes the row's current and target index directly (not a
+ * previous/next-neighbor pair like [StoresDialog]'s own onMove) since there's no separate
+ * sortOrder field here to compute a new value for — the whole list is simply rewritten in its
+ * new order and persisted as one array.
+ */
+@Composable
+private fun AisleOrderDialog(
+    order: List<Category>,
+    onMove: (from: Int, to: Int) -> Unit,
+    onReset: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(sheetContentPadding),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            SheetTitle(
+                title = stringResource(R.string.more_aisle_order_title),
+                subtitle = stringResource(R.string.more_aisle_order_subtitle),
+            )
+            Column {
+                order.forEachIndexed { index, category ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = (index + 1).toString(),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.width(22.dp),
+                        )
+                        Icon(
+                            imageVector = category.icon,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp),
+                        )
+                        Text(
+                            text = stringResource(category.displayNameRes),
+                            style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.weight(1f).padding(start = 12.dp),
+                        )
+                        IconButton(onClick = { onMove(index, index - 1) }, enabled = index > 0) {
+                            Icon(Icons.Filled.KeyboardArrowUp, contentDescription = stringResource(R.string.more_aisle_order_move_up_cd))
+                        }
+                        IconButton(onClick = { onMove(index, index + 1) }, enabled = index < order.lastIndex) {
+                            Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.more_aisle_order_move_down_cd))
+                        }
+                    }
+                }
+            }
+            OutlinedButton(onClick = onReset, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.more_aisle_order_reset))
+            }
+        }
     }
 }
 

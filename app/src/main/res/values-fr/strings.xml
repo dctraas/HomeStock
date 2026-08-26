@@ -301,6 +301,13 @@
     <string name="more_language_option_es">Espagnol</string>
     <string name="more_stores_title">Magasins</string>
     <string name="more_stores_menu_subtitle">Noms et ordre de tes magasins</string>
+    <string name="more_aisle_order_row_title">Ordre des rayons</string>
+    <string name="more_aisle_order_row_subtitle">Ordre des catégories de produits en Mode course et en vue par rayon</string>
+    <string name="more_aisle_order_title">Ordre des rayons</string>
+    <string name="more_aisle_order_subtitle">Classe les catégories dans l\'ordre où tu les croises en magasin — s\'applique à tous les magasins</string>
+    <string name="more_aisle_order_move_up_cd">Monter</string>
+    <string name="more_aisle_order_move_down_cd">Descendre</string>
+    <string name="more_aisle_order_reset">Rétablir l\'ordre par défaut</string>
     <string name="more_stores_empty">Aucun magasin ajouté pour l\'instant.</string>
     <string name="more_stores_remove_format">Supprimer %1$s</string>
     <string name="more_stores_subtitle">Ta liste de courses est groupée par magasin, dans cet ordre.</string>

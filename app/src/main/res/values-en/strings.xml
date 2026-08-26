@@ -301,6 +301,13 @@
     <string name="more_language_option_es">Spanish</string>
     <string name="more_stores_title">Stores</string>
     <string name="more_stores_menu_subtitle">Names and order of your stores</string>
+    <string name="more_aisle_order_row_title">Aisle order</string>
+    <string name="more_aisle_order_row_subtitle">Order of product categories in Shopping mode and Aisle view</string>
+    <string name="more_aisle_order_title">Aisle order</string>
+    <string name="more_aisle_order_subtitle">Put categories in the order you pass them in the store — applies to every store</string>
+    <string name="more_aisle_order_move_up_cd">Move up</string>
+    <string name="more_aisle_order_move_down_cd">Move down</string>
+    <string name="more_aisle_order_reset">Reset to default order</string>
     <string name="more_stores_empty">No stores added yet.</string>
     <string name="more_stores_remove_format">Remove %1$s</string>
     <string name="more_stores_subtitle">Your shopping list is grouped by store, in this order.</string>

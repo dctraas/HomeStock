@@ -11,6 +11,7 @@ import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.InventoryStockStatus
 import com.dtraas.homestock.data.model.MeasurementUnit
 import com.dtraas.homestock.data.repository.ActivityLogRepository
+import com.dtraas.homestock.data.repository.AisleOrderRepository
 import com.dtraas.homestock.data.repository.InventoryRepository
 import com.dtraas.homestock.data.repository.ShoppingListRepository
 import com.dtraas.homestock.data.repository.ShoppingListsRepository
@@ -50,6 +51,7 @@ class ShoppingListViewModel(
     private val shoppingListsRepository: ShoppingListsRepository,
     activityLogRepository: ActivityLogRepository,
     inventoryRepository: InventoryRepository,
+    private val aisleOrderRepository: AisleOrderRepository,
     defaultListName: String,
 ) : ViewModel() {
 
@@ -58,6 +60,14 @@ class ShoppingListViewModel(
 
     val stores: StateFlow<List<StoreEntity>> =
         storeRepository.observeStores().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** The household's own custom walking order through a store's aisles — see
+     *  [AisleOrderRepository]'s own doc. Feeds both [groupedByStore]'s AISLE sort mode below and
+     *  Winkelmodus's category grouping (ShoppingModeScreen reads this same StateFlow off its own
+     *  instance of this ViewModel). */
+    val aisleOrder: StateFlow<List<Category>> =
+        aisleOrderRepository.observeAisleOrder()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), aisleOrderRepository.defaultOrder)
 
     private val defaultListMeta = ShoppingListMeta(id = null, name = defaultListName, sortOrder = -1.0)
 
@@ -94,10 +104,15 @@ class ShoppingListViewModel(
             activeListId.flatMapLatest { listId -> shoppingListRepository.observeItemsForList(listId) },
             storeRepository.observeStores(),
             sortMode,
-        ) { items, knownStores, mode ->
+            aisleOrder,
+        ) { items, knownStores, mode, order ->
             val sortOrderByName = knownStores.associate { it.name to it.sortOrder }
             val grouped = items.groupBy { it.store }
             val ordered = if (mode == ShoppingListSortMode.AISLE) {
+                // The household's own custom gangvolgorde (see [AisleOrderRepository]) rather
+                // than Category's fixed sortOrder — falls back to that fixed order automatically
+                // whenever nothing's been customized yet (see aisleOrder's own default).
+                val rankByCategory = order.withIndex().associate { (index, category) -> category to index }
                 // isChecked stays the primary key even here — an already-checked item
                 // shouldn't jump back among the unchecked ones just because its category
                 // happens to sort earlier than theirs.
@@ -105,7 +120,7 @@ class ShoppingListViewModel(
                     itemsInStore.sortedWith(
                         compareBy(
                             { it.isChecked },
-                            { Category.fromStorageKey(it.category).sortOrder },
+                            { rankByCategory[Category.fromStorageKey(it.category)] ?: Int.MAX_VALUE },
                             { it.name.lowercase() },
                         ),
                     )
@@ -164,6 +179,11 @@ class ShoppingListViewModel(
 
     fun onSortModeChange(mode: ShoppingListSortMode) {
         sortMode.value = mode
+    }
+
+    /** Persists a new custom gangvolgorde — see [AisleOrderRepository.setAisleOrder]. */
+    fun setAisleOrder(order: List<Category>) {
+        viewModelScope.launch { aisleOrderRepository.setAisleOrder(order) }
     }
 
     fun selectList(listId: String?) {

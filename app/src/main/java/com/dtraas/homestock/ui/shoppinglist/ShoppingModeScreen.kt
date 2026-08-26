@@ -114,6 +114,7 @@ fun ShoppingModeScreen(listId: String?, onClose: () -> Unit) {
                     application.container.shoppingListsRepository,
                     application.container.activityLogRepository,
                     application.container.inventoryRepository,
+                    application.container.aisleOrderRepository,
                     defaultListName,
                 )
             }
@@ -125,6 +126,7 @@ fun ShoppingModeScreen(listId: String?, onClose: () -> Unit) {
 
     val activeList by viewModel.activeList.collectAsState()
     val groupedByStore by viewModel.groupedByStore.collectAsState()
+    val aisleOrder by viewModel.aisleOrder.collectAsState()
     val allItems = remember(groupedByStore) { groupedByStore.values.flatten() }
     val checkedCount = allItems.count { it.isChecked }
     val totalCount = allItems.size
@@ -137,9 +139,14 @@ fun ShoppingModeScreen(listId: String?, onClose: () -> Unit) {
     }
 
     // Category (aisle), not store — this screen is about walking one route through the shelves,
-    // the opposite axis from ShoppingListScreen's own store-first grouping.
-    val groupedByCategory = remember(allItems) {
-        allItems.groupBy { Category.fromStorageKey(it.category) }.toSortedMap(compareBy { it.sortOrder })
+    // the opposite axis from ShoppingListScreen's own store-first grouping. Ordered by the
+    // household's own custom gangvolgorde (see AisleOrderRepository), not Category's fixed
+    // sortOrder — aisleOrder above already falls back to that fixed order on its own whenever
+    // nothing's been customized, so this needs no separate default case.
+    val groupedByCategory = remember(allItems, aisleOrder) {
+        val rankByCategory = aisleOrder.withIndex().associate { (index, category) -> category to index }
+        allItems.groupBy { Category.fromStorageKey(it.category) }
+            .toSortedMap(compareBy { rankByCategory[it] ?: Int.MAX_VALUE })
     }
     val aisleNumberByCategory = remember(groupedByCategory) {
         groupedByCategory.keys.withIndex().associate { (index, category) -> category to (index + 1) }

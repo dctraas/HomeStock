@@ -237,6 +237,7 @@ fun MealPlanScreen(
                 onSelectDate = viewModel::selectDate,
                 onPreviousWeek = viewModel::goToPreviousWeek,
                 onNextWeek = viewModel::goToNextWeek,
+                onOpenWeekOverview = { onNavigateToWeekOverview(uiState.date) },
             )
             Column(
                 modifier = Modifier
@@ -287,7 +288,6 @@ fun MealPlanScreen(
                     onMarkEaten = { meal -> viewModel.markMealEaten(MealSlot.DINNER, meal) },
                     onMarkWasted = { meal -> viewModel.markMealWasted(MealSlot.DINNER, meal) },
                     onStartCookMode = onNavigateToCookMode,
-                    onOpenWeekOverview = { onNavigateToWeekOverview(uiState.date) },
                 )
                 MealSlot.ORDERED.filter { it != MealSlot.DINNER }.forEach { slot ->
                     CompactSlotCard(
@@ -359,6 +359,7 @@ private fun MealPlanHeader(
     onSelectDate: (LocalDate) -> Unit,
     onPreviousWeek: () -> Unit,
     onNextWeek: () -> Unit,
+    onOpenWeekOverview: () -> Unit,
 ) {
     val contentColor = LocalTopAppBarContentColor.current
     val locale = LocalConfiguration.current.locales[0]
@@ -370,13 +371,25 @@ private fun MealPlanHeader(
             .padding(horizontal = 16.dp, vertical = 4.dp)
             .padding(bottom = 14.dp),
     ) {
-        Text(
-            text = stringResource(R.string.meal_plan_this_week_title),
-            style = MaterialTheme.typography.headlineSmall,
-            color = contentColor,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
-        )
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Text(
+                text = stringResource(R.string.meal_plan_this_week_title),
+                style = MaterialTheme.typography.headlineSmall,
+                color = contentColor,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            // Altijd zichtbaar, in tegenstelling tot een eerdere plek op de uitgelichte
+            // avondeten-kaart — die rendert alleen zodra er een écht recept gepland staat voor
+            // de geselecteerde dag, dus stond het icoon soms simpelweg nergens.
+            IconButton(onClick = onOpenWeekOverview, modifier = Modifier.align(Alignment.CenterEnd)) {
+                Icon(
+                    Icons.Filled.CalendarMonth,
+                    contentDescription = stringResource(R.string.meal_plan_week_overview_cd),
+                    tint = contentColor,
+                )
+            }
+        }
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center,
@@ -517,7 +530,6 @@ private fun DinnerCard(
     onMarkEaten: (PlannedMeal) -> Unit,
     onMarkWasted: (PlannedMeal) -> Unit,
     onStartCookMode: (String) -> Unit,
-    onOpenWeekOverview: () -> Unit,
 ) {
     val featuredRecipe = planned.firstOrNull { it.recipeId != null }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -601,12 +613,6 @@ private fun DinnerCard(
                             }
                             OutlinedIconButton(onClick = { onSwap(featuredRecipe) }, modifier = Modifier.size(44.dp)) {
                                 Icon(Icons.Filled.SwapHoriz, contentDescription = stringResource(R.string.meal_plan_swap_cd))
-                            }
-                            // Naast het "Meer opties"-icoon hieronder, op uitdrukkelijk verzoek —
-                            // opent het weekoverzicht (zie WeekOverviewScreen) voor de week van de
-                            // hier getoonde dag.
-                            OutlinedIconButton(onClick = onOpenWeekOverview, modifier = Modifier.size(44.dp)) {
-                                Icon(Icons.Filled.CalendarMonth, contentDescription = stringResource(R.string.meal_plan_week_overview_cd))
                             }
                             Box {
                                 OutlinedIconButton(onClick = { showOverflow = true }, modifier = Modifier.size(44.dp)) {
