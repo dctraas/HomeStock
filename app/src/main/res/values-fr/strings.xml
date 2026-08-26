@@ -261,8 +261,8 @@
     <string name="more_theme_option_system">Système par défaut</string>
     <string name="more_theme_option_light">Clair</string>
     <string name="more_theme_option_dark">Sombre</string>
-    <string name="more_app_settings_title">App</string>
-    <string name="more_app_settings_subtitle_format">%1$s · %2$s</string>
+    <string name="more_app_settings_title">Affichage et langue</string>
+    <string name="more_app_settings_subtitle">Thème, taille du texte, contraste et langue</string>
     <string name="more_app_settings_preview_product_name">Lait</string>
     <string name="more_app_settings_preview_product_meta">Encore 4 jours · 1 L</string>
     <string name="more_accessibility_title">Accessibilité</string>

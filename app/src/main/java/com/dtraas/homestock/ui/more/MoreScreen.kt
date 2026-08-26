@@ -251,8 +251,6 @@ fun MoreScreen(
     val inventoryInsightNotificationsEnabled by notificationPreferences.inventoryInsightNotificationsEnabled.collectAsState()
     val premiumNotificationsEnabled by notificationPreferences.premiumNotificationsEnabled.collectAsState()
     val householdActivityNotificationsEnabled by notificationPreferences.householdActivityNotificationsEnabled.collectAsState()
-    val themePreferences = application.container.themePreferences
-    val themeMode by themePreferences.themeMode.collectAsState()
     val inventoryPreferences = application.container.inventoryPreferences
     val autoRestockEnabled by inventoryPreferences.autoRestockEnabled.collectAsState()
     val householdSession = application.container.householdSession
@@ -302,7 +300,6 @@ fun MoreScreen(
     val feedbackRepository = application.container.feedbackRepository
     val accountLinkRepository = application.container.accountLinkRepository
     val isAccountLinked by accountLinkRepository.observeIsLinked().collectAsState(initial = accountLinkRepository.linkedEmail != null)
-    val currentLanguage = AppLanguage.entries.find { it.tag == LocalConfiguration.current.locales[0].language } ?: AppLanguage.NL
 
     val coroutineScope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -791,11 +788,10 @@ fun MoreScreen(
                             SettingsRow(
                                 icon = Icons.Filled.Tune,
                                 title = stringResource(R.string.more_app_settings_title),
-                                subtitle = stringResource(
-                                    R.string.more_app_settings_subtitle_format,
-                                    stringResource(themeMode.labelRes()),
-                                    "${currentLanguage.flag} ${stringResource(currentLanguage.labelRes)}",
-                                ),
+                                // A static description of *what's configurable* here, not the
+                                // live values — the household can already see their own current
+                                // theme/taal without this row repeating it back to them.
+                                subtitle = stringResource(R.string.more_app_settings_subtitle),
                                 onClick = onNavigateToApp,
                             )
                         },
