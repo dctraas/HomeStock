@@ -708,15 +708,26 @@ async function fetchImportPage(url: URL): Promise<string> {
       redirect: "follow",
       signal: controller.signal,
       headers: {
-        // A plain browser-like UA — some recipe sites block requests with no/empty UA outright.
-        "user-agent": "Mozilla/5.0 (compatible; HomeStockRecipeImport/1.0)",
-        accept: "text/html,application/xhtml+xml",
+        // A real, current desktop-Chrome UA — the previous self-identifying one
+        // ("HomeStockRecipeImport/1.0") was outright rejected (or served a near-empty
+        // interstitial instead of the real page) by several major recipe sites' anti-bot
+        // layers, which is why every import attempt failed the same way regardless of the URL.
+        // The rest of this header set mimics what a real browser actually sends alongside that
+        // UA — several of the same anti-bot layers check for those too, not just the UA string.
+        "user-agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) " +
+          "Chrome/131.0.0.0 Safari/537.36",
+        accept: "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
+        "accept-language": "nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7",
+        "upgrade-insecure-requests": "1",
       },
     });
     if (!response.ok) {
+      logger.warn("importRecipeFromUrl: fetch not ok", { url: url.toString(), status: response.status });
       throw new HttpsError("unavailable", "import_fetch_failed");
     }
     const text = await response.text();
+    logger.info("importRecipeFromUrl: fetched", { url: url.toString(), status: response.status, htmlLength: text.length });
     return text.slice(0, MAX_IMPORT_HTML_LENGTH);
   } catch (error) {
     if (error instanceof HttpsError) throw error;
@@ -952,7 +963,15 @@ export const importRecipeFromUrl = onCall(
     if (pageText.length < 200) {
       // Too little text to plausibly contain a recipe — fail clearly instead of spending an
       // Anthropic call on a near-empty page (a JS-only site with no server-rendered content, a
-      // login wall, etc.).
+      // login wall, an anti-bot interstitial that returned 200 with a "please enable
+      // JavaScript"/challenge page instead of the real one, etc.). Logged with a text snippet
+      // so a repeat of this failure is actually diagnosable next time, rather than needing
+      // another guess-and-check round.
+      logger.warn("importRecipeFromUrl: page text too short for a recipe", {
+        url: url.toString(),
+        textLength: pageText.length,
+        textSnippet: pageText.slice(0, 300),
+      });
       throw new HttpsError("not-found", "no_recipe_found");
     }
 

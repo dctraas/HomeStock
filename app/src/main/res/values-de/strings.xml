@@ -280,6 +280,7 @@
     <string name="more_premium_notifications_title">Testphase &amp; Abo</string>
     <string name="more_premium_notifications_subtitle">Benachrichtigung, wenn deine Testphase bald endet</string>
     <string name="more_notifications_menu_title">Benachrichtigungen</string>
+    <string name="more_notifications_menu_subtitle">Haltbarkeit, Vorrat, Mitbewohner und Abo</string>
     <string name="more_notifications_hero_subtitle">Die wichtigste Benachrichtigung von HomeStock</string>
     <string name="more_notifications_lead_time_label">Warnen</string>
     <string name="more_notifications_time_label">Uhrzeit</string>
@@ -290,10 +291,6 @@
         <item quantity="one">%1$d Tag</item>
         <item quantity="other">%1$d Tage</item>
     </plurals>
-    <plurals name="more_notifications_menu_subtitle_format">
-        <item quantity="one">%1$d von %2$d an</item>
-        <item quantity="other">%1$d von %2$d an</item>
-    </plurals>
     <string name="more_language_title">Sprache</string>
     <string name="more_language_option_nl">Niederländisch</string>
     <string name="more_language_option_en">Englisch</string>
@@ -301,7 +298,7 @@
     <string name="more_language_option_fr">Französisch</string>
     <string name="more_language_option_es">Spanisch</string>
     <string name="more_stores_title">Geschäfte</string>
-    <string name="more_stores_count_format">%1$d Geschäfte</string>
+    <string name="more_stores_menu_subtitle">Namen und Reihenfolge deiner Geschäfte</string>
     <string name="more_stores_empty">Noch keine Geschäfte hinzugefügt.</string>
     <string name="more_stores_remove_format">%1$s entfernen</string>
     <string name="more_stores_subtitle">Deine Einkaufsliste wird nach Geschäft gruppiert, in dieser Reihenfolge.</string>

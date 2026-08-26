@@ -872,14 +872,16 @@ private fun StatTile(eyebrow: String, value: String, caption: String?, modifier:
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(top = 2.dp),
             )
-            if (caption != null) {
-                Text(
-                    text = caption,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
-            }
+            // Always rendered, even as an empty string when there's no caption — an empty Text
+            // still reserves its style's line height, so LAATST BETAALD and GESCAND (one of
+            // which often has no caption, e.g. only a single scan so far) end up the same
+            // height side by side instead of one looking shorter than the other.
+            Text(
+                text = caption ?: "",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
+            )
         }
     }
 }

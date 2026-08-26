@@ -280,6 +280,7 @@
     <string name="more_premium_notifications_title">Prueba y suscripción</string>
     <string name="more_premium_notifications_subtitle">Notificación cuando tu periodo de prueba esté por terminar</string>
     <string name="more_notifications_menu_title">Notificaciones</string>
+    <string name="more_notifications_menu_subtitle">Caducidad, existencias, convivientes y suscripción</string>
     <string name="more_notifications_hero_subtitle">La notificación más importante de HomeStock</string>
     <string name="more_notifications_lead_time_label">Avisar</string>
     <string name="more_notifications_time_label">Hora</string>
@@ -290,10 +291,6 @@
         <item quantity="one">%1$d día</item>
         <item quantity="other">%1$d días</item>
     </plurals>
-    <plurals name="more_notifications_menu_subtitle_format">
-        <item quantity="one">%1$d de %2$d activadas</item>
-        <item quantity="other">%1$d de %2$d activadas</item>
-    </plurals>
     <string name="more_language_title">Idioma</string>
     <string name="more_language_option_nl">Neerlandés</string>
     <string name="more_language_option_en">Inglés</string>
@@ -301,7 +298,7 @@
     <string name="more_language_option_fr">Francés</string>
     <string name="more_language_option_es">Español</string>
     <string name="more_stores_title">Tiendas</string>
-    <string name="more_stores_count_format">%1$d tiendas</string>
+    <string name="more_stores_menu_subtitle">Nombres y orden de tus tiendas</string>
     <string name="more_stores_empty">Aún no se han añadido tiendas.</string>
     <string name="more_stores_remove_format">Eliminar %1$s</string>
     <string name="more_stores_subtitle">Tu lista de la compra se agrupa por tienda, en este orden.</string>

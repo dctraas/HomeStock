@@ -280,6 +280,7 @@
     <string name="more_premium_notifications_title">Trial &amp; subscription</string>
     <string name="more_premium_notifications_subtitle">Notification when your trial is about to end</string>
     <string name="more_notifications_menu_title">Notifications</string>
+    <string name="more_notifications_menu_subtitle">Expiration, stock, housemates and subscription</string>
     <string name="more_notifications_hero_subtitle">HomeStock\'s most important notification</string>
     <string name="more_notifications_lead_time_label">Warn</string>
     <string name="more_notifications_time_label">Time</string>
@@ -290,10 +291,6 @@
         <item quantity="one">%1$d day</item>
         <item quantity="other">%1$d days</item>
     </plurals>
-    <plurals name="more_notifications_menu_subtitle_format">
-        <item quantity="one">%1$d of %2$d on</item>
-        <item quantity="other">%1$d of %2$d on</item>
-    </plurals>
     <string name="more_language_title">Language</string>
     <string name="more_language_option_nl">Dutch</string>
     <string name="more_language_option_en">English</string>
@@ -301,7 +298,7 @@
     <string name="more_language_option_fr">French</string>
     <string name="more_language_option_es">Spanish</string>
     <string name="more_stores_title">Stores</string>
-    <string name="more_stores_count_format">%1$d stores</string>
+    <string name="more_stores_menu_subtitle">Names and order of your stores</string>
     <string name="more_stores_empty">No stores added yet.</string>
     <string name="more_stores_remove_format">Remove %1$s</string>
     <string name="more_stores_subtitle">Your shopping list is grouped by store, in this order.</string>

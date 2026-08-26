@@ -729,7 +729,9 @@ fun MoreScreen(
                             SettingsRow(
                                 icon = Icons.Filled.Storefront,
                                 title = stringResource(R.string.more_stores_title),
-                                subtitle = stringResource(R.string.more_stores_count_format, stores.size),
+                                // A description of what's configurable here (names and order),
+                                // not a live count — same reasoning as Meldingen's row above.
+                                subtitle = stringResource(R.string.more_stores_menu_subtitle),
                                 onClick = { showStoresDialog = true },
                             )
                         },
@@ -770,12 +772,11 @@ fun MoreScreen(
                             SettingsRow(
                                 icon = Icons.Filled.Notifications,
                                 title = stringResource(R.string.more_notifications_menu_title),
-                                subtitle = notificationsSubtitle(
-                                    notificationsEnabled,
-                                    inventoryInsightNotificationsEnabled,
-                                    householdActivityNotificationsEnabled,
-                                    premiumNotificationsEnabled,
-                                ),
+                                // A description of what's configurable here (the app's four
+                                // notification categories), not the live on/off count — the
+                                // household already sees each toggle's own current state the
+                                // moment they open this row.
+                                subtitle = stringResource(R.string.more_notifications_menu_subtitle),
                                 onClick = { showNotificationsDialog = true },
                             )
                         },
@@ -997,18 +998,6 @@ private fun openPlayStoreListing(context: Context) {
         context.startActivity(
             Intent(Intent.ACTION_VIEW, Uri.parse("https://play.google.com/store/apps/details?id=${context.packageName}")),
         )
-    }
-}
-
-/** Subtitle for the Meldingen row — how many of the four toggles are on, same "summarize before
- *  you open it" idea as [accessibilitySubtitle]. */
-@Composable
-private fun notificationsSubtitle(vararg enabled: Boolean): String {
-    val onCount = enabled.count { it }
-    return if (onCount == 0) {
-        stringResource(R.string.common_off)
-    } else {
-        pluralStringResource(R.plurals.more_notifications_menu_subtitle_format, onCount, onCount, enabled.size)
     }
 }
 
@@ -1964,13 +1953,17 @@ private fun HouseholdMembersRow(members: List<HouseholdMember>, subtitle: String
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // Single 16dp gap between the leading avatars and the title, matching SettingsRow's own
-        // icon-to-title gap exactly — this used to be two stacked paddings (8dp avatar end-padding
-        // + 8dp column start-padding), an accidental double gap that pushed "Samenstelling" a
-        // noticeable ~14dp further right than every option row below it, not just the ~6dp a
-        // wider leading avatar (28dp) than icon (22dp) alone would explain.
-        OverlappingAvatars(members = members, modifier = Modifier.padding(end = 16.dp))
-        Column(modifier = Modifier.weight(1f)) {
+        // A fixed 22dp-wide slot — exactly SettingsRow's own icon size — holding the avatars,
+        // so the title column below starts at the identical x position as every other row's
+        // title, regardless of how many avatars are showing. The avatars themselves stay their
+        // real 28dp size (a Box doesn't clip by default), just centered inside/slightly
+        // overflowing that slot rather than pushing the layout width — matching a 22dp icon's
+        // footprint was the whole point, not shrinking the avatars themselves. Single 16dp gap
+        // after it, same as SettingsRow's icon-to-title gap.
+        Box(modifier = Modifier.width(22.dp), contentAlignment = Alignment.Center) {
+            OverlappingAvatars(members = members)
+        }
+        Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
             Text(stringResource(R.string.more_household_row_title), style = MaterialTheme.typography.titleSmall)
             Text(
                 text = subtitle,

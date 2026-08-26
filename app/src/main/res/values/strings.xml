@@ -284,6 +284,7 @@
     <string name="more_premium_notifications_title">Proefperiode &amp; abonnement</string>
     <string name="more_premium_notifications_subtitle">Melding wanneer je proefperiode bijna afloopt</string>
     <string name="more_notifications_menu_title">Meldingen</string>
+    <string name="more_notifications_menu_subtitle">Houdbaarheid, voorraad, huisgenoten en abonnement</string>
     <string name="more_notifications_hero_subtitle">De belangrijkste melding van HomeStock</string>
     <string name="more_notifications_lead_time_label">Waarschuw</string>
     <string name="more_notifications_time_label">Tijdstip</string>
@@ -294,10 +295,6 @@
         <item quantity="one">%1$d dag</item>
         <item quantity="other">%1$d dagen</item>
     </plurals>
-    <plurals name="more_notifications_menu_subtitle_format">
-        <item quantity="one">%1$d van %2$d aan</item>
-        <item quantity="other">%1$d van %2$d aan</item>
-    </plurals>
     <string name="more_language_title">Taal</string>
     <string name="more_language_option_nl">Nederlands</string>
     <string name="more_language_option_en">Engels</string>
@@ -305,7 +302,7 @@
     <string name="more_language_option_fr">Frans</string>
     <string name="more_language_option_es">Spaans</string>
     <string name="more_stores_title">Winkels</string>
-    <string name="more_stores_count_format">%1$d winkels</string>
+    <string name="more_stores_menu_subtitle">Namen en volgorde van je winkels</string>
     <string name="more_stores_empty">Nog geen winkels toegevoegd.</string>
     <string name="more_stores_remove_format">%1$s verwijderen</string>
     <string name="more_stores_subtitle">Je boodschappenlijst wordt per winkel gegroepeerd, in deze volgorde.</string>

@@ -3,17 +3,20 @@
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
     <!-- Recenters AND shrinks the mark into the adaptive-icon safe zone (a 66dp circle centered
-         on the canvas, radius 33 from (54,54) — content outside it can get clipped, and does on
-         at least one real launcher, by a previous pass here that only left ~2.8dp of margin at
-         the tightest point). That tightest point isn't the handle's peak (y=16, the thing this
-         comment used to center on) — it's the bag body's own bottom corners, near (35,88)/
-         (65,88), which sit further from the mark's true center (50, 50.25) than the handle peak
-         does (~40.6dp vs ~37.75dp). scale=0.65 (down from 0.8) brings that corner in to ~26.4dp
-         from center, a real ~6.6dp safety margin instead of shaving it down to the edge.
-         translateX=21.5 ((54-50*0.65)) and translateY=21.34 ((54-50.25*0.65)) put the (still
-         precisely centered) mark's center back on the canvas center (54,54) at the new scale. -->
-    <group android:scaleX="0.65" android:scaleY="0.65"
-        android:translateX="21.5" android:translateY="21.34">
+         on the canvas, radius 33 from (54,54) — content outside it can get clipped by
+         launcher-specific mask shapes). Two prior passes here (scale 0.8, then 0.65) both still
+         showed the handle's top edge clipped on a real device despite the math saying there was
+         margin to spare — so this pass stops trying to shave the margin down to a computed
+         minimum and instead goes deliberately small: scale=0.5 puts every part of the mark
+         (mark bbox radius ~40.6dp from its own center at full size) at most ~20.3dp from the
+         canvas center, ~13dp of margin inside the 33dp safe radius on every side. translateX=29
+         ((54-50*0.5)) and translateY=28.88 ((54-50.25*0.5)) keep the mark centered at the new
+         scale. If a chunk is still missing after this, the icon change likely isn't reaching the
+         installed app at all (adaptive icons are aggressively cached by most launchers) — a full
+         uninstall + reinstall, not just an "update", is worth trying before adjusting these
+         numbers any further. -->
+    <group android:scaleX="0.5" android:scaleY="0.5"
+        android:translateX="29" android:translateY="28.88">
         <path android:fillColor="@color/ic_launcher_mark"
             android:pathData="M24,36 H76 L71,82 A6,6 0 0 1 65,88 H35 A6,6 0 0 1 29,82 Z" />
         <path android:strokeColor="@color/ic_launcher_mark" android:strokeWidth="7"

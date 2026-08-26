@@ -52,7 +52,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -72,6 +74,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.dao.ActivityLogWithProduct
@@ -408,11 +411,17 @@ private fun HouseholdActivityRow(entry: ActivityLogWithProduct, photoUrl: String
             modifier = Modifier.size(34.dp),
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                if (photoUrl != null) {
+                // photoLoadFailed catches a URL that exists but doesn't actually load (deleted
+                // Storage object, a stale/broken download URL, no network) — without this, that
+                // case rendered a blank circle instead of falling back to the activity icon the
+                // way a genuinely missing photoUrl already does below.
+                var photoLoadFailed by remember(photoUrl) { mutableStateOf(false) }
+                if (photoUrl != null && !photoLoadFailed) {
                     AsyncImage(
                         model = photoUrl,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
+                        onState = { state -> photoLoadFailed = state is AsyncImagePainter.State.Error },
                         modifier = Modifier.fillMaxSize().clip(CircleShape),
                     )
                 } else {

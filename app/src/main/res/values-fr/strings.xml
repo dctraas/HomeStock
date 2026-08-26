@@ -280,6 +280,7 @@
     <string name="more_premium_notifications_title">Essai &amp; abonnement</string>
     <string name="more_premium_notifications_subtitle">Notification lorsque votre période d\'essai touche à sa fin</string>
     <string name="more_notifications_menu_title">Notifications</string>
+    <string name="more_notifications_menu_subtitle">Péremption, stock, colocataires et abonnement</string>
     <string name="more_notifications_hero_subtitle">La notification la plus importante de HomeStock</string>
     <string name="more_notifications_lead_time_label">Avertir</string>
     <string name="more_notifications_time_label">Heure</string>
@@ -290,10 +291,6 @@
         <item quantity="one">%1$d jour</item>
         <item quantity="other">%1$d jours</item>
     </plurals>
-    <plurals name="more_notifications_menu_subtitle_format">
-        <item quantity="one">%1$d sur %2$d activée</item>
-        <item quantity="other">%1$d sur %2$d activées</item>
-    </plurals>
     <string name="more_language_title">Langue</string>
     <string name="more_language_option_nl">Néerlandais</string>
     <string name="more_language_option_en">Anglais</string>
@@ -301,7 +298,7 @@
     <string name="more_language_option_fr">Français</string>
     <string name="more_language_option_es">Espagnol</string>
     <string name="more_stores_title">Magasins</string>
-    <string name="more_stores_count_format">%1$d magasins</string>
+    <string name="more_stores_menu_subtitle">Noms et ordre de tes magasins</string>
     <string name="more_stores_empty">Aucun magasin ajouté pour l\'instant.</string>
     <string name="more_stores_remove_format">Supprimer %1$s</string>
     <string name="more_stores_subtitle">Ta liste de courses est groupée par magasin, dans cet ordre.</string>
