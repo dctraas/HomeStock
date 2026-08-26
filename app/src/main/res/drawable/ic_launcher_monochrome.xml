@@ -2,12 +2,14 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <!-- Same recenter as ic_launcher_foreground.xml — see its comment for the math. Only
-         difference here: the bag-body path is stroked (7dp), not filled, so its own bottom edge
-         sits 3.5dp lower (y=91.5, not 88) — true bbox y:[12.5,91.5], centered at 52, giving
-         translateY=12.4 ((54-52*0.8)) instead of foreground's 13.8. -->
-    <group android:scaleX="0.8" android:scaleY="0.8"
-        android:translateX="14" android:translateY="12.4">
+    <!-- Same recenter-and-shrink as ic_launcher_foreground.xml — see its comment for why 0.65,
+         not 0.8. Only difference here: the bag-body path is stroked (7dp), not filled, so its own
+         bottom edge sits 3.5dp lower (y=91.5, not 88) and its corners bulge out a bit further
+         still — true center at (50, 52), not (50, 50.25), giving translateY=20.2
+         ((54-52*0.65)) instead of foreground's 21.34. translateX is unaffected (54-50*0.65=21.5,
+         same as foreground) since the stroke widens both sides symmetrically. -->
+    <group android:scaleX="0.65" android:scaleY="0.65"
+        android:translateX="21.5" android:translateY="20.2">
         <path android:strokeColor="#FFFFFF" android:strokeWidth="7"
             android:fillColor="@android:color/transparent"
             android:pathData="M24,36 H76 L71,82 A6,6 0 0 1 65,88 H35 A6,6 0 0 1 29,82 Z" />

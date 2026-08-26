@@ -49,7 +49,6 @@ import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.outlined.StarBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -287,46 +286,27 @@ fun ProductDetailScreen(
                     modifier = Modifier.offset(y = (-6).dp),
                 )
 
-                Button(
-                    onClick = viewModel::addToShoppingList,
-                    shape = RoundedCornerShape(18.dp),
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp).height(52.dp),
-                ) {
-                    Icon(Icons.Filled.PlaylistAdd, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(stringResource(R.string.product_detail_add_to_list_button))
-                }
-                // Opgemaakt/Weggegooid used to be one "Opgemaakt" button that then opened a
-                // dialog asking to pick between the two — confusing (the button's own label
-                // already looked like a direct action) and it hid Weggegooid a tap deeper than
-                // households expected to find it. Both choices are now their own always-visible
-                // button, straight to removeFromInventory — no extra confirmation step, since the
-                // tapped button already states exactly what's about to happen. The two-choice
-                // dialog still exists for the header overflow's generic "Verwijderen" entry,
-                // where the choice genuinely isn't implied by what was tapped.
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
+                    Button(
+                        onClick = viewModel::addToShoppingList,
+                        shape = RoundedCornerShape(18.dp),
+                        modifier = Modifier.weight(1f).height(52.dp),
+                    ) {
+                        Icon(Icons.Filled.PlaylistAdd, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.product_detail_add_to_list_button))
+                    }
                     OutlinedButton(
-                        onClick = { viewModel.removeFromInventory(wasted = false); onBack() },
+                        onClick = { showDeleteConfirm = true },
                         shape = RoundedCornerShape(18.dp),
                         modifier = Modifier.weight(1f).height(52.dp),
                     ) {
                         Icon(Icons.Filled.CheckCircle, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(stringResource(R.string.product_detail_mark_used_up))
-                    }
-                    OutlinedButton(
-                        onClick = { viewModel.removeFromInventory(wasted = true); onBack() },
-                        shape = RoundedCornerShape(18.dp),
-                        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-                        modifier = Modifier.weight(1f).height(52.dp),
-                    ) {
-                        Icon(Icons.Filled.Delete, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(stringResource(R.string.product_detail_delete_wasted))
                     }
                 }
 

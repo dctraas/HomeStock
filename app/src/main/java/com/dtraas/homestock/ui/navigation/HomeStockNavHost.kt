@@ -3,6 +3,7 @@ package com.dtraas.homestock.ui.navigation
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -139,7 +140,14 @@ fun HomeStockApp(
             }
         },
     ) { padding ->
-        Column(modifier = Modifier.padding(padding)) {
+        // consumeWindowInsets, not just padding: every individual screen below also carries its
+        // own `contentWindowInsets = WindowInsets.safeDrawing.only(...Bottom)` (each needs that
+        // for when it's opened with the bottom bar hidden — a detail screen, for instance).
+        // Without consuming here first, that same raw system bottom inset gets reserved a second
+        // time on top of what this Scaffold already reserved for its own bottomBar, leaving a
+        // visible strip of dead space under every screen's last row — most noticeable on a short
+        // page like Instellingen's Debug section.
+        Column(modifier = Modifier.padding(padding).consumeWindowInsets(padding)) {
             // Tour first, account-link nudge only once it's out of the way — showing both
             // overlays at once (a brand new device that also just created/joined a household
             // hits both conditions together) would just be two banners/screens fighting for

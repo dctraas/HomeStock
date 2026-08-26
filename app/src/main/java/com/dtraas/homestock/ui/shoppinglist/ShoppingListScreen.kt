@@ -356,7 +356,9 @@ fun ShoppingListScreen() {
                     totalCount = allItems.size,
                     selectedStore = selectedStoreFilter,
                     onStoreSelected = { selectedStoreFilter = it },
-                    modifier = Modifier.padding(top = 8.dp, bottom = 6.dp),
+                    // Tighter bottom gap (was 6dp) — combined with the lists' own top content
+                    // padding below (also trimmed), leaves more room for the actual products.
+                    modifier = Modifier.padding(top = 8.dp, bottom = 2.dp),
                 )
             }
 
@@ -761,7 +763,10 @@ private fun ReorderableShoppingList(
 
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 8.dp),
+        // Top trimmed to 2dp (was 8dp) — less gap before the first sticky StoreHeader, per
+        // "regelafstand tussen de winkelchips en de eerste winkelnaam kleiner"; bottom kept at
+        // 8dp so the last row still gets breathing room above the bottom bar.
+        contentPadding = PaddingValues(top = 2.dp, bottom = 8.dp),
     ) {
         storeRuns.forEach { (storeName, groupItems) ->
             stickyHeader(key = "header_$storeName") {
@@ -825,7 +830,10 @@ private fun AisleOrderedShoppingList(
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = 8.dp),
+        // Top trimmed to 2dp (was 8dp) — less gap before the first sticky StoreHeader, per
+        // "regelafstand tussen de winkelchips en de eerste winkelnaam kleiner"; bottom kept at
+        // 8dp so the last row still gets breathing room above the bottom bar.
+        contentPadding = PaddingValues(top = 2.dp, bottom = 8.dp),
     ) {
         groupedByStore.forEach { (storeName, itemsInStore) ->
             stickyHeader(key = "header_$storeName") {
