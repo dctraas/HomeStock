@@ -511,7 +511,6 @@
     <string name="product_detail_retry_lookup_success">Productgegevens bijgewerkt</string>
     <string name="product_detail_retry_lookup_failure">Opzoeken mislukt. Probeer het later opnieuw.</string>
     <string name="product_detail_delete_dialog_title">Product verwijderen?</string>
-    <string name="product_detail_delete_dialog_text">Weet je zeker dat je dit product uit je voorraad wilt verwijderen?</string>
     <string name="product_detail_delete_dialog_text_wasted_prompt">Heb je dit product opgebruikt, of is het weggegooid?</string>
     <string name="product_detail_delete_used_up">Opgebruikt</string>
     <string name="product_detail_delete_wasted">Weggegooid</string>

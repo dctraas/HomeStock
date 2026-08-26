@@ -2,8 +2,14 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
+    <!-- translateX/Y recenter the mark itself, not just the 108dp canvas: the raw path data's
+         own bounding box (x:[24,76], y:[29,88]) is centered at (50, 58.5), not (54, 54) — so the
+         naive "shrink 0.8, inset 10.8 on every side" safe-zone formula (correct only if the path
+         already filled the full 108 canvas edge to edge) left the mark visibly off-center: ~3.2dp
+         left and ~3.6dp low. translateX=14 ((54-50*0.8)), translateY=7.2 ((54-58.5*0.8)) instead
+         put the mark's own bbox center at the canvas center after the 0.8 scale. -->
     <group android:scaleX="0.8" android:scaleY="0.8"
-        android:translateX="10.8" android:translateY="10.8">
+        android:translateX="14" android:translateY="7.2">
         <path android:fillColor="@color/ic_launcher_mark"
             android:pathData="M24,36 H76 L71,82 A6,6 0 0 1 65,88 H35 A6,6 0 0 1 29,82 Z" />
         <path android:strokeColor="@color/ic_launcher_mark" android:strokeWidth="7"

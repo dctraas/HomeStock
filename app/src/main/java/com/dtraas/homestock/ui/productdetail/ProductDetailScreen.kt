@@ -270,7 +270,10 @@ fun ProductDetailScreen(
             ) {
             if (stillInInventory) {
                 // Overlaps the header row by design — a bit of visual overlap between the hero
-                // area and the stock card, per the review.
+                // area and the stock card, per the review. Smaller than the original -14dp: that
+                // read as too tight against the header on a real device, so this keeps the
+                // "floats up over the header" effect while leaving noticeably more breathing room
+                // above "IN HUIS".
                 StockCard(
                     quantity = uiState.quantityInInventory ?: 0,
                     unit = product?.unit,
@@ -280,7 +283,7 @@ fun ProductDetailScreen(
                     // offset, not padding: Modifier.padding() rejects negative values outright
                     // (throws IllegalArgumentException), while offset shifts the draw position
                     // without that restriction — the only way to get this intentional overlap.
-                    modifier = Modifier.offset(y = (-14).dp),
+                    modifier = Modifier.offset(y = (-6).dp),
                 )
 
                 Row(
@@ -439,47 +442,33 @@ fun ProductDetailScreen(
         }
 
         if (showDeleteConfirm) {
-            // Only near/past its expiration date is a removal ambiguous enough to ask about —
-            // otherwise it's almost certainly ordinary consumption, so don't add a question
-            // nobody needs. Same <= 3 days threshold used for isNearExpiry elsewhere.
-            val isNearExpiry = uiState.expirationDate?.let { daysUntilExpiration(it) <= 3 } ?: false
+            // Always asks, regardless of how close the product is to its expiration date —
+            // this used to only ask near/past expiry (on the assumption anything else was
+            // "almost certainly ordinary consumption"), but food gets thrown away well before
+            // its printed date too (it went off early, a mistake purchase, a recipe change),
+            // and skipping the question there meant those removals could never be logged as
+            // waste — silently undercounting exactly what Statistieken's "Vaakst weggegooid"/
+            // "meest verspild" cards are trying to surface.
             AlertDialog(
                 onDismissRequest = { showDeleteConfirm = false },
                 title = { Text(stringResource(R.string.product_detail_delete_dialog_title)) },
-                text = {
-                    Text(
-                        stringResource(
-                            if (isNearExpiry) R.string.product_detail_delete_dialog_text_wasted_prompt
-                            else R.string.product_detail_delete_dialog_text
-                        )
-                    )
-                },
+                text = { Text(stringResource(R.string.product_detail_delete_dialog_text_wasted_prompt)) },
                 confirmButton = {
-                    if (isNearExpiry) {
-                        Row {
-                            TextButton(
-                                onClick = {
-                                    showDeleteConfirm = false
-                                    viewModel.removeFromInventory(wasted = false)
-                                    onBack()
-                                },
-                            ) { Text(stringResource(R.string.product_detail_delete_used_up)) }
-                            TextButton(
-                                onClick = {
-                                    showDeleteConfirm = false
-                                    viewModel.removeFromInventory(wasted = true)
-                                    onBack()
-                                },
-                            ) { Text(stringResource(R.string.product_detail_delete_wasted), color = MaterialTheme.colorScheme.error) }
-                        }
-                    } else {
+                    Row {
                         TextButton(
                             onClick = {
                                 showDeleteConfirm = false
-                                viewModel.removeFromInventory()
+                                viewModel.removeFromInventory(wasted = false)
                                 onBack()
                             },
-                        ) { Text(stringResource(R.string.product_detail_remove), color = MaterialTheme.colorScheme.error) }
+                        ) { Text(stringResource(R.string.product_detail_delete_used_up)) }
+                        TextButton(
+                            onClick = {
+                                showDeleteConfirm = false
+                                viewModel.removeFromInventory(wasted = true)
+                                onBack()
+                            },
+                        ) { Text(stringResource(R.string.product_detail_delete_wasted), color = MaterialTheme.colorScheme.error) }
                     }
                 },
                 dismissButton = {

@@ -3,6 +3,10 @@
     android:width="24dp" android:height="24dp"
     android:viewportWidth="100" android:viewportHeight="100"
     android:tint="?attr/colorControlNormal">
+    <!-- translateY recenters the mark: its own bbox (y:[29,88]) is centered at 58.5, not 50 —
+         see ic_launcher_foreground.xml's comment for the same issue on the launcher icon. No
+         translateX needed; the bbox (x:[24,76]) is already centered at 50 here. -->
+    <group android:translateY="-8.5">
         <path android:strokeColor="#FFFFFF" android:strokeWidth="7"
             android:fillColor="@android:color/transparent"
             android:pathData="M24,36 H76 L71,82 A6,6 0 0 1 65,88 H35 A6,6 0 0 1 29,82 Z" />
@@ -13,4 +17,5 @@
             android:strokeLineCap="round" android:strokeLineJoin="round"
             android:fillColor="@android:color/transparent"
             android:pathData="M38,62 L47,71 L64,52" />
+    </group>
 </vector>

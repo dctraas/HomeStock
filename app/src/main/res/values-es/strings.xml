@@ -507,7 +507,6 @@
     <string name="product_detail_retry_lookup_success">Datos del producto actualizados</string>
     <string name="product_detail_retry_lookup_failure">Error al buscar. Inténtalo de nuevo más tarde.</string>
     <string name="product_detail_delete_dialog_title">¿Eliminar producto?</string>
-    <string name="product_detail_delete_dialog_text">¿Seguro que quieres eliminar este producto de tu inventario?</string>
     <string name="product_detail_delete_dialog_text_wasted_prompt">¿Has consumido este producto o lo has tirado?</string>
     <string name="product_detail_delete_used_up">Consumido</string>
     <string name="product_detail_delete_wasted">Desperdiciado</string>

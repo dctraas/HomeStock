@@ -507,7 +507,6 @@
     <string name="product_detail_retry_lookup_success">Product details updated</string>
     <string name="product_detail_retry_lookup_failure">Lookup failed. Please try again later.</string>
     <string name="product_detail_delete_dialog_title">Delete product?</string>
-    <string name="product_detail_delete_dialog_text">Are you sure you want to remove this product from your inventory?</string>
     <string name="product_detail_delete_dialog_text_wasted_prompt">Did you use up this product, or did you throw it away?</string>
     <string name="product_detail_delete_used_up">Used up</string>
     <string name="product_detail_delete_wasted">Wasted</string>

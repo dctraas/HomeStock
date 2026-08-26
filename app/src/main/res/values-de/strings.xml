@@ -507,7 +507,6 @@
     <string name="product_detail_retry_lookup_success">Produktinformationen aktualisiert</string>
     <string name="product_detail_retry_lookup_failure">Suche fehlgeschlagen. Versuche es später erneut.</string>
     <string name="product_detail_delete_dialog_title">Produkt löschen?</string>
-    <string name="product_detail_delete_dialog_text">Möchtest du dieses Produkt wirklich aus deinem Vorrat entfernen?</string>
     <string name="product_detail_delete_dialog_text_wasted_prompt">Hast du dieses Produkt aufgebraucht oder weggeworfen?</string>
     <string name="product_detail_delete_used_up">Aufgebraucht</string>
     <string name="product_detail_delete_wasted">Weggeworfen</string>
