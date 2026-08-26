@@ -60,6 +60,7 @@ import androidx.compose.material.icons.filled.DragIndicator
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.ImportExport
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.Lightbulb
@@ -715,7 +716,6 @@ fun MoreScreen(
                     rows = listOf(
                         {
                             HouseholdMembersRow(
-                                members = members,
                                 subtitle = pluralStringResource(
                                     R.plurals.more_household_subtitle_format,
                                     memberCount,
@@ -1945,7 +1945,7 @@ private fun SwitchRow(
  * are visible at a glance instead of a generic icon, per the design review.
  */
 @Composable
-private fun HouseholdMembersRow(members: List<HouseholdMember>, subtitle: String, onClick: () -> Unit) {
+private fun HouseholdMembersRow(subtitle: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1953,16 +1953,18 @@ private fun HouseholdMembersRow(members: List<HouseholdMember>, subtitle: String
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // A fixed 22dp-wide slot — exactly SettingsRow's own icon size — holding the avatars,
-        // so the title column below starts at the identical x position as every other row's
-        // title, regardless of how many avatars are showing. The avatars themselves stay their
-        // real 28dp size (a Box doesn't clip by default), just centered inside/slightly
-        // overflowing that slot rather than pushing the layout width — matching a 22dp icon's
-        // footprint was the whole point, not shrinking the avatars themselves. Single 16dp gap
-        // after it, same as SettingsRow's icon-to-title gap.
-        Box(modifier = Modifier.width(22.dp), contentAlignment = Alignment.Center) {
-            OverlappingAvatars(members = members)
-        }
+        // A plain house icon, same size/tint/gap as every other row's leading icon (see
+        // SettingsRow) — this used to be a stack of member avatars/initials, but a leading
+        // element wider than the other rows' icons (28dp vs 22dp) kept nudging "Samenstelling"
+        // a few dp further right than its neighbors no matter how the gap around it was tuned.
+        // A same-size icon sidesteps that entirely; the household's actual composition/photos
+        // are one tap away regardless, inside the screen this row opens.
+        Icon(
+            imageVector = Icons.Filled.Home,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(22.dp),
+        )
         Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
             Text(stringResource(R.string.more_household_row_title), style = MaterialTheme.typography.titleSmall)
             Text(
@@ -1970,52 +1972,6 @@ private fun HouseholdMembersRow(members: List<HouseholdMember>, subtitle: String
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
-        }
-    }
-}
-
-/** Up to 3 small circular avatars (photo, or initials on a tinted circle), each overlapping the
- *  previous by 8dp — a quick "who's in this household" glance next to [HouseholdMembersRow]. */
-@Composable
-private fun OverlappingAvatars(members: List<HouseholdMember>, modifier: Modifier = Modifier) {
-    val visible = members.take(3)
-    Row(modifier = modifier) {
-        visible.forEachIndexed { index, member ->
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primaryContainer,
-                border = BorderStroke(2.dp, MaterialTheme.colorScheme.surfaceContainerHigh),
-                modifier = Modifier
-                    .size(28.dp)
-                    .offset(x = (-8 * index).dp),
-            ) {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    if (member.photoUrl != null) {
-                        AsyncImage(
-                            model = member.photoUrl,
-                            contentDescription = null,
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier.fillMaxSize().clip(CircleShape),
-                        )
-                    } else {
-                        val initials = member.displayName?.trim().takeUnless { it.isNullOrEmpty() }?.let { initialsOf(it) }
-                        if (initials != null && initials.isNotEmpty()) {
-                            Text(
-                                text = initials,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                            )
-                        } else {
-                            Icon(
-                                imageVector = Icons.Filled.AccountCircle,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                                modifier = Modifier.size(16.dp),
-                            )
-                        }
-                    }
-                }
-            }
         }
     }
 }

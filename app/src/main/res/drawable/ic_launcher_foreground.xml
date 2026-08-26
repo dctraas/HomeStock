@@ -2,21 +2,16 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <!-- Recenters AND shrinks the mark into the adaptive-icon safe zone (a 66dp circle centered
-         on the canvas, radius 33 from (54,54) — content outside it can get clipped by
-         launcher-specific mask shapes). Two prior passes here (scale 0.8, then 0.65) both still
-         showed the handle's top edge clipped on a real device despite the math saying there was
-         margin to spare — so this pass stops trying to shave the margin down to a computed
-         minimum and instead goes deliberately small: scale=0.5 puts every part of the mark
-         (mark bbox radius ~40.6dp from its own center at full size) at most ~20.3dp from the
-         canvas center, ~13dp of margin inside the 33dp safe radius on every side. translateX=29
-         ((54-50*0.5)) and translateY=28.88 ((54-50.25*0.5)) keep the mark centered at the new
-         scale. If a chunk is still missing after this, the icon change likely isn't reaching the
-         installed app at all (adaptive icons are aggressively cached by most launchers) — a full
-         uninstall + reinstall, not just an "update", is worth trying before adjusting these
-         numbers any further. -->
-    <group android:scaleX="0.5" android:scaleY="0.5"
-        android:translateX="29" android:translateY="28.88">
+    <!-- translateX/Y recenter the mark within the 108dp canvas — the naive "shrink 0.8, inset
+         10.8 on every side" formula this originally shipped with only holds if the raw path
+         data already fills the viewport edge to edge, which it doesn't (its own bbox is
+         x:[24,76], y:[36,88], off-center from (54,54)). translateX=14/translateY=7.2 correct
+         that. Several later attempts to also fine-tune this for a suspected "clipped at the
+         top" adaptive-icon-mask issue turned out to be chasing the wrong file — that issue was
+         actually on the splash screen (see ic_splash_logo.xml), not this launcher icon, which
+         was fine at this exact centering the whole time. Leave this one alone. -->
+    <group android:scaleX="0.8" android:scaleY="0.8"
+        android:translateX="14" android:translateY="7.2">
         <path android:fillColor="@color/ic_launcher_mark"
             android:pathData="M24,36 H76 L71,82 A6,6 0 0 1 65,88 H35 A6,6 0 0 1 29,82 Z" />
         <path android:strokeColor="@color/ic_launcher_mark" android:strokeWidth="7"

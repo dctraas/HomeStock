@@ -2,11 +2,19 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="288dp" android:height="288dp"
     android:viewportWidth="100" android:viewportHeight="100">
-    <!-- See ic_notification.xml's comment for the bbox derivation — but this file's body path is
-         filled, not stroked (same distinction as ic_launcher_foreground.xml vs
-         ic_launcher_monochrome.xml), so its bottom edge stays at y=88: true bbox y:[12.5,88],
-         centered at 50.25, giving translateY=50-50.25=-0.25 rather than -2. -->
-    <group android:translateY="-0.25">
+    <!-- This is the actual site of the "piece missing at the top" clipping that earlier rounds
+         mistakenly kept trying to fix on the launcher icon instead. windowSplashScreenAnimatedIcon
+         (see themes.xml) has no windowSplashScreenIconBackgroundColor set, so Android's
+         SplashScreen API treats this as an icon-without-background: it must fit inside a 192dp
+         circle within its 288dp canvas — a stricter, smaller safe zone (radius ratio ~0.333 of
+         the canvas) than an adaptive launcher icon gets. At the old translateY-only centering
+         (no scale-down at all), the mark's own farthest points sit ~40.6 units from its center
+         in this 100-unit viewport — well outside a ~33.3-unit safe radius, so the handle's top
+         got clipped exactly as reported. scale=0.5 brings that down to ~20.3, a real margin
+         instead of none. translateX=25 ((50-50*0.5)) and translateY=24.88 ((50-50.25*0.5)) keep
+         the (still precisely centered) mark on the canvas center (50,50) at the new scale. -->
+    <group android:scaleX="0.5" android:scaleY="0.5"
+        android:translateX="25" android:translateY="24.88">
         <path android:fillColor="@color/ic_launcher_mark"
             android:pathData="M24,36 H76 L71,82 A6,6 0 0 1 65,88 H35 A6,6 0 0 1 29,82 Z" />
         <path android:strokeColor="@color/ic_launcher_mark" android:strokeWidth="7"

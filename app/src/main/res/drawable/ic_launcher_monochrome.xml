@@ -2,13 +2,11 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <!-- Same recenter-and-shrink as ic_launcher_foreground.xml — see its comment for why 0.5, not
-         a more precisely-computed value. Only difference here: the bag-body path is stroked
-         (7dp), not filled, so its true center sits at (50, 52), not (50, 50.25), giving
-         translateY=28 ((54-52*0.5)) instead of foreground's 28.88. translateX is unaffected
-         (54-50*0.5=29, same as foreground) since the stroke widens both sides symmetrically. -->
-    <group android:scaleX="0.5" android:scaleY="0.5"
-        android:translateX="29" android:translateY="28">
+    <!-- Same recenter as ic_launcher_foreground.xml — see its comment for why this stayed at
+         0.8/14/7.2 rather than the smaller/differently-translated values a few later attempts
+         tried here (chasing a clipping issue that was actually on the splash screen). -->
+    <group android:scaleX="0.8" android:scaleY="0.8"
+        android:translateX="14" android:translateY="7.2">
         <path android:strokeColor="#FFFFFF" android:strokeWidth="7"
             android:fillColor="@android:color/transparent"
             android:pathData="M24,36 H76 L71,82 A6,6 0 0 1 65,88 H35 A6,6 0 0 1 29,82 Z" />
