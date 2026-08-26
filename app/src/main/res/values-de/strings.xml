@@ -798,10 +798,6 @@
         <item quantity="other">%1$d Gerichte kannst du jetzt kochen</item>
     </plurals>
 
-    <plurals name="meal_plan_dinners_planned">
-        <item quantity="one">%1$d von 7 Abendessen geplant</item>
-        <item quantity="other">%1$d von 7 Abendessen geplant</item>
-    </plurals>
     <plurals name="meal_plan_missing_ingredients_title">
         <item quantity="one">%1$d Zutat fehlt</item>
         <item quantity="other">%1$d Zutaten fehlen</item>

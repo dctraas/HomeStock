@@ -798,10 +798,6 @@
         <item quantity="other">%1$d plats à cuisiner dès maintenant</item>
     </plurals>
 
-    <plurals name="meal_plan_dinners_planned">
-        <item quantity="one">%1$d dîner sur 7 planifié</item>
-        <item quantity="other">%1$d dîners sur 7 planifiés</item>
-    </plurals>
     <plurals name="meal_plan_missing_ingredients_title">
         <item quantity="one">%1$d ingrédient manquant</item>
         <item quantity="other">%1$d ingrédients manquants</item>

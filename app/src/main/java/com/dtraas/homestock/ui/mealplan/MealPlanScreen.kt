@@ -205,13 +205,6 @@ fun MealPlanScreen(
         val rest = uiState.date.format(DateTimeFormatter.ofPattern("d MMMM", locale))
         "$dayName $rest"
     }
-    // "N van 7 avonden gepland" counts avondeten specifically (not any-slot, unlike the day
-    // strip's own dots below) — the one meal households most reliably plan ahead for, per the
-    // design review.
-    val plannedDinnerCount = remember(uiState.weekPlan) {
-        uiState.weekPlan.values.count { it[MealSlot.DINNER]?.isNotEmpty() == true }
-    }
-
     Scaffold(
         // MealPlanHeader below already claims the status bar inset itself — without this,
         // Scaffold's default contentWindowInsets (safeDrawing, top included since there's no
@@ -237,7 +230,6 @@ fun MealPlanScreen(
             // now it's inside the same green gradient block as the "Deze week" title, matching
             // the Claude Design review's "Deze week" header (see MealPlanHeader).
             MealPlanHeader(
-                plannedDinnerCount = plannedDinnerCount,
                 selectedDate = uiState.date,
                 weekPlan = uiState.weekPlan,
                 onSelectDate = viewModel::selectDate,
@@ -349,16 +341,16 @@ private val MealSlot.icon: ImageVector
     }
 
 /**
- * The fixed (non-scrolling) green gradient header — "Deze week" + the "N van 7 avonden gepland"
- * count, and the tappable dagstrip right underneath, all inside the same gradient block ("De
- * dagstrip met tapbare kaarten moet in de groene header vallen", per the Claude Design review;
- * see also artboard 1e in the uploaded mockup, which this header's layout mirrors). Replaces the
+ * The fixed (non-scrolling) green gradient header — "Deze week" title, the week's date range
+ * with prev/next chevrons flanking it, and the tappable dagstrip right underneath spanning the
+ * full header width, all inside the same gradient block (per the Claude Design review's header
+ * mockup: date chips full-width, the week range in place of a planned-count subtitle, with the
+ * week navigation moved up to flank that range instead of squeezing the day strip). Replaces the
  * old flat HomeStockTopAppBar the title/subtitle used to live in on their own, with the dagstrip
  * further down on plain white background.
  */
 @Composable
 private fun MealPlanHeader(
-    plannedDinnerCount: Int,
     selectedDate: LocalDate,
     weekPlan: Map<LocalDate, Map<MealSlot, List<PlannedMeal>>>,
     onSelectDate: (LocalDate) -> Unit,
@@ -366,6 +358,7 @@ private fun MealPlanHeader(
     onNextWeek: () -> Unit,
 ) {
     val contentColor = LocalTopAppBarContentColor.current
+    val locale = LocalConfiguration.current.locales[0]
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -374,36 +367,61 @@ private fun MealPlanHeader(
             .padding(horizontal = 16.dp, vertical = 4.dp)
             .padding(bottom = 14.dp),
     ) {
-        Column {
-            Text(
-                text = stringResource(R.string.meal_plan_this_week_title),
-                style = MaterialTheme.typography.headlineSmall,
-                color = contentColor,
-            )
-            Text(
-                text = pluralStringResource(R.plurals.meal_plan_dinners_planned, plannedDinnerCount, plannedDinnerCount),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Bold,
-                color = OnTopAppBarContainerAccent,
-                modifier = Modifier.padding(top = 2.dp),
-            )
-        }
+        Text(
+            text = stringResource(R.string.meal_plan_this_week_title),
+            style = MaterialTheme.typography.headlineSmall,
+            color = contentColor,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth(),
+        )
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(top = 12.dp),
+            horizontalArrangement = Arrangement.Center,
+            modifier = Modifier.fillMaxWidth().padding(top = 2.dp),
         ) {
             IconButton(onClick = onPreviousWeek) {
                 Icon(Icons.Filled.ChevronLeft, contentDescription = stringResource(R.string.meal_plan_previous_week_cd), tint = contentColor)
             }
-            WeekDayStrip(
-                selectedDate = selectedDate,
-                weekPlan = weekPlan,
-                onSelectDate = onSelectDate,
-                modifier = Modifier.weight(1f),
+            Text(
+                text = remember(selectedDate, locale) { weekRangeLabel(selectedDate, locale) },
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = OnTopAppBarContainerAccent,
             )
             IconButton(onClick = onNextWeek) {
                 Icon(Icons.Filled.ChevronRight, contentDescription = stringResource(R.string.meal_plan_next_week_cd), tint = contentColor)
             }
+        }
+        WeekDayStrip(
+            selectedDate = selectedDate,
+            weekPlan = weekPlan,
+            onSelectDate = onSelectDate,
+            modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+        )
+    }
+}
+
+/** "17 – 23 augustus" for a week fully inside one month; falls back to "28 augustus – 3
+ *  september" across a month boundary, and adds the year on each side if the week also crosses
+ *  a year boundary (New Year's week) — otherwise a bare day range reads ambiguously without
+ *  its month at all. */
+private fun weekRangeLabel(selectedDate: LocalDate, locale: Locale): String {
+    val weekStart = selectedDate.with(DayOfWeek.MONDAY)
+    val weekEnd = weekStart.plusDays(6)
+    return when {
+        weekStart.year != weekEnd.year -> {
+            val startFmt = weekStart.format(DateTimeFormatter.ofPattern("d MMMM yyyy", locale))
+            val endFmt = weekEnd.format(DateTimeFormatter.ofPattern("d MMMM yyyy", locale))
+            "$startFmt – $endFmt"
+        }
+        weekStart.month != weekEnd.month -> {
+            val startFmt = weekStart.format(DateTimeFormatter.ofPattern("d MMMM", locale))
+            val endFmt = weekEnd.format(DateTimeFormatter.ofPattern("d MMMM", locale))
+            "$startFmt – $endFmt"
+        }
+        else -> {
+            val monthName = weekEnd.format(DateTimeFormatter.ofPattern("MMMM", locale))
+            "${weekStart.dayOfMonth} – ${weekEnd.dayOfMonth} $monthName"
         }
     }
 }
@@ -414,7 +432,9 @@ private fun MealPlanHeader(
  * text/dot, matching the mockup's dagstrip on its green header), any other day is a translucent
  * white pill, and any day with at least one planned meal in [weekPlan] (any slot, not just
  * avondeten — unlike the header's "N van 7 avonden gepland" count) gets a small dot underneath.
- * Week-to-week navigation is the chevrons flanking this strip in [MealPlanHeader].
+ * Week-to-week navigation is the chevrons flanking the week-range label above this strip in
+ * [MealPlanHeader] — this strip itself spans the full header width now, edge to edge, per the
+ * Claude Design review's header mockup.
  */
 @Composable
 private fun WeekDayStrip(

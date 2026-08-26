@@ -802,10 +802,6 @@
         <item quantity="other">%1$d gerechten kun je nu koken</item>
     </plurals>
 
-    <plurals name="meal_plan_dinners_planned">
-        <item quantity="one">%1$d van 7 avonden gepland</item>
-        <item quantity="other">%1$d van 7 avonden gepland</item>
-    </plurals>
     <plurals name="meal_plan_missing_ingredients_title">
         <item quantity="one">%1$d ingrediënt ontbreekt</item>
         <item quantity="other">%1$d ingrediënten ontbreken</item>
