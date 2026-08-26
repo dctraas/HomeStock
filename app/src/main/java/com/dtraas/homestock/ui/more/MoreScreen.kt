@@ -91,6 +91,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -162,6 +163,7 @@ import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.ProductImage
 import com.dtraas.homestock.ui.components.ProfileEditDialog
 import com.dtraas.homestock.ui.components.QuantityStepper
+import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.components.SheetChip
 import com.dtraas.homestock.ui.components.SheetEyebrow
 import com.dtraas.homestock.ui.components.SheetPrimaryButton
@@ -176,6 +178,7 @@ import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnSageGreenPrimaryContainer
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
+import com.dtraas.homestock.ui.theme.SageGreenPrimary
 import com.dtraas.homestock.ui.theme.SageGreenPrimaryContainer
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
@@ -308,6 +311,7 @@ fun MoreScreen(
     val feedbackErrorMessage = stringResource(R.string.more_feedback_error)
 
     var showProfileDialog by remember { mutableStateOf(false) }
+    var searchQuery by remember { mutableStateOf("") }
     var showStoresDialog by remember { mutableStateOf(false) }
     var showNotificationsDialog by remember { mutableStateOf(false) }
     var showFeedbackDialog by remember { mutableStateOf(false) }
@@ -688,16 +692,28 @@ fun MoreScreen(
         contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
+        // Titles used both to label their row below and, via [matches], to decide whether the
+        // header's search field keeps that row on screen — pulled out to plain vals rather than
+        // calling stringResource(...) twice (once here, once inside the row itself) per entry.
+        val householdRowTitle = stringResource(R.string.more_household_row_title)
+        val storesTitle = stringResource(R.string.more_stores_title)
+        val statisticsTitle = stringResource(R.string.more_statistics_title)
+        val autoRestockTitle = stringResource(R.string.more_auto_restock_title)
+        val notificationsTitle = stringResource(R.string.more_notifications_menu_title)
+        val appSettingsTitle = stringResource(R.string.more_app_settings_title)
+        val accountLinkTitle = stringResource(R.string.account_link_row_title)
+        val dataCsvTitle = stringResource(R.string.more_data_csv_title)
+        val feedbackTitle = stringResource(R.string.more_about_feedback)
+        val rateAppTitle = stringResource(R.string.more_about_rate_app)
+        val privacyTitle = stringResource(R.string.more_about_privacy_policy)
+        val licensesTitle = stringResource(R.string.more_about_licenses)
+        fun matches(title: String) = searchQuery.isBlank() || title.contains(searchQuery, ignoreCase = true)
+
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // Profiel + huishouden-subtitel + code leefden voorheen op een losse Card boven het
-            // scrollende deel; nu zitten ze vast in de groene gradient-header, net als de andere
-            // herbouwde schermen deze ronde.
-            MoreScreenHeader(
-                displayName = displayName,
-                photoPath = photoPath,
-                householdName = householdName,
-                onClick = { showProfileDialog = true },
-            )
+            // Alleen nog de titel + een zoekbalk — profiel/huishouden-identiteit (foto, naam,
+            // huishoudcode) verhuisde naar ProfileRow hieronder, als eerste rij in de lijst, om
+            // in de header zelf plaats te maken voor het zoekveld.
+            MoreScreenHeader(searchQuery = searchQuery, onSearchQueryChange = { searchQuery = it })
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -706,14 +722,23 @@ fun MoreScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
+                // Profiel + huishouden-subtitel + code — voorheen vast in de groene header, nu
+                // de eerste rij van de scrollende lijst zelf, op uitdrukkelijk verzoek.
+                ProfileRow(
+                    displayName = displayName,
+                    photoPath = photoPath,
+                    householdName = householdName,
+                    onClick = { showProfileDialog = true },
+                )
+
                 // Terug naar de oorspronkelijke plek, direct onder de header — "Premium
                 // simuleren" (helemaal onderaan, bij Debug) was wat te weinig ruimte eronder
-                // had, niet deze kaart.
+                // had, niet deze kaart. Premium blijft ook zichtbaar tijdens het zoeken — het is
+                // geen doorzoekbare instelling, maar een permanente ingang naar het abonnement.
                 PremiumCard(isPremium = isPremium, onClick = onNavigateToPremium)
 
-                SectionHeader(stringResource(R.string.more_section_household))
-                SettingsGroup(
-                    rows = listOf(
+                val householdRows: List<@Composable () -> Unit> = listOfNotNull(
+                    if (matches(householdRowTitle)) {
                         {
                             HouseholdMembersRow(
                                 subtitle = pluralStringResource(
@@ -724,26 +749,32 @@ fun MoreScreen(
                                 ),
                                 onClick = onNavigateToHousehold,
                             )
-                        },
+                        }
+                    } else null,
+                    if (matches(storesTitle)) {
                         {
                             SettingsRow(
                                 icon = Icons.Filled.Storefront,
-                                title = stringResource(R.string.more_stores_title),
+                                title = storesTitle,
                                 // A description of what's configurable here (names and order),
                                 // not a live count — same reasoning as Meldingen's row above.
                                 subtitle = stringResource(R.string.more_stores_menu_subtitle),
                                 onClick = { showStoresDialog = true },
                             )
-                        },
+                        }
+                    } else null,
+                    if (matches(statisticsTitle)) {
                         {
                             SettingsRow(
                                 icon = Icons.Filled.BarChart,
-                                title = stringResource(R.string.more_statistics_title),
+                                title = statisticsTitle,
                                 subtitle = stringResource(R.string.more_statistics_subtitle),
                                 trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                                 onClick = { if (isPremium) onNavigateToStatistics() else onNavigateToPremium() },
                             )
-                        },
+                        }
+                    } else null,
+                    if (matches(autoRestockTitle)) {
                         {
                             // Hoort inhoudelijk bij Voorraad/Boodschappenlijst-gedrag, niet bij
                             // een apparaat-instelling — de App-sectie hieronder gaat terug naar
@@ -751,18 +782,21 @@ fun MoreScreen(
                             // later bijkwam) verhuist hierheen in plaats van te verdwijnen.
                             SwitchRow(
                                 icon = Icons.Filled.ShoppingCart,
-                                title = stringResource(R.string.more_auto_restock_title),
+                                title = autoRestockTitle,
                                 subtitle = stringResource(R.string.more_auto_restock_subtitle),
                                 checked = autoRestockEnabled,
                                 onCheckedChange = inventoryPreferences::setAutoRestockEnabled,
                             )
-                        },
-                    ),
+                        }
+                    } else null,
                 )
+                if (householdRows.isNotEmpty()) {
+                    SectionHeader(stringResource(R.string.more_section_household))
+                    SettingsGroup(rows = householdRows)
+                }
 
-                SectionHeader(stringResource(R.string.more_section_preferences))
-                SettingsGroup(
-                    rows = listOf(
+                val preferenceRows: List<@Composable () -> Unit> = listOfNotNull(
+                    if (matches(notificationsTitle)) {
                         {
                             // The four notification toggles used to live inline here, one row
                             // each — folded into their own submenu (per design review) since
@@ -771,7 +805,7 @@ fun MoreScreen(
                             // below gets for Weergave/Taal/Toegankelijkheid.
                             SettingsRow(
                                 icon = Icons.Filled.Notifications,
-                                title = stringResource(R.string.more_notifications_menu_title),
+                                title = notificationsTitle,
                                 // A description of what's configurable here (the app's four
                                 // notification categories), not the live on/off count — the
                                 // household already sees each toggle's own current state the
@@ -779,7 +813,9 @@ fun MoreScreen(
                                 subtitle = stringResource(R.string.more_notifications_menu_subtitle),
                                 onClick = { showNotificationsDialog = true },
                             )
-                        },
+                        }
+                    } else null,
+                    if (matches(appSettingsTitle)) {
                         {
                             // Weergave, Taal en Toegankelijkheid used to be three separate rows,
                             // each opening its own small AlertDialog — collapsed into this one
@@ -788,24 +824,27 @@ fun MoreScreen(
                             // screen (with a live preview) than three disconnected popups.
                             SettingsRow(
                                 icon = Icons.Filled.Tune,
-                                title = stringResource(R.string.more_app_settings_title),
+                                title = appSettingsTitle,
                                 // A static description of *what's configurable* here, not the
                                 // live values — the household can already see their own current
                                 // theme/taal without this row repeating it back to them.
                                 subtitle = stringResource(R.string.more_app_settings_subtitle),
                                 onClick = onNavigateToApp,
                             )
-                        },
-                    ),
+                        }
+                    } else null,
                 )
+                if (preferenceRows.isNotEmpty()) {
+                    SectionHeader(stringResource(R.string.more_section_preferences))
+                    SettingsGroup(rows = preferenceRows)
+                }
 
-                SectionHeader(stringResource(R.string.more_section_support))
-                SettingsGroup(
-                    rows = listOf(
+                val supportRows: List<@Composable () -> Unit> = listOfNotNull(
+                    if (matches(accountLinkTitle)) {
                         {
                             SettingsRow(
                                 icon = Icons.Filled.VerifiedUser,
-                                title = stringResource(R.string.account_link_row_title),
+                                title = accountLinkTitle,
                                 subtitle = if (isAccountLinked) {
                                     stringResource(R.string.account_link_row_subtitle_linked_format, accountLinkRepository.linkedEmail ?: "—")
                                 } else {
@@ -813,53 +852,80 @@ fun MoreScreen(
                                 },
                                 onClick = onNavigateToAccountLink,
                             )
-                        },
+                        }
+                    } else null,
+                    if (matches(dataCsvTitle)) {
                         {
                             // Hoorde eerst thuis in de App-sectie tussen de andere apparaat-
                             // instellingen; verhuisd naar Ondersteuning, direct onder Account
                             // koppelen, op uitdrukkelijk verzoek.
                             SettingsRow(
                                 icon = Icons.Filled.ImportExport,
-                                title = stringResource(R.string.more_data_csv_title),
+                                title = dataCsvTitle,
                                 subtitle = stringResource(R.string.more_data_csv_subtitle),
                                 trailingLabel = if (isPremium) null else stringResource(R.string.more_premium_locked_subtitle),
                                 onClick = { if (isPremium) showImportExportDialog = true else onNavigateToPremium() },
                             )
-                        },
+                        }
+                    } else null,
+                    if (matches(feedbackTitle)) {
                         {
                             SettingsRow(
                                 icon = Icons.Filled.Feedback,
-                                title = stringResource(R.string.more_about_feedback),
+                                title = feedbackTitle,
                                 subtitle = stringResource(R.string.more_about_feedback_subtitle),
                                 onClick = { showFeedbackDialog = true },
                             )
-                        },
+                        }
+                    } else null,
+                    if (matches(rateAppTitle)) {
                         {
                             SettingsRow(
                                 icon = Icons.Filled.StarRate,
-                                title = stringResource(R.string.more_about_rate_app),
+                                title = rateAppTitle,
                                 subtitle = stringResource(R.string.more_about_rate_app_subtitle),
                                 onClick = { openPlayStoreListing(context) },
                             )
-                        },
+                        }
+                    } else null,
+                    if (matches(privacyTitle)) {
                         {
                             SettingsRow(
                                 icon = Icons.Filled.PrivacyTip,
-                                title = stringResource(R.string.more_about_privacy_policy),
+                                title = privacyTitle,
                                 subtitle = stringResource(R.string.more_about_privacy_policy_subtitle),
                                 onClick = onNavigateToPrivacyPolicy,
                             )
-                        },
+                        }
+                    } else null,
+                    if (matches(licensesTitle)) {
                         {
                             SettingsRow(
                                 icon = Icons.Filled.Description,
-                                title = stringResource(R.string.more_about_licenses),
+                                title = licensesTitle,
                                 subtitle = stringResource(R.string.more_about_licenses_subtitle),
                                 onClick = onNavigateToLicenses,
                             )
-                        },
-                    ),
+                        }
+                    } else null,
                 )
+                if (supportRows.isNotEmpty()) {
+                    SectionHeader(stringResource(R.string.more_section_support))
+                    SettingsGroup(rows = supportRows)
+                }
+
+                // Zoekopdracht levert niets op in geen enkele sectie — laat dat expliciet zien
+                // in plaats van een verwarrend kaal scherm (de Profiel-rij en Premium-kaart
+                // blijven wel altijd zichtbaar, zie hierboven).
+                if (searchQuery.isNotBlank() && householdRows.isEmpty() && preferenceRows.isEmpty() && supportRows.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.more_settings_search_empty_format, searchQuery),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+                    )
+                }
 
                 Text(
                     text = stringResource(R.string.more_about_version_format, BuildConfig.VERSION_NAME),
@@ -1666,21 +1732,14 @@ private fun initialsOf(name: String): String =
         .joinToString("")
 
 /**
- * The fixed (non-scrolling) green gradient header — "Instellingen" title, then the profile row:
- * a 56dp squircle avatar (photo, or this device's initials), the device's own name, and a
- * subtitle combining the household's name, member count and join code, so the one thing every
- * household member sets up early (their name) and the household they're in are both visible
- * without opening anything ("Profielnaam moet in de groene header vallen", matching artboard 1f
- * in the uploaded mockup). Replaces the old flat HomeStockTopAppBar plus a separate profile Card
- * that used to sit above the scrolling content.
+ * The fixed (non-scrolling) green gradient header — just the "Instellingen" title and a search
+ * field for filtering the settings list below by row title. Used to also pin the profile row
+ * (photo/initials, device name, household name+code) here, but that moved to be the scrolling
+ * list's own first row ([ProfileRow]) once this needed room for search too — see MoreScreen's
+ * call site for how [searchQuery] narrows down which rows stay visible.
  */
 @Composable
-private fun MoreScreenHeader(
-    displayName: String?,
-    photoPath: String?,
-    householdName: String?,
-    onClick: () -> Unit,
-) {
+private fun MoreScreenHeader(searchQuery: String, onSearchQueryChange: (String) -> Unit) {
     val contentColor = LocalTopAppBarContentColor.current
     Column(
         modifier = Modifier
@@ -1697,14 +1756,58 @@ private fun MoreScreenHeader(
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
+        SearchField(
+            query = searchQuery,
+            onQueryChange = onSearchQueryChange,
+            placeholder = stringResource(R.string.more_settings_search_placeholder),
+            dense = true,
+            // Same white-pill-on-green pairing as Voorraad's own header search field — the
+            // default outlined styling would barely read against this gradient.
+            colors = OutlinedTextFieldDefaults.colors(
+                focusedContainerColor = Color.White,
+                unfocusedContainerColor = Color.White,
+                disabledContainerColor = Color.White,
+                focusedBorderColor = Color.Transparent,
+                unfocusedBorderColor = Color.Transparent,
+                focusedTextColor = SageGreenPrimary,
+                unfocusedTextColor = SageGreenPrimary,
+                focusedLeadingIconColor = SageGreenPrimary,
+                unfocusedLeadingIconColor = SageGreenPrimary,
+                focusedTrailingIconColor = SageGreenPrimary,
+                unfocusedTrailingIconColor = SageGreenPrimary,
+                cursorColor = SageGreenPrimary,
+                focusedPlaceholderColor = SageGreenPrimary.copy(alpha = 0.6f),
+                unfocusedPlaceholderColor = SageGreenPrimary.copy(alpha = 0.6f),
+            ),
+            modifier = Modifier.fillMaxWidth().padding(top = 14.dp),
+        )
+    }
+}
+
+/**
+ * Profile identity row — 56dp squircle avatar (photo, or this device's initials), the device's
+ * own name, and the household's name, so the one thing every household member sets up early
+ * (their name) and the household they're in are both visible without opening anything. Used to
+ * be pinned inside [MoreScreenHeader]'s green gradient; now the scrolling list's own first row
+ * instead, on explicit request, once the header needed the room for a settings search field.
+ */
+@Composable
+private fun ProfileRow(
+    displayName: String?,
+    photoPath: String?,
+    householdName: String?,
+    onClick: () -> Unit,
+) {
+    val trimmedName = displayName?.trim().takeUnless { it.isNullOrEmpty() }
+    Card(
+        onClick = onClick,
+        shape = SoftCardShape,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 14.dp)
-                .clickable(onClick = onClick),
+            modifier = Modifier.fillMaxWidth().padding(16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            val trimmedName = displayName?.trim().takeUnless { it.isNullOrEmpty() }
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = SageGreenPrimaryContainer,
@@ -1740,19 +1843,17 @@ private fun MoreScreenHeader(
                     text = trimmedName ?: stringResource(R.string.more_household_member_unnamed),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = contentColor,
                 )
                 Text(
                     text = householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.more_household_default_name),
                     style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Bold,
-                    color = OnTopAppBarContainerAccent,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
             Icon(
                 imageVector = Icons.Filled.ChevronRight,
                 contentDescription = null,
-                tint = contentColor,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -1955,7 +2056,7 @@ private fun HouseholdMembersRow(subtitle: String, onClick: () -> Unit) {
     ) {
         // A plain house icon, same size/tint/gap as every other row's leading icon (see
         // SettingsRow) — this used to be a stack of member avatars/initials, but a leading
-        // element wider than the other rows' icons (28dp vs 22dp) kept nudging "Samenstelling"
+        // element wider than the other rows' icons (28dp vs 22dp) kept nudging this row's title
         // a few dp further right than its neighbors no matter how the gap around it was tuned.
         // A same-size icon sidesteps that entirely; the household's actual composition/photos
         // are one tap away regardless, inside the screen this row opens.
@@ -1966,7 +2067,7 @@ private fun HouseholdMembersRow(subtitle: String, onClick: () -> Unit) {
             modifier = Modifier.size(22.dp),
         )
         Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
-            Text(stringResource(R.string.more_household_row_title), style = MaterialTheme.typography.titleSmall)
+            Text(stringResource(R.string.more_household_row_title), style = MaterialTheme.typography.titleSmall) // "Beheer"
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodySmall,

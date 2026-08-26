@@ -30,6 +30,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddCircleOutline
 import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
@@ -149,6 +150,7 @@ fun MealPlanScreen(
     onRecipeClick: (String) -> Unit,
     onProductClick: (String) -> Unit,
     onNavigateToCookMode: (String) -> Unit = {},
+    onNavigateToWeekOverview: (LocalDate) -> Unit = {},
 ) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: MealPlanViewModel = viewModel(
@@ -285,6 +287,7 @@ fun MealPlanScreen(
                     onMarkEaten = { meal -> viewModel.markMealEaten(MealSlot.DINNER, meal) },
                     onMarkWasted = { meal -> viewModel.markMealWasted(MealSlot.DINNER, meal) },
                     onStartCookMode = onNavigateToCookMode,
+                    onOpenWeekOverview = { onNavigateToWeekOverview(uiState.date) },
                 )
                 MealSlot.ORDERED.filter { it != MealSlot.DINNER }.forEach { slot ->
                     CompactSlotCard(
@@ -514,6 +517,7 @@ private fun DinnerCard(
     onMarkEaten: (PlannedMeal) -> Unit,
     onMarkWasted: (PlannedMeal) -> Unit,
     onStartCookMode: (String) -> Unit,
+    onOpenWeekOverview: () -> Unit,
 ) {
     val featuredRecipe = planned.firstOrNull { it.recipeId != null }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -597,6 +601,12 @@ private fun DinnerCard(
                             }
                             OutlinedIconButton(onClick = { onSwap(featuredRecipe) }, modifier = Modifier.size(44.dp)) {
                                 Icon(Icons.Filled.SwapHoriz, contentDescription = stringResource(R.string.meal_plan_swap_cd))
+                            }
+                            // Naast het "Meer opties"-icoon hieronder, op uitdrukkelijk verzoek —
+                            // opent het weekoverzicht (zie WeekOverviewScreen) voor de week van de
+                            // hier getoonde dag.
+                            OutlinedIconButton(onClick = onOpenWeekOverview, modifier = Modifier.size(44.dp)) {
+                                Icon(Icons.Filled.CalendarMonth, contentDescription = stringResource(R.string.meal_plan_week_overview_cd))
                             }
                             Box {
                                 OutlinedIconButton(onClick = { showOverflow = true }, modifier = Modifier.size(44.dp)) {

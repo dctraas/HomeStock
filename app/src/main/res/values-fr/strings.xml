@@ -177,7 +177,7 @@
         <item quantity="one">%1$d membre · Code : %2$s</item>
         <item quantity="other">%1$d membres · Code : %2$s</item>
     </plurals>
-    <string name="more_household_row_title">Composition</string>
+    <string name="more_household_row_title">Gestion</string>
     <string name="more_household_default_name">Mon foyer</string>
     <string name="more_household_members_title">Membres</string>
     <string name="household_members_title_with_limit_format">Membres (%1$d/%2$d)</string>
@@ -229,6 +229,8 @@
     <string name="more_profile_preview_product">Bananes</string>
     <string name="more_expiry_notifications_description">Recevez une notification quand un produit est bientôt périmé</string>
     <string name="more_settings_title">Paramètres</string>
+    <string name="more_settings_search_placeholder">Rechercher dans les paramètres</string>
+    <string name="more_settings_search_empty_format">Aucun paramètre trouvé pour « %1$s »</string>
     <string name="account_link_row_title">Lier le compte</string>
     <string name="account_link_row_subtitle_linked_format">Lié à %1$s</string>
     <string name="account_link_row_subtitle_unlinked">Évitez de perdre vos données lors d\'une réinstallation</string>
@@ -670,8 +672,20 @@
     <string name="shopping_list_voice_input_unavailable">La reconnaissance vocale n\'est pas disponible sur cet appareil</string>
     <string name="shopping_list_search_placeholder">Rechercher dans la liste de courses…</string>
     <!-- "Keuken" redesign (2026-08) -->
-    <string name="shopping_list_bottom_add_placeholder">Ajouter quelque chose…</string>
+    <string name="shopping_list_bottom_shopping_mode_label">Mode course</string>
+    <string name="shopping_list_quick_add_item_cd">Ajouter un article</string>
     <string name="shopping_list_voice_quick_add_cd">Ajouter à la voix</string>
+
+    <string name="shopping_mode_title">Mode course</string>
+    <string name="shopping_mode_close_cd">Fermer</string>
+    <string name="shopping_mode_screen_on_cd">Garder l'écran allumé</string>
+    <string name="shopping_mode_screen_on_state_on">Activé</string>
+    <string name="shopping_mode_screen_on_state_off">Désactivé</string>
+    <string name="shopping_mode_planned_format">%1$s prévu</string>
+    <string name="shopping_mode_in_cart_format">%1$s dans le panier</string>
+    <string name="shopping_mode_aisle_label_format">rayon %1$d · %2$s</string>
+    <string name="shopping_mode_done_button">Courses terminées</string>
+    <string name="shopping_mode_empty">Rien à cocher — votre liste est vide.</string>
     <string name="shopping_list_more_options_cd">Plus d\'options</string>
     <string name="shopping_list_more_options_title">Options</string>
     <string name="shopping_list_progress_checked_format">%1$d/%2$d cochés</string>
@@ -935,6 +949,14 @@
     <string name="meal_plan_all_in_stock">tout est en stock</string>
     <string name="meal_plan_swap_cd">Changer de recette</string>
     <string name="meal_plan_overflow_cd">Plus d\'options</string>
+    <string name="meal_plan_week_overview_cd">Aperçu de la semaine</string>
+    <string name="week_overview_title">Aperçu de la semaine</string>
+    <string name="week_overview_evening_free">Soirée libre</string>
+    <string name="week_overview_plan_suggestion">Planifier</string>
+    <plurals name="week_overview_planned_count_format">
+        <item quantity="one">%1$d dîner sur 7 planifié</item>
+        <item quantity="other">%1$d dîners sur 7 planifiés</item>
+    </plurals>
     <string name="meal_plan_servings_format">%1$d portions</string>
     <string name="meal_plan_add_cd">Ajouter un repas</string>
     <string name="meal_plan_add_chooser_title">Que voulez-vous ajouter ?</string>

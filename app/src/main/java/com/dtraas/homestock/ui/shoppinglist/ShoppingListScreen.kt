@@ -191,7 +191,7 @@ private fun buildShoppingListShareText(
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun ShoppingListScreen() {
+fun ShoppingListScreen(onNavigateToShoppingMode: (String?) -> Unit = {}) {
     val context = LocalContext.current
     val application = context.applicationContext as HomeStockApplication
     val defaultListName = stringResource(R.string.shopping_list_title)
@@ -348,6 +348,7 @@ fun ShoppingListScreen() {
                 totalCount = allItems.size,
                 totalPrice = totalPrice,
                 storeCount = groupedByStore.keys.count { it.isNotBlank() },
+                onVoiceClick = ::launchVoiceQuickAdd,
             )
 
             if (groupedByStore.isNotEmpty()) {
@@ -486,8 +487,8 @@ fun ShoppingListScreen() {
             }
 
             // Thumb-zone bottom bar: suggestion chips (own history + Voorraad items running
-            // low), then a full-width "voeg iets toe" button beside a dedicated spraak button
-            // — replaces the old top-of-screen search/quick-add field entirely.
+            // low), then a full-width "Winkelmodus" button beside a round "+" button — spraak
+            // moved up into the header, same row as the progress bar, to make room here.
             ShoppingListBottomBar(
                 historySuggestions = historySuggestions,
                 lowStockSuggestions = lowStockSuggestions,
@@ -495,8 +496,8 @@ fun ShoppingListScreen() {
                 onLowStockSuggestionClick = { suggestion ->
                     viewModel.addItem(suggestion.name, suggestion.category, "", 1)
                 },
+                onShoppingModeClick = { onNavigateToShoppingMode(activeList.id) },
                 onAddClick = { showAddDialog = true },
-                onVoiceClick = ::launchVoiceQuickAdd,
             )
         }
 
@@ -1289,6 +1290,7 @@ private fun ShoppingListHeader(
     totalCount: Int,
     totalPrice: Double?,
     storeCount: Int,
+    onVoiceClick: () -> Unit,
 ) {
     val contentColor = LocalTopAppBarContentColor.current
     Column(
@@ -1339,22 +1341,29 @@ private fun ShoppingListHeader(
                 Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.shopping_list_more_options_cd), tint = contentColor)
             }
         }
-        if (showProgress) {
-            ShoppingProgressBar(
-                checkedCount = checkedCount,
-                totalCount = totalCount,
-                totalPrice = totalPrice,
-                storeCount = storeCount,
-                modifier = Modifier.padding(top = 4.dp, start = 4.dp),
-            )
-        }
+        // Unconditional now (used to be gated behind showProgress, i.e. only once the list had
+        // items) — the spraak button that moved into this row (see below) needs to stay reachable
+        // even on a brand-new empty list, since voice is exactly how a household might add that
+        // list's very first item. [showProgress] still hides the bar/meta line specifically, since
+        // "0/0 afgevinkt" with an empty bar underneath isn't meaningful the way the count text and
+        // mic button both still are.
+        ShoppingProgressBar(
+            checkedCount = checkedCount,
+            totalCount = totalCount,
+            totalPrice = totalPrice,
+            storeCount = storeCount,
+            showBar = showProgress,
+            onVoiceClick = onVoiceClick,
+            modifier = Modifier.padding(top = 4.dp, start = 4.dp),
+        )
     }
 }
 
 /**
  * How far through the list the household is — checked/total items as plain text plus a filled
- * bar. Lives permanently inside [ShoppingListHeader]'s dark green gradient, hence the
- * white/coral palette below instead of the surface-oriented colors a plain page background
+ * bar — with the spraak (voice quick-add) button pinned top-right of that same count line, per
+ * explicit request. Lives permanently inside [ShoppingListHeader]'s dark green gradient, hence
+ * the white/coral palette below instead of the surface-oriented colors a plain page background
  * would use.
  */
 @Composable
@@ -1363,6 +1372,8 @@ private fun ShoppingProgressBar(
     totalCount: Int,
     totalPrice: Double?,
     storeCount: Int,
+    showBar: Boolean,
+    onVoiceClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
@@ -1377,28 +1388,40 @@ private fun ShoppingProgressBar(
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
             )
-            val metaParts = listOfNotNull(
-                if (storeCount > 0) pluralStringResource(R.plurals.shopping_list_store_count_format, storeCount, storeCount) else null,
-                totalPrice?.let { formatPrice(it) },
-            )
-            if (metaParts.isNotEmpty()) {
-                Text(
-                    text = metaParts.joinToString(" · "),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = OnTopAppBarContainerAccent,
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val metaParts = listOfNotNull(
+                    if (storeCount > 0) pluralStringResource(R.plurals.shopping_list_store_count_format, storeCount, storeCount) else null,
+                    totalPrice?.let { formatPrice(it) },
                 )
+                if (metaParts.isNotEmpty()) {
+                    Text(
+                        text = metaParts.joinToString(" · "),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = OnTopAppBarContainerAccent,
+                    )
+                }
+                IconButton(onClick = onVoiceClick, modifier = Modifier.size(28.dp)) {
+                    Icon(
+                        Icons.Filled.Mic,
+                        contentDescription = stringResource(R.string.shopping_list_voice_quick_add_cd),
+                        tint = Color.White,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
             }
         }
-        LinearProgressIndicator(
-            progress = { if (totalCount > 0) checkedCount.toFloat() / totalCount else 0f },
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 6.dp)
-                .height(8.dp)
-                .clip(RoundedCornerShape(percent = 50)),
-            color = OnTopAppBarContainerAccent,
-            trackColor = Color.White.copy(alpha = 0.18f),
-        )
+        if (showBar) {
+            LinearProgressIndicator(
+                progress = { if (totalCount > 0) checkedCount.toFloat() / totalCount else 0f },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp)
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(percent = 50)),
+                color = OnTopAppBarContainerAccent,
+                trackColor = Color.White.copy(alpha = 0.18f),
+            )
+        }
     }
 }
 
@@ -1462,11 +1485,10 @@ private fun StoreChipsRow(
 /**
  * Thumb-zone bottom bar: suggestion chips (own history + Voorraad items running low, see
  * [ShoppingListViewModel.historySuggestions]/[ShoppingListViewModel.lowStockSuggestions]) above
- * a page-wide "voeg iets toe" pill and a dedicated round spraak button — replaces both the old
- * top-of-screen search/quick-add field and the old bottom-right floating "+" ("Onderaan de
- * pagina een paginabrede knop om iets toe te voegen en rechtsonder een knop om iets via spraak
- * toe te voegen. Daarboven suggestiechips uit mijn eigen historie en de voorraad die bijna op
- * is.").
+ * a page-wide "Winkelmodus" pill (opens [ShoppingModeScreen]) and a round "+" button (opens
+ * "Item toevoegen" — [onAddClick]). Spraak used to be this round button; it moved up into
+ * [ShoppingListHeader], same row as the checked/total count, on explicit request, freeing this
+ * spot for a quicker "add one item" action alongside the new Winkelmodus entry point.
  */
 @Composable
 private fun ShoppingListBottomBar(
@@ -1474,8 +1496,8 @@ private fun ShoppingListBottomBar(
     lowStockSuggestions: List<LowStockSuggestion>,
     onHistorySuggestionClick: (String) -> Unit,
     onLowStockSuggestionClick: (LowStockSuggestion) -> Unit,
+    onShoppingModeClick: () -> Unit,
     onAddClick: () -> Unit,
-    onVoiceClick: () -> Unit,
 ) {
     // Wrapped in a rounded-top Surface again ("dezelfde achtergrondkleur als eerder") — but
     // surfaceContainer + rounded top corners rather than the old plain colorScheme.surface +
@@ -1533,7 +1555,7 @@ private fun ShoppingListBottomBar(
                 val addButtonContainer = if (isDarkTheme) Color.Black else Color.White
                 val addButtonContent = if (isDarkTheme) Color.White else Color.Black
                 Surface(
-                    onClick = onAddClick,
+                    onClick = onShoppingModeClick,
                     modifier = Modifier.weight(1f).height(52.dp),
                     shape = SoftCardShapeCompact,
                     color = addButtonContainer,
@@ -1544,19 +1566,19 @@ private fun ShoppingListBottomBar(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         Icon(
-                            Icons.Filled.Add,
+                            Icons.Filled.DoneAll,
                             contentDescription = null,
                             tint = addButtonContent,
                         )
                         Text(
-                            text = stringResource(R.string.shopping_list_bottom_add_placeholder),
+                            text = stringResource(R.string.shopping_list_bottom_shopping_mode_label),
                             color = addButtonContent,
                             style = MaterialTheme.typography.bodyLarge,
                         )
                     }
                 }
                 FilledIconButton(
-                    onClick = onVoiceClick,
+                    onClick = onAddClick,
                     modifier = Modifier.size(52.dp),
                     shape = CircleShape,
                     colors = IconButtonDefaults.filledIconButtonColors(
@@ -1564,7 +1586,7 @@ private fun ShoppingListBottomBar(
                         contentColor = MaterialTheme.colorScheme.onSecondary,
                     ),
                 ) {
-                    Icon(Icons.Filled.Mic, contentDescription = stringResource(R.string.shopping_list_voice_quick_add_cd))
+                    Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.shopping_list_quick_add_item_cd))
                 }
             }
         }

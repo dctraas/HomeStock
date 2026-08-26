@@ -9,11 +9,20 @@ import androidx.compose.material.icons.filled.RestaurantMenu
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.ui.graphics.vector.ImageVector
 import com.dtraas.homestock.R
+import java.time.LocalDate
 
 sealed class Destination(val route: String) {
     data object Scan : Destination("scan")
     data object Inventory : Destination("inventory")
     data object ShoppingList : Destination("shopping_list")
+    data object ShoppingMode : Destination("shopping_mode?listId={listId}") {
+        // Empty string, not a real "no list" sentinel value, stands in for null here — NavType.StringType
+        // arguments can't be genuinely null unless declared nullable, and a nullable String nav argument
+        // still round-trips awkwardly through the query-string route syntax. The default (unnamed) list's
+        // own id is already null everywhere else in this app (see ShoppingListItemEntity.listId), so "" is
+        // free to mean exactly that here — ShoppingModeScreen turns it back into null before use.
+        fun createRoute(listId: String?) = "shopping_mode?listId=${listId ?: ""}"
+    }
     data object Statistics : Destination("statistics")
     data object Notifications : Destination("notifications")
     data object More : Destination("more")
@@ -54,6 +63,11 @@ sealed class Destination(val route: String) {
     data object ReceiptScan : Destination("receipt_scan")
     data object AiRecognize : Destination("ai_recognize")
     data object MealPlan : Destination("meal_plan")
+    data object WeekOverview : Destination("week_overview/{anchorDate}") {
+        // ISO-8601 (yyyy-MM-dd), same DATE_FORMATTER MealPlanRepository stores its own Firestore
+        // document ids as — free of the "/" a plain LocalDate.toString() would need escaping.
+        fun createRoute(anchorDate: LocalDate) = "week_overview/$anchorDate"
+    }
     data object Premium : Destination("premium")
     data object Household : Destination("household")
     data object AppSettings : Destination("app_settings")

@@ -26,6 +26,9 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -47,6 +50,9 @@ import com.dtraas.homestock.ui.account.AccountLinkScreen
 import com.dtraas.homestock.ui.household.HouseholdSettingsScreen
 import com.dtraas.homestock.ui.inventory.InventoryScreen
 import com.dtraas.homestock.ui.mealplan.MealPlanScreen
+import com.dtraas.homestock.ui.mealplan.MealPlanViewModel
+import com.dtraas.homestock.ui.mealplan.WeekOverviewScreen
+import java.time.LocalDate
 import com.dtraas.homestock.ui.more.AppSettingsScreen
 import com.dtraas.homestock.ui.more.LicensesScreen
 import com.dtraas.homestock.ui.more.MoreScreen
@@ -64,6 +70,7 @@ import com.dtraas.homestock.ui.scan.ScanScreen
 import com.dtraas.homestock.ui.scanresult.ScanResultScreen
 import com.dtraas.homestock.ui.searchproduct.SearchProductScreen
 import com.dtraas.homestock.ui.shoppinglist.ShoppingListScreen
+import com.dtraas.homestock.ui.shoppinglist.ShoppingModeScreen
 import com.dtraas.homestock.ui.statistics.StatisticsScreen
 
 @Composable
@@ -204,7 +211,21 @@ fun HomeStockApp(
                 )
             }
             composable(Destination.ShoppingList.route) {
-                ShoppingListScreen()
+                ShoppingListScreen(
+                    onNavigateToShoppingMode = { listId ->
+                        navController.navigate(Destination.ShoppingMode.createRoute(listId))
+                    },
+                )
+            }
+            composable(
+                route = Destination.ShoppingMode.route,
+                arguments = listOf(navArgument("listId") { type = NavType.StringType; defaultValue = "" }),
+            ) { entry ->
+                val listId = entry.arguments?.getString("listId")?.takeIf { it.isNotBlank() }
+                ShoppingModeScreen(
+                    listId = listId,
+                    onClose = { navController.popBackStack() },
+                )
             }
             composable(Destination.Statistics.route) {
                 StatisticsScreen(
@@ -395,6 +416,37 @@ fun HomeStockApp(
                     onRecipeClick = { mealId -> navController.navigate(Destination.RecipeDetail.createRoute(mealId)) },
                     onProductClick = { barcode -> navController.navigate(Destination.ProductDetail.createRoute(barcode)) },
                     onNavigateToCookMode = { mealId -> navController.navigate(Destination.CookMode.createRoute(mealId)) },
+                    onNavigateToWeekOverview = { anchorDate ->
+                        navController.navigate(Destination.WeekOverview.createRoute(anchorDate))
+                    },
+                )
+            }
+            composable(
+                route = Destination.WeekOverview.route,
+                arguments = listOf(navArgument("anchorDate") { type = NavType.StringType }),
+            ) { entry ->
+                val anchorDate = entry.arguments?.getString("anchorDate")?.let(LocalDate::parse) ?: LocalDate.now()
+                // Shares MealPlanScreen's own MealPlanViewModel (same route's still-alive
+                // back-stack entry, hence same ViewModelStore) rather than creating a second,
+                // disconnected instance — so tapping a day here actually jumps the screen
+                // underneath to it on the way back, instead of silently doing nothing.
+                val mealPlanEntry = remember(entry) { navController.getBackStackEntry(Destination.MealPlan.route) }
+                val mealPlanViewModel: MealPlanViewModel = viewModel(
+                    viewModelStoreOwner = mealPlanEntry,
+                    factory = viewModelFactory {
+                        initializer {
+                            MealPlanViewModel(
+                                application.container.mealPlanRepository,
+                                application.container.recipeRepository,
+                                application.container.inventoryRepository,
+                            )
+                        }
+                    },
+                )
+                WeekOverviewScreen(
+                    anchorDate = anchorDate,
+                    onClose = { navController.popBackStack() },
+                    onSelectDate = mealPlanViewModel::selectDate,
                 )
             }
             composable(Destination.Premium.route) {
