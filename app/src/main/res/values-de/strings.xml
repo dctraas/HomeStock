@@ -339,7 +339,7 @@
     <string name="more_statistics_subtitle">Vorrat, Verschwendung und Scans pro Haushaltsmitglied</string>
     <string name="more_section_household">Haushalt</string>
     <string name="more_data_csv_title">Daten übertragen</string>
-    <string name="more_data_csv_subtitle">Vorrat und Einkaufsliste als CSV exportieren oder importieren</string>
+    <string name="more_data_csv_subtitle">Vorrat, Listen, Rezepte, Geschäfte und mehr als CSV exportieren oder importieren</string>
     <string name="more_section_support">Support</string>
     <string name="more_export_header_favorite">Favorit</string>
     <string name="more_export_success">Datei gespeichert</string>
@@ -355,15 +355,35 @@
     <string name="more_export_last_never">Noch nicht exportiert</string>
     <string name="more_data_scope_lists">Listen</string>
     <string name="more_data_scope_all">Alles</string>
+    <string name="more_data_scope_recipes">Rezepte</string>
+    <string name="more_data_scope_stores">Geschäfte</string>
+    <string name="more_data_scope_meal_history">Mahlzeiten-Verlauf</string>
     <string name="more_export_header_price">Preis</string>
     <string name="more_export_header_checked">Abgehakt</string>
+    <string name="more_export_header_recipe_id">ID</string>
+    <string name="more_export_header_own_recipe">Eigenes Rezept</string>
+    <string name="more_export_header_cuisine">Küche</string>
+    <string name="more_export_header_ready_minutes">Zubereitungszeit (Min.)</string>
+    <string name="more_export_header_servings">Portionen</string>
+    <string name="more_export_header_ingredients">Zutaten</string>
+    <string name="more_export_header_instructions">Zubereitung</string>
+    <string name="more_export_header_date">Datum</string>
+    <string name="more_export_header_meal_slot">Mahlzeit</string>
+    <string name="more_export_header_status">Status</string>
+    <string name="more_export_subtitle_meal_history">Geplante Mahlzeiten der letzten 6 Monate</string>
     <string name="more_import_title">Importieren</string>
     <string name="more_import_subtitle">Wird zu deinem aktuellen Bestand hinzugefügt</string>
+    <string name="more_import_subtitle_recipes">Wird zu deinen eigenen Rezepten und Favoriten hinzugefügt</string>
+    <string name="more_import_subtitle_stores">Wird zu deiner Geschäfteliste hinzugefügt</string>
     <string name="more_import_info">Du siehst zuerst eine Vorschau dessen, was hinzugefügt wird. Bestehende Produkte bleiben erhalten.</string>
+    <string name="more_import_info_direct">Wird sofort hinzugefügt, ohne Vorschau.</string>
+    <string name="more_import_not_available">Diese Kategorie kann derzeit nur exportiert werden.</string>
     <string name="more_import_choose_file_action">Datei auswählen</string>
     <string name="more_import_preview_title">Vorschau</string>
     <string name="more_import_preview_confirm">Zum Bestand hinzufügen</string>
     <string name="more_import_preview_skipped_format">%1$d Zeilen werden übersprungen.</string>
+    <string name="more_import_recipe_success_format">%1$d Rezepte importiert.</string>
+    <string name="more_import_store_success_format">%1$d Geschäfte importiert.</string>
     <plurals name="more_export_subtitle_inventory_format">
         <item quantity="one">%1$d Produkt auf Lager</item>
         <item quantity="other">%1$d Produkte auf Lager</item>
@@ -371,6 +391,14 @@
     <plurals name="more_export_subtitle_lists_format">
         <item quantity="one">%1$d Artikel auf deinen Listen</item>
         <item quantity="other">%1$d Artikel auf deinen Listen</item>
+    </plurals>
+    <plurals name="more_export_subtitle_recipes_format">
+        <item quantity="one">%1$d Rezept (eigene + Favoriten)</item>
+        <item quantity="other">%1$d Rezepte (eigene + Favoriten)</item>
+    </plurals>
+    <plurals name="more_export_subtitle_stores_format">
+        <item quantity="one">%1$d Geschäft</item>
+        <item quantity="other">%1$d Geschäfte</item>
     </plurals>
     <plurals name="more_import_preview_subtitle_format">
         <item quantity="one">%1$d Produkt wird zu deinem Bestand hinzugefügt.</item>

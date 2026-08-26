@@ -339,7 +339,7 @@
     <string name="more_statistics_subtitle">Inventario, desperdicio y escaneos por miembro del hogar</string>
     <string name="more_section_household">Hogar</string>
     <string name="more_data_csv_title">Transferir datos</string>
-    <string name="more_data_csv_subtitle">Exporta o importa tu inventario y lista de la compra como CSV</string>
+    <string name="more_data_csv_subtitle">Exporta o importa tu inventario, listas, recetas, tiendas y más como CSV</string>
     <string name="more_section_support">Soporte</string>
     <string name="more_export_header_favorite">Favorito</string>
     <string name="more_export_success">Archivo guardado</string>
@@ -355,15 +355,35 @@
     <string name="more_export_last_never">Aún no exportado</string>
     <string name="more_data_scope_lists">Listas</string>
     <string name="more_data_scope_all">Todo</string>
+    <string name="more_data_scope_recipes">Recetas</string>
+    <string name="more_data_scope_stores">Tiendas</string>
+    <string name="more_data_scope_meal_history">Historial de comidas</string>
     <string name="more_export_header_price">Precio</string>
     <string name="more_export_header_checked">Marcado</string>
+    <string name="more_export_header_recipe_id">ID</string>
+    <string name="more_export_header_own_recipe">Receta propia</string>
+    <string name="more_export_header_cuisine">Cocina</string>
+    <string name="more_export_header_ready_minutes">Tiempo de preparación (min)</string>
+    <string name="more_export_header_servings">Raciones</string>
+    <string name="more_export_header_ingredients">Ingredientes</string>
+    <string name="more_export_header_instructions">Instrucciones</string>
+    <string name="more_export_header_date">Fecha</string>
+    <string name="more_export_header_meal_slot">Momento de la comida</string>
+    <string name="more_export_header_status">Estado</string>
+    <string name="more_export_subtitle_meal_history">Comidas planificadas de los últimos 6 meses</string>
     <string name="more_import_title">Importar</string>
     <string name="more_import_subtitle">Se añade a tu inventario actual</string>
+    <string name="more_import_subtitle_recipes">Se añade a tus recetas propias y favoritas</string>
+    <string name="more_import_subtitle_stores">Se añade a tu lista de tiendas</string>
     <string name="more_import_info">Primero verás una vista previa de lo que se añadirá. Los productos existentes se mantienen.</string>
+    <string name="more_import_info_direct">Se añade de inmediato, sin pantalla de vista previa.</string>
+    <string name="more_import_not_available">Por ahora, esta categoría solo se puede exportar.</string>
     <string name="more_import_choose_file_action">Elegir archivo</string>
     <string name="more_import_preview_title">Vista previa</string>
     <string name="more_import_preview_confirm">Añadir al inventario</string>
     <string name="more_import_preview_skipped_format">%1$d filas se omitirán.</string>
+    <string name="more_import_recipe_success_format">%1$d recetas importadas.</string>
+    <string name="more_import_store_success_format">%1$d tiendas importadas.</string>
     <plurals name="more_export_subtitle_inventory_format">
         <item quantity="one">%1$d producto en existencia</item>
         <item quantity="other">%1$d productos en existencia</item>
@@ -371,6 +391,14 @@
     <plurals name="more_export_subtitle_lists_format">
         <item quantity="one">%1$d artículo en tus listas</item>
         <item quantity="other">%1$d artículos en tus listas</item>
+    </plurals>
+    <plurals name="more_export_subtitle_recipes_format">
+        <item quantity="one">%1$d receta (propias + favoritas)</item>
+        <item quantity="other">%1$d recetas (propias + favoritas)</item>
+    </plurals>
+    <plurals name="more_export_subtitle_stores_format">
+        <item quantity="one">%1$d tienda</item>
+        <item quantity="other">%1$d tiendas</item>
     </plurals>
     <plurals name="more_import_preview_subtitle_format">
         <item quantity="one">%1$d producto se añadirá a tu inventario.</item>

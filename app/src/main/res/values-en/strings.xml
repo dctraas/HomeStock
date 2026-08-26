@@ -339,7 +339,7 @@
     <string name="more_statistics_subtitle">Inventory, waste, and scans per household member</string>
     <string name="more_section_household">Household</string>
     <string name="more_data_csv_title">Transfer data</string>
-    <string name="more_data_csv_subtitle">Export or import your inventory and shopping list as CSV</string>
+    <string name="more_data_csv_subtitle">Export or import your inventory, lists, recipes, stores and more as CSV</string>
     <string name="more_section_support">Support</string>
     <string name="more_export_header_favorite">Favorite</string>
     <string name="more_export_success">File saved</string>
@@ -355,15 +355,35 @@
     <string name="more_export_last_never">Not exported yet</string>
     <string name="more_data_scope_lists">Lists</string>
     <string name="more_data_scope_all">All</string>
+    <string name="more_data_scope_recipes">Recipes</string>
+    <string name="more_data_scope_stores">Stores</string>
+    <string name="more_data_scope_meal_history">Meal history</string>
     <string name="more_export_header_price">Price</string>
     <string name="more_export_header_checked">Checked</string>
+    <string name="more_export_header_recipe_id">ID</string>
+    <string name="more_export_header_own_recipe">Own recipe</string>
+    <string name="more_export_header_cuisine">Cuisine</string>
+    <string name="more_export_header_ready_minutes">Ready time (min)</string>
+    <string name="more_export_header_servings">Servings</string>
+    <string name="more_export_header_ingredients">Ingredients</string>
+    <string name="more_export_header_instructions">Instructions</string>
+    <string name="more_export_header_date">Date</string>
+    <string name="more_export_header_meal_slot">Meal slot</string>
+    <string name="more_export_header_status">Status</string>
+    <string name="more_export_subtitle_meal_history">Planned meals from the last 6 months</string>
     <string name="more_import_title">Import</string>
     <string name="more_import_subtitle">Adds to your current stock</string>
+    <string name="more_import_subtitle_recipes">Adds to your own recipes and favorites</string>
+    <string name="more_import_subtitle_stores">Adds to your store list</string>
     <string name="more_import_info">You’ll see a preview of what’s added first. Existing products stay as they are.</string>
+    <string name="more_import_info_direct">Added right away, with no preview screen.</string>
+    <string name="more_import_not_available">This category can only be exported right now.</string>
     <string name="more_import_choose_file_action">Choose file</string>
     <string name="more_import_preview_title">Preview</string>
     <string name="more_import_preview_confirm">Add to stock</string>
     <string name="more_import_preview_skipped_format">%1$d rows will be skipped.</string>
+    <string name="more_import_recipe_success_format">%1$d recipes imported.</string>
+    <string name="more_import_store_success_format">%1$d stores imported.</string>
     <plurals name="more_export_subtitle_inventory_format">
         <item quantity="one">%1$d product in stock</item>
         <item quantity="other">%1$d products in stock</item>
@@ -371,6 +391,14 @@
     <plurals name="more_export_subtitle_lists_format">
         <item quantity="one">%1$d item on your lists</item>
         <item quantity="other">%1$d items on your lists</item>
+    </plurals>
+    <plurals name="more_export_subtitle_recipes_format">
+        <item quantity="one">%1$d recipe (own + favorites)</item>
+        <item quantity="other">%1$d recipes (own + favorites)</item>
+    </plurals>
+    <plurals name="more_export_subtitle_stores_format">
+        <item quantity="one">%1$d store</item>
+        <item quantity="other">%1$d stores</item>
     </plurals>
     <plurals name="more_import_preview_subtitle_format">
         <item quantity="one">%1$d product will be added to your stock.</item>

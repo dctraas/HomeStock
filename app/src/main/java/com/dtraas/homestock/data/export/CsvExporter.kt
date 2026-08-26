@@ -2,6 +2,8 @@ package com.dtraas.homestock.data.export
 
 import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.local.entity.ShoppingListItemEntity
+import com.dtraas.homestock.data.local.entity.StoreEntity
+import com.dtraas.homestock.data.repository.RecipeDetail
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -95,13 +97,84 @@ object CsvExporter {
     }
 
     /**
-     * Both datasets in one file — one column count for the whole file would force either sheet's
-     * columns onto the other, so each keeps its own header, with a blank line and a one-column
-     * section title between them, same convention a household would use hand-combining two
-     * exports in a spreadsheet themselves.
+     * Every dataset in one file — one column count for the whole file would force one section's
+     * columns onto another's, so each [sections] entry (title to already-built CSV body) keeps
+     * its own header, with a blank line and a one-column section title before each one after the
+     * first — same convention a household would use hand-combining several exports in a
+     * spreadsheet themselves. Used for MoreScreen's "Alles"-scope export.
      */
-    fun combinedToCsv(inventorySection: String, shoppingListSection: String, inventoryTitle: String, shoppingListTitle: String): String =
-        listOf(row(inventoryTitle), inventorySection, "", row(shoppingListTitle), shoppingListSection).joinToString("\r\n")
+    fun combinedToCsv(sections: List<Pair<String, String>>): String =
+        sections.flatMapIndexed { index, (title, body) ->
+            if (index == 0) listOf(row(title), body) else listOf("", row(title), body)
+        }.joinToString("\r\n")
+
+    /**
+     * "Mijn recepten" + "Favoriete recepten" together (the "Recepten" scope of MoreScreen's
+     * Data-overzetten sheet) — [recipes] is expected pre-merged and de-duplicated by id (a
+     * recipe favorited *and* hand-entered appears once, with both [headers]' custom/favorite
+     * columns "Ja"); [customIds]/[favoriteIds] are what actually drive those two columns. Full
+     * detail, not just a list row — every ingredient and the whole bereidingswijze — since
+     * that's the entire point of exporting a recipe versus just its name. Ingredients are one
+     * field, [INGREDIENT_SEPARATOR]-joined name/measure pairs (each pair itself
+     * [INGREDIENT_FIELD_SEPARATOR]-joined) — CSV's own comma/quote escaping already protects
+     * commas *inside* an ingredient name, so a second delimiter level is needed to keep a whole
+     * ingredient list inside one field rather than exploding the column count per recipe.
+     * [CsvImporter.parseRecipesCsv] reads this exact shape back in.
+     */
+    fun recipesToCsv(
+        recipes: List<RecipeDetail>,
+        customIds: Set<String>,
+        favoriteIds: Set<String>,
+        headers: RecipeCsvHeaders,
+        yesLabel: String,
+        noLabel: String,
+    ): String {
+        val header = row(
+            headers.id, headers.name, headers.custom, headers.favorite, headers.category,
+            headers.area, headers.readyInMinutes, headers.servings, headers.ingredients, headers.instructions,
+        )
+        val dataRows = recipes.map { recipe ->
+            row(
+                recipe.id,
+                recipe.name,
+                if (recipe.id in customIds) yesLabel else noLabel,
+                if (recipe.id in favoriteIds) yesLabel else noLabel,
+                recipe.category,
+                recipe.area,
+                recipe.readyInMinutes?.toString(),
+                recipe.servings?.toString(),
+                recipe.ingredients.joinToString(INGREDIENT_SEPARATOR) { (name, measure) -> "$name$INGREDIENT_FIELD_SEPARATOR$measure" },
+                recipe.instructions,
+            )
+        }
+        return rows(header, dataRows)
+    }
+
+    /** The household's custom store list (the "Winkels" scope) — just names, in the household's own sortOrder. [CsvImporter.parseStoresCsv] reads this back in. */
+    fun storesToCsv(stores: List<StoreEntity>, headers: StoreCsvHeaders): String {
+        val header = row(headers.name)
+        val dataRows = stores.map { row(it.name) }
+        return rows(header, dataRows)
+    }
+
+    /**
+     * A read-out of the maaltijdplanner's past entries (the "Maaltijden historie" scope) —
+     * export-only, same as [shoppingListToCsv]: a planned-meal history is a record of what
+     * happened, not something with a sensible "import" meaning (unlike Voorraad/Recepten/Winkels,
+     * which are all current, editable state a household might want to restore). [entries] are
+     * expected pre-formatted (date/slot/status already localized) by the caller, same convention
+     * every other export function here uses.
+     */
+    fun mealHistoryToCsv(entries: List<MealHistoryCsvRow>, headers: MealHistoryCsvHeaders): String {
+        val header = row(headers.date, headers.slot, headers.name, headers.status)
+        val dataRows = entries.map { row(it.date, it.slot, it.name, it.status) }
+        return rows(header, dataRows)
+    }
+
+    // Between-ingredient / within-ingredient-pair separators for the [recipesToCsv] ingredients
+    // field — [CsvImporter.parseRecipesCsv] must split on the exact same two literals.
+    const val INGREDIENT_SEPARATOR = ";"
+    const val INGREDIENT_FIELD_SEPARATOR = "|"
 }
 
 data class InventoryCsvHeaders(
@@ -125,4 +198,34 @@ data class ShoppingListCsvHeaders(
     val note: String,
     val price: String,
     val checked: String,
+)
+
+data class RecipeCsvHeaders(
+    val id: String,
+    val name: String,
+    val custom: String,
+    val favorite: String,
+    val category: String,
+    val area: String,
+    val readyInMinutes: String,
+    val servings: String,
+    val ingredients: String,
+    val instructions: String,
+)
+
+data class StoreCsvHeaders(val name: String)
+
+data class MealHistoryCsvHeaders(
+    val date: String,
+    val slot: String,
+    val name: String,
+    val status: String,
+)
+
+/** One already-localized row for [CsvExporter.mealHistoryToCsv] — see that function's doc for why this is export-only. */
+data class MealHistoryCsvRow(
+    val date: String,
+    val slot: String,
+    val name: String,
+    val status: String?,
 )

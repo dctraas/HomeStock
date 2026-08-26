@@ -428,6 +428,26 @@ class RecipeRepository(
     /** Cheap membership check for RecipeDetailScreen's favorite toggle — avoids mapping full detail just to know one id's state. */
     fun observeFavoriteIds(): Flow<Set<String>> = observeFavoriteSnapshots().map { docs -> docs.map { it.id }.toSet() }
 
+    /**
+     * One-time reads of *full* [RecipeDetail]s (ingredients + instructions, not just the summary
+     * [observeCustomRecipes]/[observeFavoriteRecipes] give a list row) — built for MoreScreen's
+     * Data-overzetten CSV export, which needs everything a recipe actually contains, not just
+     * enough to render a row. A plain `.get()` rather than a live listener: an export is a
+     * point-in-time snapshot by nature, same reasoning as [fetchWeekPlan]-style reads elsewhere.
+     */
+    suspend fun fetchAllCustomRecipeDetails(): List<RecipeDetail> {
+        val householdId = householdSession.householdId.value ?: return emptyList()
+        return customRecipesCollection(householdId).get().await().documents
+            .mapNotNull { mapFirestoreDocToDetail(it, isCustom = true) }
+    }
+
+    /** See [fetchAllCustomRecipeDetails] — same reasoning, the favorites collection instead. */
+    suspend fun fetchAllFavoriteRecipeDetails(): List<RecipeDetail> {
+        val householdId = householdSession.householdId.value ?: return emptyList()
+        return favoriteRecipesCollection(householdId).get().await().documents
+            .mapNotNull { mapFirestoreDocToDetail(it) }
+    }
+
     private fun observeFavoriteSnapshots(): Flow<List<DocumentSnapshot>> =
         householdSession.householdId.flatMapLatest { householdId ->
             if (householdId == null) {

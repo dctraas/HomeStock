@@ -9,6 +9,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flatMapLatest
@@ -102,10 +103,23 @@ class MealPlanRepository(
      * selected day's own entry is kept current from its live [observeMealPlan] listener instead
      * (see MealPlanViewModel.observeCurrentDate), which is as live as either needs to be.
      */
-    suspend fun fetchWeekPlan(weekStart: LocalDate): Map<LocalDate, Map<MealSlot, List<PlannedMeal>>> {
+    suspend fun fetchWeekPlan(weekStart: LocalDate): Map<LocalDate, Map<MealSlot, List<PlannedMeal>>> =
+        fetchDateRange(weekStart, weekStart.plusDays(6))
+
+    /**
+     * One-time read of every planned meal, per slot, across every day from [start] to [end]
+     * inclusive — [fetchWeekPlan] is just this called with a 7-day span. Built for MoreScreen's
+     * Data-overzetten "Maaltijden historie" export, which needs a much wider window than one
+     * week; a plain per-day `get()` loop rather than a
+     * Firestore collection-group query, same reasoning as [fetchWeekPlan] already had — this is
+     * a point-in-time export/overview read, not something that needs to react live.
+     */
+    suspend fun fetchDateRange(start: LocalDate, end: LocalDate): Map<LocalDate, Map<MealSlot, List<PlannedMeal>>> {
         val householdId = householdSession.householdId.value ?: return emptyMap()
-        return (0..6).associate { offset ->
-            val date = weekStart.plusDays(offset.toLong())
+        val dayCount = ChronoUnit.DAYS.between(start, end)
+        if (dayCount < 0) return emptyMap()
+        return (0..dayCount).associate { offset ->
+            val date = start.plusDays(offset)
             val snapshot = dayDoc(householdId, date).get().await()
             val dayPlan = MealSlot.ORDERED.associateWith { slot ->
                 (snapshot.get(slot.storageKey) as? List<*>).orEmpty().mapNotNull { PlannedMeal.fromMap(it as? Map<*, *>) }

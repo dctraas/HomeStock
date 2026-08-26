@@ -68,6 +68,59 @@ object CsvImporter {
     }
 
     /**
+     * Reads back a [CsvExporter.recipesToCsv] file, positionally: id, name, custom (Ja/Nee),
+     * favorite (Ja/Nee), category, area, readyInMinutes, servings, ingredients, instructions —
+     * same "column order, not header text, is what matters" contract as [parseInventoryCsv]. A
+     * row missing its name is skipped, same as a nameless inventory row; every other field is
+     * optional the way a recipe's own fields already are.
+     */
+    fun parseRecipesCsv(csv: String, yesLabel: String): RecipeImportResult {
+        val allRows = parseCsv(csv)
+        if (allRows.isEmpty()) return RecipeImportResult(emptyList(), 0)
+        val dataRows = allRows.drop(1)
+
+        var skipped = 0
+        val imported = mutableListOf<ImportedRecipeRow>()
+        for (cols in dataRows) {
+            if (cols.size < 10) {
+                skipped++
+                continue
+            }
+            val name = cols[1].trim()
+            if (name.isEmpty()) {
+                skipped++
+                continue
+            }
+            val ingredients = cols[8].split(CsvExporter.INGREDIENT_SEPARATOR)
+                .mapNotNull { entry ->
+                    val parts = entry.split(CsvExporter.INGREDIENT_FIELD_SEPARATOR, limit = 2)
+                    val ingredientName = parts.getOrNull(0)?.trim().orEmpty()
+                    if (ingredientName.isEmpty()) null else ingredientName to (parts.getOrNull(1)?.trim().orEmpty())
+                }
+            imported += ImportedRecipeRow(
+                id = cols[0].trim(),
+                name = name,
+                isCustom = cols[2].trim().equals(yesLabel, ignoreCase = true),
+                isFavorite = cols[3].trim().equals(yesLabel, ignoreCase = true),
+                category = cols[4].trim().ifEmpty { null },
+                area = cols[5].trim().ifEmpty { null },
+                readyInMinutes = cols[6].trim().toIntOrNull(),
+                servings = cols[7].trim().toIntOrNull(),
+                ingredients = ingredients,
+                instructions = cols[9].trim().ifEmpty { null },
+            )
+        }
+        return RecipeImportResult(imported, skipped)
+    }
+
+    /** Reads back a [CsvExporter.storesToCsv] file — just the one name column, blank rows skipped outright rather than counted (a store list has no other field to make a blank row worth reporting). */
+    fun parseStoresCsv(csv: String): List<String> {
+        val allRows = parseCsv(csv)
+        if (allRows.isEmpty()) return emptyList()
+        return allRows.drop(1).mapNotNull { cols -> cols.getOrNull(0)?.trim()?.takeIf { it.isNotEmpty() } }
+    }
+
+    /**
      * Minimal RFC 4180 parser: quoted fields, `""`-escaped quotes inside them, and both `\r\n`
      * and bare `\n` line endings (a file re-saved by a text editor rather than a spreadsheet app
      * may not keep CsvExporter's own `\r\n`). No CSV library exists in this project's
@@ -148,5 +201,23 @@ data class ImportedInventoryRow(
 
 data class InventoryImportResult(
     val rows: List<ImportedInventoryRow>,
+    val skippedCount: Int,
+)
+
+data class ImportedRecipeRow(
+    val id: String,
+    val name: String,
+    val isCustom: Boolean,
+    val isFavorite: Boolean,
+    val category: String?,
+    val area: String?,
+    val readyInMinutes: Int?,
+    val servings: Int?,
+    val ingredients: List<Pair<String, String>>,
+    val instructions: String?,
+)
+
+data class RecipeImportResult(
+    val rows: List<ImportedRecipeRow>,
     val skippedCount: Int,
 )

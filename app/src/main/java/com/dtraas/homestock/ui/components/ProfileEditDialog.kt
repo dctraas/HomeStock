@@ -140,6 +140,9 @@ fun ProfileEditDialog(
                                 text = stringResource(R.string.household_name_char_count_format, nameInput.length, DISPLAY_NAME_MAX_LENGTH),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                // A touch of end padding — flush against the field's own edge
+                                // read as too tight.
+                                modifier = Modifier.padding(end = 4.dp),
                             )
                         },
                         shape = RoundedCornerShape(16.dp),

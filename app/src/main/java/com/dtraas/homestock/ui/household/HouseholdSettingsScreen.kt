@@ -240,7 +240,9 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                 yesLabel = csvYes,
                 noLabel = csvNo,
             )
-            pendingExportCsv = CsvExporter.combinedToCsv(inventoryCsv, listCsv, inventorySectionTitle, shoppingListSectionTitle)
+            pendingExportCsv = CsvExporter.combinedToCsv(
+                listOf(inventorySectionTitle to inventoryCsv, shoppingListSectionTitle to listCsv),
+            )
             exportLauncher.launch("homestock-data.csv")
         }
     }
