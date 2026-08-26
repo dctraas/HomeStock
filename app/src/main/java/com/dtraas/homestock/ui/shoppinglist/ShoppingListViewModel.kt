@@ -122,15 +122,6 @@ class ShoppingListViewModel(
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
-    /** Sum of price × quantity across every item on the active list that has a price set
-     *  (checked or not) — null (rather than 0.0) when nothing on the list has a price yet, so
-     *  ShoppingListScreen can hide the total entirely instead of showing a misleading €0,00. */
-    val totalPrice: StateFlow<Double?> =
-        groupedByStore.map { grouped ->
-            val priced = grouped.values.flatten().mapNotNull { item -> item.price?.let { it * item.quantity } }
-            priced.takeIf { it.isNotEmpty() }?.sum()
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
-
     /** Product names the household recently scanned/adjusted (see ActivityLogRepository),
      *  most-recent-first and deduplicated, offered as quick-add suggestion chips — reusing
      *  the household's own activity log rather than a dedicated "shopping history" store that

@@ -649,7 +649,6 @@
     <string name="shopping_list_voice_quick_add_cd">Per Sprache hinzufügen</string>
     <string name="shopping_list_more_options_cd">Weitere Optionen</string>
     <string name="shopping_list_more_options_title">Optionen</string>
-    <string name="shopping_list_progress_checked_format">%1$d/%2$d abgehakt</string>
     <plurals name="shopping_list_store_count_format">
         <item quantity="one">%1$d Geschäft</item>
         <item quantity="other">%1$d Geschäfte</item>
