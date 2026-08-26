@@ -2,14 +2,17 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp"
     android:viewportWidth="108" android:viewportHeight="108">
-    <!-- translateX/Y recenter the mark itself, not just the 108dp canvas: the raw path data's
-         own bounding box (x:[24,76], y:[29,88]) is centered at (50, 58.5), not (54, 54) — so the
-         naive "shrink 0.8, inset 10.8 on every side" safe-zone formula (correct only if the path
-         already filled the full 108 canvas edge to edge) left the mark visibly off-center: ~3.2dp
-         left and ~3.6dp low. translateX=14 ((54-50*0.8)), translateY=7.2 ((54-58.5*0.8)) instead
-         put the mark's own bbox center at the canvas center after the 0.8 scale. -->
+    <!-- translateX/Y recenter the mark itself, not just the 108dp canvas. The mark's true
+         bounding box isn't just the bag-body path's own points (y:[36,88]) — the handle
+         (M37,36 V29 A13,13...) is a semicircle centered at (50,29) with radius 13, so it peaks at
+         y=16, and its 7dp stroke extends that another 3.5 upward to y=12.5. A first pass here
+         only accounted for the handle's start point (y=29), not its actual peak or stroke — that
+         undercorrected and left the mark sitting visibly high in the canvas. Full bbox:
+         x:[24,76] (centered at 50 already), y:[12.5,88] (centered at 50.25, not 58.5).
+         translateX=14 ((54-50*0.8)), translateY=13.8 ((54-50.25*0.8)) put that true center at the
+         canvas center (54,54) after the 0.8 scale. -->
     <group android:scaleX="0.8" android:scaleY="0.8"
-        android:translateX="14" android:translateY="7.2">
+        android:translateX="14" android:translateY="13.8">
         <path android:fillColor="@color/ic_launcher_mark"
             android:pathData="M24,36 H76 L71,82 A6,6 0 0 1 65,88 H35 A6,6 0 0 1 29,82 Z" />
         <path android:strokeColor="@color/ic_launcher_mark" android:strokeWidth="7"

@@ -681,6 +681,7 @@
     <string name="shopping_list_voice_quick_add_cd">Toevoegen via spraak</string>
     <string name="shopping_list_more_options_cd">Meer opties</string>
     <string name="shopping_list_more_options_title">Opties</string>
+    <string name="shopping_list_progress_checked_format">%1$d/%2$d afgevinkt</string>
     <plurals name="shopping_list_store_count_format">
         <item quantity="one">%1$d winkel</item>
         <item quantity="other">%1$d winkels</item>

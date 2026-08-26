@@ -1964,8 +1964,13 @@ private fun HouseholdMembersRow(members: List<HouseholdMember>, subtitle: String
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        OverlappingAvatars(members = members, modifier = Modifier.padding(end = 8.dp))
-        Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
+        // Single 16dp gap between the leading avatars and the title, matching SettingsRow's own
+        // icon-to-title gap exactly — this used to be two stacked paddings (8dp avatar end-padding
+        // + 8dp column start-padding), an accidental double gap that pushed "Samenstelling" a
+        // noticeable ~14dp further right than every option row below it, not just the ~6dp a
+        // wider leading avatar (28dp) than icon (22dp) alone would explain.
+        OverlappingAvatars(members = members, modifier = Modifier.padding(end = 16.dp))
+        Column(modifier = Modifier.weight(1f)) {
             Text(stringResource(R.string.more_household_row_title), style = MaterialTheme.typography.titleSmall)
             Text(
                 text = subtitle,

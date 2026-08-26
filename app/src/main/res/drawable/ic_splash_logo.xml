@@ -2,8 +2,11 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="288dp" android:height="288dp"
     android:viewportWidth="100" android:viewportHeight="100">
-    <!-- See ic_notification.xml's comment — same mark, same off-center bbox, same fix. -->
-    <group android:translateY="-8.5">
+    <!-- See ic_notification.xml's comment for the bbox derivation — but this file's body path is
+         filled, not stroked (same distinction as ic_launcher_foreground.xml vs
+         ic_launcher_monochrome.xml), so its bottom edge stays at y=88: true bbox y:[12.5,88],
+         centered at 50.25, giving translateY=50-50.25=-0.25 rather than -2. -->
+    <group android:translateY="-0.25">
         <path android:fillColor="@color/ic_launcher_mark"
             android:pathData="M24,36 H76 L71,82 A6,6 0 0 1 65,88 H35 A6,6 0 0 1 29,82 Z" />
         <path android:strokeColor="@color/ic_launcher_mark" android:strokeWidth="7"

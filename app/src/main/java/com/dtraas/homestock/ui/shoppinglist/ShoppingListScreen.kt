@@ -77,6 +77,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -146,6 +147,7 @@ import com.dtraas.homestock.ui.components.sheetContentPadding
 import com.dtraas.homestock.ui.theme.LocalIsDarkTheme
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
+import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
@@ -213,6 +215,7 @@ fun ShoppingListScreen() {
     val lists by viewModel.lists.collectAsState()
     val activeList by viewModel.activeList.collectAsState()
     val itemCountByListId by viewModel.itemCountByListId.collectAsState()
+    val totalPrice by viewModel.totalPrice.collectAsState()
     val allItems = groupedByStore.values.flatten()
     val hasCheckedItems = allItems.any { it.isChecked }
     val hasUncheckedItems = allItems.any { !it.isChecked }
@@ -322,12 +325,11 @@ fun ShoppingListScreen() {
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // The green header carries just the list switcher + meer-opties now — delen used to
-            // sit here too as its own icon button, but "Boodschappenlijst delen" inside
-            // meer-opties (see ShoppingListMoreOptionsDialog) already covers the exact same
-            // action, so the header copy was a plain duplicate. The progress bar (checked count
-            // + store count + a filled bar) that used to live right underneath is gone too —
-            // it was eating space the product rows below needed more.
+            // The green header carries the list switcher + meer-opties, and — once the active
+            // list has items — the progress bar right underneath, back after a round briefly
+            // removed it for more vertical room. Delen stays gone from here: it's a plain
+            // duplicate of "Boodschappenlijst delen" already inside meer-opties (see
+            // ShoppingListMoreOptionsDialog).
             ShoppingListHeader(
                 listName = activeList.name,
                 onListNameClick = { showListMenu = true },
@@ -341,6 +343,11 @@ fun ShoppingListScreen() {
                 onRenameList = { listToRename = it },
                 onDeleteList = { listToDelete = it },
                 onMoreOptionsClick = { showMoreOptions = true },
+                showProgress = groupedByStore.isNotEmpty(),
+                checkedCount = allItems.count { it.isChecked },
+                totalCount = allItems.size,
+                totalPrice = totalPrice,
+                storeCount = groupedByStore.keys.count { it.isNotBlank() },
             )
 
             if (groupedByStore.isNotEmpty()) {
@@ -1249,11 +1256,11 @@ private fun ShoppingCheckCircle(
 
 /**
  * The fixed (non-scrolling) green gradient header — replaces the old flat HomeStockTopAppBar.
- * Just the list-name switcher + meer-opties on a single row now. Delen used to be a second icon
- * button here, and a checked/total progress bar used to live right underneath — both removed:
- * delen was a plain duplicate of "Boodschappenlijst delen" already inside meer-opties (see
- * ShoppingListMoreOptionsDialog), and the progress bar was eating vertical space the product
- * rows below needed more.
+ * List-name switcher + meer-opties on the (centered-title) top row, and — once the active list
+ * has items — the progress bar right underneath, back after a round briefly removed it for more
+ * vertical room; the household asked for it back. Delen stays gone from here: it was a plain
+ * duplicate of "Boodschappenlijst delen" already inside meer-opties (see
+ * ShoppingListMoreOptionsDialog), unrelated to the progress bar's return.
  */
 @Composable
 private fun ShoppingListHeader(
@@ -1269,9 +1276,14 @@ private fun ShoppingListHeader(
     onRenameList: (ShoppingListMeta) -> Unit,
     onDeleteList: (ShoppingListMeta) -> Unit,
     onMoreOptionsClick: () -> Unit,
+    showProgress: Boolean,
+    checkedCount: Int,
+    totalCount: Int,
+    totalPrice: Double?,
+    storeCount: Int,
 ) {
     val contentColor = LocalTopAppBarContentColor.current
-    Box(
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(LocalTopAppBarContainerColor.current)
@@ -1281,42 +1293,104 @@ private fun ShoppingListHeader(
             // the item list below, per "iets meer boodschap items te kunnen tonen".
             .padding(bottom = 8.dp),
     ) {
+        Box(modifier = Modifier.fillMaxWidth()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .padding(horizontal = 48.dp)
+                    .clickable(onClick = onListNameClick)
+                    .padding(vertical = 10.dp, horizontal = 4.dp),
+            ) {
+                Text(
+                    text = listName,
+                    style = MaterialTheme.typography.titleLarge,
+                    color = contentColor,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Icon(
+                    Icons.Filled.ArrowDropDown,
+                    contentDescription = stringResource(R.string.shopping_list_switch_list_cd),
+                    tint = contentColor,
+                )
+            }
+            if (listMenuExpanded) {
+                ShoppingListSwitcherSheet(
+                    lists = lists,
+                    activeListId = activeListId,
+                    itemCountByListId = itemCountByListId,
+                    onDismiss = onDismissListMenu,
+                    onSelect = onSelectList,
+                    onCreateNew = onCreateNewList,
+                    onRename = onRenameList,
+                    onDelete = onDeleteList,
+                )
+            }
+            IconButton(onClick = onMoreOptionsClick, modifier = Modifier.align(Alignment.CenterEnd)) {
+                Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.shopping_list_more_options_cd), tint = contentColor)
+            }
+        }
+        if (showProgress) {
+            ShoppingProgressBar(
+                checkedCount = checkedCount,
+                totalCount = totalCount,
+                totalPrice = totalPrice,
+                storeCount = storeCount,
+                modifier = Modifier.padding(top = 4.dp, start = 4.dp),
+            )
+        }
+    }
+}
+
+/**
+ * How far through the list the household is — checked/total items as plain text plus a filled
+ * bar. Lives permanently inside [ShoppingListHeader]'s dark green gradient, hence the
+ * white/coral palette below instead of the surface-oriented colors a plain page background
+ * would use.
+ */
+@Composable
+private fun ShoppingProgressBar(
+    checkedCount: Int,
+    totalCount: Int,
+    totalPrice: Double?,
+    storeCount: Int,
+    modifier: Modifier = Modifier,
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
         Row(
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier
-                .align(Alignment.Center)
-                .padding(horizontal = 48.dp)
-                .clickable(onClick = onListNameClick)
-                .padding(vertical = 10.dp, horizontal = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             Text(
-                text = listName,
-                style = MaterialTheme.typography.titleLarge,
-                color = contentColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                text = stringResource(R.string.shopping_list_progress_checked_format, checkedCount, totalCount),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
             )
-            Icon(
-                Icons.Filled.ArrowDropDown,
-                contentDescription = stringResource(R.string.shopping_list_switch_list_cd),
-                tint = contentColor,
+            val metaParts = listOfNotNull(
+                if (storeCount > 0) pluralStringResource(R.plurals.shopping_list_store_count_format, storeCount, storeCount) else null,
+                totalPrice?.let { formatPrice(it) },
             )
+            if (metaParts.isNotEmpty()) {
+                Text(
+                    text = metaParts.joinToString(" · "),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = OnTopAppBarContainerAccent,
+                )
+            }
         }
-        if (listMenuExpanded) {
-            ShoppingListSwitcherSheet(
-                lists = lists,
-                activeListId = activeListId,
-                itemCountByListId = itemCountByListId,
-                onDismiss = onDismissListMenu,
-                onSelect = onSelectList,
-                onCreateNew = onCreateNewList,
-                onRename = onRenameList,
-                onDelete = onDeleteList,
-            )
-        }
-        IconButton(onClick = onMoreOptionsClick, modifier = Modifier.align(Alignment.CenterEnd)) {
-            Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.shopping_list_more_options_cd), tint = contentColor)
-        }
+        LinearProgressIndicator(
+            progress = { if (totalCount > 0) checkedCount.toFloat() / totalCount else 0f },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 6.dp)
+                .height(8.dp)
+                .clip(RoundedCornerShape(percent = 50)),
+            color = OnTopAppBarContainerAccent,
+            trackColor = Color.White.copy(alpha = 0.18f),
+        )
     }
 }
 
