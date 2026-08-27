@@ -456,6 +456,16 @@
 
     <!-- Voorraad -->
     <string name="inventory_title">Voorraad</string>
+    <plurals name="inventory_stats_expiring_format">
+        <item quantity="one">%d verloopt bijna</item>
+        <item quantity="other">%d verlopen bijna</item>
+    </plurals>
+    <plurals name="inventory_stats_low_stock_format">
+        <item quantity="one">%d bijna op</item>
+        <item quantity="other">%d bijna op</item>
+    </plurals>
+    <string name="inventory_kitchen_title">Keuken</string>
+    <string name="inventory_expiring_soon_title">Eerst opmaken</string>
     <string name="inventory_show_as_tiles_cd">Toon als tegels</string>
     <string name="inventory_search_placeholder">Zoek in voorraad…</string>
     <string name="inventory_filter_all">Alles</string>
@@ -590,7 +600,8 @@
     <string name="product_detail_field_brand">Merk</string>
     <string name="product_detail_field_unit">Eenheid</string>
     <string name="product_detail_field_location">Locatie in huis</string>
-    <string name="location_pantry">Voorraadkast</string>
+        <string name="location_fridge">Koelkast</string>
+<string name="location_pantry">Voorraadkast</string>
     <string name="location_cellar">Kelder</string>
     <string name="location_freezer">Vriezer</string>
     <string name="product_detail_field_last_price">Laatst betaald</string>

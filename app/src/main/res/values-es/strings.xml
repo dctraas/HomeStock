@@ -452,6 +452,16 @@
 
     <!-- Inventario -->
     <string name="inventory_title">Inventario</string>
+    <plurals name="inventory_stats_expiring_format">
+        <item quantity="one">%d caduca pronto</item>
+        <item quantity="other">%d caducan pronto</item>
+    </plurals>
+    <plurals name="inventory_stats_low_stock_format">
+        <item quantity="one">%d casi agotado</item>
+        <item quantity="other">%d casi agotados</item>
+    </plurals>
+    <string name="inventory_kitchen_title">Cocina</string>
+    <string name="inventory_expiring_soon_title">Consumir primero</string>
     <string name="inventory_show_as_tiles_cd">Mostrar como tarjetas</string>
     <string name="inventory_search_placeholder">Buscar en el inventario…</string>
     <string name="inventory_filter_all">Todo</string>
@@ -586,7 +596,8 @@
     <string name="product_detail_field_brand">Marca</string>
     <string name="product_detail_field_unit">Unidad</string>
     <string name="product_detail_field_location">Ubicación en casa</string>
-    <string name="location_pantry">Despensa</string>
+        <string name="location_fridge">Nevera</string>
+<string name="location_pantry">Despensa</string>
     <string name="location_cellar">Sótano</string>
     <string name="location_freezer">Congelador</string>
     <string name="product_detail_field_last_price">Último precio pagado</string>

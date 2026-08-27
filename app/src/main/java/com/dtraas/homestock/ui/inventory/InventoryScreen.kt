@@ -40,6 +40,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.AcUnit
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -49,6 +50,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Kitchen
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.MoreVert
@@ -59,6 +61,7 @@ import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Receipt
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Storage
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.WorkspacePremium
@@ -106,11 +109,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -139,6 +142,8 @@ import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.components.onColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
+import com.dtraas.homestock.ui.theme.CoralSecondaryDark
+import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SageGreenPrimary
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShape
@@ -353,6 +358,24 @@ fun InventoryScreen(
                     onSearchQueryChange = viewModel::onSearchQueryChange,
                     onFilterClick = { showFilterSheet = true },
                     hasActiveFilter = hasActiveFilter,
+                    totalCount = uiState.totalCount,
+                    expiringSoonCount = uiState.expiringSoonCount,
+                    lowStockCount = uiState.lowStockCount,
+                )
+                if (uiState.expiringSoonItems.isNotEmpty()) {
+                    ExpiringSoonCard(
+                        items = uiState.expiringSoonItems,
+                        onItemClick = { item -> onProductClick(item.barcode) },
+                        onSeeAllClick = { viewModel.onExpiringSoonFilterChange(true) },
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
+                LocationChipRow(
+                    totalCount = uiState.totalCount,
+                    groupedByLocation = uiState.groupedByLocation,
+                    selectedLocation = uiState.selectedLocation,
+                    onSelectLocation = viewModel::onLocationFilterChange,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
                 )
             }
 
@@ -573,11 +596,13 @@ fun InventoryScreen(
 }
 
 /**
- * Household profile row + search field + filter button, all folded into one green gradient
- * header (same Keukenlinnen pattern as Productdetail/Boodschappenlijst/Maaltijdplanner/
- * Instellingen/Statistieken/Premium/Activiteiten this round) — replaces the flat
- * HomeStockTopAppBar plus the separate always-visible search Row that used to sit right below
- * it, per the design review ("Neem de Zoekbalk en filter op in de Header").
+ * Household eyebrow + "Keuken" title + profile row + stats row + search field/filter button,
+ * all folded into one green gradient header (same Keukenlinnen pattern as Productdetail/
+ * Boodschappenlijst/Maaltijdplanner/Instellingen/Statistieken/Premium/Activiteiten this round).
+ * Title left-aligned (per the app-wide header pass) with the household's own name as a small
+ * eyebrow above it — matching the Claude Design mockup's "HUIZE TRAAS" / "Keuken" pairing — and
+ * a new "N producten · N verlopen bijna · N bijna op" stats line, both replacing the old
+ * centered "household name (or 'Voorraad') as the one and only title" treatment.
  */
 @Composable
 private fun InventoryHeader(
@@ -590,27 +615,46 @@ private fun InventoryHeader(
     onSearchQueryChange: (String) -> Unit,
     onFilterClick: () -> Unit,
     hasActiveFilter: Boolean,
+    totalCount: Int,
+    expiringSoonCount: Int,
+    lowStockCount: Int,
 ) {
     val contentColor = LocalTopAppBarContentColor.current
+    val locale = LocalConfiguration.current.locales[0]
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(LocalTopAppBarContainerColor.current)
             .windowInsetsPadding(WindowInsets.statusBars)
-            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .padding(horizontal = 16.dp, vertical = 4.dp)
             .padding(bottom = 14.dp),
     ) {
-        // A Box rather than a plain Row: the household name is centered on the full header width
-        // (not just the space left over between the two icons), so it stays visually centered
-        // even though the notifications/profile icons on either side aren't the same width as
-        // each other (a badge on the left one, a possible round photo on the right one).
-        Box(modifier = Modifier.fillMaxWidth()) {
-            // Meldingen is no longer its own bottom-nav tab — this is the way to reach it, at
-            // the far-left glance position. The red counter badge tracks unread developer
-            // notices. Bell icon rather than the old envelope — a bell is the more conventional
-            // "notifications" glyph, and this row already reads as generic developer-notice
-            // alerts rather than mail/messages specifically.
-            IconButton(onClick = onNotificationsClick, modifier = Modifier.align(Alignment.CenterStart)) {
+        Row(verticalAlignment = Alignment.Top) {
+            Column(modifier = Modifier.weight(1f)) {
+                if (!householdName.isNullOrBlank()) {
+                    Text(
+                        text = householdName.uppercase(locale),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = OnTopAppBarContainerAccent,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.inventory_kitchen_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = contentColor,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+            // Meldingen is no longer its own bottom-nav tab — this is the way to reach it. The
+            // red counter badge tracks unread developer notices. Bell icon rather than the old
+            // envelope — a bell is the more conventional "notifications" glyph, and this row
+            // already reads as generic developer-notice alerts rather than mail/messages
+            // specifically.
+            IconButton(onClick = onNotificationsClick) {
                 if (unreadNoticeCount > 0) {
                     BadgedBox(badge = { Badge { Text(unreadNoticeCount.toString()) } }) {
                         Icon(Icons.Filled.Notifications, contentDescription = stringResource(R.string.nav_news), tint = contentColor)
@@ -619,16 +663,7 @@ private fun InventoryHeader(
                     Icon(Icons.Filled.Notifications, contentDescription = stringResource(R.string.nav_news), tint = contentColor)
                 }
             }
-            Text(
-                text = householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.inventory_title),
-                style = MaterialTheme.typography.titleLarge,
-                color = contentColor,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.align(Alignment.Center).padding(horizontal = 56.dp),
-            )
-            IconButton(onClick = onProfileClick, modifier = Modifier.align(Alignment.CenterEnd)) {
+            IconButton(onClick = onProfileClick) {
                 if (photoPath != null) {
                     AsyncImage(
                         model = File(photoPath),
@@ -640,6 +675,26 @@ private fun InventoryHeader(
                     Icon(Icons.Filled.AccountCircle, contentDescription = stringResource(R.string.more_profile_title), tint = contentColor)
                 }
             }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp, start = 4.dp)) {
+            Text(
+                text = pluralStringResource(R.plurals.statistics_hero_product_count_format, totalCount, totalCount),
+                style = MaterialTheme.typography.labelMedium,
+                color = OnTopAppBarContainerAccent,
+            )
+            Text("  ·  ", style = MaterialTheme.typography.labelMedium, color = OnTopAppBarContainerAccent)
+            Text(
+                text = pluralStringResource(R.plurals.inventory_stats_expiring_format, expiringSoonCount, expiringSoonCount),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = if (expiringSoonCount > 0) FontWeight.Bold else FontWeight.Normal,
+                color = if (expiringSoonCount > 0) CoralSecondaryDark else OnTopAppBarContainerAccent,
+            )
+            Text("  ·  ", style = MaterialTheme.typography.labelMedium, color = OnTopAppBarContainerAccent)
+            Text(
+                text = pluralStringResource(R.plurals.inventory_stats_low_stock_format, lowStockCount, lowStockCount),
+                style = MaterialTheme.typography.labelMedium,
+                color = OnTopAppBarContainerAccent,
+            )
         }
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -693,6 +748,157 @@ private fun InventoryHeader(
                     )
                 }
             }
+        }
+    }
+}
+
+/**
+ * "Eerst opmaken" — up to 3 soonest-expiring items as horizontal chips, each showing how soon
+ * (the same wording [stockStatusPillText] already gives the grid/list badges) and the product
+ * name. "Alles →" switches on the existing [InventoryViewModel.onExpiringSoonFilterChange] quick
+ * filter rather than opening a separate screen — same list, just narrowed to everything, not
+ * only the 3 shown here. The mockup's "Kook hiermee" recipe-suggestion button is deliberately
+ * not built here, out of scope for this pass.
+ */
+@Composable
+private fun ExpiringSoonCard(
+    items: List<InventoryItemWithProduct>,
+    onItemClick: (InventoryItemWithProduct) -> Unit,
+    onSeeAllClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = SoftCardShape,
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = stringResource(R.string.inventory_expiring_soon_title),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable(onClick = onSeeAllClick)) {
+                    Text(
+                        text = stringResource(R.string.inventory_filter_all),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Icon(
+                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                items.forEach { item ->
+                    ExpiringSoonChip(item = item, onClick = { onItemClick(item) }, modifier = Modifier.weight(1f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExpiringSoonChip(item: InventoryItemWithProduct, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    val stockStatus = InventoryStockStatus.of(item.quantity, item.minQuantity, item.expirationDate)
+    val dayLabel = stockStatusPillText(stockStatus, item.expirationDate).orEmpty()
+    Column(
+        modifier = modifier
+            .clip(SoftCardShapeCompact)
+            .background(stockStatus.color)
+            .clickable(onClick = onClick)
+            .padding(10.dp),
+    ) {
+        Icon(
+            imageVector = Category.fromStorageKey(item.category).icon,
+            contentDescription = null,
+            tint = stockStatus.onColor,
+            modifier = Modifier.size(18.dp),
+        )
+        Text(
+            text = dayLabel,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = stockStatus.onColor,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+        Text(
+            text = item.name,
+            style = MaterialTheme.typography.bodySmall,
+            color = stockStatus.onColor,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 2.dp),
+        )
+    }
+}
+
+/** Location extension local to Voorraad — no location has ever had an icon anywhere else, so
+ *  this only exists here rather than a shared file like Category's own `icon` extension. */
+private val Location.icon: ImageVector
+    get() = when (this) {
+        Location.FRIDGE -> Icons.Filled.Kitchen
+        Location.FREEZER -> Icons.Filled.AcUnit
+        Location.PANTRY -> Icons.Filled.Inventory2
+        Location.CELLAR -> Icons.Filled.Storage
+    }
+
+/**
+ * Always-visible "Alles"/per-[Location] filter row — replaces having to open
+ * [InventoryFilterSheet] just to narrow by location, per the Claude Design mockup's "Alles 82 ·
+ * Koelkast 24 · Vries 12 · Voorraadkast …" chip row. Reuses the same
+ * [InventoryUiState.selectedLocation]/[InventoryViewModel.onLocationFilterChange] the filter
+ * sheet's own location control already writes to, so the two never disagree. Fixed 4 locations
+ * shown regardless of whether each currently has any items (a location with 0 is still a valid
+ * place to look, and a fixed set of chips doesn't jump around as items move between them).
+ */
+@Composable
+private fun LocationChipRow(
+    totalCount: Int,
+    groupedByLocation: Map<String?, List<InventoryItemWithProduct>>,
+    selectedLocation: String?,
+    onSelectLocation: (String?) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    fun countFor(location: Location): Int =
+        groupedByLocation.entries.firstOrNull { it.key?.equals(location.storageKey, ignoreCase = true) == true }?.value?.size ?: 0
+
+    val selectedColors = FilterChipDefaults.filterChipColors(
+        selectedContainerColor = MaterialTheme.colorScheme.primary,
+        selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+        selectedLeadingIconColor = MaterialTheme.colorScheme.onPrimary,
+    )
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
+        contentPadding = PaddingValues(horizontal = 16.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        item {
+            FilterChip(
+                selected = selectedLocation == null,
+                onClick = { onSelectLocation(null) },
+                label = { Text("${stringResource(R.string.inventory_filter_all)} $totalCount") },
+                colors = selectedColors,
+            )
+        }
+        items(Location.entries) { location ->
+            val isSelected = selectedLocation?.equals(location.storageKey, ignoreCase = true) == true
+            FilterChip(
+                selected = isSelected,
+                onClick = { onSelectLocation(if (isSelected) null else location.storageKey) },
+                label = { Text("${stringResource(location.labelRes)} ${countFor(location)}") },
+                leadingIcon = { Icon(location.icon, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                colors = selectedColors,
+            )
         }
     }
 }
@@ -1348,12 +1554,14 @@ private fun InventoryGridTile(
             // A small camera hint on the fallback (no real photo yet) — an unobtrusive nudge
             // that a product photo would help this tile stand out, without a tap target of
             // its own (ProductDetail, one tap away via onClick, is where photos are managed).
-            if (item.imageUrl.isNullOrBlank()) {
+            // Top-end per the Claude Design mockup — guarded off during selectionMode since
+            // that's the same corner the selection checkmark below claims.
+            if (!selectionMode && item.imageUrl.isNullOrBlank()) {
                 Icon(
                     imageVector = Icons.Filled.PhotoCamera,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.55f),
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp).size(16.dp),
+                    modifier = Modifier.align(Alignment.TopEnd).padding(6.dp).size(16.dp),
                 )
             }
             // Replaces the old status dot — color and text both, right on the photo, so what
@@ -1376,26 +1584,6 @@ private fun InventoryGridTile(
                         fontWeight = FontWeight.Bold,
                         color = stockStatus.onColor,
                         modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
-                    )
-                }
-            }
-            // Add-to-shopping-list lives on the photo itself now (bottom-end corner), not
-            // beside the stepper below — shown only when a restock might actually be relevant
-            // (low/out), same condition as before.
-            val showCartBadge = stockStatus == InventoryStockStatus.LOW_STOCK || stockStatus == InventoryStockStatus.OUT_OF_STOCK
-            if (!selectionMode && showCartBadge) {
-                FilledIconButton(
-                    onClick = onAddToShoppingList,
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp).size(26.dp),
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                    ),
-                ) {
-                    Icon(
-                        Icons.Filled.AddShoppingCart,
-                        contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
-                        modifier = Modifier.size(14.dp),
                     )
                 }
             }
@@ -1435,16 +1623,33 @@ private fun InventoryGridTile(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 1.dp),
             )
-            // A full-width pill now that the cart button has moved off this row entirely (see
-            // the photo above) — − pinned left, quantity centered, + pinned right.
-            QuantityStepper(
-                quantity = item.quantity,
-                onDecrease = onDecrease,
-                onIncrease = onIncrease,
-                dense = true,
-                pill = true,
+            // Stepper + cart icon side by side, per the Claude Design mockup — the cart used to
+            // live as a badge on the photo and only for low/out-of-stock items; it's now always
+            // here instead, next to the quantity it'd be restocking.
+            Row(
                 modifier = Modifier.padding(top = 4.dp),
-            )
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                QuantityStepper(
+                    quantity = item.quantity,
+                    onDecrease = onDecrease,
+                    onIncrease = onIncrease,
+                    dense = true,
+                    pill = true,
+                    modifier = Modifier.weight(1f),
+                )
+                if (!selectionMode) {
+                    IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(28.dp)) {
+                        Icon(
+                            Icons.Filled.AddShoppingCart,
+                            contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                }
+            }
         }
     }
 }

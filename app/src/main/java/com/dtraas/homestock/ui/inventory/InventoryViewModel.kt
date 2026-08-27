@@ -71,6 +71,12 @@ data class InventoryUiState(
     // category filter happens to be active.
     val totalCount: Int = 0,
     val lowStockCount: Int = 0,
+    val expiringSoonCount: Int = 0,
+    // The 3 soonest-expiring items, unfiltered, soonest first — the "Eerst opmaken" header
+    // card's chips. A subset of what expiringSoonCount counts, not everything it counts —
+    // the card only ever has room for a handful, "Alles" (expiringSoonOnly) is where the rest
+    // shows up.
+    val expiringSoonItems: List<InventoryItemWithProduct> = emptyList(),
 )
 
 class InventoryViewModel(
@@ -183,6 +189,11 @@ class InventoryViewModel(
                 .sortedBy { it.lowercase() },
             totalCount = items.size,
             lowStockCount = items.count { InventoryStockStatus.isLowStock(it.quantity, it.minQuantity) },
+            expiringSoonCount = items.count { InventoryStockStatus.isExpiringSoon(it.expirationDate) },
+            expiringSoonItems = items
+                .filter { InventoryStockStatus.isExpiringSoon(it.expirationDate) }
+                .sortedBy { it.expirationDate }
+                .take(3),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), InventoryUiState())
 

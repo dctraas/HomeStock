@@ -452,6 +452,16 @@
 
     <!-- Vorrat -->
     <string name="inventory_title">Vorrat</string>
+    <plurals name="inventory_stats_expiring_format">
+        <item quantity="one">%d läuft bald ab</item>
+        <item quantity="other">%d laufen bald ab</item>
+    </plurals>
+    <plurals name="inventory_stats_low_stock_format">
+        <item quantity="one">%d wird knapp</item>
+        <item quantity="other">%d werden knapp</item>
+    </plurals>
+    <string name="inventory_kitchen_title">Küche</string>
+    <string name="inventory_expiring_soon_title">Zuerst aufbrauchen</string>
     <string name="inventory_show_as_tiles_cd">Als Kacheln anzeigen</string>
     <string name="inventory_search_placeholder">Vorrat durchsuchen…</string>
     <string name="inventory_filter_all">Alle</string>
@@ -586,7 +596,8 @@
     <string name="product_detail_field_brand">Marke</string>
     <string name="product_detail_field_unit">Einheit</string>
     <string name="product_detail_field_location">Standort im Haus</string>
-    <string name="location_pantry">Vorratsschrank</string>
+        <string name="location_fridge">Kühlschrank</string>
+<string name="location_pantry">Vorratsschrank</string>
     <string name="location_cellar">Keller</string>
     <string name="location_freezer">Gefrierfach</string>
     <string name="product_detail_field_last_price">Zuletzt bezahlt</string>

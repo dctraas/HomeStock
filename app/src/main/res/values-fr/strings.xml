@@ -452,6 +452,16 @@
 
     <!-- Stock -->
     <string name="inventory_title">Stock</string>
+    <plurals name="inventory_stats_expiring_format">
+        <item quantity="one">%d expire bientôt</item>
+        <item quantity="other">%d expirent bientôt</item>
+    </plurals>
+    <plurals name="inventory_stats_low_stock_format">
+        <item quantity="one">%d presque épuisé</item>
+        <item quantity="other">%d presque épuisés</item>
+    </plurals>
+    <string name="inventory_kitchen_title">Cuisine</string>
+    <string name="inventory_expiring_soon_title">À consommer en premier</string>
     <string name="inventory_show_as_tiles_cd">Afficher en cartes</string>
     <string name="inventory_search_placeholder">Rechercher dans le stock…</string>
     <string name="inventory_filter_all">Tout</string>
@@ -586,7 +596,8 @@
     <string name="product_detail_field_brand">Marque</string>
     <string name="product_detail_field_unit">Unité</string>
     <string name="product_detail_field_location">Emplacement dans la maison</string>
-    <string name="location_pantry">Garde-manger</string>
+        <string name="location_fridge">Réfrigérateur</string>
+<string name="location_pantry">Garde-manger</string>
     <string name="location_cellar">Cave</string>
     <string name="location_freezer">Congélateur</string>
     <string name="product_detail_field_last_price">Dernier prix payé</string>
