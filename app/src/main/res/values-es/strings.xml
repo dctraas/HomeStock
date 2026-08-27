@@ -871,9 +871,26 @@
     <string name="recipes_show_as_grid_cd">Mostrar como cuadrícula</string>
     <string name="recipes_show_as_list_cd">Mostrar como lista</string>
     <string name="recipes_match_ratio_format">%1$d/%2$d en casa</string>
-    <string name="recipes_more_options_cd">Más opciones</string>
+    <string name="recipes_filter_cd">Filtro</string>
     <string name="recipes_allergen_menu_header">Excluir alérgenos</string>
     <string name="recipes_area_match_cd">Coincide con tu idioma/región</string>
+    <string name="recipes_match_complete_cd">Todo en casa</string>
+    <string name="recipes_hero_card_title">Cocina con lo que tienes</string>
+    <string name="recipes_hero_card_subtitle_format">Cocina ahora con: %1$s</string>
+    <string name="recipes_hero_card_subtitle_empty">Descubre recetas que encajan con tu despensa.</string>
+    <string name="recipes_hero_card_cta_cd">Ver recetas de tu despensa</string>
+    <plurals name="recipes_hero_expiring_badge">
+        <item quantity="one">%1$d producto caduca pronto</item>
+        <item quantity="other">%1$d productos caducan pronto</item>
+    </plurals>
+    <string name="recipes_browse_sorted_header">Casi completo</string>
+    <string name="recipes_browse_sorted_label">Ordenado por coincidencia</string>
+    <string name="recipes_used_expiring_pill_format">Usa %1$s</string>
+    <string name="recipes_servings_short_format">%1$d rac.</string>
+    <plurals name="recipes_missing_count_format">
+        <item quantity="one">Falta %1$d</item>
+        <item quantity="other">Faltan %1$d</item>
+    </plurals>
     <string name="recipes_detail_error">No se pudo cargar esta receta. Inténtalo de nuevo.</string>
     <string name="recipes_ingredients_title">Ingredientes</string>
     <string name="recipes_servings_label">Raciones</string>

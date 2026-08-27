@@ -871,9 +871,26 @@
     <string name="recipes_show_as_grid_cd">Afficher en grille</string>
     <string name="recipes_show_as_list_cd">Afficher en liste</string>
     <string name="recipes_match_ratio_format">%1$d/%2$d en stock</string>
-    <string name="recipes_more_options_cd">Plus d\'options</string>
+    <string name="recipes_filter_cd">Filtre</string>
     <string name="recipes_allergen_menu_header">Exclure les allergènes</string>
     <string name="recipes_area_match_cd">Correspond à ta langue/région</string>
+    <string name="recipes_match_complete_cd">Tout en stock</string>
+    <string name="recipes_hero_card_title">Cuisine avec ce que tu as</string>
+    <string name="recipes_hero_card_subtitle_format">Cuisine maintenant avec : %1$s</string>
+    <string name="recipes_hero_card_subtitle_empty">Découvre des recettes adaptées à ton stock.</string>
+    <string name="recipes_hero_card_cta_cd">Voir les recettes de ton stock</string>
+    <plurals name="recipes_hero_expiring_badge">
+        <item quantity="one">%1$d produit expire bientôt</item>
+        <item quantity="other">%1$d produits expirent bientôt</item>
+    </plurals>
+    <string name="recipes_browse_sorted_header">Presque complet</string>
+    <string name="recipes_browse_sorted_label">Trié par correspondance</string>
+    <string name="recipes_used_expiring_pill_format">Utilise %1$s</string>
+    <string name="recipes_servings_short_format">%1$d pers.</string>
+    <plurals name="recipes_missing_count_format">
+        <item quantity="one">%1$d manquant</item>
+        <item quantity="other">%1$d manquants</item>
+    </plurals>
     <string name="recipes_detail_error">Impossible de charger cette recette. Réessayez.</string>
     <string name="recipes_ingredients_title">Ingrédients</string>
     <string name="recipes_servings_label">Portions</string>

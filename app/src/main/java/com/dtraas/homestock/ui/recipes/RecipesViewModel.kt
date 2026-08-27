@@ -67,6 +67,11 @@ data class RecipesUiState(
     val hasMore: Boolean = false,
     /** True only while a "load more" page is in flight — distinct from [isLoading], which covers the *first* page of a fresh browse/search so the existing list can stay visible (with a small footer spinner) while more loads. */
     val isLoadingMore: Boolean = false,
+    /** Every currently-favorited meal id — collected continuously (see [RecipesViewModel.load]),
+     *  independent of which tab is showing, so the heart overlay on a BROWSE/CUSTOM/INVENTORY
+     *  grid tile (see RecipeGridTile) reflects favorite state without that tab being FAVORITES
+     *  itself. */
+    val favoriteIds: Set<String> = emptySet(),
 )
 
 /**
@@ -155,6 +160,26 @@ class RecipesViewModel(
                 if (householdDefaults.isNotEmpty()) _uiState.update { it.copy(excludedAllergens = householdDefaults) }
                 refreshCurrentTab()
             }
+            // Own long-lived collection, not tied to listJob/refreshCurrentTab — favorite state
+            // needs to keep updating no matter which tab is currently showing (see
+            // RecipesUiState.favoriteIds' doc), unlike the tab-specific recipe lists that get
+            // cancelled and replaced on every switch.
+            viewModelScope.launch {
+                recipeRepository.observeFavoriteIds().collect { ids ->
+                    _uiState.update { it.copy(favoriteIds = ids) }
+                }
+            }
+        }
+    }
+
+    /** Toggles [mealId]'s favorite state — used by the heart overlay on grid tiles across every
+     *  tab (see [RecipesUiState.favoriteIds]), not just FAVORITES itself. No local optimistic
+     *  update needed: [RecipesUiState.favoriteIds] already tracks Firestore live, so the heart
+     *  flips back on its own the moment [RecipeRepository.toggleFavorite] resolves. */
+    fun toggleFavorite(mealId: String) {
+        val isCurrentlyFavorite = mealId in _uiState.value.favoriteIds
+        viewModelScope.launch {
+            recipeRepository.toggleFavorite(mealId, isCurrentlyFavorite)
         }
     }
 

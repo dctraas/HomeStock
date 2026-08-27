@@ -875,9 +875,26 @@
     <string name="recipes_show_as_grid_cd">Toon als raster</string>
     <string name="recipes_show_as_list_cd">Toon als lijst</string>
     <string name="recipes_match_ratio_format">%1$d/%2$d in huis</string>
-    <string name="recipes_more_options_cd">Meer opties</string>
+    <string name="recipes_filter_cd">Filter</string>
     <string name="recipes_allergen_menu_header">Allergenen uitsluiten</string>
     <string name="recipes_area_match_cd">Sluit aan bij jouw taal/regio</string>
+    <string name="recipes_match_complete_cd">Alles in huis</string>
+    <string name="recipes_hero_card_title">Kook wat je hebt</string>
+    <string name="recipes_hero_card_subtitle_format">Nu koken met: %1$s</string>
+    <string name="recipes_hero_card_subtitle_empty">Bekijk recepten die passen bij jouw voorraad.</string>
+    <string name="recipes_hero_card_cta_cd">Bekijk recepten uit je voorraad</string>
+    <plurals name="recipes_hero_expiring_badge">
+        <item quantity="one">%1$d item verloopt bijna</item>
+        <item quantity="other">%1$d items verlopen bijna</item>
+    </plurals>
+    <string name="recipes_browse_sorted_header">Bijna compleet</string>
+    <string name="recipes_browse_sorted_label">Gesorteerd op match</string>
+    <string name="recipes_used_expiring_pill_format">Gebruikt %1$s</string>
+    <string name="recipes_servings_short_format">%1$d pers.</string>
+    <plurals name="recipes_missing_count_format">
+        <item quantity="one">%1$d missend</item>
+        <item quantity="other">%1$d missend</item>
+    </plurals>
     <string name="recipes_detail_error">Kon dit recept niet laden. Probeer het opnieuw.</string>
     <string name="recipes_ingredients_title">Ingrediënten</string>
     <string name="recipes_servings_label">Porties</string>

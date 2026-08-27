@@ -871,9 +871,26 @@
     <string name="recipes_show_as_grid_cd">Show as grid</string>
     <string name="recipes_show_as_list_cd">Show as list</string>
     <string name="recipes_match_ratio_format">%1$d/%2$d in stock</string>
-    <string name="recipes_more_options_cd">More options</string>
+    <string name="recipes_filter_cd">Filter</string>
     <string name="recipes_allergen_menu_header">Exclude allergens</string>
     <string name="recipes_area_match_cd">Matches your language/region</string>
+    <string name="recipes_match_complete_cd">Everything in stock</string>
+    <string name="recipes_hero_card_title">Cook what you have</string>
+    <string name="recipes_hero_card_subtitle_format">Cook with: %1$s</string>
+    <string name="recipes_hero_card_subtitle_empty">See recipes that fit your inventory.</string>
+    <string name="recipes_hero_card_cta_cd">View recipes from your inventory</string>
+    <plurals name="recipes_hero_expiring_badge">
+        <item quantity="one">%1$d item expiring soon</item>
+        <item quantity="other">%1$d items expiring soon</item>
+    </plurals>
+    <string name="recipes_browse_sorted_header">Almost complete</string>
+    <string name="recipes_browse_sorted_label">Sorted by match</string>
+    <string name="recipes_used_expiring_pill_format">Uses %1$s</string>
+    <string name="recipes_servings_short_format">%1$d serv.</string>
+    <plurals name="recipes_missing_count_format">
+        <item quantity="one">%1$d missing</item>
+        <item quantity="other">%1$d missing</item>
+    </plurals>
     <string name="recipes_detail_error">Couldn\'t load this recipe. Please try again.</string>
     <string name="recipes_ingredients_title">Ingredients</string>
     <string name="recipes_servings_label">Servings</string>

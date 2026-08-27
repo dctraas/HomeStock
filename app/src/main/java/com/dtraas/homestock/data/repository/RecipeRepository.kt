@@ -1,5 +1,6 @@
 package com.dtraas.homestock.data.repository
 
+import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.remote.observeSnapshots
@@ -47,6 +48,13 @@ data class RecipeSuggestion(
     // "unknown", not "not quick" — a "Snel (<20 min)" filter over these should exclude rather
     // than assume for a null value, same reasoning as [matchCount]'s null/zero distinction above.
     val readyInMinutes: Int? = null,
+    // Same "only known when a full RecipeDetail was already at hand" caveat as [readyInMinutes].
+    val servings: Int? = null,
+    // Name of one inventory item close to expiring that this recipe also uses, if any — see
+    // [RecipeRepository.expiringIngredientUsedIn]. Populated for [RecipeRepository.browseAllRecipes]/
+    // [RecipeRepository.searchRecipesByName] results (full detail, ingredients included, is
+    // already fetched for those), not for the lighter ingredient-match half of [suggestRecipes].
+    val expiringIngredientUsed: String? = null,
 )
 
 /** One page of [RecipeRepository.browseAllRecipes]/[RecipeRepository.searchRecipesByName] — [hasMore] mirrors Spoonacular's own `totalResults` for that exact query, so the caller knows whether a further [loadMore]-style call (same params, next `offset`) is worth making. */
@@ -139,7 +147,15 @@ class RecipeRepository(
         excludedAllergens: Set<Allergen> = emptySet(),
         languageTag: String? = null,
     ): Result<List<RecipeSuggestion>> = try {
-        val inventoryNames = inventoryRepository.observeInventoryWithProduct().first().map { it.name }
+        // Soonest-expiring items first — a household with both "milk" and "salmon" recognized in
+        // inventory should get suggestions built from whichever of the two is closer to going
+        // off, not whichever happened to sort first in Firestore. Keeps this list's own "use it
+        // up" framing honest, and the same ordering RecipesScreen's hero card draws its "3
+        // gerechten met X, Y en Z" ingredient names from lines up with what these seed ingredients
+        // actually were.
+        val inventoryItems = inventoryRepository.observeInventoryWithProduct().first()
+            .sortedWith(compareBy(nullsLast()) { it.expirationDate })
+        val inventoryNames = inventoryItems.map { it.name }
         val seedIngredients = matchDutchIngredients(inventoryNames).take(maxSeedIngredients)
 
         val suggestions = LinkedHashMap<String, RecipeSuggestion>()
@@ -173,6 +189,7 @@ class RecipeRepository(
                     totalIngredientCount = existing?.totalIngredientCount,
                     missingIngredients = existing?.missingIngredients ?: emptyList(),
                     readyInMinutes = detail.readyInMinutes,
+                    servings = detail.servings,
                 )
             }
         }
@@ -218,9 +235,33 @@ class RecipeRepository(
         plain.forEach { merged.putIfAbsent(it.id, it) }
         areaIds.forEach { id -> detailCache[id]?.let { merged.putIfAbsent(id, it) } }
 
+        // A whole page's worth of "N/M in huis" ratios and "gebruikt X"-badges (see
+        // annotateWithInventory) cost one inventory fetch here, not one per recipe — full detail
+        // (ingredients included) is already at hand for every result in [merged].
+        val inventoryNames = inventoryRepository.observeInventoryWithProduct().first().map { it.name }
+        val expiringSoon = fetchExpiringSoon()
         val list = merged.values
-            .map { detail -> RecipeSuggestion(RecipeSummary(detail.id, detail.name, detail.thumbnailUrl), matchCount = null, matchesArea = detail.id in areaIds) }
-            .sortedWith(compareByDescending<RecipeSuggestion> { it.matchesArea }.thenBy { it.meal.name })
+            .map { detail ->
+                val match = annotateWithInventory(detail, inventoryNames, expiringSoon)
+                RecipeSuggestion(
+                    meal = RecipeSummary(detail.id, detail.name, detail.thumbnailUrl),
+                    matchCount = match.matchCount,
+                    totalIngredientCount = match.totalIngredientCount,
+                    matchesArea = detail.id in areaIds,
+                    readyInMinutes = detail.readyInMinutes,
+                    servings = detail.servings,
+                    expiringIngredientUsed = match.expiringIngredientUsed,
+                )
+            }
+            // "Gesorteerd op match" — highest ingredient-match ratio first (a recipe with no
+            // ingredient info at all, e.g. an empty [RecipeDetail.ingredients], sorts as if it
+            // matched nothing rather than being treated as unknown/excluded), then area-matched,
+            // then name.
+            .sortedWith(
+                compareByDescending<RecipeSuggestion> { matchRatio(it) }
+                    .thenByDescending { it.matchesArea }
+                    .thenBy { it.meal.name },
+            )
 
         Result.success(RecipePage(withTranslatedTitles(list, languageTag), hasMore))
     } catch (e: Exception) {
@@ -230,7 +271,10 @@ class RecipeRepository(
     /**
      * Free-text search by recipe name (e.g. typed into RecipesScreen's search field), independent
      * of inventory or category. Pages the same way [browseAllRecipes] does — see its doc for how
-     * [offset]/[RecipePage.hasMore] work and their 900-result ceiling.
+     * [offset]/[RecipePage.hasMore] work and their 900-result ceiling. Also annotated with match/
+     * expiring-ingredient info like [browseAllRecipes], but left in Spoonacular's own relevance
+     * order rather than re-sorted by match — a household searching by name is looking for that
+     * specific recipe, not the best-stocked one.
      */
     suspend fun searchRecipesByName(
         query: String,
@@ -242,10 +286,42 @@ class RecipeRepository(
             callSearchRecipes(mode = "query", query = query, number = PAGE_SIZE, offset = offset, intolerances = spoonacularIntolerances(excludedAllergens)),
         )
         details.forEach { cacheSearchResult(it) }
-        val suggestions = details.map { RecipeSuggestion(RecipeSummary(it.id, it.name, it.thumbnailUrl), matchCount = null) }
+        val inventoryNames = inventoryRepository.observeInventoryWithProduct().first().map { it.name }
+        val expiringSoon = fetchExpiringSoon()
+        val suggestions = details.map { detail ->
+            val match = annotateWithInventory(detail, inventoryNames, expiringSoon)
+            RecipeSuggestion(
+                meal = RecipeSummary(detail.id, detail.name, detail.thumbnailUrl),
+                matchCount = match.matchCount,
+                totalIngredientCount = match.totalIngredientCount,
+                readyInMinutes = detail.readyInMinutes,
+                servings = detail.servings,
+                expiringIngredientUsed = match.expiringIngredientUsed,
+            )
+        }
         Result.success(RecipePage(withTranslatedTitles(suggestions, languageTag), hasMore))
     } catch (e: Exception) {
         Result.failure(e)
+    }
+
+    /** [browseAllRecipes]/[searchRecipesByName]'s per-recipe inventory annotation. */
+    private data class InventoryMatch(val matchCount: Int?, val totalIngredientCount: Int?, val expiringIngredientUsed: String?)
+
+    private fun annotateWithInventory(
+        detail: RecipeDetail,
+        inventoryNames: List<String>,
+        expiringSoon: List<InventoryItemWithProduct>,
+    ): InventoryMatch {
+        if (detail.ingredients.isEmpty()) return InventoryMatch(null, null, null)
+        val matched = detail.ingredients.map { it.first }.count { ingredient -> inventoryHasIngredient(ingredient, inventoryNames) }
+        return InventoryMatch(matched, detail.ingredients.size, expiringIngredientUsedIn(detail, expiringSoon))
+    }
+
+    /** Fraction of [RecipeSuggestion.totalIngredientCount] matched — 0.0 when either is unknown,
+     *  same as an actual 0/N match rather than being excluded from a match-ratio sort entirely. */
+    private fun matchRatio(suggestion: RecipeSuggestion): Double {
+        val total = suggestion.totalIngredientCount?.takeIf { it > 0 } ?: return 0.0
+        return (suggestion.matchCount ?: 0).toDouble() / total
     }
 
     /**
@@ -480,6 +556,25 @@ class RecipeRepository(
     }
 
     /**
+     * The heart-toggle convenience a recipe grid tile needs — it only ever has a [RecipeSuggestion]
+     * (a [mealId], not a full [RecipeDetail]) to work with. Un-favoriting is just [removeFavorite];
+     * favoriting fetches the full detail first (see [getRecipeDetail] — already cached from
+     * whatever search/browse produced this tile in the first place, so this is a cache hit, not a
+     * fresh network round trip) since [addFavorite] needs the whole snapshot to store.
+     */
+    suspend fun toggleFavorite(mealId: String, isCurrentlyFavorite: Boolean): Result<Unit> = try {
+        if (isCurrentlyFavorite) {
+            removeFavorite(mealId)
+        } else {
+            val detail = getRecipeDetail(mealId).getOrElse { return Result.failure(it) }
+            addFavorite(detail)
+        }
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    /**
      * Persists [tags] (RecipeTag storage keys) on [detail] by writing to whichever of its own
      * collections currently store it — its custom-recipe doc when [RecipeDetail.isCustom], its
      * favorite doc when [isFavorite] — since tags only mean anything on a recipe the household
@@ -600,12 +695,24 @@ class RecipeRepository(
      * nudge that cooking tonight's planned dinner also uses up something about to go off. Same
      * fuzzy English/Dutch matching as [matchedIngredients]; first match by soonest expiry wins.
      */
-    suspend fun expiringIngredientUsedIn(detail: RecipeDetail, withinDays: Long = 3): String? {
+    suspend fun expiringIngredientUsedIn(detail: RecipeDetail, withinDays: Long = 3): String? =
+        expiringIngredientUsedIn(detail, fetchExpiringSoon(withinDays))
+
+    /** Household items expiring within [withinDays], soonest first — split out of
+     *  [expiringIngredientUsedIn] so a whole page of recipes (see [browseAllRecipes]) can fetch
+     *  this once and check each recipe against it locally, instead of one inventory fetch per
+     *  recipe. */
+    private suspend fun fetchExpiringSoon(withinDays: Long = 3): List<InventoryItemWithProduct> {
         val now = System.currentTimeMillis()
         val cutoff = now + withinDays * 86_400_000L
-        val expiringSoon = inventoryRepository.observeInventoryWithProduct().first()
+        return inventoryRepository.observeInventoryWithProduct().first()
             .filter { it.expirationDate != null && it.expirationDate in now..cutoff }
             .sortedBy { it.expirationDate }
+    }
+
+    /** The already-fetched-[expiringSoon] version of [expiringIngredientUsedIn] — first match by
+     *  soonest expiry wins. */
+    private fun expiringIngredientUsedIn(detail: RecipeDetail, expiringSoon: List<InventoryItemWithProduct>): String? {
         for (item in expiringSoon) {
             val used = detail.ingredients.any { (ingredient, _) -> inventoryHasIngredient(ingredient, listOf(item.name)) }
             if (used) return item.name
