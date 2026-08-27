@@ -1,5 +1,6 @@
 package com.dtraas.homestock.data.local.entity
 
+import com.dtraas.homestock.data.model.Category
 import com.google.firebase.firestore.DocumentSnapshot
 
 /**
@@ -12,15 +13,18 @@ data class StoreEntity(
     val id: String,
     val name: String,
     val sortOrder: Double,
-    // The household's own walking order through THIS store's aisles, as an ordered list of
-    // Category storage keys — what decides the "gang N" order Winkelmodus (see
-    // ShoppingModeScreen) and the "Winkelindeling" sort mode (ShoppingListViewModel/
-    // ShoppingListSortMode.AISLE) group this store's products in, instead of Category's own
-    // fixed sortOrder. Empty (never customized, or a category the household added after
-    // customizing) means "fall back to Category's own sortOrder for that category" — see
-    // ShoppingListViewModel.groupedByStore's own AISLE-mode rank map for exactly how that
-    // fallback merge happens. Deliberately per-store, not one household-wide order: two real
-    // supermarkets rarely lay their aisles out the same way.
+    // The household's own walking order through THIS store's aisles ("gangvolgorde") — what
+    // decides the "gang N" order Winkelmodus (see ShoppingModeScreen) and the "Winkelindeling"
+    // sort mode (ShoppingListViewModel/ShoppingListSortMode.AISLE) group this store's products
+    // in, instead of Category's own fixed sortOrder. Each element is one *path* (one physical
+    // aisle) — a single Category storage key ("zuivel"), or several joined with "," when more
+    // than one category lives in the same aisle ("zuivel,kaas"). See [aislePaths] for the
+    // parsed form; edited via MoreScreen's Winkels dialog. Empty (never customized, or a
+    // category the household added after customizing) means "fall back to Category's own
+    // sortOrder for that category" — see [aislePaths] and ShoppingListViewModel.groupedByStore's
+    // own AISLE-mode rank map for exactly how that fallback merge happens. Deliberately
+    // per-store, not one household-wide order: two real supermarkets rarely lay their aisles
+    // out the same way.
     val aisleOrder: List<String> = emptyList(),
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
@@ -28,6 +32,23 @@ data class StoreEntity(
         "sortOrder" to sortOrder,
         "aisleOrder" to aisleOrder,
     )
+
+    /**
+     * [aisleOrder] parsed into paths (each a non-empty [Category] list, comma-joined keys split
+     * back apart) plus every category the household hasn't placed yet, each as its own
+     * trailing single-category path in [Category]'s own fixed [Category.sortOrder] order — so
+     * the result always covers every category exactly once, even for a store that's never been
+     * customized at all (then it's just 11 one-category paths in the default order).
+     */
+    fun aislePaths(): List<List<Category>> {
+        val paths = aisleOrder.mapNotNull { entry ->
+            val categories = entry.split(",").mapNotNull { key -> Category.entries.find { it.storageKey == key } }
+            categories.takeIf { it.isNotEmpty() }
+        }
+        val placed = paths.flatten().toSet()
+        val remaining = Category.entries.sortedBy { it.sortOrder }.filterNot { it in placed }
+        return paths + remaining.map { listOf(it) }
+    }
 
     companion object {
         fun fromDocument(document: DocumentSnapshot): StoreEntity? {
@@ -41,3 +62,8 @@ data class StoreEntity(
         }
     }
 }
+
+/** Serializes [paths] (see [StoreEntity.aisleOrder]'s doc) back into the comma-joined storage
+ *  form — the inverse of [StoreEntity.aislePaths]. */
+fun List<List<Category>>.toAisleOrderStorage(): List<String> =
+    map { path -> path.joinToString(",") { it.storageKey } }

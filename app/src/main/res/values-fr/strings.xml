@@ -300,12 +300,16 @@
     <string name="more_language_option_fr">Français</string>
     <string name="more_language_option_es">Espagnol</string>
     <string name="more_stores_title">Magasins</string>
-    <string name="more_stores_menu_subtitle">Noms et ordre de tes magasins</string>
+    <string name="more_stores_menu_subtitle">Noms, ordre et rayons de tes magasins</string>
     <string name="more_aisle_order_row_title">Ordre des rayons</string>
     <string name="more_aisle_order_row_subtitle">Ordre des catégories de produits par magasin en Mode course et en vue par rayon</string>
     <string name="more_aisle_order_title">Ordre des rayons</string>
     <string name="more_aisle_order_subtitle">Choisis un magasin pour personnaliser son ordre des rayons</string>
     <string name="more_aisle_order_store_subtitle">Classe les catégories dans l\'ordre où tu les croises dans ce magasin</string>
+    <string name="more_aisle_order_merge_hint">Touchez ⋮ sur un rayon pour fusionner des rayons ou les séparer à nouveau.</string>
+    <string name="more_aisle_order_merge_next">Fusionner avec le rayon suivant</string>
+    <string name="more_aisle_order_split">Séparer ce rayon</string>
+    <string name="more_aisle_order_row_options_cd">Plus d\'options pour ce rayon</string>
     <string name="more_aisle_order_no_stores">Ajoute d\'abord un magasin dans Magasins pour lui définir un ordre des rayons</string>
     <string name="more_aisle_order_move_up_cd">Monter</string>
     <string name="more_aisle_order_move_down_cd">Descendre</string>

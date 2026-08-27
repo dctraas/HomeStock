@@ -300,12 +300,16 @@
     <string name="more_language_option_fr">Francés</string>
     <string name="more_language_option_es">Español</string>
     <string name="more_stores_title">Tiendas</string>
-    <string name="more_stores_menu_subtitle">Nombres y orden de tus tiendas</string>
+    <string name="more_stores_menu_subtitle">Nombres, orden y pasillos de tus tiendas</string>
     <string name="more_aisle_order_row_title">Orden de pasillos</string>
     <string name="more_aisle_order_row_subtitle">Orden de las categorías de productos por tienda en Modo compra y Vista por pasillo</string>
     <string name="more_aisle_order_title">Orden de pasillos</string>
     <string name="more_aisle_order_subtitle">Elige una tienda para personalizar su orden de pasillos</string>
     <string name="more_aisle_order_store_subtitle">Ordena las categorías como las encuentras en esta tienda</string>
+    <string name="more_aisle_order_merge_hint">Toca ⋮ en un pasillo para combinar pasillos o volver a separarlos.</string>
+    <string name="more_aisle_order_merge_next">Combinar con el siguiente pasillo</string>
+    <string name="more_aisle_order_split">Separar este pasillo</string>
+    <string name="more_aisle_order_row_options_cd">Más opciones para este pasillo</string>
     <string name="more_aisle_order_no_stores">Añade primero una tienda en Tiendas para poder definir su orden de pasillos</string>
     <string name="more_aisle_order_move_up_cd">Subir</string>
     <string name="more_aisle_order_move_down_cd">Bajar</string>

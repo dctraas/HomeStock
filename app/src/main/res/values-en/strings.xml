@@ -300,12 +300,16 @@
     <string name="more_language_option_fr">French</string>
     <string name="more_language_option_es">Spanish</string>
     <string name="more_stores_title">Stores</string>
-    <string name="more_stores_menu_subtitle">Names and order of your stores</string>
+    <string name="more_stores_menu_subtitle">Names, order, and aisle layout of your stores</string>
     <string name="more_aisle_order_row_title">Aisle order</string>
     <string name="more_aisle_order_row_subtitle">Order of product categories per store in Shopping mode and Aisle view</string>
     <string name="more_aisle_order_title">Aisle order</string>
     <string name="more_aisle_order_subtitle">Choose a store to customize its aisle order</string>
     <string name="more_aisle_order_store_subtitle">Put categories in the order you pass them in this store</string>
+    <string name="more_aisle_order_merge_hint">Tap ⋮ on an aisle to merge aisles together, or split them apart again.</string>
+    <string name="more_aisle_order_merge_next">Merge with next aisle</string>
+    <string name="more_aisle_order_split">Split this aisle</string>
+    <string name="more_aisle_order_row_options_cd">More options for this aisle</string>
     <string name="more_aisle_order_no_stores">Add a store under Stores first to set an aisle order for it</string>
     <string name="more_aisle_order_move_up_cd">Move up</string>
     <string name="more_aisle_order_move_down_cd">Move down</string>

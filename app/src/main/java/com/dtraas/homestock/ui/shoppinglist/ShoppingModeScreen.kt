@@ -70,6 +70,7 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.entity.ShoppingListItemEntity
+import com.dtraas.homestock.data.local.entity.StoreEntity
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.MeasurementUnit
 import com.dtraas.homestock.ui.components.formatQuantityWithUnit
@@ -139,6 +140,7 @@ fun ShoppingModeScreen(listId: String?, initialStoreName: String?, onClose: () -
 
     val groupedByStore by viewModel.groupedByStore.collectAsState()
     val storeNames = remember(groupedByStore) { groupedByStore.keys.toList() }
+    val knownStores by viewModel.stores.collectAsState()
 
     // Only ever written when the household actually taps a store in the picker (or "wissel van
     // winkel" resets it back to null) — never auto-populated for the single-store case, so
@@ -162,6 +164,7 @@ fun ShoppingModeScreen(listId: String?, initialStoreName: String?, onClose: () -
     } else {
         ShoppingModeStoreScreen(
             storeName = effectiveStore,
+            store = knownStores.firstOrNull { it.name == effectiveStore },
             items = groupedByStore.getValue(effectiveStore),
             onCheckedChange = { itemId, checked -> viewModel.setChecked(itemId, checked) },
             // Alleen aanbieden om te wisselen als er ook daadwerkelijk iets te wisselen valt.
@@ -298,6 +301,7 @@ private fun ShoppingModePicker(storeCounts: Map<String, Int>, onSelectStore: (St
 @Composable
 private fun ShoppingModeStoreScreen(
     storeName: String,
+    store: StoreEntity?,
     items: List<ShoppingListItemEntity>,
     onCheckedChange: (itemId: String, checked: Boolean) -> Unit,
     onSwitchStore: (() -> Unit)?,
@@ -315,8 +319,12 @@ private fun ShoppingModeStoreScreen(
     // Category (aisle) groups, in this store's own gangvolgorde — items is already sorted by
     // exactly that order (AISLE sort mode, forced on in ShoppingModeScreen), so grouping it here
     // is just bucketing consecutive same-category runs; Kotlin's groupBy preserves first-seen
-    // key order, so no separate rank lookup is needed on this side at all.
+    // key order, so no separate rank lookup is needed to get the *grouping* right on this side.
     val categoriesInStore = remember(items) { items.groupBy { Category.fromStorageKey(it.category) } }
+    // A rank lookup is still needed for the *displayed* aisle number, though — a path with more
+    // than one category (see StoreEntity.aislePaths) must show the same "gang N" for each of
+    // them, not a fresh number per category the way a flat index would.
+    val rankByCategory = remember(store) { categoryRankFor(store) }
     var checkedSectionExpanded by rememberSaveable { mutableStateOf(false) }
 
     // On for the whole time this screen is open by default (a shopping trip is exactly the
@@ -354,13 +362,24 @@ private fun ShoppingModeStoreScreen(
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    categoriesInStore.entries.forEachIndexed { index, (category, itemsInCategory) ->
+                    // Consecutive categories sharing one path (see rankByCategory above) show
+                    // the same aisle number instead of each bumping it — only a genuine rank
+                    // change advances the count, so a merged "Zuivel + Kaas" path still reads as
+                    // one "gang N", not two.
+                    var aisleNumber = 0
+                    var previousRank: Int? = null
+                    categoriesInStore.entries.forEach { (category, itemsInCategory) ->
                         val unchecked = itemsInCategory.filterNot { it.isChecked }
-                        if (unchecked.isEmpty()) return@forEachIndexed
+                        if (unchecked.isEmpty()) return@forEach
+                        val rank = rankByCategory[category]
+                        if (rank != previousRank) {
+                            aisleNumber += 1
+                            previousRank = rank
+                        }
                         item(key = "header_${category.storageKey}") {
                             ShoppingModeCategoryHeader(
                                 category = category,
-                                aisleNumber = index + 1,
+                                aisleNumber = aisleNumber,
                                 itemCount = itemsInCategory.size,
                                 modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
                             )

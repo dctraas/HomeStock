@@ -29,16 +29,16 @@ import kotlinx.coroutines.launch
  *  list's bottom bar — see [ShoppingListViewModel.lowStockSuggestions]. */
 data class LowStockSuggestion(val barcode: String, val name: String, val category: Category)
 
-/** [customOrderKeys] (a store's own [StoreEntity.aisleOrder]) turned into a full rank lookup
- *  covering every [Category] — the explicitly ordered ones first, then any category the
- *  household hasn't placed yet (including all of them, for a store that's never been
- *  customized at all — [customOrderKeys] empty), appended in Category's own fixed
- *  [Category.sortOrder] order. Shared by [ShoppingListViewModel.groupedByStore]'s AISLE sort
- *  mode. */
-private fun categoryRankFor(customOrderKeys: List<String>): Map<Category, Int> {
-    val custom = customOrderKeys.mapNotNull { key -> Category.entries.find { it.storageKey == key } }
-    val remaining = Category.entries.sortedBy { it.sortOrder }.filterNot { it in custom }
-    return (custom + remaining).withIndex().associate { (index, category) -> category to index }
+/** [store]'s own gangvolgorde (see [StoreEntity.aislePaths]) turned into a rank lookup covering
+ *  every [Category] — every category within the same path shares that path's rank, so they sort
+ *  together as one aisle. Null [store] (a "no store" bucket, which has no [StoreEntity] to look
+ *  up at all) falls back to Category's own fixed [Category.sortOrder], same as an uncustomized
+ *  store's own [StoreEntity.aislePaths] already does. Shared by
+ *  [ShoppingListViewModel.groupedByStore]'s AISLE sort mode and, since it's not file-private,
+ *  ShoppingModeScreen's own aisle-number display (same package). */
+fun categoryRankFor(store: StoreEntity?): Map<Category, Int> {
+    val paths = store?.aislePaths() ?: Category.entries.sortedBy { it.sortOrder }.map { listOf(it) }
+    return paths.withIndex().flatMap { (rank, path) -> path.map { category -> category to rank } }.toMap()
 }
 
 /** How items are ordered within each store's group. */
@@ -120,7 +120,7 @@ class ShoppingListViewModel(
                     // supermarkets rarely lay their aisles out the same way. Falls back to that
                     // fixed order automatically for a store that's never been customized (or for
                     // "no store" items, which have no StoreEntity to look up at all).
-                    val rankByCategory = categoryRankFor(storeByName[storeName]?.aisleOrder.orEmpty())
+                    val rankByCategory = categoryRankFor(storeByName[storeName])
                     itemsInStore.sortedWith(
                         compareBy(
                             { it.isChecked },

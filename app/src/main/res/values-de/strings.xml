@@ -300,12 +300,16 @@
     <string name="more_language_option_fr">Französisch</string>
     <string name="more_language_option_es">Spanisch</string>
     <string name="more_stores_title">Geschäfte</string>
-    <string name="more_stores_menu_subtitle">Namen und Reihenfolge deiner Geschäfte</string>
+    <string name="more_stores_menu_subtitle">Namen, Reihenfolge und Ganganordnung deiner Geschäfte</string>
     <string name="more_aisle_order_row_title">Gangreihenfolge</string>
     <string name="more_aisle_order_row_subtitle">Reihenfolge der Produktkategorien pro Geschäft im Einkaufsmodus und in der Gangansicht</string>
     <string name="more_aisle_order_title">Gangreihenfolge</string>
     <string name="more_aisle_order_subtitle">Wähle ein Geschäft, um seine Gangreihenfolge anzupassen</string>
     <string name="more_aisle_order_store_subtitle">Ordne die Kategorien in der Reihenfolge, in der du sie in diesem Geschäft triffst</string>
+    <string name="more_aisle_order_merge_hint">Tippe bei einem Gang auf ⋮, um Gänge zusammenzufügen oder wieder zu trennen.</string>
+    <string name="more_aisle_order_merge_next">Mit nächstem Gang zusammenfügen</string>
+    <string name="more_aisle_order_split">Diesen Gang trennen</string>
+    <string name="more_aisle_order_row_options_cd">Weitere Optionen für diesen Gang</string>
     <string name="more_aisle_order_no_stores">Füge zuerst unter Geschäfte ein Geschäft hinzu, um dafür eine Gangreihenfolge festzulegen</string>
     <string name="more_aisle_order_move_up_cd">Nach oben</string>
     <string name="more_aisle_order_move_down_cd">Nach unten</string>
