@@ -464,7 +464,6 @@
         <item quantity="one">%d wird knapp</item>
         <item quantity="other">%d werden knapp</item>
     </plurals>
-    <string name="inventory_kitchen_title">Küche</string>
     <string name="inventory_expiring_soon_title">Zuerst aufbrauchen</string>
     <string name="inventory_show_as_tiles_cd">Als Kacheln anzeigen</string>
     <string name="inventory_search_placeholder">Vorrat durchsuchen…</string>

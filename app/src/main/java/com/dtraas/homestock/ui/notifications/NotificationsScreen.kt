@@ -81,6 +81,7 @@ import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.model.ActivityType
 import com.dtraas.homestock.data.model.DeveloperNotice
 import com.dtraas.homestock.data.repository.HouseholdMember
+import com.dtraas.homestock.data.repository.photoUrlFor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent

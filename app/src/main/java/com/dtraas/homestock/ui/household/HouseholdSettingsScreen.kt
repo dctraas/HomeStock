@@ -129,9 +129,9 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
         initial = HouseholdCapacityInfo(memberCount = 0, limit = HouseholdMembersRepository.FREE_MEMBER_LIMIT, isPremium = false),
     )
     val isPremium by householdMembersRepository.observeHouseholdIsPremium().collectAsState(initial = false)
-    // Matched by exact display name, same reasoning as NotificationsViewModel.photoUrlFor and
-    // StatisticsViewModel's MemberScanEntry — activity log entries only ever stamp a plain
-    // name, not a uid, so that's the only join key available here too.
+    // Matched by exact display name, same reasoning as HouseholdMembersRepository.photoUrlFor —
+    // activity log entries only ever stamp a plain name, not a uid, so that's the only join key
+    // available here too.
     val recentActivity by application.container.activityLogRepository.observeRecent().collectAsState(initial = emptyList())
     val lastActiveByName = remember(recentActivity) {
         recentActivity.groupBy { it.actorName }.mapValues { (_, entries) -> entries.maxOf { it.timestamp } }

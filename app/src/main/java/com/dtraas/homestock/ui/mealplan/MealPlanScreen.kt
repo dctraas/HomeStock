@@ -909,26 +909,42 @@ private fun CompactPlannedRow(
                 modifier = Modifier.weight(1f),
             )
             // Opgebruikt/weggegooid only ever applies to a planned product, and only until it's
-            // been resolved — after that a small label replaces the two action icons rather than
+            // been resolved — after that a small label replaces the overflow button rather than
             // letting you flip it back and forth (matching Productdetail's own one-way
-            // opgebruikt/weggegooid choice, see removeFromInventory's doc).
+            // opgebruikt/weggegooid choice, see removeFromInventory's doc). Folded into one
+            // overflow menu instead of two dedicated icon buttons sitting inline next to the
+            // "toevoegen aan boodschappenlijst" icon and the "X" remove button — with all of
+            // those in the same row there was no width left for the product name itself (same
+            // MoreVert-menu pattern DinnerCard's featured recipe card already uses for swap/
+            // verwijder).
             if (meal.isProduct) {
                 if (meal.status == null) {
-                    IconButton(onClick = onMarkEaten, modifier = Modifier.size(28.dp)) {
-                        Icon(
-                            imageVector = Icons.Filled.CheckCircle,
-                            contentDescription = stringResource(R.string.product_detail_delete_used_up),
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
-                    IconButton(onClick = onMarkWasted, modifier = Modifier.size(28.dp)) {
-                        Icon(
-                            imageVector = Icons.Filled.DeleteSweep,
-                            contentDescription = stringResource(R.string.product_detail_delete_wasted),
-                            tint = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.size(16.dp),
-                        )
+                    var showStatusMenu by remember { mutableStateOf(false) }
+                    Box {
+                        IconButton(onClick = { showStatusMenu = true }, modifier = Modifier.size(28.dp)) {
+                            Icon(
+                                imageVector = Icons.Filled.MoreVert,
+                                contentDescription = stringResource(R.string.meal_plan_overflow_cd),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(16.dp),
+                            )
+                        }
+                        DropdownMenu(expanded = showStatusMenu, onDismissRequest = { showStatusMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.product_detail_delete_used_up)) },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                                },
+                                onClick = { showStatusMenu = false; onMarkEaten() },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.product_detail_delete_wasted)) },
+                                leadingIcon = {
+                                    Icon(Icons.Filled.DeleteSweep, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                                },
+                                onClick = { showStatusMenu = false; onMarkWasted() },
+                            )
+                        }
                     }
                 } else {
                     Text(

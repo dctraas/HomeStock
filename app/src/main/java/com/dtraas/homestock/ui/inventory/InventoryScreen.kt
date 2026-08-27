@@ -642,7 +642,7 @@ private fun InventoryHeader(
                     )
                 }
                 Text(
-                    text = stringResource(R.string.inventory_kitchen_title),
+                    text = stringResource(R.string.inventory_title),
                     style = MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,
                     color = contentColor,

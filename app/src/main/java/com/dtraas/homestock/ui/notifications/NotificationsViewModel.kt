@@ -87,9 +87,3 @@ class NotificationsViewModel(
         dismissedNoticesStore.markAllSeen()
     }
 }
-
-/** Best-effort avatar lookup for an activity entry's actor — matched by exact display name,
- *  same reasoning as StatisticsViewModel's MemberScanEntry (activityLog entries only ever
- *  stamped a plain name, not a uid). */
-fun List<HouseholdMember>.photoUrlFor(actorName: String?): String? =
-    actorName?.let { name -> firstOrNull { it.displayName == name }?.photoUrl }

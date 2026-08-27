@@ -464,7 +464,6 @@
         <item quantity="one">%d casi agotado</item>
         <item quantity="other">%d casi agotados</item>
     </plurals>
-    <string name="inventory_kitchen_title">Cocina</string>
     <string name="inventory_expiring_soon_title">Consumir primero</string>
     <string name="inventory_show_as_tiles_cd">Mostrar como tarjetas</string>
     <string name="inventory_search_placeholder">Buscar en el inventario…</string>

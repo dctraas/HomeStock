@@ -48,7 +48,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Accessibility
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.BugReport
@@ -1833,8 +1833,12 @@ private fun ProfileRow(
                         color = OnSageGreenPrimaryContainer,
                     )
                 } else {
+                    // A plain person silhouette rather than AccountCircle — AccountCircle's own
+                    // glyph is itself a circle-in-a-circle, which on top of this row's already-
+                    // circular avatar surface read as one big double-ringed icon, noticeably
+                    // heavier than every other row's plain flat icon (see SettingsRow).
                     Icon(
-                        imageVector = Icons.Filled.AccountCircle,
+                        imageVector = Icons.Filled.Person,
                         contentDescription = null,
                         tint = OnSageGreenPrimaryContainer,
                         modifier = Modifier.size(22.dp),

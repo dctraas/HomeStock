@@ -464,7 +464,6 @@
         <item quantity="one">%d running low</item>
         <item quantity="other">%d running low</item>
     </plurals>
-    <string name="inventory_kitchen_title">Kitchen</string>
     <string name="inventory_expiring_soon_title">Use up first</string>
     <string name="inventory_show_as_tiles_cd">Show as tiles</string>
     <string name="inventory_search_placeholder">Search inventory…</string>

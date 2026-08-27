@@ -39,6 +39,17 @@ data class HouseholdMember(
     val excludedAllergens: Set<Allergen> = emptySet(),
 )
 
+/** Best-effort avatar lookup by [actorName] — activityLog/scan entries only ever stamped a plain
+ *  name, not a uid, so this is an exact (trimmed) [HouseholdMember.displayName] match rather than
+ *  a guaranteed join; a member who's renamed themselves since, or a name with incidental leading/
+ *  trailing whitespace, simply falls back to whatever placeholder the caller already shows for an
+ *  unmatched name. Shared by NotificationsScreen's activity feed and Statistieken's "Wie doet
+ *  wat" cards — was duplicated inline in both before, with no trimming, which meant it silently
+ *  stopped matching for a display name saved with (or later gaining) surrounding whitespace. */
+fun List<HouseholdMember>.photoUrlFor(actorName: String?): String? =
+    actorName?.trim()?.takeIf { it.isNotEmpty() }
+        ?.let { name -> firstOrNull { it.displayName?.trim() == name }?.photoUrl }
+
 /** What [HouseholdMembersRepository.canJoin] decided — Premium lifts the member cap entirely
  *  (see [HouseholdCapacityInfo]), so the only way a join can be blocked at all now is the
  *  free-tier cap. */

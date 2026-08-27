@@ -12,6 +12,7 @@ import com.dtraas.homestock.data.repository.HouseholdSession
 import com.dtraas.homestock.data.repository.MonthlyWaste
 import com.dtraas.homestock.data.repository.StatisticsRepository
 import com.dtraas.homestock.data.repository.YearlyWaste
+import com.dtraas.homestock.data.repository.photoUrlFor
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -84,8 +85,7 @@ class StatisticsViewModel(
         householdMembersRepository.observeMembers(),
     ) { scans, members ->
         scans.map { scan ->
-            val photoUrl = scan.actorName?.let { name -> members.firstOrNull { it.displayName == name }?.photoUrl }
-            MemberScanEntry(name = scan.actorName ?: "", photoUrl = photoUrl, scanCount = scan.scanCount)
+            MemberScanEntry(name = scan.actorName ?: "", photoUrl = members.photoUrlFor(scan.actorName), scanCount = scan.scanCount)
         }
     }
 
