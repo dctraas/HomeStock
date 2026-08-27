@@ -1,7 +1,9 @@
 package com.dtraas.homestock.ui.statistics
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,19 +21,23 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.EventBusy
-import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.DeleteSweep
+import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.Lightbulb
-import androidx.compose.material.icons.filled.TrendingDown
+import androidx.compose.material.icons.filled.QrCodeScanner
+import androidx.compose.material.icons.filled.Tune
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,12 +45,18 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,9 +65,10 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -64,16 +77,21 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
+import com.dtraas.homestock.data.local.dao.ActivityLogWithProduct
+import com.dtraas.homestock.data.local.dao.TopScannedProduct
 import com.dtraas.homestock.data.local.dao.TopWastedProduct
+import com.dtraas.homestock.data.model.ActivityType
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.repository.MonthlyWaste
+import com.dtraas.homestock.data.repository.YearlyWaste
 import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.theme.CoralSecondaryDark
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
-import com.dtraas.homestock.ui.theme.SageGreenPrimaryDark
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
+import java.time.Instant
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.abs
@@ -83,6 +101,8 @@ import kotlin.math.abs
 fun StatisticsScreen(
     onBack: () -> Unit,
     onNavigateToExpiringSoon: () -> Unit = {},
+    // Kept for HomeStockNavHost call-site compatibility — the redesigned tile row (per the
+    // Claude Design mockup) no longer has a dedicated low-stock tile, "Bespaard" took its place.
     onNavigateToLowStock: () -> Unit = {},
     onNavigateToInventory: () -> Unit = {},
 ) {
@@ -93,12 +113,27 @@ fun StatisticsScreen(
                 StatisticsViewModel(
                     application.container.statisticsRepository,
                     application.container.householdMembersRepository,
+                    application.container.householdRepository,
+                    application.container.activityLogRepository,
+                    application.container.householdSession,
                 )
             }
         },
     )
     val uiState by viewModel.uiState.collectAsState()
     val locale = LocalConfiguration.current.locales[0]
+    var showGoalDialog by rememberSaveable { mutableStateOf(false) }
+    var activityShareExpanded by rememberSaveable { mutableStateOf(false) }
+    var scannedHistoryExpanded by rememberSaveable { mutableStateOf(false) }
+
+    if (showGoalDialog) {
+        GoalEditDialog(
+            currentGoal = uiState.wasteGoal,
+            onDismiss = { showGoalDialog = false },
+            onSave = { goal -> viewModel.setWasteGoal(goal); showGoalDialog = false },
+            onClear = { viewModel.setWasteGoal(null); showGoalDialog = false },
+        )
+    }
 
     Scaffold(
         // StatisticsHeader below already claims the status bar inset itself — without this,
@@ -108,14 +143,16 @@ fun StatisticsScreen(
         contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // "Verspilling per maand" — eyebrow, €-waarde, delta en de 6-maands-balkjes — zat
-            // eerst in een los gekleurde Card bovenaan de scrollende lijst; die verhuist hier
-            // naar een echte, vaste groene gradient-header die vanaf de statusbalk doorloopt,
-            // met de terugknop/titel-rij erin, per de Claude Design review (artboard 1g).
             StatisticsHeader(
                 onBack = onBack,
+                period = uiState.period,
+                onPeriodChange = viewModel::onPeriodChange,
                 monthlyWaste = uiState.monthlyWaste,
+                yearlyWaste = uiState.yearlyWaste,
                 deltaPercent = uiState.wasteDeltaPercent,
+                productCount = uiState.wasteProductCountThisMonth,
+                wasteGoal = uiState.wasteGoal,
+                onEditGoal = { showGoalDialog = true },
                 locale = locale,
             )
             if (uiState.isLoading) {
@@ -131,51 +168,37 @@ fun StatisticsScreen(
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentPadding = PaddingValues(16.dp),
-                verticalArrangement = Arrangement.spacedBy(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
                 item {
                     StatusTilesRow(
                         expiringSoonCount = uiState.expiringSoonCount,
-                        lowStockCount = uiState.lowStockCount,
+                        savedValueThisMonth = uiState.savedValueThisMonth,
                         totalInInventory = uiState.totalInInventory,
+                        categoryCount = uiState.categoryCount,
                         onExpiringSoonClick = onNavigateToExpiringSoon,
-                        onLowStockClick = onNavigateToLowStock,
                         onInStockClick = onNavigateToInventory,
                     )
                 }
 
+                item { TopWastedCard(products = uiState.topWastedProducts) }
+
                 item {
-                    Text(stringResource(R.string.statistics_most_wasted), style = MaterialTheme.typography.titleMedium)
-                }
-                if (uiState.topWastedProducts.isEmpty()) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.statistics_no_waste_yet),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                } else {
-                    val maxWastedCount = uiState.topWastedProducts.maxOf { it.wastedCount }
-                    itemsIndexed(uiState.topWastedProducts, key = { _, product -> product.barcode }) { index, product ->
-                        TopWastedRow(rank = index + 1, product = product, maxCount = maxWastedCount)
-                    }
-                    item { WasteInsightCard(topProduct = uiState.topWastedProducts.first()) }
+                    ActivityShareRow(
+                        shareEntries = uiState.activityShare,
+                        memberScans = uiState.memberScans,
+                        expanded = activityShareExpanded,
+                        onToggle = { activityShareExpanded = !activityShareExpanded },
+                    )
                 }
 
                 item {
-                    Text(stringResource(R.string.statistics_by_actor), style = MaterialTheme.typography.titleMedium)
-                }
-                if (uiState.memberScans.isEmpty()) {
-                    item {
-                        Text(
-                            text = stringResource(R.string.statistics_no_scans_yet),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                } else {
-                    item { MemberScanRow(uiState.memberScans) }
+                    ScannedHistoryRow(
+                        topScanned = uiState.topScannedProducts,
+                        recentActivity = uiState.recentActivity,
+                        expanded = scannedHistoryExpanded,
+                        onToggle = { scannedHistoryExpanded = !scannedHistoryExpanded },
+                    )
                 }
             }
         }
@@ -185,20 +208,22 @@ fun StatisticsScreen(
 private fun formatPrice(value: Double): String = String.format(Locale.getDefault(), "€%.2f", value)
 
 /**
- * The fixed (non-scrolling) green gradient header — back button + title row, then the screen's
- * headline metric: this month's total approximate waste value, a month-over-month delta, and a
- * 6-bar chart giving the number visible context. Used to be a flat HomeStockTopAppBar with a
- * separately-colored WasteHeroCard underneath, on plain white background; "Verspilling per maand
- * bovenaan moet opgenomen worden in groene header" per the Claude Design review folds both into
- * one true gradient header extending from the status bar (artboard 1g in the uploaded mockup).
- * The chart itself is still the period selector — there's nothing to pick, it's always "the last
- * 6 months".
+ * The fixed (non-scrolling) green gradient header — back button + title row with the Maand/Jaar
+ * period pills, then the screen's headline metric: this period's total approximate waste value,
+ * a delta badge vs. the previous period, a subtitle with the product count and the household's
+ * self-set waste-value goal (or a prompt to set one), and a bar chart matching the chosen period.
  */
 @Composable
 private fun StatisticsHeader(
     onBack: () -> Unit,
+    period: StatisticsPeriod,
+    onPeriodChange: (StatisticsPeriod) -> Unit,
     monthlyWaste: List<MonthlyWaste>,
+    yearlyWaste: List<YearlyWaste>,
     deltaPercent: Int?,
+    productCount: Int,
+    wasteGoal: Double?,
+    onEditGoal: () -> Unit,
     locale: Locale,
 ) {
     val contentColor = LocalTopAppBarContentColor.current
@@ -210,68 +235,143 @@ private fun StatisticsHeader(
             .padding(horizontal = 20.dp, vertical = 4.dp)
             .padding(bottom = 20.dp),
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).offset(x = (-12).dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth().offset(x = (-12).dp)) {
+            IconButton(onClick = onBack) {
                 Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back), tint = contentColor)
             }
             Text(
                 text = stringResource(R.string.statistics_title),
                 style = MaterialTheme.typography.titleLarge,
                 color = contentColor,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.align(Alignment.Center).padding(horizontal = 48.dp),
+                modifier = Modifier.weight(1f),
             )
+            PeriodToggle(period = period, onPeriodChange = onPeriodChange)
         }
-        val currentMonth = monthlyWaste.lastOrNull()
-        val monthName = currentMonth?.month?.let {
-            DateTimeFormatter.ofPattern("MMMM", locale).format(it.atDay(1))
-        }.orEmpty()
+        val eyebrowLabel = when (period) {
+            StatisticsPeriod.MONTH -> monthlyWaste.lastOrNull()?.month?.let {
+                DateTimeFormatter.ofPattern("MMMM", locale).format(it.atDay(1))
+            }.orEmpty().uppercase(locale)
+            StatisticsPeriod.YEAR -> yearlyWaste.lastOrNull()?.year?.toString().orEmpty()
+        }
         Text(
-            text = stringResource(R.string.statistics_hero_eyebrow_format, monthName.uppercase(locale)),
+            text = stringResource(R.string.statistics_hero_eyebrow_format, eyebrowLabel),
             style = MaterialTheme.typography.labelSmall,
             color = OnTopAppBarContainerAccent,
             fontWeight = FontWeight.ExtraBold,
             modifier = Modifier.padding(top = 8.dp),
         )
-        Text(
-            text = formatPrice(currentMonth?.totalValue ?: 0.0),
-            style = MaterialTheme.typography.displaySmall,
-            color = Color.White,
-            fontWeight = FontWeight.ExtraBold,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-        if (deltaPercent != null) {
-            val previousMonthName = monthlyWaste.getOrNull(monthlyWaste.size - 2)?.month?.let {
-                DateTimeFormatter.ofPattern("MMMM", locale).format(it.atDay(1))
-            }.orEmpty()
-            val arrow = if (deltaPercent <= 0) "▼" else "▲"
+        val currentValue = when (period) {
+            StatisticsPeriod.MONTH -> monthlyWaste.lastOrNull()?.totalValue
+            StatisticsPeriod.YEAR -> yearlyWaste.lastOrNull()?.totalValue
+        } ?: 0.0
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
             Text(
-                text = stringResource(
-                    R.string.product_detail_stat_price_delta_format,
-                    "$arrow ${abs(deltaPercent)}%",
-                    previousMonthName,
-                ),
+                text = formatPrice(currentValue),
+                style = MaterialTheme.typography.displaySmall,
+                color = Color.White,
+                fontWeight = FontWeight.ExtraBold,
+            )
+            if (deltaPercent != null) {
+                DeltaBadge(deltaPercent = deltaPercent, modifier = Modifier.padding(start = 10.dp))
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 6.dp)) {
+            Text(
+                text = pluralStringResource(R.plurals.statistics_hero_product_count_format, productCount, productCount),
                 style = MaterialTheme.typography.bodyMedium,
-                color = SageGreenPrimaryDark,
+                color = OnTopAppBarContainerAccent,
+            )
+            Text(text = " · ", style = MaterialTheme.typography.bodyMedium, color = OnTopAppBarContainerAccent)
+            Text(
+                text = if (wasteGoal != null) {
+                    stringResource(R.string.statistics_hero_goal_format, formatPrice(wasteGoal))
+                } else {
+                    stringResource(R.string.statistics_hero_set_goal_cta)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = OnTopAppBarContainerAccent,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.padding(top = 4.dp),
+                modifier = Modifier.clickable(onClick = onEditGoal),
             )
         }
-        if (monthlyWaste.isNotEmpty()) {
-            MiniBarChart(monthlyWaste = monthlyWaste, locale = locale, modifier = Modifier.padding(top = 20.dp))
+        val points = when (period) {
+            StatisticsPeriod.MONTH -> monthlyWaste.map { DateTimeFormatter.ofPattern("MMM", locale).format(it.month.atDay(1)) to it.totalValue }
+            StatisticsPeriod.YEAR -> yearlyWaste.map { it.year.toString() to it.totalValue }
+        }
+        if (points.isNotEmpty()) {
+            MiniBarChart(points = points, modifier = Modifier.padding(top = 20.dp))
         }
     }
 }
 
+/** "Maand"/"Jaar" segmented pill pair in the header's title row. */
 @Composable
-private fun MiniBarChart(monthlyWaste: List<MonthlyWaste>, locale: Locale, modifier: Modifier = Modifier) {
-    val maxValue = monthlyWaste.maxOf { it.totalValue }.coerceAtLeast(0.01)
+private fun PeriodToggle(period: StatisticsPeriod, onPeriodChange: (StatisticsPeriod) -> Unit) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(Color.White.copy(alpha = 0.14f))
+            .padding(2.dp),
+    ) {
+        PeriodPill(
+            label = stringResource(R.string.statistics_period_month),
+            selected = period == StatisticsPeriod.MONTH,
+            onClick = { onPeriodChange(StatisticsPeriod.MONTH) },
+        )
+        PeriodPill(
+            label = stringResource(R.string.statistics_period_year),
+            selected = period == StatisticsPeriod.YEAR,
+            onClick = { onPeriodChange(StatisticsPeriod.YEAR) },
+        )
+    }
+}
+
+@Composable
+private fun PeriodPill(label: String, selected: Boolean, onClick: () -> Unit) {
+    Surface(
+        onClick = onClick,
+        shape = RoundedCornerShape(50),
+        color = if (selected) Color.White.copy(alpha = 0.22f) else Color.Transparent,
+    ) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+            color = Color.White,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+        )
+    }
+}
+
+/** Rounded "▼ 31% minder" chip next to the hero price — [deltaPercent] is signed (negative =
+ *  less waste), the strings themselves already carry the direction arrow and wording. */
+@Composable
+private fun DeltaBadge(deltaPercent: Int, modifier: Modifier = Modifier) {
+    val text = if (deltaPercent <= 0) {
+        stringResource(R.string.statistics_delta_less_format, abs(deltaPercent))
+    } else {
+        stringResource(R.string.statistics_delta_more_format, deltaPercent)
+    }
+    Surface(shape = RoundedCornerShape(50), color = Color.White.copy(alpha = 0.18f), modifier = modifier) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = Color.White,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+        )
+    }
+}
+
+@Composable
+private fun MiniBarChart(points: List<Pair<String, Double>>, modifier: Modifier = Modifier) {
+    val maxValue = points.maxOf { it.second }.coerceAtLeast(0.01)
     Row(
         modifier = modifier.fillMaxWidth().height(72.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        monthlyWaste.forEachIndexed { index, point ->
-            val isCurrent = index == monthlyWaste.lastIndex
+        points.forEachIndexed { index, (label, value) ->
+            val isCurrent = index == points.lastIndex
             Column(
                 modifier = Modifier.weight(1f).fillMaxHeight(),
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -281,12 +381,12 @@ private fun MiniBarChart(monthlyWaste: List<MonthlyWaste>, locale: Locale, modif
                     modifier = Modifier
                         .weight(1f, fill = false)
                         .fillMaxWidth()
-                        .fillMaxHeight((point.totalValue / maxValue).toFloat().coerceIn(0.06f, 1f))
+                        .fillMaxHeight((value / maxValue).toFloat().coerceIn(0.06f, 1f))
                         .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
                         .background(if (isCurrent) CoralSecondaryDark else Color.White.copy(alpha = 0.22f)),
                 )
                 Text(
-                    text = DateTimeFormatter.ofPattern("MMM", locale).format(point.month.atDay(1)),
+                    text = label,
                     style = MaterialTheme.typography.labelSmall,
                     color = OnTopAppBarContainerAccent,
                     modifier = Modifier.padding(top = 6.dp),
@@ -296,50 +396,82 @@ private fun MiniBarChart(monthlyWaste: List<MonthlyWaste>, locale: Locale, modif
     }
 }
 
-/**
- * Three tiles instead of the old seven-equal-stat-cards summary — [expiringSoonCount] and
- * [lowStockCount] are actionable ("go check these"), [totalInInventory] is a plain fact, and
- * each tile navigates to Voorraad with that same filter already applied (see
- * InventoryScreen's showExpiringSoonOnOpen/showLowStockOnOpen).
- */
+/** Simple AlertDialog with a single decimal text field — sets or clears
+ *  [com.dtraas.homestock.data.repository.HouseholdRepository.setWasteGoal]. */
+@Composable
+private fun GoalEditDialog(currentGoal: Double?, onDismiss: () -> Unit, onSave: (Double) -> Unit, onClear: () -> Unit) {
+    var text by rememberSaveable(currentGoal) {
+        mutableStateOf(currentGoal?.let { String.format(Locale.getDefault(), "%.0f", it) }.orEmpty())
+    }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.statistics_goal_dialog_title)) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                label = { Text(stringResource(R.string.statistics_goal_dialog_label)) },
+                leadingIcon = { Text("€", style = MaterialTheme.typography.bodyLarge) },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { text.replace(',', '.').toDoubleOrNull()?.let(onSave) }) {
+                Text(stringResource(R.string.common_save))
+            }
+        },
+        dismissButton = {
+            Row {
+                if (currentGoal != null) {
+                    TextButton(onClick = onClear) { Text(stringResource(R.string.statistics_goal_dialog_clear)) }
+                }
+                TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+            }
+        },
+    )
+}
+
+/** Three plain neutral tiles — "Verloopt" and "Voorraad" navigate to Voorraad with that filter
+ *  already applied (see InventoryScreen's showExpiringSoonOnOpen), "Bespaard" is informational
+ *  (the value of everything used up rather than wasted this month) and has no destination. */
 @Composable
 private fun StatusTilesRow(
     expiringSoonCount: Int,
-    lowStockCount: Int,
+    savedValueThisMonth: Double,
     totalInInventory: Int,
+    categoryCount: Int,
     onExpiringSoonClick: () -> Unit,
-    onLowStockClick: () -> Unit,
     onInStockClick: () -> Unit,
 ) {
+    val locale = LocalConfiguration.current.locales[0]
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         StatusTile(
-            count = expiringSoonCount,
             label = stringResource(R.string.statistics_expiring_soon),
-            icon = Icons.Filled.EventBusy,
-            containerColor = MaterialTheme.colorScheme.secondaryContainer,
-            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+            value = expiringSoonCount.toString(),
+            caption = stringResource(R.string.statistics_tile_expiring_caption),
             onClick = onExpiringSoonClick,
+            locale = locale,
             modifier = Modifier.weight(1f),
         )
         StatusTile(
-            count = lowStockCount,
-            label = stringResource(R.string.statistics_low_stock),
-            icon = Icons.Filled.TrendingDown,
-            containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-            contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-            onClick = onLowStockClick,
+            label = stringResource(R.string.statistics_tile_saved_label),
+            value = formatPrice(savedValueThisMonth),
+            caption = stringResource(R.string.statistics_tile_saved_caption),
+            onClick = null,
+            locale = locale,
             modifier = Modifier.weight(1f),
         )
         StatusTile(
-            count = totalInInventory,
             label = stringResource(R.string.statistics_in_stock),
-            icon = Icons.Filled.Inventory2,
-            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-            contentColor = MaterialTheme.colorScheme.onSurface,
+            value = totalInInventory.toString(),
+            caption = pluralStringResource(R.plurals.statistics_tile_stock_caption_format, categoryCount, categoryCount),
             onClick = onInStockClick,
+            locale = locale,
             modifier = Modifier.weight(1f),
         )
     }
@@ -347,116 +479,338 @@ private fun StatusTilesRow(
 
 @Composable
 private fun StatusTile(
-    count: Int,
     label: String,
-    icon: ImageVector,
-    containerColor: Color,
-    contentColor: Color,
-    onClick: () -> Unit,
+    value: String,
+    caption: String,
+    onClick: (() -> Unit)?,
+    locale: Locale,
     modifier: Modifier = Modifier,
 ) {
-    Surface(
-        onClick = onClick,
-        modifier = modifier,
-        shape = SoftCardShapeCompact,
-        color = containerColor,
-    ) {
-        Column(modifier = Modifier.padding(vertical = 14.dp, horizontal = 8.dp)) {
-            Icon(icon, contentDescription = null, tint = contentColor, modifier = Modifier.size(18.dp))
+    val content: @Composable () -> Unit = {
+        Column(modifier = Modifier.padding(vertical = 14.dp, horizontal = 12.dp)) {
             Text(
-                text = count.toString(),
+                text = label.uppercase(locale),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = value,
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold,
-                color = contentColor,
-                modifier = Modifier.padding(top = 6.dp),
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.padding(top = 4.dp),
             )
             Text(
-                text = label,
-                style = MaterialTheme.typography.labelMedium,
-                color = contentColor,
+                text = caption,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
             )
+        }
+    }
+    if (onClick != null) {
+        Surface(onClick = onClick, modifier = modifier, shape = SoftCardShapeCompact, color = MaterialTheme.colorScheme.surfaceContainerHigh) { content() }
+    } else {
+        Surface(modifier = modifier, shape = SoftCardShapeCompact, color = MaterialTheme.colorScheme.surfaceContainerHigh) { content() }
+    }
+}
+
+/** "Wat je het vaakst weggooit" — one bordered card holding the ranked list plus a concrete
+ *  tip derived from the top entry, matching the Claude Design mockup's single-card layout
+ *  (this used to be a section heading + separate cards). */
+@Composable
+private fun TopWastedCard(products: List<TopWastedProduct>) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = SoftCardShapeCompact,
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Text(
+                    text = stringResource(R.string.statistics_most_wasted),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = stringResource(R.string.statistics_most_wasted_period),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (products.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.statistics_no_waste_yet),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 12.dp),
+                )
+                return@Column
+            }
+            val maxWastedCount = products.maxOf { it.wastedCount }
+            Column(modifier = Modifier.padding(top = 12.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                products.forEach { product -> TopWastedRow(product = product, maxCount = maxWastedCount) }
+            }
+            WasteTipBox(topProduct = products.first(), modifier = Modifier.padding(top = 16.dp))
         }
     }
 }
 
-/** Mirrors the old "Meest verspild" row, but the trailing count is now "N× · €X,XX" — the
- *  euro figure is the reason this list matters at all now that the hero above puts a price on
- *  waste, not just a tally. */
+/** One ranked row inside [TopWastedCard]: category icon, name + proportional bar, trailing
+ *  "N× · €X,XX" — no card of its own now that it lives inside one shared card. */
 @Composable
-private fun TopWastedRow(rank: Int, product: TopWastedProduct, maxCount: Int) {
+private fun TopWastedRow(product: TopWastedProduct, maxCount: Int) {
     val category = Category.fromStorageKey(product.category)
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        shape = SoftCardShapeCompact,
-    ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = category.icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
+        )
+        Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
             Text(
-                text = rank.toString(),
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.secondary,
-                modifier = Modifier.width(24.dp),
+                text = product.name,
+                style = MaterialTheme.typography.titleSmall,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
-            Icon(
-                imageVector = category.icon,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(20.dp),
-            )
-            Column(modifier = Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                Text(
-                    text = product.name,
-                    style = MaterialTheme.typography.titleSmall,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-                ProportionalBar(
-                    fraction = product.wastedCount.toFloat() / maxCount.toFloat(),
-                    color = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.padding(top = 6.dp),
-                )
-            }
-            Text(
-                text = stringResource(R.string.statistics_wasted_row_format, product.wastedCount, formatPrice(product.wastedValue)),
-                style = MaterialTheme.typography.bodyMedium,
+            ProportionalBar(
+                fraction = product.wastedCount.toFloat() / maxCount.toFloat(),
                 color = MaterialTheme.colorScheme.secondary,
-                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.padding(top = 6.dp),
             )
         }
+        Text(
+            text = stringResource(R.string.statistics_wasted_row_format, product.wastedCount, formatPrice(product.wastedValue)),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.secondary,
+            fontWeight = FontWeight.SemiBold,
+        )
     }
 }
 
 /** A single concrete suggestion, derived from whichever product tops the waste ranking — not a
  *  generic tip, so it changes as the household's own habits do. */
 @Composable
-private fun WasteInsightCard(topProduct: TopWastedProduct) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer),
-        shape = SoftCardShapeCompact,
+private fun WasteTipBox(topProduct: TopWastedProduct, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(
-            modifier = Modifier.padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Icon(
+            imageVector = Icons.Filled.Lightbulb,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(20.dp),
+        )
+        Text(
+            text = stringResource(
+                R.string.statistics_insight_format,
+                stringResource(Category.fromStorageKey(topProduct.category).displayNameRes),
+            ),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(start = 12.dp),
+        )
+    }
+}
+
+/** "Dennis 62% · Marieke 38% — van alle wijzigingen deze maand" — tapping expands the same
+ *  per-member breakdown cards the old "Wie doet wat" section always showed. */
+@Composable
+private fun ActivityShareRow(
+    shareEntries: List<ActivityShareEntry>,
+    memberScans: List<MemberScanEntry>,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    Column {
+        Surface(
+            onClick = onToggle,
+            shape = SoftCardShapeCompact,
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            modifier = Modifier.fillMaxWidth(),
         ) {
-            Icon(
-                imageVector = Icons.Filled.Lightbulb,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                modifier = Modifier.size(20.dp),
+            Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    if (shareEntries.isEmpty()) {
+                        Text(stringResource(R.string.statistics_activity_share_empty), style = MaterialTheme.typography.titleSmall)
+                    } else {
+                        val combined = shareEntries.joinToString(" · ") { entry ->
+                            val name = entry.name.ifBlank { stringResource(R.string.activity_actor_unknown) }
+                            "$name ${entry.percent}%"
+                        }
+                        Text(combined, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
+                        Text(
+                            text = stringResource(R.string.statistics_activity_share_caption),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        AnimatedVisibility(visible = expanded) {
+            Column(modifier = Modifier.padding(top = 12.dp)) {
+                Text(stringResource(R.string.statistics_by_actor), style = MaterialTheme.typography.titleSmall)
+                if (memberScans.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.statistics_no_scans_yet),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                } else {
+                    MemberScanRow(members = memberScans, modifier = Modifier.padding(top = 10.dp))
+                }
+            }
+        }
+    }
+}
+
+/** "Meest gescand, activiteit & geschiedenis" — tapping expands the most-scanned ranking (never
+ *  shown anywhere else in the app before this screen) plus a short recent-activity feed. */
+@Composable
+private fun ScannedHistoryRow(
+    topScanned: List<TopScannedProduct>,
+    recentActivity: List<ActivityLogWithProduct>,
+    expanded: Boolean,
+    onToggle: () -> Unit,
+) {
+    Column {
+        Surface(
+            onClick = onToggle,
+            shape = SoftCardShapeCompact,
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = stringResource(R.string.statistics_scanned_history_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        AnimatedVisibility(visible = expanded) {
+            Column(modifier = Modifier.padding(top = 12.dp)) {
+                Text(stringResource(R.string.statistics_scanned_section_title), style = MaterialTheme.typography.titleSmall)
+                if (topScanned.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.statistics_no_scans_yet),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                } else {
+                    Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        topScanned.forEach { ScannedProductRow(it) }
+                    }
+                }
+                Text(
+                    text = stringResource(R.string.statistics_recent_activity_section_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.padding(top = 16.dp),
+                )
+                if (recentActivity.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.statistics_recent_activity_empty),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 8.dp),
+                    )
+                } else {
+                    Column(modifier = Modifier.padding(top = 8.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        recentActivity.forEach { RecentActivityRow(it) }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScannedProductRow(product: TopScannedProduct) {
+    val category = Category.fromStorageKey(product.category)
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Icon(
+            imageVector = category.icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp),
+        )
+        Text(
+            text = product.name,
+            style = MaterialTheme.typography.bodyMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f).padding(start = 12.dp),
+        )
+        Text(
+            text = stringResource(R.string.statistics_scan_count_format, product.scanCount),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+private fun recentActivityIcon(type: ActivityType): ImageVector = when (type) {
+    ActivityType.SCANNED -> Icons.Filled.QrCodeScanner
+    ActivityType.QUANTITY_CHANGED -> Icons.Filled.Tune
+    ActivityType.REMOVED -> Icons.Filled.Delete
+    ActivityType.ADDED_TO_SHOPPING_LIST -> Icons.Filled.AddShoppingCart
+    ActivityType.WASTED -> Icons.Filled.DeleteSweep
+}
+
+@Composable
+private fun RecentActivityRow(entry: ActivityLogWithProduct) {
+    val type = remember(entry.type) { ActivityType.fromStorageKey(entry.type) }
+    val time = remember(entry.timestamp) {
+        DateTimeFormatter.ofPattern("d MMM, HH:mm").format(Instant.ofEpochMilli(entry.timestamp).atZone(ZoneId.systemDefault()))
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Surface(shape = CircleShape, color = MaterialTheme.colorScheme.secondaryContainer, modifier = Modifier.size(28.dp)) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                Icon(
+                    imageVector = recentActivityIcon(type),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+        }
+        Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
+            Text(
+                text = "${entry.productName} · ${entry.detail}",
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = stringResource(
-                    R.string.statistics_insight_format,
-                    stringResource(Category.fromStorageKey(topProduct.category).displayNameRes),
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onTertiaryContainer,
-                modifier = Modifier.padding(start = 12.dp),
+                text = "${entry.actorName ?: stringResource(R.string.activity_actor_unknown)} · $time",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
@@ -465,9 +819,9 @@ private fun WasteInsightCard(topProduct: TopWastedProduct) {
 /** "Wie doet wat" — one card per household member who's scanned at least once, avatar (photo or
  *  a generic icon when no match was found — see [MemberScanEntry]'s doc) plus their scan count. */
 @Composable
-private fun MemberScanRow(members: List<MemberScanEntry>) {
+private fun MemberScanRow(members: List<MemberScanEntry>, modifier: Modifier = Modifier) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.spacedBy(10.dp),
     ) {
         members.forEach { member ->

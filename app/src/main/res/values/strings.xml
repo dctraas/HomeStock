@@ -347,7 +347,7 @@
         <item quantity="other">%1$d items op de boodschappenlijst krijgen geen winkel meer.</item>
 
     </plurals>
-    <string name="more_statistics_title">Statistieken</string>
+    <string name="more_statistics_title">Inzicht &amp; Verspilling</string>
     <string name="more_statistics_subtitle">Voorraad, verspilling en scans per huisgenoot</string>
     <string name="more_section_household">Huishouden</string>
     <string name="more_data_csv_title">Data overzetten</string>
@@ -792,17 +792,44 @@
     <string name="notification_member_left_body_format">%1$s heeft het huishouden verlaten</string>
 
     <!-- Statistieken -->
-    <string name="statistics_title">Statistieken</string>
-    <string name="statistics_hero_eyebrow_format">VERSPILD IN %1$s</string>
+    <string name="statistics_title">Inzicht</string>
+    <string name="statistics_hero_eyebrow_format">WEGGEGOOID IN %1$s</string>
+    <plurals name="statistics_hero_product_count_format">
+        <item quantity="one">%d product</item>
+        <item quantity="other">%d producten</item>
+    </plurals>
+    <plurals name="statistics_tile_stock_caption_format">
+        <item quantity="one">%d categorie</item>
+        <item quantity="other">%d categorieën</item>
+    </plurals>
+    <string name="statistics_period_month">Maand</string>
+    <string name="statistics_period_year">Jaar</string>
+    <string name="statistics_delta_less_format">▼ %1$d%% minder</string>
+    <string name="statistics_delta_more_format">▲ %1$d%% meer</string>
+    <string name="statistics_hero_goal_format">doel: onder %1$s</string>
+    <string name="statistics_hero_set_goal_cta">Stel doel in</string>
+    <string name="statistics_tile_expiring_caption">deze week</string>
+    <string name="statistics_tile_saved_label">Bespaard</string>
+    <string name="statistics_tile_saved_caption">opgemaakt i.p.v. weg</string>
+    <string name="statistics_most_wasted_period">6 maanden</string>
+    <string name="statistics_activity_share_caption">van alle wijzigingen deze maand</string>
+    <string name="statistics_activity_share_empty">Nog geen activiteit deze maand.</string>
+    <string name="statistics_scanned_history_title">Meest gescand, activiteit &amp; geschiedenis</string>
+    <string name="statistics_scanned_section_title">Meest gescand</string>
+    <string name="statistics_recent_activity_section_title">Recente activiteit</string>
+    <string name="statistics_recent_activity_empty">Nog geen activiteit.</string>
+    <string name="statistics_goal_dialog_title">Doel voor voedselverspilling</string>
+    <string name="statistics_goal_dialog_label">Maandelijks doel (€)</string>
+    <string name="statistics_goal_dialog_clear">Geen doel</string>
     <string name="statistics_no_scans_yet">Nog geen scans om te tonen.</string>
-    <string name="statistics_most_wasted">Vaakst weggegooid</string>
+    <string name="statistics_most_wasted">Wat je het vaakst weggooit</string>
     <string name="statistics_no_waste_yet">Nog niets als weggegooid gemarkeerd.</string>
     <string name="statistics_wasted_row_format">%1$d× · %2$s</string>
     <string name="statistics_insight_format">Je gooit het vaakst producten uit de categorie %1$s weg. Overweeg kleinere porties te kopen, of vries de rest in voordat het bederft.</string>
-    <string name="statistics_in_stock">In voorraad</string>
+    <string name="statistics_in_stock">Voorraad</string>
     <string name="statistics_by_actor">Wie doet wat</string>
     <string name="statistics_scan_count_format">%1$dx</string>
-    <string name="statistics_expiring_soon">Verlopen bijna</string>
+    <string name="statistics_expiring_soon">Verloopt</string>
     <string name="statistics_low_stock">Bijna op</string>
     <string name="statistics_busiest_day_title">Drukste scandag</string>
 

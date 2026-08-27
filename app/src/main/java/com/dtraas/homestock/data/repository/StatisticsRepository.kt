@@ -26,9 +26,19 @@ import java.time.ZoneOffset
 /** One month's total approximate waste value — see [StatisticsRepository.observeMonthlyWasteValue]. */
 data class MonthlyWaste(val month: YearMonth, val totalValue: Double)
 
+/** One calendar year's total approximate waste value — the "Jaar" period on Inzicht &
+ *  Verspilling's hero chart, see [StatisticsRepository.observeYearlyWasteValue]. */
+data class YearlyWaste(val year: Int, val totalValue: Double)
+
 /** How many items were logged as waste, and their approximate combined value, in some window —
  *  see [StatisticsRepository.observeWasteSince]. */
 data class WasteSummary(val count: Int, val totalValue: Double)
+
+/** How many activityLog entries (of any type — scans, removals, waste, ...) a household member
+ *  is responsible for in some window; null [actorName] means no name was set. Distinct from
+ *  [com.dtraas.homestock.data.local.dao.ActorScanCount], which only counts scans — see
+ *  [StatisticsRepository.observeActivityShareThisMonth]. */
+data class ActorActivityCount(val actorName: String?, val count: Int)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class StatisticsRepository(
@@ -212,6 +222,100 @@ class StatisticsRepository(
                             totals[month] = (totals[month] ?: 0.0) + price
                         }
                     months.map { MonthlyWaste(it, totals[it] ?: 0.0) }
+                }
+            }
+        }
+
+    /**
+     * Same idea as [observeMonthlyWasteValue] but bucketed by calendar year rather than month,
+     * for Inzicht & Verspilling's "Jaar" period toggle — [yearsBack] years up to and including
+     * the current one, oldest first, always exactly [yearsBack] entries.
+     */
+    fun observeYearlyWasteValue(yearsBack: Int = 6): Flow<List<YearlyWaste>> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(emptyList())
+            } else {
+                combine(
+                    collection(householdId, "activityLog").observeSnapshots(),
+                    products(householdId),
+                ) { snapshot, products ->
+                    val currentYear = YearMonth.now().year
+                    val years = (yearsBack - 1 downTo 0).map { currentYear - it }
+                    val totals = years.associateWith { 0.0 }.toMutableMap()
+                    snapshot.documents
+                        .filter { it.getString("type") == ActivityType.WASTED.storageKey }
+                        .forEach { doc ->
+                            val timestamp = doc.getLong("timestamp") ?: return@forEach
+                            val year = Instant.ofEpochMilli(timestamp).atZone(ZoneId.systemDefault()).year
+                            if (year !in totals) return@forEach
+                            val barcode = doc.getString("barcode") ?: return@forEach
+                            val price = products[barcode]?.lastPrice ?: 0.0
+                            totals[year] = (totals[year] ?: 0.0) + price
+                        }
+                    years.map { YearlyWaste(it, totals[it] ?: 0.0) }
+                }
+            }
+        }
+
+    /** How many distinct products have at least one "wasted" entry so far this calendar month —
+     *  Inzicht & Verspilling's hero subtitle ("9 producten"). */
+    fun observeWasteProductCountThisMonth(): Flow<Int> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(0)
+            } else {
+                collection(householdId, "activityLog").observeSnapshots().map { snapshot ->
+                    val monthStart = YearMonth.now().atDay(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    snapshot.documents
+                        .filter { it.getString("type") == ActivityType.WASTED.storageKey && (it.getLong("timestamp") ?: 0L) >= monthStart }
+                        .mapNotNull { it.getString("barcode") }
+                        .distinct()
+                        .size
+                }
+            }
+        }
+
+    /**
+     * Approximate value of everything logged as [ActivityType.REMOVED] (used up, not thrown
+     * away) so far this month — Inzicht & Verspilling's "Bespaard" tile: food that made it to
+     * the plate instead of the bin, priced the same way [observeMonthlyWasteValue] prices waste.
+     */
+    fun observeSavedValueThisMonth(): Flow<Double> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(0.0)
+            } else {
+                combine(
+                    collection(householdId, "activityLog").observeSnapshots(),
+                    products(householdId),
+                ) { snapshot, products ->
+                    val monthStart = YearMonth.now().atDay(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    snapshot.documents
+                        .filter { it.getString("type") == ActivityType.REMOVED.storageKey && (it.getLong("timestamp") ?: 0L) >= monthStart }
+                        .sumOf { doc ->
+                            val barcode = doc.getString("barcode") ?: return@sumOf 0.0
+                            products[barcode]?.lastPrice ?: 0.0
+                        }
+                }
+            }
+        }
+
+    /** Share of this month's household activity (every logged type, not just scans) per member —
+     *  Inzicht & Verspilling's "Dennis 62% · Marieke 38%" row. */
+    fun observeActivityShareThisMonth(): Flow<List<ActorActivityCount>> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(emptyList())
+            } else {
+                collection(householdId, "activityLog").observeSnapshots().map { snapshot ->
+                    val monthStart = YearMonth.now().atDay(1).atStartOfDay(ZoneId.systemDefault()).toInstant().toEpochMilli()
+                    snapshot.documents
+                        .filter { (it.getLong("timestamp") ?: 0L) >= monthStart }
+                        .groupingBy { it.getString("actorName") }
+                        .eachCount()
+                        .map { (actorName, count) -> ActorActivityCount(actorName, count) }
+                        .sortedByDescending { it.count }
                 }
             }
         }

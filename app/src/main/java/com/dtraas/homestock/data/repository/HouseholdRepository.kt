@@ -90,6 +90,30 @@ class HouseholdRepository(
         }
 
     /**
+     * The household's self-set monthly food-waste budget (Inzicht & Verspilling's "doel: onder
+     * €X") — null until a member sets one via [setWasteGoal], in which case the screen shows a
+     * "stel doel in" prompt instead of a target.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeWasteGoal(): Flow<Double?> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(null)
+            } else {
+                firestore.collection(HOUSEHOLDS_COLLECTION).document(householdId).observeSnapshot()
+                    .map { it.getDouble(FIELD_WASTE_GOAL) }
+            }
+        }
+
+    /** Sets (or, with `goal = null`, clears) the household's monthly waste-value budget. */
+    suspend fun setWasteGoal(householdId: String, goal: Double?): Result<Unit> = try {
+        firestore.collection(HOUSEHOLDS_COLLECTION).document(householdId).update(FIELD_WASTE_GOAL, goal).await()
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    /**
      * When this household was created — the delete-confirmation sheet's "DIT VERDWIJNT" card
      * turns this into "X maanden geschiedenis" so the count is real, not a guess. Households
      * created before `createdAt` existed have no such field, hence the nullable return.
@@ -233,6 +257,7 @@ class HouseholdRepository(
 
         private const val FIELD_NAME = "name"
         private const val FIELD_INVITE_EXPIRES_AT = "inviteExpiresAt"
+        private const val FIELD_WASTE_GOAL = "wasteGoal"
 
         /** How long a freshly (re)shared invite link keeps working for a new join — see
          *  [refreshInviteExpiry]. */

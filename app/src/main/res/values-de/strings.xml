@@ -343,7 +343,7 @@
         <item quantity="other">%1$d Artikel auf der Einkaufsliste verlieren ihr Geschäft.</item>
 
     </plurals>
-    <string name="more_statistics_title">Statistiken</string>
+    <string name="more_statistics_title">Einblick &amp; Verschwendung</string>
     <string name="more_statistics_subtitle">Vorrat, Verschwendung und Scans pro Haushaltsmitglied</string>
     <string name="more_section_household">Haushalt</string>
     <string name="more_data_csv_title">Daten übertragen</string>
@@ -788,17 +788,44 @@
     <string name="notification_member_left_body_format">%1$s hat den Haushalt verlassen</string>
 
     <!-- Statistiken -->
-    <string name="statistics_title">Statistiken</string>
-    <string name="statistics_hero_eyebrow_format">VERSCHWENDET IN %1$s</string>
+    <string name="statistics_title">Einblick</string>
+    <string name="statistics_hero_eyebrow_format">WEGGEWORFEN IM %1$s</string>
+    <plurals name="statistics_hero_product_count_format">
+        <item quantity="one">%d Produkt</item>
+        <item quantity="other">%d Produkte</item>
+    </plurals>
+    <plurals name="statistics_tile_stock_caption_format">
+        <item quantity="one">%d Kategorie</item>
+        <item quantity="other">%d Kategorien</item>
+    </plurals>
+    <string name="statistics_period_month">Monat</string>
+    <string name="statistics_period_year">Jahr</string>
+    <string name="statistics_delta_less_format">▼ %1$d %% weniger</string>
+    <string name="statistics_delta_more_format">▲ %1$d %% mehr</string>
+    <string name="statistics_hero_goal_format">Ziel: unter %1$s</string>
+    <string name="statistics_hero_set_goal_cta">Ziel festlegen</string>
+    <string name="statistics_tile_expiring_caption">diese Woche</string>
+    <string name="statistics_tile_saved_label">Gespart</string>
+    <string name="statistics_tile_saved_caption">aufgebraucht statt weggeworfen</string>
+    <string name="statistics_most_wasted_period">6 Monate</string>
+    <string name="statistics_activity_share_caption">aller Änderungen diesen Monat</string>
+    <string name="statistics_activity_share_empty">Diesen Monat noch keine Aktivität.</string>
+    <string name="statistics_scanned_history_title">Meistgescannt, Aktivität &amp; Verlauf</string>
+    <string name="statistics_scanned_section_title">Meistgescannt</string>
+    <string name="statistics_recent_activity_section_title">Letzte Aktivität</string>
+    <string name="statistics_recent_activity_empty">Noch keine Aktivität.</string>
+    <string name="statistics_goal_dialog_title">Ziel für Lebensmittelverschwendung</string>
+    <string name="statistics_goal_dialog_label">Monatliches Ziel (€)</string>
+    <string name="statistics_goal_dialog_clear">Kein Ziel</string>
     <string name="statistics_no_scans_yet">Noch keine Scans vorhanden.</string>
-    <string name="statistics_most_wasted">Am häufigsten weggeworfen</string>
+    <string name="statistics_most_wasted">Was du am häufigsten wegwirfst</string>
     <string name="statistics_no_waste_yet">Noch nichts als weggeworfen markiert.</string>
     <string name="statistics_wasted_row_format">%1$d× · %2$s</string>
     <string name="statistics_insight_format">Du wirfst am häufigsten Produkte aus der Kategorie %1$s weg. Kaufe kleinere Mengen oder friere den Rest ein, bevor er verdirbt.</string>
-    <string name="statistics_in_stock">Auf Vorrat</string>
+    <string name="statistics_in_stock">Vorrat</string>
     <string name="statistics_by_actor">Wer macht was</string>
     <string name="statistics_scan_count_format">%1$dx</string>
-    <string name="statistics_expiring_soon">Läuft bald ab</string>
+    <string name="statistics_expiring_soon">Läuft ab</string>
     <string name="statistics_low_stock">Wenig Vorrat</string>
     <string name="statistics_busiest_day_title">Aktivster Scan-Tag</string>
 
