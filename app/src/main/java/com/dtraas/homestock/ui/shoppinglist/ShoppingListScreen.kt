@@ -144,7 +144,6 @@ import com.dtraas.homestock.ui.components.SheetTitle
 import com.dtraas.homestock.ui.components.formatQuantityWithUnit
 import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.components.sheetContentPadding
-import com.dtraas.homestock.ui.theme.LocalIsDarkTheme
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
@@ -1551,32 +1550,31 @@ private fun ShoppingListBottomBar(
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                // Deliberately literal white (light mode) / black (dark mode) rather than a
-                // theme color — always the maximum-contrast opposite of LocalIsDarkTheme, not
-                // just "whatever onSurface happens to be" — per explicit request.
-                val isDarkTheme = LocalIsDarkTheme.current
-                val addButtonContainer = if (isDarkTheme) Color.Black else Color.White
-                val addButtonContent = if (isDarkTheme) Color.White else Color.Black
+                // Solid primary green, fully rounded (a true pill, not just a soft-rounded
+                // rect) — per the Claude Design mockup's own close-up of this button, replacing
+                // the earlier literal white/black treatment.
                 Surface(
                     onClick = onShoppingModeClick,
                     modifier = Modifier.weight(1f).height(52.dp),
-                    shape = SoftCardShapeCompact,
-                    color = addButtonContainer,
+                    shape = RoundedCornerShape(percent = 50),
+                    color = MaterialTheme.colorScheme.primary,
                 ) {
                     Row(
                         modifier = Modifier.fillMaxSize().padding(horizontal = 16.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        horizontalArrangement = Arrangement.Center,
                     ) {
                         Icon(
-                            Icons.Filled.DoneAll,
+                            Icons.Filled.Storefront,
                             contentDescription = null,
-                            tint = addButtonContent,
+                            tint = MaterialTheme.colorScheme.onPrimary,
                         )
                         Text(
                             text = stringResource(R.string.shopping_list_bottom_shopping_mode_label),
-                            color = addButtonContent,
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.bodyLarge,
+                            modifier = Modifier.padding(start = 8.dp),
                         )
                     }
                 }
