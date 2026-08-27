@@ -644,8 +644,12 @@ private fun ActivityShareRow(
                     if (shareEntries.isEmpty()) {
                         Text(stringResource(R.string.statistics_activity_share_empty), style = MaterialTheme.typography.titleSmall)
                     } else {
+                        // stringResource() can't be called inside joinToString's transform lambda
+                        // (it isn't guaranteed-inline, so the Compose compiler rejects a
+                        // @Composable call there) — resolved once up front instead.
+                        val unknownActor = stringResource(R.string.activity_actor_unknown)
                         val combined = shareEntries.joinToString(" · ") { entry ->
-                            val name = entry.name.ifBlank { stringResource(R.string.activity_actor_unknown) }
+                            val name = entry.name.ifBlank { unknownActor }
                             "$name ${entry.percent}%"
                         }
                         Text(combined, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
