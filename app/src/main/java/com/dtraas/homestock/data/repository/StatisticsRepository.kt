@@ -8,6 +8,7 @@ import com.dtraas.homestock.data.local.entity.InventoryItemEntity
 import com.dtraas.homestock.data.local.entity.ProductEntity
 import com.dtraas.homestock.data.local.entity.ScanHistoryEntity
 import com.dtraas.homestock.data.model.ActivityType
+import com.dtraas.homestock.data.model.InventoryStockStatus
 import com.dtraas.homestock.data.remote.observeSnapshots
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -88,10 +89,12 @@ class StatisticsRepository(
             items.count { (item, _) -> item.expirationDate != null && item.expirationDate <= cutoff }
         }
 
-    /** Items at or below the minimum quantity threshold the household set for them. */
+    /** Same definition as [com.dtraas.homestock.data.model.InventoryStockStatus.isLowStock] —
+     *  below the household's own set minimum, but excluding 0 (out of stock is its own, more
+     *  urgent status, not "low"). */
     fun observeLowStockCount(): Flow<Int> =
         inventoryWithProducts().map { items ->
-            items.count { (item, _) -> item.minQuantity != null && item.quantity <= item.minQuantity }
+            items.count { (item, _) -> InventoryStockStatus.isLowStock(item.quantity, item.minQuantity) }
         }
 
     /**

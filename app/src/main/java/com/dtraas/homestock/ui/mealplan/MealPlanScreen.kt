@@ -309,18 +309,6 @@ fun MealPlanScreen(
                         )
                     }
                 }
-                CompactSlotCard(
-                    slot = MealSlot.SNACK,
-                    label = stringResource(MealSlot.SNACK.labelRes),
-                    planned = uiState.plan[MealSlot.SNACK].orEmpty(),
-                    onAddClick = { viewModel.openPicker(MealSlot.SNACK) },
-                    onOpenRecipe = onRecipeClick,
-                    onOpenProduct = onProductClick,
-                    onRemove = { meal -> removeWithUndo(MealSlot.SNACK, meal) },
-                    onAddToShoppingList = { meal -> viewModel.addProductToShoppingList(meal.name) },
-                    onMarkEaten = { meal -> viewModel.markMealEaten(MealSlot.SNACK, meal) },
-                    onMarkWasted = { meal -> viewModel.markMealWasted(MealSlot.SNACK, meal) },
-                )
             }
         }
     }
@@ -528,9 +516,9 @@ private fun WeekDayStrip(
  * treatment: a small thumbnail next to the name, an "N/M in huis" pill and — when tonight's
  * recipe would also use up something close to expiring — an orange "gebruikt X" pill, then a
  * "N missend"/"Kookstand" action line, per the Claude Design mockup (which replaces the earlier
- * full-width photo banner + primary "Kookmodus" button). Falls back to the same compact
- * treatment as [CompactSlotCard]'s other slots when nothing's planned yet, or only a product/
- * hand-typed name is — there's no recipe detail to feature in that case. Multi-meal support (see
+ * full-width photo banner + primary "Kookmodus" button). Falls back to the same compact-row
+ * treatment [CompactPlannedRow] gives every other slot when nothing's planned yet, or only a
+ * product/hand-typed name is — there's no recipe detail to feature in that case. Multi-meal support (see
  * [PlannedMeal]'s doc) still applies: any planned dinner entries beyond the featured recipe
  * render as compact rows underneath it.
  */
@@ -749,56 +737,12 @@ private fun DinnerActionLink(icon: ImageVector, text: String, onClick: () -> Uni
     }
 }
 
-/** Tussendoor's own compact treatment — no featured-recipe thumbnail card the way avondeten gets
- *  (see [DinnerCard]); Ontbijt/Lunch use the two-column [MealSlotTile] instead. */
-@Composable
-private fun CompactSlotCard(
-    slot: MealSlot,
-    label: String,
-    planned: List<PlannedMeal>,
-    onAddClick: () -> Unit,
-    onOpenRecipe: (String) -> Unit,
-    onOpenProduct: (String) -> Unit,
-    onRemove: (PlannedMeal) -> Unit,
-    onAddToShoppingList: (PlannedMeal) -> Unit,
-    onMarkEaten: (PlannedMeal) -> Unit,
-    onMarkWasted: (PlannedMeal) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Icon(slot.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(18.dp))
-            Text(
-                text = label,
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 6.dp),
-            )
-        }
-        planned.forEach { meal ->
-            CompactPlannedRow(
-                meal = meal,
-                onClick = {
-                    when {
-                        meal.recipeId != null -> onOpenRecipe(meal.recipeId)
-                        meal.productBarcode != null -> onOpenProduct(meal.productBarcode)
-                    }
-                },
-                onRemove = { onRemove(meal) },
-                onAddToShoppingList = { onAddToShoppingList(meal) },
-                onMarkEaten = { onMarkEaten(meal) },
-                onMarkWasted = { onMarkWasted(meal) },
-            )
-        }
-        EmptySlotAddButton(onAddClick, contentDescription = stringResource(R.string.meal_plan_add_cd))
-    }
-}
-
 /**
  * Ontbijt/Lunch's own two-column card treatment, per the Claude Design mockup — a solid-bordered
  * card once something's planned, a dashed one (echoing [EmptySlotAddButton]'s own dashed style)
  * with a "+ Plannen" prompt when the slot is still empty, side by side with its sibling via the
  * caller's [Modifier.weight]. A planned slot still offers the same "add another" affordance
- * underneath its entries as [CompactSlotCard] — multi-meal support isn't lost, just less
+ * underneath its entries — multi-meal support isn't lost, just less
  * prominent than the empty-slot prompt.
  */
 @Composable

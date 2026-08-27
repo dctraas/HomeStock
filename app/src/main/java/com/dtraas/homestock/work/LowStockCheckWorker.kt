@@ -21,6 +21,7 @@ import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.MainActivity
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
+import com.dtraas.homestock.data.model.InventoryStockStatus
 import kotlinx.coroutines.flow.first
 import java.util.concurrent.TimeUnit
 
@@ -48,8 +49,13 @@ class LowStockCheckWorker(
             return Result.success()
         }
 
+        // InventoryStockStatus.isLowStock, not a bare quantity <= minQuantity check — that inline
+        // version used to disagree with it (inclusive of quantity == minQuantity, and of 0/out-
+        // of-stock items, which isLowStock deliberately excludes as their own, more urgent
+        // status), so this worker could notify about items Voorraad's own "Lage voorraad" filter
+        // then didn't consider low stock at all — see that filter's InventoryViewModel.groupedInventory.
         val lowStock = container.inventoryRepository.observeInventoryWithProduct().first()
-            .filter { item -> item.minQuantity != null && item.quantity <= item.minQuantity }
+            .filter { item -> InventoryStockStatus.isLowStock(item.quantity, item.minQuantity) }
 
         if (lowStock.isNotEmpty()) {
             postNotification(lowStock)
