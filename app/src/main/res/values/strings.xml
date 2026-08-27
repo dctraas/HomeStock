@@ -949,9 +949,10 @@
     <string name="recipe_tag_add_dialog_label">Label</string>
     <string name="recipe_tag_add_dialog_confirm">Toevoegen</string>
     <string name="recipes_tab_inventory">Uit je voorraad</string>
-    <string name="recipes_tab_browse">Ontdekken</string>
+    <string name="recipes_tab_browse">Ontdek</string>
     <string name="recipes_tab_favorites">Favorieten</string>
-    <string name="recipes_tab_custom">Mijn recepten</string>
+    <string name="recipes_tab_custom">Eigen</string>
+    <string name="recipes_tab_ai">AI</string>
     <string name="recipes_add_custom_button">Eigen recept toevoegen</string>
     <string name="recipes_inventory_empty_title">Nog geen match gevonden</string>
     <string name="recipes_inventory_empty_subtitle">Vul je voorraad aan, of bekijk Ontdekken voor meer recepten.</string>

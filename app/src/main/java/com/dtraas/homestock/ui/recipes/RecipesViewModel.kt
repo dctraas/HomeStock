@@ -35,8 +35,10 @@ enum class ImportRecipeError { NO_CONNECTION, PREMIUM_REQUIRED, UNKNOWN }
 /** Which recipe source RecipesScreen is currently showing — see [RecipesViewModel.selectTab].
  *  [INVENTORY] ("Uit je voorraad") is the default tab per the design review — what used to be
  *  the "Kook wat je hebt" promo card on [BROWSE] ("Ontdekken") is now this tab's own content
- *  instead of an opt-in banner. */
-enum class RecipesTab { INVENTORY, BROWSE, FAVORITES, CUSTOM }
+ *  instead of an opt-in banner. [AI] replaces what used to be a floating action button opening
+ *  a "Recept bedenken" bottom sheet — it has no recipe list of its own (see
+ *  [RecipesViewModel.refreshCurrentTab]), just that same form as a persistent tab instead. */
+enum class RecipesTab { INVENTORY, BROWSE, FAVORITES, CUSTOM, AI }
 
 /** Why a browse/search load failed — [QUOTA_EXCEEDED] gets its own, more accurate message
  *  instead of being lumped in with [NO_CONNECTION] (see `spoonacularGet` in
@@ -169,6 +171,10 @@ class RecipesViewModel(
             RecipesTab.BROWSE -> launchBrowseOrSearch()
             RecipesTab.FAVORITES -> launchLiveList(recipeRepository::observeFavoriteRecipes)
             RecipesTab.CUSTOM -> launchLiveList(recipeRepository::observeCustomRecipes)
+            // No list to load — RecipesScreen shows the "Recept bedenken" form instead, see
+            // RecipesTab.AI's doc. Still clears isLoading in case a previous tab's fetch was
+            // still in flight when this tab was selected.
+            RecipesTab.AI -> null.also { _uiState.update { state -> state.copy(isLoading = false) } }
         }
     }
 

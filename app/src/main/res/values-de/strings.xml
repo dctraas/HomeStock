@@ -947,7 +947,8 @@
     <string name="recipes_tab_inventory">Aus deinem Vorrat</string>
     <string name="recipes_tab_browse">Entdecken</string>
     <string name="recipes_tab_favorites">Favoriten</string>
-    <string name="recipes_tab_custom">Meine Rezepte</string>
+    <string name="recipes_tab_custom">Eigene</string>
+    <string name="recipes_tab_ai">KI</string>
     <string name="recipes_add_custom_button">Eigenes Rezept hinzufügen</string>
     <string name="recipes_inventory_empty_title">Noch keine Treffer</string>
     <string name="recipes_inventory_empty_subtitle">Fülle deinen Vorrat auf oder schau bei Entdecken nach mehr Rezepten.</string>

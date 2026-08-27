@@ -947,7 +947,8 @@
     <string name="recipes_tab_inventory">Depuis votre stock</string>
     <string name="recipes_tab_browse">Découvrir</string>
     <string name="recipes_tab_favorites">Favoris</string>
-    <string name="recipes_tab_custom">Mes recettes</string>
+    <string name="recipes_tab_custom">Perso</string>
+    <string name="recipes_tab_ai">IA</string>
     <string name="recipes_add_custom_button">Ajouter ma propre recette</string>
     <string name="recipes_inventory_empty_title">Pas encore de correspondance</string>
     <string name="recipes_inventory_empty_subtitle">Complétez votre stock, ou consultez Découvrir pour plus de recettes.</string>
