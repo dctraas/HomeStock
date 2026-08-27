@@ -67,7 +67,6 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -197,16 +196,14 @@ private fun NotificationsHeader(
             .padding(horizontal = 16.dp, vertical = 4.dp)
             .padding(bottom = 14.dp),
     ) {
-        Box(modifier = Modifier.fillMaxWidth()) {
-            IconButton(onClick = onBack, modifier = Modifier.align(Alignment.CenterStart).offset(x = (-12).dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.offset(x = (-12).dp)) {
+            IconButton(onClick = onBack) {
                 Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back), tint = contentColor)
             }
             Text(
                 text = stringResource(R.string.nav_news),
                 style = MaterialTheme.typography.titleLarge,
                 color = contentColor,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.align(Alignment.Center).padding(horizontal = 48.dp),
             )
         }
         Row(

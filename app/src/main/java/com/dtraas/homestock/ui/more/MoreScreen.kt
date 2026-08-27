@@ -727,15 +727,6 @@ fun MoreScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                // Profiel + huishouden-subtitel + code — voorheen vast in de groene header, nu
-                // de eerste rij van de scrollende lijst zelf, op uitdrukkelijk verzoek.
-                ProfileRow(
-                    displayName = displayName,
-                    photoPath = photoPath,
-                    householdName = householdName,
-                    onClick = { showProfileDialog = true },
-                )
-
                 // Terug naar de oorspronkelijke plek, direct onder de header — "Premium
                 // simuleren" (helemaal onderaan, bij Debug) was wat te weinig ruimte eronder
                 // had, niet deze kaart. Premium blijft ook zichtbaar tijdens het zoeken — het is
@@ -743,6 +734,18 @@ fun MoreScreen(
                 PremiumCard(isPremium = isPremium, onClick = onNavigateToPremium)
 
                 val householdRows: List<@Composable () -> Unit> = listOfNotNull(
+                    // Profiel + huishouden-naam — voorheen vast in de groene header, nu de eerste
+                    // rij van de Huishouden-sectie zelf, op uitdrukkelijk verzoek. Altijd
+                    // zichtbaar tijdens het zoeken (zoals de Premium-kaart hierboven) — dit is een
+                    // identiteitsrij, geen doorzoekbare instelling.
+                    {
+                        ProfileRow(
+                            displayName = displayName,
+                            photoPath = photoPath,
+                            householdName = householdName,
+                            onClick = { showProfileDialog = true },
+                        )
+                    },
                     if (matches(householdRowTitle)) {
                         {
                             HouseholdMembersRow(
@@ -931,8 +934,9 @@ fun MoreScreen(
 
                 // Zoekopdracht levert niets op in geen enkele sectie — laat dat expliciet zien
                 // in plaats van een verwarrend kaal scherm (de Profiel-rij en Premium-kaart
-                // blijven wel altijd zichtbaar, zie hierboven).
-                if (searchQuery.isNotBlank() && householdRows.isEmpty() && preferenceRows.isEmpty() && supportRows.isEmpty()) {
+                // blijven wel altijd zichtbaar, zie hierboven — householdRows telt hier daarom
+                // vanaf 1, niet 0: die ene rij is nooit een teken dat er iets écht matchte).
+                if (searchQuery.isNotBlank() && householdRows.size <= 1 && preferenceRows.isEmpty() && supportRows.isEmpty()) {
                     Text(
                         text = stringResource(R.string.more_settings_search_empty_format, searchQuery),
                         style = MaterialTheme.typography.bodyMedium,
@@ -1776,8 +1780,6 @@ private fun MoreScreenHeader(searchQuery: String, onSearchQueryChange: (String) 
             text = stringResource(R.string.more_settings_title),
             style = MaterialTheme.typography.headlineSmall,
             color = contentColor,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth(),
         )
         SearchField(
             query = searchQuery,

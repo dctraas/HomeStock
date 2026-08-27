@@ -376,8 +376,6 @@ private fun MealPlanHeader(
                 text = stringResource(R.string.meal_plan_this_week_title),
                 style = MaterialTheme.typography.headlineSmall,
                 color = contentColor,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth(),
             )
             // Altijd zichtbaar, in tegenstelling tot een eerdere plek op de uitgelichte
             // avondeten-kaart — die rendert alleen zodra er een écht recept gepland staat voor

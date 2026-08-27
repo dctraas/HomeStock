@@ -1307,8 +1307,7 @@ private fun ShoppingListHeader(
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
-                    .align(Alignment.Center)
-                    .padding(horizontal = 48.dp)
+                    .align(Alignment.CenterStart)
                     .clickable(onClick = onListNameClick)
                     .padding(vertical = 10.dp, horizontal = 4.dp),
             ) {

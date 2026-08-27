@@ -1,8 +1,8 @@
 package com.dtraas.homestock.ui.components
 
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
@@ -11,8 +11,9 @@ import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 
 /**
- * [CenterAlignedTopAppBar] with an explicit, dedicated container color (see
- * [LocalTopAppBarContainerColor]) instead of the Material3 default, which matches
+ * [TopAppBar] (left-aligned title, per explicit request — this used to be
+ * [androidx.compose.material3.CenterAlignedTopAppBar]) with an explicit, dedicated container
+ * color (see [LocalTopAppBarContainerColor]) instead of the Material3 default, which matches
  * [androidx.compose.material3.MaterialTheme.colorScheme.surface] — this app's page
  * background exactly — so the bar silently blended into the content below it. Used for
  * every top app bar in the app so the title bar reads as its own band on every screen.
@@ -33,13 +34,13 @@ fun HomeStockTopAppBar(
 ) {
     val contentColor = LocalTopAppBarContentColor.current
     val containerColor = LocalTopAppBarContainerColor.current
-    CenterAlignedTopAppBar(
+    TopAppBar(
         title = title,
         modifier = modifier,
         navigationIcon = navigationIcon,
         actions = actions,
         scrollBehavior = scrollBehavior,
-        colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+        colors = TopAppBarDefaults.topAppBarColors(
             containerColor = containerColor,
             // Explicitly pinned to the same value as containerColor above — left at its
             // Material3 default, scrolledContainerColor is a pale surfaceContainer tone

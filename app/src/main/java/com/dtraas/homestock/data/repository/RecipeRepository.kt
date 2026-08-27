@@ -164,7 +164,7 @@ class RecipeRepository(
                 intolerances = spoonacularIntolerances(excludedAllergens),
             )
             parseDetails(response).forEach { detail ->
-                cacheDetail(detail)
+                cacheSearchResult(detail)
                 val existing = suggestions[detail.id]
                 suggestions[detail.id] = RecipeSuggestion(
                     meal = RecipeSummary(detail.id, detail.name, detail.thumbnailUrl),
@@ -204,13 +204,13 @@ class RecipeRepository(
     ): Result<RecipePage> = try {
         val intolerances = spoonacularIntolerances(excludedAllergens)
         val (plain, hasMore) = parseSearchResults(callSearchRecipes(mode = "browse", number = PAGE_SIZE, offset = offset, intolerances = intolerances))
-        plain.forEach { cacheDetail(it) }
+        plain.forEach { cacheSearchResult(it) }
 
         val areaIds = LinkedHashSet<String>()
         if (offset == 0) {
             languageToCuisine[languageTag]?.let { cuisine ->
                 val (boosted, _) = parseSearchResults(callSearchRecipes(mode = "browse", cuisine = cuisine, number = 8, intolerances = intolerances))
-                boosted.forEach { detail -> cacheDetail(detail); areaIds += detail.id }
+                boosted.forEach { detail -> cacheSearchResult(detail); areaIds += detail.id }
             }
         }
 
@@ -241,7 +241,7 @@ class RecipeRepository(
         val (details, hasMore) = parseSearchResults(
             callSearchRecipes(mode = "query", query = query, number = PAGE_SIZE, offset = offset, intolerances = spoonacularIntolerances(excludedAllergens)),
         )
-        details.forEach { cacheDetail(it) }
+        details.forEach { cacheSearchResult(it) }
         val suggestions = details.map { RecipeSuggestion(RecipeSummary(it.id, it.name, it.thumbnailUrl), matchCount = null) }
         Result.success(RecipePage(withTranslatedTitles(suggestions, languageTag), hasMore))
     } catch (e: Exception) {
@@ -638,6 +638,29 @@ class RecipeRepository(
     }
 
     private fun cacheDetail(detail: RecipeDetail) {
+        detailCache[detail.id] = detail
+    }
+
+    /**
+     * Caches a search/browse result — [suggestRecipes]/[browseAllRecipes]/[searchRecipesByName]
+     * all call this instead of [cacheDetail] directly. Unlike that plain overwrite, this never
+     * lets a search result regress an existing, more complete cache entry: Spoonacular's bulk
+     * search/browse endpoint is known to sometimes come back with empty instructions for a
+     * recipe whose dedicated detail endpoint has real ones (see [needsInstructionsRefetch]'s own
+     * doc), and a search result is always English — never carries a translation. Before this
+     * guard, simply browsing back to a recipe list and having it re-search in the background
+     * would silently clobber whatever [getRecipeDetail] had already cached for a recipe still
+     * open (or about to be reopened) on RecipeDetailScreen: its instructions could vanish, or a
+     * translation already shown could revert to English — the exact bug behind "this recipe
+     * showed fine, then went blank/English again after I browsed back and reopened it." A
+     * recipe [detailCache] doesn't have yet, or whose existing entry has neither real
+     * instructions nor a translation to lose, still caches normally.
+     */
+    private fun cacheSearchResult(detail: RecipeDetail) {
+        val existing = detailCache[detail.id]
+        val existingIsMoreComplete = existing != null &&
+            (!existing.instructions.isNullOrBlank() || existing.translatedForLocale != null)
+        if (existingIsMoreComplete) return
         detailCache[detail.id] = detail
     }
 
