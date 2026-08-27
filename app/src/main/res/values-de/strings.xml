@@ -953,7 +953,6 @@
         <item quantity="one">%1$d Tag</item>
         <item quantity="other">%1$d Tage</item>
     </plurals>
-    <string name="recipes_import_url_button">Von URL importieren</string>
     <string name="recipes_import_url_title">Rezept von URL importieren</string>
     <string name="recipes_import_url_hint">Füge den Link zu einer Rezeptseite ein — wir extrahieren die Zutaten und die Zubereitung. Du kannst vor dem Speichern noch alles anpassen.</string>
     <string name="recipes_import_url_placeholder">https://…</string>
@@ -978,15 +977,21 @@
     <string name="recipes_tab_inventory">Aus deinem Vorrat</string>
     <string name="recipes_tab_browse">Entdecken</string>
     <string name="recipes_tab_favorites">Favoriten</string>
-    <string name="recipes_tab_custom">Eigene</string>
     <string name="recipes_tab_ai">KI</string>
-    <string name="recipes_add_custom_button">Eigenes Rezept hinzufügen</string>
+    <string name="recipes_tab_mine">Meine Rezepte</string>
+    <string name="recipes_custom_badge_short">EIGEN</string>
+    <string name="recipes_add_tile_title">Rezept hinzufügen</string>
+    <string name="recipes_add_write_own_action">Selbst schreiben</string>
+    <string name="recipes_add_from_link_action">Von einem Link</string>
+    <string name="recipes_mine_filter_all">Alle</string>
+    <string name="recipes_mine_filter_favorite">Favorit</string>
+    <string name="recipes_mine_filter_custom">Eigene</string>
+    <string name="recipes_mine_filter_count_format">%1$s · %2$d</string>
+    <string name="recipes_mine_sort_to_name_cd">Nach Name sortieren</string>
+    <string name="recipes_mine_sort_to_recent_cd">Nach zuletzt hinzugefügt sortieren</string>
+    <string name="recipes_mine_search_placeholder">Durchsuche deine Rezepte…</string>
     <string name="recipes_inventory_empty_title">Noch keine Treffer</string>
     <string name="recipes_inventory_empty_subtitle">Fülle deinen Vorrat auf oder schau bei Entdecken nach mehr Rezepten.</string>
-    <string name="recipes_favorites_empty_title">Noch keine Favoriten</string>
-    <string name="recipes_favorites_empty_subtitle">Tippe auf das Herz bei einem Rezept, um es hier zu speichern.</string>
-    <string name="recipes_custom_empty_title">Noch keine eigenen Rezepte</string>
-    <string name="recipes_custom_empty_subtitle">Füge dein eigenes Rezept über die Schaltfläche oben hinzu.</string>
     <string name="custom_recipe_edit_title_new">Neues Rezept</string>
     <string name="custom_recipe_edit_title_edit">Rezept bearbeiten</string>
     <string name="custom_recipe_name_label">Name</string>

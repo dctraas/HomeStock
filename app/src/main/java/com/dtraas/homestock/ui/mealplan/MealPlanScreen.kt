@@ -87,11 +87,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
@@ -118,6 +114,7 @@ import com.dtraas.homestock.data.repository.RecipeDetail
 import com.dtraas.homestock.data.repository.RecipeSuggestion
 import com.dtraas.homestock.ui.components.HomeStockBottomSheet
 import com.dtraas.homestock.ui.components.SheetChip
+import com.dtraas.homestock.ui.components.dashedBorder
 import com.dtraas.homestock.ui.components.SheetTitle
 import com.dtraas.homestock.ui.components.sheetContentPadding
 import com.dtraas.homestock.ui.recipes.GenerateRecipeError
@@ -1074,17 +1071,6 @@ private fun MissingIngredientsBar(count: Int, onAddToList: () -> Unit) {
             }
         }
     }
-}
-
-/** A dashed rounded-rect outline — Compose has no built-in dashed border, so this draws one
- *  directly via a dash [PathEffect] on a round-rect stroke. Used for [EmptySlotAddButton], the
- *  one place this design calls for a dashed rather than solid outline. */
-private fun Modifier.dashedBorder(color: Color, cornerRadius: Dp, strokeWidth: Dp = 1.dp): Modifier = drawBehind {
-    val stroke = Stroke(
-        width = strokeWidth.toPx(),
-        pathEffect = PathEffect.dashPathEffect(floatArrayOf(10f, 6f), 0f),
-    )
-    drawRoundRect(color = color, style = stroke, cornerRadius = CornerRadius(cornerRadius.toPx()))
 }
 
 /**

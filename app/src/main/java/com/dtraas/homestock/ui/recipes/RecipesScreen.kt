@@ -27,6 +27,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items as gridItems
+import androidx.compose.foundation.lazy.grid.itemsIndexed as gridItemsIndexed
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -40,12 +41,14 @@ import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.ContentPaste
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.RestaurantMenu
+import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ViewList
@@ -113,6 +116,7 @@ import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
 import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.components.SheetChip
+import com.dtraas.homestock.ui.components.dashedBorder
 import com.dtraas.homestock.ui.components.SheetEyebrow
 import com.dtraas.homestock.ui.components.SheetPrimaryButton
 import com.dtraas.homestock.ui.components.SheetTitle
@@ -120,6 +124,7 @@ import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SageGreenPrimary
+import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
@@ -236,6 +241,8 @@ fun RecipesScreen(
                     if (query.isEmpty()) viewModel.clearSearch()
                 },
                 onSearch = viewModel::search,
+                mineSearchQuery = uiState.mineSearchQuery,
+                onMineSearchQueryChange = viewModel::onMineSearchQueryChange,
                 viewMode = viewMode,
                 onToggleViewMode = { viewMode = viewMode.toggled() },
                 excludedAllergens = uiState.excludedAllergens,
@@ -269,28 +276,27 @@ fun RecipesScreen(
                 )
             }
 
-            if (uiState.tab == RecipesTab.CUSTOM) {
-                Row(modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp)) {
-                    TextButton(onClick = onAddCustomRecipe, modifier = Modifier.padding(horizontal = 8.dp)) {
-                        Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Text(stringResource(R.string.recipes_add_custom_button), modifier = Modifier.padding(start = 8.dp))
-                    }
-                    TextButton(onClick = { showImportDialog = true }, modifier = Modifier.padding(horizontal = 8.dp)) {
-                        Icon(Icons.Filled.Link, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Text(stringResource(R.string.recipes_import_url_button), modifier = Modifier.padding(start = 8.dp))
-                    }
-                }
-            }
-
-            // Custom labels (see RecipeDetailScreen's tag editor) only ever exist on the
-            // household's own saved recipes — never on a BROWSE/search result (see
-            // RecipeSuggestion's doc) — so the filter row only shows on Favorieten/Eigen recepten.
-            if (uiState.tab == RecipesTab.FAVORITES || uiState.tab == RecipesTab.CUSTOM) {
-                RecipeTagFilterRow(
-                    customTags = uiState.availableCustomTags,
-                    selectedCustomTags = uiState.selectedCustomTags,
-                    onToggleCustom = viewModel::toggleCustomTagFilter,
+            // "Zelf schrijven"/"Van een link" used to be a text-button row pinned above the list
+            // — now folded into the AddRecipeTile that's always the grid's first item instead
+            // (see the MINE branch of the `else` case below), so there's nothing to show here.
+            if (uiState.tab == RecipesTab.MINE) {
+                MineFilterRow(
+                    counts = uiState.mineCounts,
+                    selected = uiState.mineFilter,
+                    onSelect = viewModel::setMineFilter,
+                    sortOrder = uiState.mineSortOrder,
+                    onToggleSort = viewModel::toggleMineSortOrder,
                 )
+                // Custom labels (see RecipeDetailScreen's tag editor) only ever exist on the
+                // household's own saved/favorited recipes — never on a plain BROWSE/search result
+                // (see RecipeSuggestion's doc) — so this filter row only ever shows here.
+                if (uiState.availableCustomTags.isNotEmpty()) {
+                    RecipeTagFilterRow(
+                        customTags = uiState.availableCustomTags,
+                        selectedCustomTags = uiState.selectedCustomTags,
+                        onToggleCustom = viewModel::toggleCustomTagFilter,
+                    )
+                }
             }
 
             when {
@@ -326,20 +332,21 @@ fun RecipesScreen(
                         onRetry = viewModel::search,
                     )
                 }
-                uiState.recipes.isEmpty() -> {
+                // MINE never hits this branch — its grid always has at least the AddRecipeTile
+                // (see the `else` case below), so an empty merged favorites+custom list still has
+                // something to show instead of a dead-end "niets gevonden" message.
+                uiState.recipes.isEmpty() && uiState.tab != RecipesTab.MINE -> {
                     val (emptyTitle, emptySubtitle) = when (uiState.tab) {
                         RecipesTab.INVENTORY -> stringResource(R.string.recipes_inventory_empty_title) to stringResource(R.string.recipes_inventory_empty_subtitle)
                         RecipesTab.BROWSE -> stringResource(R.string.recipes_empty_title) to stringResource(R.string.recipes_empty_subtitle)
-                        RecipesTab.FAVORITES -> stringResource(R.string.recipes_favorites_empty_title) to stringResource(R.string.recipes_favorites_empty_subtitle)
-                        RecipesTab.CUSTOM -> stringResource(R.string.recipes_custom_empty_title) to stringResource(R.string.recipes_custom_empty_subtitle)
-                        // Unreachable — the AI tab returns its own content before this `when` is
-                        // ever evaluated (see RecipesScreen's `uiState.tab == RecipesTab.AI`
-                        // branch) — only kept here so this stays an exhaustive `when`.
-                        RecipesTab.AI -> stringResource(R.string.recipes_empty_title) to stringResource(R.string.recipes_empty_subtitle)
+                        // Unreachable — MINE/AI both return before this `when` is ever evaluated
+                        // (MINE via the guard above, AI via its own early `return@Column`) — only
+                        // kept here so this stays an exhaustive `when`.
+                        RecipesTab.MINE, RecipesTab.AI -> stringResource(R.string.recipes_empty_title) to stringResource(R.string.recipes_empty_subtitle)
                     }
                     RecipesMessage(
                         modifier = Modifier.fillMaxSize(),
-                        icon = if (uiState.tab == RecipesTab.FAVORITES) Icons.Filled.Favorite else Icons.Filled.RestaurantMenu,
+                        icon = Icons.Filled.RestaurantMenu,
                         title = emptyTitle,
                         subtitle = emptySubtitle,
                     )
@@ -368,7 +375,31 @@ fun RecipesScreen(
                             )
                         }
                     }
-                    if (uiState.tab == RecipesTab.INVENTORY) {
+                    if (uiState.tab == RecipesTab.MINE) {
+                        // Fixed 2-column grid, no list/grid toggle (same reasoning as Uit je
+                        // voorraad below) — AddRecipeTile is always the first item, so this grid
+                        // is never actually empty even when the merged favorites+custom list is.
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(2),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            verticalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            item(key = "add_recipe") {
+                                AddRecipeTile(onWriteOwnRecipe = onAddCustomRecipe, onImportFromUrl = { showImportDialog = true })
+                            }
+                            gridItemsIndexed(uiState.recipes, key = { _, recipe -> recipe.meal.id }) { index, recipe ->
+                                MineRecipeTile(
+                                    recipe = recipe,
+                                    index = index,
+                                    isFavorite = recipe.meal.id in uiState.favoriteIds,
+                                    onClick = { onRecipeClick(recipe.meal.id) },
+                                    onToggleFavorite = { viewModel.toggleFavorite(recipe.meal.id) },
+                                )
+                            }
+                        }
+                    } else if (uiState.tab == RecipesTab.INVENTORY) {
                         // Fixed hero + 2-column grid, not the plain list/grid toggle the other
                         // tabs offer — the hero (spanning both columns) is what used to be the
                         // separate "Kook wat je hebt" promo card's destination, now this tab's
@@ -760,8 +791,8 @@ private fun ImportRecipeDialog(
     )
 }
 
-/** Switches between the household's inventory-matched picks, browsing Spoonacular, its
- *  favorites, and its own custom recipes — see [RecipesTab]. */
+/** Switches between the household's own merged favorites+custom list, its inventory-matched
+ *  picks, browsing Spoonacular, and the AI form — see [RecipesTab]. */
 @Composable
 private fun RecipesTabRow(selected: RecipesTab, onSelect: (RecipesTab) -> Unit) {
     Row(
@@ -771,14 +802,15 @@ private fun RecipesTabRow(selected: RecipesTab, onSelect: (RecipesTab) -> Unit) 
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        // Ontdek, Favorieten, Eigen, AI, Uit je voorraad — AI toegevoegd als vierde tabblad (op
-        // uitdrukkelijk verzoek), Uit je voorraad daardoor naar plek 5 geschoven.
+        // Mijn recepten, Uit je voorraad, Ontdek, AI — per de Claude Design mockup. Favorieten en
+        // Eigen recepten zijn niet langer twee losse tabbladen (een recept kan allebei zijn),
+        // maar één gecombineerde "Mijn recepten" met Alles/Favoriet/Zelf-chips erin (zie
+        // MineFilterRow) in plaats van een harde tab-knip.
         val tabs = listOf(
-            RecipesTab.BROWSE to R.string.recipes_tab_browse,
-            RecipesTab.FAVORITES to R.string.recipes_tab_favorites,
-            RecipesTab.CUSTOM to R.string.recipes_tab_custom,
-            RecipesTab.AI to R.string.recipes_tab_ai,
+            RecipesTab.MINE to R.string.recipes_tab_mine,
             RecipesTab.INVENTORY to R.string.recipes_tab_inventory,
+            RecipesTab.BROWSE to R.string.recipes_tab_browse,
+            RecipesTab.AI to R.string.recipes_tab_ai,
         )
         tabs.forEach { (tab, labelRes) ->
             if (tab == RecipesTab.AI) {
@@ -1002,6 +1034,8 @@ private fun RecipesHeader(
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
+    mineSearchQuery: String,
+    onMineSearchQueryChange: (String) -> Unit,
     viewMode: RecipesViewMode,
     onToggleViewMode: () -> Unit,
     excludedAllergens: Set<Allergen>,
@@ -1037,14 +1071,14 @@ private fun RecipesHeader(
             }
             // Two direct icon buttons instead of one "Meer opties" menu — each toggle/filter is
             // one tap away now rather than a menu-then-item detour (per the design review: "de
-            // knoppen mogen los rechtsboven staan"). Vast rooster op Uit je voorraad (hero +
-            // 2-koloms grid) and AI's form-not-list content don't have a view mode to toggle, so
-            // that button only shows for the other three tabs.
+            // knoppen mogen los rechtsboven staan"). Mijn recepten and Uit je voorraad both have
+            // their own fixed grid (no list/grid toggle — see RecipesScreen's `else` branch), and
+            // AI has no list at all, so that button only ever shows for Ontdek.
             Row(
                 modifier = Modifier.align(Alignment.CenterEnd),
                 horizontalArrangement = Arrangement.spacedBy(2.dp),
             ) {
-                if (tab != RecipesTab.INVENTORY && tab != RecipesTab.AI) {
+                if (tab == RecipesTab.BROWSE) {
                     IconButton(onClick = onToggleViewMode) {
                         Icon(
                             imageVector = if (viewMode == RecipesViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
@@ -1056,7 +1090,7 @@ private fun RecipesHeader(
                     }
                 }
                 // Allergenen zijn alleen zinvol tegen Spoonacular's brede catalogus op
-                // Ontdekken — Favorieten/Eigen/Uit je voorraad zijn al beperkt tot wat het
+                // Ontdekken — Mijn recepten/Uit je voorraad zijn al beperkt tot wat het
                 // huishouden zelf al heeft opgeslagen of in voorraad heeft.
                 if (tab == RecipesTab.BROWSE) {
                     Box {
@@ -1092,11 +1126,17 @@ private fun RecipesHeader(
                 }
             }
         }
-        if (tab == RecipesTab.BROWSE) {
+        if (tab == RecipesTab.BROWSE || tab == RecipesTab.MINE) {
+            // Ontdek submits a fresh Spoonacular query on IME action (see onSearch); Mijn
+            // recepten's own list is small and already fully loaded, so it just live-filters as
+            // you type instead (see RecipesUiState.mineSearchQuery's doc) — same field, two
+            // different query/onChange sources depending on which tab is showing.
             SearchField(
-                query = searchQuery,
-                onQueryChange = onSearchQueryChange,
-                placeholder = stringResource(R.string.recipes_search_placeholder),
+                query = if (tab == RecipesTab.MINE) mineSearchQuery else searchQuery,
+                onQueryChange = if (tab == RecipesTab.MINE) onMineSearchQueryChange else onSearchQueryChange,
+                placeholder = stringResource(
+                    if (tab == RecipesTab.MINE) R.string.recipes_mine_search_placeholder else R.string.recipes_search_placeholder,
+                ),
                 dense = true,
                 onSearch = onSearch,
                 // A white pill instead of the default outline styling, which would barely read
@@ -1124,7 +1164,73 @@ private fun RecipesHeader(
     }
 }
 
-/** Chip row for filtering Favorieten/Eigen recepten by the household's own custom labels (see
+/** [RecipesTab.MINE]'s "Alles · 18 / Favoriet · 7 / Zelf · 6" row, plus a sort toggle at the far
+ *  end (see [MineSortOrder]) — the counts come from [MineCounts], not the length of the already-
+ *  filtered [RecipesUiState.recipes], so switching chips doesn't change what the others report. */
+@Composable
+private fun MineFilterRow(
+    counts: MineCounts,
+    selected: MineFilter,
+    onSelect: (MineFilter) -> Unit,
+    sortOrder: MineSortOrder,
+    onToggleSort: () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Row(
+            modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            FilterChip(
+                selected = selected == MineFilter.ALL,
+                onClick = { onSelect(MineFilter.ALL) },
+                label = { Text(stringResource(R.string.recipes_mine_filter_count_format, stringResource(R.string.recipes_mine_filter_all), counts.all)) },
+            )
+            FilterChip(
+                selected = selected == MineFilter.FAVORITE,
+                onClick = { onSelect(MineFilter.FAVORITE) },
+                leadingIcon = { Icon(Icons.Filled.Favorite, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                label = {
+                    Text(
+                        stringResource(
+                            R.string.recipes_mine_filter_count_format,
+                            stringResource(R.string.recipes_mine_filter_favorite),
+                            counts.favorite,
+                        ),
+                    )
+                },
+            )
+            FilterChip(
+                selected = selected == MineFilter.CUSTOM,
+                onClick = { onSelect(MineFilter.CUSTOM) },
+                label = {
+                    Text(
+                        stringResource(
+                            R.string.recipes_mine_filter_count_format,
+                            stringResource(R.string.recipes_mine_filter_custom),
+                            counts.custom,
+                        ),
+                    )
+                },
+            )
+        }
+        IconButton(onClick = onToggleSort, modifier = Modifier.padding(start = 4.dp)) {
+            Icon(
+                imageVector = Icons.Filled.SwapVert,
+                contentDescription = stringResource(
+                    if (sortOrder == MineSortOrder.RECENT) R.string.recipes_mine_sort_to_name_cd else R.string.recipes_mine_sort_to_recent_cd,
+                ),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
+/** Chip row for filtering Mijn recepten by the household's own custom labels (see
  *  RecipeDetailScreen's tag editor) — an AND match against every selected chip (see
  *  [RecipesViewModel.toggleCustomTagFilter]). The 3 fixed preset chips (Snel/Kindvriendelijk/
  *  Restjes) this row used to also offer are gone, per explicit request — only per-recipe custom
@@ -1284,17 +1390,6 @@ private fun RecipeGridTile(
     onClick: () -> Unit,
     onToggleFavorite: () -> Unit,
 ) {
-    val matchRatio = if (recipe.matchCount != null && recipe.totalIngredientCount != null && recipe.totalIngredientCount > 0) {
-        recipe.matchCount.toFloat() / recipe.totalIngredientCount
-    } else {
-        null
-    }
-    val missingCount = if (recipe.matchCount != null && recipe.totalIngredientCount != null) {
-        (recipe.totalIngredientCount - recipe.matchCount).coerceAtLeast(0)
-    } else {
-        null
-    }
-
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
@@ -1323,51 +1418,12 @@ private fun RecipeGridTile(
                         )
                     }
                 }
-                if (matchRatio != null) {
-                    Surface(
-                        shape = CircleShape,
-                        color = Color.White,
-                        modifier = Modifier.align(Alignment.TopStart).padding(6.dp).size(34.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            if (matchRatio >= 1f) {
-                                Icon(
-                                    imageVector = Icons.Filled.Check,
-                                    contentDescription = stringResource(R.string.recipes_match_complete_cd),
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(18.dp),
-                                )
-                            } else {
-                                CircularProgressIndicator(
-                                    progress = { matchRatio },
-                                    modifier = Modifier.size(28.dp),
-                                    strokeWidth = 3.dp,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
-                                )
-                                Text(
-                                    text = "${(matchRatio * 100).toInt()}%",
-                                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                )
-                            }
-                        }
-                    }
-                }
-                Surface(
-                    shape = CircleShape,
-                    color = Color.White.copy(alpha = 0.85f),
-                    onClick = onToggleFavorite,
+                MatchRingBadge(matchRatio = matchRatioOf(recipe), modifier = Modifier.align(Alignment.TopStart).padding(6.dp))
+                FavoriteHeartButton(
+                    isFavorite = isFavorite,
+                    onToggle = onToggleFavorite,
                     modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
-                ) {
-                    Icon(
-                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-                        contentDescription = stringResource(if (isFavorite) R.string.recipes_favorite_remove_cd else R.string.recipes_favorite_add_cd),
-                        tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(6.dp).size(16.dp),
-                    )
-                }
+                )
             }
             Column(modifier = Modifier.padding(8.dp)) {
                 Text(
@@ -1377,51 +1433,283 @@ private fun RecipeGridTile(
                     overflow = TextOverflow.Ellipsis,
                 )
                 if (recipe.expiringIngredientUsed != null) {
+                    ExpiringIngredientPill(recipe.expiringIngredientUsed, modifier = Modifier.padding(top = 6.dp))
+                }
+                RecipeMetaLine(recipe, modifier = Modifier.padding(top = 4.dp))
+            }
+        }
+    }
+}
+
+/** Fraction of [RecipeSuggestion.totalIngredientCount] matched — shared by [RecipeGridTile] and
+ *  [MineRecipeTile]'s [MatchRingBadge]. Null (no ring at all) when the source this suggestion
+ *  came from never carries a match count (e.g. a plain search result) — same null/unknown vs.
+ *  0/N-matched distinction [RecipeSuggestion.matchCount]'s own doc describes. */
+private fun matchRatioOf(recipe: RecipeSuggestion): Float? {
+    val total = recipe.totalIngredientCount ?: return null
+    val matched = recipe.matchCount ?: return null
+    return if (total > 0) matched.toFloat() / total else null
+}
+
+private fun missingCountOf(recipe: RecipeSuggestion): Int? {
+    val total = recipe.totalIngredientCount ?: return null
+    val matched = recipe.matchCount ?: return null
+    return (total - matched).coerceAtLeast(0)
+}
+
+/** Circular match-ratio badge — a checkmark once everything's in huis, otherwise a progress ring
+ *  with the percentage inside. Renders nothing at all when [matchRatio] is null (see
+ *  [matchRatioOf]), so callers can place this unconditionally without their own null check. */
+@Composable
+private fun MatchRingBadge(matchRatio: Float?, modifier: Modifier = Modifier) {
+    if (matchRatio == null) return
+    Surface(shape = CircleShape, color = Color.White, modifier = modifier.size(34.dp)) {
+        Box(contentAlignment = Alignment.Center) {
+            if (matchRatio >= 1f) {
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = stringResource(R.string.recipes_match_complete_cd),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp),
+                )
+            } else {
+                CircularProgressIndicator(
+                    progress = { matchRatio },
+                    modifier = Modifier.size(28.dp),
+                    strokeWidth = 3.dp,
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                )
+                Text(
+                    text = "${(matchRatio * 100).toInt()}%",
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp),
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+            }
+        }
+    }
+}
+
+/** Heart overlay shared by every grid tile flavor — toggles [RecipesViewModel.toggleFavorite]. */
+@Composable
+private fun FavoriteHeartButton(isFavorite: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.85f), onClick = onToggle, modifier = modifier) {
+        Icon(
+            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+            contentDescription = stringResource(if (isFavorite) R.string.recipes_favorite_remove_cd else R.string.recipes_favorite_add_cd),
+            tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(6.dp).size(16.dp),
+        )
+    }
+}
+
+@Composable
+private fun ExpiringIngredientPill(ingredientName: String, modifier: Modifier = Modifier) {
+    Surface(shape = RoundedCornerShape(percent = 50), color = MaterialTheme.colorScheme.secondaryContainer, modifier = modifier) {
+        Text(
+            text = stringResource(R.string.recipes_used_expiring_pill_format, ingredientName),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+        )
+    }
+}
+
+/** "35 min · 4 pers. · N missend" (+ the taal/regio globe, trailing) — whichever parts are
+ *  actually known for [recipe]; renders nothing at all when none are. */
+@Composable
+private fun RecipeMetaLine(recipe: RecipeSuggestion, modifier: Modifier = Modifier) {
+    val missingCount = missingCountOf(recipe)
+    val metaParts = buildList {
+        recipe.readyInMinutes?.let { add(stringResource(R.string.recipes_ready_in_minutes_format, it)) }
+        recipe.servings?.let { add(stringResource(R.string.recipes_servings_short_format, it)) }
+        if (missingCount != null && missingCount > 0) {
+            add(pluralStringResource(R.plurals.recipes_missing_count_format, missingCount, missingCount))
+        }
+    }
+    if (metaParts.isEmpty() && !recipe.matchesArea) return
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = modifier) {
+        if (metaParts.isNotEmpty()) {
+            Text(
+                text = metaParts.joinToString(" · "),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false),
+            )
+        }
+        if (recipe.matchesArea) {
+            Icon(
+                imageVector = Icons.Filled.Public,
+                contentDescription = stringResource(R.string.recipes_area_match_cd),
+                tint = MaterialTheme.colorScheme.secondary,
+                modifier = Modifier.padding(start = 4.dp).size(12.dp),
+            )
+        }
+    }
+}
+
+/**
+ * [RecipesTab.MINE]'s own tile — [RecipeGridTile] plus two things unique to "wat is van mij":
+ * a colored band behind the photo (rotating through the app's 3 container colors by [index], so
+ * a grid of mostly photo-less custom recipes doesn't read as a monotone wall of grey), and an
+ * "EIGEN" badge for a hand-entered/imported recipe (see [RecipeRepository.CUSTOM_ID_PREFIX]) —
+ * a favorited *Spoonacular* recipe has no such badge, only the heart. Tags (see
+ * [RecipeDetailScreen]'s tag editor) render as a small chip row underneath — the one piece of
+ * per-recipe detail that's genuinely MINE-only, Ontdek/search results never carry any (see
+ * [RecipeSuggestion.tags]'s doc).
+ */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun MineRecipeTile(
+    recipe: RecipeSuggestion,
+    index: Int,
+    isFavorite: Boolean,
+    onClick: () -> Unit,
+    onToggleFavorite: () -> Unit,
+) {
+    val isCustom = recipe.meal.id.startsWith(RecipeRepository.CUSTOM_ID_PREFIX)
+    val (bandColor, onBandColor) = when (index % 3) {
+        0 -> MaterialTheme.colorScheme.primaryContainer to MaterialTheme.colorScheme.onPrimaryContainer
+        1 -> MaterialTheme.colorScheme.tertiaryContainer to MaterialTheme.colorScheme.onTertiaryContainer
+        else -> MaterialTheme.colorScheme.secondaryContainer to MaterialTheme.colorScheme.onSecondaryContainer
+    }
+    Card(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = SoftCardShapeCompact,
+    ) {
+        Column {
+            Box(modifier = Modifier.fillMaxWidth().aspectRatio(1f).background(bandColor, SoftImageShape)) {
+                if (recipe.meal.thumbnailUrl != null) {
+                    AsyncImage(
+                        model = recipe.meal.thumbnailUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxWidth().aspectRatio(1f).clip(SoftImageShape),
+                    )
+                } else {
+                    Icon(
+                        imageVector = Icons.Filled.RestaurantMenu,
+                        contentDescription = null,
+                        tint = onBandColor.copy(alpha = 0.6f),
+                        modifier = Modifier.align(Alignment.Center).size(36.dp),
+                    )
+                }
+                MatchRingBadge(matchRatio = matchRatioOf(recipe), modifier = Modifier.align(Alignment.TopStart).padding(6.dp))
+                FavoriteHeartButton(
+                    isFavorite = isFavorite,
+                    onToggle = onToggleFavorite,
+                    modifier = Modifier.align(Alignment.TopEnd).padding(6.dp),
+                )
+                if (isCustom) {
                     Surface(
-                        shape = RoundedCornerShape(percent = 50),
-                        color = MaterialTheme.colorScheme.secondaryContainer,
-                        modifier = Modifier.padding(top = 6.dp),
+                        shape = SoftBadgeShape,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                        modifier = Modifier.align(Alignment.BottomStart).padding(6.dp),
                     ) {
                         Text(
-                            text = stringResource(R.string.recipes_used_expiring_pill_format, recipe.expiringIngredientUsed),
+                            text = stringResource(R.string.recipes_custom_badge_short),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
+                            fontWeight = FontWeight.Bold,
+                            color = onBandColor,
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
                         )
                     }
                 }
-                val metaParts = buildList {
-                    recipe.readyInMinutes?.let { add(stringResource(R.string.recipes_ready_in_minutes_format, it)) }
-                    recipe.servings?.let { add(stringResource(R.string.recipes_servings_short_format, it)) }
-                    if (missingCount != null && missingCount > 0) {
-                        add(pluralStringResource(R.plurals.recipes_missing_count_format, missingCount, missingCount))
-                    }
+            }
+            Column(modifier = Modifier.padding(8.dp)) {
+                Text(
+                    text = recipe.meal.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                if (recipe.expiringIngredientUsed != null) {
+                    ExpiringIngredientPill(recipe.expiringIngredientUsed, modifier = Modifier.padding(top = 4.dp))
                 }
-                if (metaParts.isNotEmpty() || recipe.matchesArea) {
-                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 4.dp)) {
-                        if (metaParts.isNotEmpty()) {
-                            Text(
-                                text = metaParts.joinToString(" · "),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                modifier = Modifier.weight(1f, fill = false),
-                            )
-                        }
-                        if (recipe.matchesArea) {
-                            Icon(
-                                imageVector = Icons.Filled.Public,
-                                contentDescription = stringResource(R.string.recipes_area_match_cd),
-                                tint = MaterialTheme.colorScheme.secondary,
-                                modifier = Modifier.padding(start = 4.dp).size(12.dp),
-                            )
+                RecipeMetaLine(recipe, modifier = Modifier.padding(top = 4.dp))
+                if (recipe.tags.isNotEmpty()) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier.padding(top = 6.dp),
+                    ) {
+                        recipe.tags.forEach { tag ->
+                            Surface(shape = RoundedCornerShape(percent = 50), color = MaterialTheme.colorScheme.surfaceContainerHighest) {
+                                Text(
+                                    text = tag,
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                )
+                            }
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+/**
+ * First tile in [RecipesTab.MINE]'s grid — dashed border matching [EmptySlotAddButton]'s own
+ * style elsewhere in the app, folding what used to be two separate "Eigen recept toevoegen"/
+ * "Importeer van URL" text buttons above the list into one always-present tile instead, the same
+ * height as every recipe tile beside it rather than a full-width row that pushed the grid down.
+ */
+@Composable
+private fun AddRecipeTile(onWriteOwnRecipe: () -> Unit, onImportFromUrl: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(0.72f)
+            .dashedBorder(MaterialTheme.colorScheme.outlineVariant, cornerRadius = 12.dp)
+            .padding(14.dp),
+        verticalArrangement = Arrangement.Center,
+    ) {
+        Surface(shape = SoftBadgeShape, color = MaterialTheme.colorScheme.primaryContainer) {
+            Icon(
+                imageVector = Icons.Filled.Add,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.padding(10.dp).size(20.dp),
+            )
+        }
+        Text(
+            text = stringResource(R.string.recipes_add_tile_title),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(top = 12.dp),
+        )
+        Row(
+            modifier = Modifier.padding(top = 10.dp).clickable(onClick = onWriteOwnRecipe),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Filled.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+            Text(
+                text = stringResource(R.string.recipes_add_write_own_action),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 6.dp),
+            )
+        }
+        Row(
+            modifier = Modifier.padding(top = 8.dp).clickable(onClick = onImportFromUrl),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(Icons.Filled.Link, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+            Text(
+                text = stringResource(R.string.recipes_add_from_link_action),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 6.dp),
+            )
         }
     }
 }

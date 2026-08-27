@@ -957,7 +957,6 @@
         <item quantity="one">%1$d dag</item>
         <item quantity="other">%1$d dgn</item>
     </plurals>
-    <string name="recipes_import_url_button">Importeer van URL</string>
     <string name="recipes_import_url_title">Recept importeren van URL</string>
     <string name="recipes_import_url_hint">Plak de link naar een receptenpagina — wij halen de ingrediënten en bereidingswijze eruit. Je kunt alles nog aanpassen voordat je het opslaat.</string>
     <string name="recipes_import_url_placeholder">https://…</string>
@@ -982,15 +981,21 @@
     <string name="recipes_tab_inventory">Uit je voorraad</string>
     <string name="recipes_tab_browse">Ontdek</string>
     <string name="recipes_tab_favorites">Favorieten</string>
-    <string name="recipes_tab_custom">Eigen</string>
     <string name="recipes_tab_ai">AI</string>
-    <string name="recipes_add_custom_button">Eigen recept toevoegen</string>
+    <string name="recipes_tab_mine">Mijn recepten</string>
+    <string name="recipes_custom_badge_short">EIGEN</string>
+    <string name="recipes_add_tile_title">Recept toevoegen</string>
+    <string name="recipes_add_write_own_action">Zelf schrijven</string>
+    <string name="recipes_add_from_link_action">Van een link</string>
+    <string name="recipes_mine_filter_all">Alles</string>
+    <string name="recipes_mine_filter_favorite">Favoriet</string>
+    <string name="recipes_mine_filter_custom">Zelf</string>
+    <string name="recipes_mine_filter_count_format">%1$s · %2$d</string>
+    <string name="recipes_mine_sort_to_name_cd">Sorteer op naam</string>
+    <string name="recipes_mine_sort_to_recent_cd">Sorteer op recent toegevoegd</string>
+    <string name="recipes_mine_search_placeholder">Zoek in je recepten…</string>
     <string name="recipes_inventory_empty_title">Nog geen match gevonden</string>
     <string name="recipes_inventory_empty_subtitle">Vul je voorraad aan, of bekijk Ontdekken voor meer recepten.</string>
-    <string name="recipes_favorites_empty_title">Nog geen favorieten</string>
-    <string name="recipes_favorites_empty_subtitle">Tik op het hartje bij een recept om het hier te bewaren.</string>
-    <string name="recipes_custom_empty_title">Nog geen eigen recepten</string>
-    <string name="recipes_custom_empty_subtitle">Voeg je eigen recept toe met de knop hierboven.</string>
     <string name="custom_recipe_edit_title_new">Nieuw recept</string>
     <string name="custom_recipe_edit_title_edit">Recept bewerken</string>
     <string name="custom_recipe_name_label">Naam</string>

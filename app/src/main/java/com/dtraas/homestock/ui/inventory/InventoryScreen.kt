@@ -1598,6 +1598,26 @@ private fun InventoryGridTile(
                         .background(MaterialTheme.colorScheme.surface, CircleShape),
                 )
             }
+            // Back on the photo (bottom-end, mirroring the camera hint's top-end) rather than
+            // beside the stepper below — with the stepper's own -/+/aantal already competing for
+            // that same narrow row, the cart icon left barely any room for any of them to read.
+            // Still real, one-tap functionality (see onAddToShoppingList's own doc at the
+            // InventoryScreen call site), just moved instead of dropped.
+            if (!selectionMode) {
+                Surface(
+                    shape = CircleShape,
+                    color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
+                    onClick = onAddToShoppingList,
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp),
+                ) {
+                    Icon(
+                        Icons.Filled.AddShoppingCart,
+                        contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(6.dp).size(16.dp),
+                    )
+                }
+            }
         }
         Column(modifier = Modifier.padding(start = 8.dp, end = 8.dp, top = 6.dp, bottom = 8.dp)) {
             Text(
@@ -1623,33 +1643,16 @@ private fun InventoryGridTile(
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 1.dp),
             )
-            // Stepper + cart icon side by side, per the Claude Design mockup — the cart used to
-            // live as a badge on the photo and only for low/out-of-stock items; it's now always
-            // here instead, next to the quantity it'd be restocking.
-            Row(
-                modifier = Modifier.padding(top = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                QuantityStepper(
-                    quantity = item.quantity,
-                    onDecrease = onDecrease,
-                    onIncrease = onIncrease,
-                    dense = true,
-                    pill = true,
-                    modifier = Modifier.weight(1f),
-                )
-                if (!selectionMode) {
-                    IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(28.dp)) {
-                        Icon(
-                            Icons.Filled.AddShoppingCart,
-                            contentDescription = stringResource(R.string.inventory_add_to_shopping_list_cd),
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
-                }
-            }
+            // Full width now that the cart icon moved onto the photo above — -/+/aantal actually
+            // fit comfortably instead of squeezing next to a fourth control.
+            QuantityStepper(
+                quantity = item.quantity,
+                onDecrease = onDecrease,
+                onIncrease = onIncrease,
+                dense = true,
+                pill = true,
+                modifier = Modifier.padding(top = 4.dp).fillMaxWidth(),
+            )
         }
     }
 }

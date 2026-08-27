@@ -440,10 +440,8 @@ class RecipeRepository(
                 flowOf(emptyList())
             } else {
                 customRecipesCollection(householdId).observeSnapshots().map { snapshot ->
-                    snapshot.documents
-                        .mapNotNull { mapFirestoreDocToDetail(it, isCustom = true) }
-                        .sortedBy { it.name.lowercase() }
-                        .map { RecipeSuggestion(RecipeSummary(it.id, it.name, it.thumbnailUrl), tags = it.tags, readyInMinutes = it.readyInMinutes) }
+                    val details = snapshot.documents.mapNotNull { mapFirestoreDocToDetail(it, isCustom = true) }.sortedBy { it.name.lowercase() }
+                    withInventoryMatch(details)
                 }
             }
         }
@@ -507,10 +505,29 @@ class RecipeRepository(
     /** Bookmarked recipes (any source — Spoonacular, AI-generated, or custom), alphabetical by name. */
     fun observeFavoriteRecipes(): Flow<List<RecipeSuggestion>> =
         observeFavoriteSnapshots().map { docs ->
-            docs.mapNotNull { mapFirestoreDocToDetail(it) }
-                .sortedBy { it.name.lowercase() }
-                .map { RecipeSuggestion(RecipeSummary(it.id, it.name, it.thumbnailUrl), tags = it.tags, readyInMinutes = it.readyInMinutes) }
+            val details = docs.mapNotNull { mapFirestoreDocToDetail(it) }.sortedBy { it.name.lowercase() }
+            withInventoryMatch(details)
         }
+
+    /** [observeFavoriteRecipes]/[observeCustomRecipes]' shared "N/M in huis" + "gebruikt X"
+     *  annotation — same [annotateWithInventory] one page of [browseAllRecipes] uses, one
+     *  inventory fetch for the whole list rather than one per recipe. */
+    private suspend fun withInventoryMatch(details: List<RecipeDetail>): List<RecipeSuggestion> {
+        val inventoryNames = inventoryRepository.observeInventoryWithProduct().first().map { it.name }
+        val expiringSoon = fetchExpiringSoon()
+        return details.map { detail ->
+            val match = annotateWithInventory(detail, inventoryNames, expiringSoon)
+            RecipeSuggestion(
+                meal = RecipeSummary(detail.id, detail.name, detail.thumbnailUrl),
+                matchCount = match.matchCount,
+                totalIngredientCount = match.totalIngredientCount,
+                tags = detail.tags,
+                readyInMinutes = detail.readyInMinutes,
+                servings = detail.servings,
+                expiringIngredientUsed = match.expiringIngredientUsed,
+            )
+        }
+    }
 
     /** Cheap membership check for RecipeDetailScreen's favorite toggle — avoids mapping full detail just to know one id's state. */
     fun observeFavoriteIds(): Flow<Set<String>> = observeFavoriteSnapshots().map { docs -> docs.map { it.id }.toSet() }

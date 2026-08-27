@@ -953,7 +953,6 @@
         <item quantity="one">%1$d day</item>
         <item quantity="other">%1$d days</item>
     </plurals>
-    <string name="recipes_import_url_button">Import from URL</string>
     <string name="recipes_import_url_title">Import a recipe from a URL</string>
     <string name="recipes_import_url_hint">Paste the link to a recipe page — we\'ll pull out the ingredients and instructions. You can still edit everything before saving.</string>
     <string name="recipes_import_url_placeholder">https://…</string>
@@ -978,15 +977,21 @@
     <string name="recipes_tab_inventory">From your stock</string>
     <string name="recipes_tab_browse">Discover</string>
     <string name="recipes_tab_favorites">Favorites</string>
-    <string name="recipes_tab_custom">Mine</string>
     <string name="recipes_tab_ai">AI</string>
-    <string name="recipes_add_custom_button">Add your own recipe</string>
+    <string name="recipes_tab_mine">My recipes</string>
+    <string name="recipes_custom_badge_short">MINE</string>
+    <string name="recipes_add_tile_title">Add recipe</string>
+    <string name="recipes_add_write_own_action">Write your own</string>
+    <string name="recipes_add_from_link_action">From a link</string>
+    <string name="recipes_mine_filter_all">All</string>
+    <string name="recipes_mine_filter_favorite">Favorite</string>
+    <string name="recipes_mine_filter_custom">Mine</string>
+    <string name="recipes_mine_filter_count_format">%1$s · %2$d</string>
+    <string name="recipes_mine_sort_to_name_cd">Sort by name</string>
+    <string name="recipes_mine_sort_to_recent_cd">Sort by recently added</string>
+    <string name="recipes_mine_search_placeholder">Search your recipes…</string>
     <string name="recipes_inventory_empty_title">No match yet</string>
     <string name="recipes_inventory_empty_subtitle">Stock up a bit more, or check Discover for more recipes.</string>
-    <string name="recipes_favorites_empty_title">No favorites yet</string>
-    <string name="recipes_favorites_empty_subtitle">Tap the heart on a recipe to save it here.</string>
-    <string name="recipes_custom_empty_title">No recipes of your own yet</string>
-    <string name="recipes_custom_empty_subtitle">Add your own recipe with the button above.</string>
     <string name="custom_recipe_edit_title_new">New recipe</string>
     <string name="custom_recipe_edit_title_edit">Edit recipe</string>
     <string name="custom_recipe_name_label">Name</string>

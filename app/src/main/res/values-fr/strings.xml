@@ -953,7 +953,6 @@
         <item quantity="one">%1$d jour</item>
         <item quantity="other">%1$d jours</item>
     </plurals>
-    <string name="recipes_import_url_button">Importer depuis une URL</string>
     <string name="recipes_import_url_title">Importer une recette depuis une URL</string>
     <string name="recipes_import_url_hint">Colle le lien d\'une page de recette — nous en extrairons les ingrédients et la préparation. Tu pourras tout modifier avant d\'enregistrer.</string>
     <string name="recipes_import_url_placeholder">https://…</string>
@@ -978,15 +977,21 @@
     <string name="recipes_tab_inventory">Depuis votre stock</string>
     <string name="recipes_tab_browse">Découvrir</string>
     <string name="recipes_tab_favorites">Favoris</string>
-    <string name="recipes_tab_custom">Perso</string>
     <string name="recipes_tab_ai">IA</string>
-    <string name="recipes_add_custom_button">Ajouter ma propre recette</string>
+    <string name="recipes_tab_mine">Mes recettes</string>
+    <string name="recipes_custom_badge_short">PERSO</string>
+    <string name="recipes_add_tile_title">Ajouter une recette</string>
+    <string name="recipes_add_write_own_action">Écrire la mienne</string>
+    <string name="recipes_add_from_link_action">Depuis un lien</string>
+    <string name="recipes_mine_filter_all">Toutes</string>
+    <string name="recipes_mine_filter_favorite">Favorite</string>
+    <string name="recipes_mine_filter_custom">Perso</string>
+    <string name="recipes_mine_filter_count_format">%1$s · %2$d</string>
+    <string name="recipes_mine_sort_to_name_cd">Trier par nom</string>
+    <string name="recipes_mine_sort_to_recent_cd">Trier par ajout récent</string>
+    <string name="recipes_mine_search_placeholder">Rechercher dans tes recettes…</string>
     <string name="recipes_inventory_empty_title">Pas encore de correspondance</string>
     <string name="recipes_inventory_empty_subtitle">Complétez votre stock, ou consultez Découvrir pour plus de recettes.</string>
-    <string name="recipes_favorites_empty_title">Pas encore de favoris</string>
-    <string name="recipes_favorites_empty_subtitle">Appuyez sur le cœur d\'une recette pour l\'enregistrer ici.</string>
-    <string name="recipes_custom_empty_title">Pas encore de recettes personnelles</string>
-    <string name="recipes_custom_empty_subtitle">Ajoutez votre propre recette avec le bouton ci-dessus.</string>
     <string name="custom_recipe_edit_title_new">Nouvelle recette</string>
     <string name="custom_recipe_edit_title_edit">Modifier la recette</string>
     <string name="custom_recipe_name_label">Nom</string>

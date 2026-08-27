@@ -13,7 +13,6 @@ import com.dtraas.homestock.data.repository.ShoppingListRepository
 import com.google.firebase.functions.FirebaseFunctionsException
 import java.io.IOException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -33,12 +32,30 @@ enum class GenerateRecipeError { NO_CONNECTION, PREMIUM_REQUIRED, UNKNOWN }
 enum class ImportRecipeError { NO_CONNECTION, PREMIUM_REQUIRED, UNKNOWN }
 
 /** Which recipe source RecipesScreen is currently showing — see [RecipesViewModel.selectTab].
- *  [INVENTORY] ("Uit je voorraad") is the default tab per the design review — what used to be
- *  the "Kook wat je hebt" promo card on [BROWSE] ("Ontdekken") is now this tab's own content
- *  instead of an opt-in banner. [AI] replaces what used to be a floating action button opening
- *  a "Recept bedenken" bottom sheet — it has no recipe list of its own (see
- *  [RecipesViewModel.refreshCurrentTab]), just that same form as a persistent tab instead. */
-enum class RecipesTab { INVENTORY, BROWSE, FAVORITES, CUSTOM, AI }
+ *  [MINE] ("Mijn recepten") replaces what used to be two separate tabs, Favorieten and Eigen
+ *  recepten — a household's favorited Spoonacular picks and its own hand-entered/imported
+ *  recipes are now one merged list, narrowed by [MineFilter] instead of a tab switch (a recipe
+ *  can be both at once — favorited *and* self-written — so a hard tab split undercounted
+ *  either). [AI] replaces what used to be a floating action button opening a "Recept bedenken"
+ *  bottom sheet — it has no recipe list of its own (see [RecipesViewModel.refreshCurrentTab]),
+ *  just that same form as a persistent tab instead. */
+enum class RecipesTab { MINE, INVENTORY, BROWSE, AI }
+
+/** The "Alles · 18 / Favoriet · 7 / Zelf · 6" chips atop [RecipesTab.MINE] — narrows the merged
+ *  favorites+custom list without a second Firestore query, since both lists are already fully
+ *  loaded (see [RecipesViewModel.launchMineTab]). */
+enum class MineFilter { ALL, FAVORITE, CUSTOM }
+
+/** [RecipesTab.MINE]'s sort toggle — [RECENT] is whatever order the underlying Firestore queries
+ *  already return (most recently favorited/added first), [NAME] re-sorts alphabetically. */
+enum class MineSortOrder { RECENT, NAME }
+
+/** [RecipesTab.MINE]'s filter chip counts — computed from the *unfiltered* merged list (not
+ *  [RecipesUiState.recipes], which is the already-[MineFilter]-narrowed result) so picking one
+ *  chip doesn't change what the others report. [all] is the merged favorites-∪-custom count, not
+ *  [favorite] + [custom] added together — those two can overlap (a favorited own recipe counts
+ *  toward both) without double-counting in [all]. */
+data class MineCounts(val all: Int = 0, val favorite: Int = 0, val custom: Int = 0)
 
 /** Why a browse/search load failed — [QUOTA_EXCEEDED] gets its own, more accurate message
  *  instead of being lumped in with [NO_CONNECTION] (see `spoonacularGet` in
@@ -52,12 +69,20 @@ data class RecipesUiState(
     val loadError: RecipesLoadError? = null,
     val excludedAllergens: Set<Allergen> = emptySet(),
     // Free-text labels households typed themselves (see RecipeDetailScreen's tag editor) — only
-    // meaningful for FAVORITES/CUSTOM (see RecipesViewModel.launchLiveList); BROWSE/search results
-    // never carry tags at all (see RecipeSuggestion's doc), so this filter simply isn't shown on
-    // that tab. [availableCustomTags] is derived from the *unfiltered* Favorites/Custom list (see
-    // launchLiveList) so picking one filter doesn't hide the others.
+    // meaningful for MINE (see RecipesViewModel.launchMineTab); BROWSE/search results never carry
+    // tags at all (see RecipeSuggestion's doc), so this filter simply isn't shown on that tab.
+    // [availableCustomTags] is derived from the *unfiltered* merged list (see launchMineTab) so
+    // picking one filter doesn't hide the others.
     val availableCustomTags: List<String> = emptyList(),
     val selectedCustomTags: Set<String> = emptySet(),
+    val mineFilter: MineFilter = MineFilter.ALL,
+    val mineSortOrder: MineSortOrder = MineSortOrder.RECENT,
+    val mineCounts: MineCounts = MineCounts(),
+    /** Live client-side name filter over [RecipesTab.MINE]'s already-fully-loaded merged list —
+     *  separate from [searchQuery], which submits a fresh Spoonacular query on IME action instead
+     *  of filtering as you type (see [RecipesViewModel.search]); MINE's own list is small and
+     *  already in memory, so there's no round trip to wait for. */
+    val mineSearchQuery: String = "",
     val searchQuery: String = "",
     val isGenerating: Boolean = false,
     val generateError: GenerateRecipeError? = null,
@@ -85,10 +110,11 @@ data class RecipesUiState(
  * inventory-matched results, not paginated (Spoonacular's own ranking already returns its best
  * matches in one page).
  *
- * [RecipesTab.FAVORITES]/[RecipesTab.CUSTOM] are simple live Firestore lists (see
- * [RecipeRepository.observeFavoriteRecipes]/[RecipeRepository.observeCustomRecipes]) — no search,
- * allergen filter, or language boost; those only make sense against Spoonacular's much bigger
- * catalog, not a household's own short personal list.
+ * [RecipesTab.MINE] merges [RecipeRepository.observeFavoriteRecipes] and
+ * [RecipeRepository.observeCustomRecipes] into one live list (see [launchMineTab]) — no allergen
+ * filter or language boost, those only make sense against Spoonacular's much bigger catalog, not
+ * a household's own short personal list — but it does get its own live, client-side name filter
+ * ([RecipesUiState.mineSearchQuery]) and the [MineFilter]/[MineSortOrder] chips.
  */
 class RecipesViewModel(
     private val recipeRepository: RecipeRepository,
@@ -130,10 +156,13 @@ class RecipesViewModel(
     // need the caller (RecipesScreen) to keep threading the current app language through every action.
     private var languageTag: String? = null
 
-    // Mirrors RecipesUiState.selectedCustomTags — a separate flow (rather than deriving from
-    // _uiState itself) so launchLiveList's combine() below only re-filters on an actual
-    // tag-filter change, not on every unrelated uiState update (e.g. isLoading toggling).
+    // Mirror RecipesUiState's own MINE-tab fields — separate flows (rather than deriving from
+    // _uiState itself) so launchMineTab's combine() below only re-filters on an actual filter/
+    // sort/tag/query change, not on every unrelated uiState update (e.g. isLoading toggling).
     private val selectedCustomTags = MutableStateFlow<Set<String>>(emptySet())
+    private val mineFilter = MutableStateFlow(MineFilter.ALL)
+    private val mineSortOrder = MutableStateFlow(MineSortOrder.RECENT)
+    private val mineSearchQuery = MutableStateFlow("")
 
     // Whichever tab's list is currently being collected — cancelled and replaced on every tab
     // switch/reload so a stale Favorites/Custom Firestore listener (or an in-flight Spoonacular
@@ -192,10 +221,9 @@ class RecipesViewModel(
     private fun refreshCurrentTab() {
         listJob?.cancel()
         listJob = when (_uiState.value.tab) {
+            RecipesTab.MINE -> launchMineTab()
             RecipesTab.INVENTORY -> launchInventoryTab()
             RecipesTab.BROWSE -> launchBrowseOrSearch()
-            RecipesTab.FAVORITES -> launchLiveList(recipeRepository::observeFavoriteRecipes)
-            RecipesTab.CUSTOM -> launchLiveList(recipeRepository::observeCustomRecipes)
             // No list to load — RecipesScreen shows the "Recept bedenken" form instead, see
             // RecipesTab.AI's doc. Still clears isLoading in case a previous tab's fetch was
             // still in flight when this tab was selected.
@@ -203,27 +231,69 @@ class RecipesViewModel(
         }
     }
 
-    /** Favorites/Custom are further filtered client-side by [selectedCustomTags] (an AND match —
-     *  a recipe must carry every selected custom label) — small, already-loaded lists, so no
-     *  need for a separate Firestore query per tag combination the way BROWSE's allergen filter
-     *  needs one. [RecipesUiState.availableCustomTags] is derived here from the unfiltered
-     *  [list], not the filtered result, so narrowing by one custom tag doesn't make the others
-     *  disappear from the filter row. [RecipeTag.fromStorageKey] filters out any now-retired
-     *  preset key (Snel/Kindvriendelijk/Restjes) a recipe tagged before their removal might still
-     *  carry, so it can't resurface as a garbled custom-looking chip. */
-    private fun launchLiveList(source: () -> Flow<List<RecipeSuggestion>>): Job =
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, loadError = null) }
-            combine(source(), selectedCustomTags) { list, customTags ->
-                val available = list.flatMap { it.tags }.filter { RecipeTag.fromStorageKey(it) == null }.distinct().sorted()
-                val filtered = list.filter { recipe -> customTags.all { it in recipe.tags } }
-                available to filtered
-            }.collect { (available, filtered) ->
-                _uiState.update {
-                    it.copy(isLoading = false, recipes = filtered, loadError = null, availableCustomTags = available)
-                }
+    /** Everything [MineFilter]/[MineSortOrder]/[selectedCustomTags]/[mineSearchQuery] narrow
+     *  down together — bundled into one flow first so [launchMineTab]'s own combine() stays a
+     *  plain 3-way one (the two Firestore lists plus this) instead of running into
+     *  kotlinx.coroutines' combine only having direct overloads up to 5 flows. */
+    private data class MineSettings(
+        val customTags: Set<String>,
+        val filter: MineFilter,
+        val sortOrder: MineSortOrder,
+        val query: String,
+    )
+
+    private val mineSettings = combine(
+        selectedCustomTags,
+        mineFilter,
+        mineSortOrder,
+        mineSearchQuery,
+    ) { customTags, filter, sortOrder, query -> MineSettings(customTags, filter, sortOrder, query) }
+
+    /**
+     * [RecipesTab.MINE]'s own load — merges [RecipeRepository.observeFavoriteRecipes] and
+     * [RecipeRepository.observeCustomRecipes] into one deduplicated list (a recipe can be both:
+     * a favorited Spoonacular pick and a self-written one are different sources but the same
+     * concept to a household browsing "what's mine", so they collapse into a single tile rather
+     * than showing twice), then narrows it by [MineSettings] — small, already-loaded lists, so
+     * no need for a separate Firestore query per filter/tag/search combination the way BROWSE's
+     * allergen filter or search needs one. [RecipesUiState.availableCustomTags]/[MineCounts] are
+     * derived here from the *unfiltered* merged list, not the filtered result, so narrowing by
+     * one chip/tag doesn't change what the others report. [RecipeTag.fromStorageKey] filters out
+     * any now-retired preset key (Snel/Kindvriendelijk/Restjes) a recipe tagged before their
+     * removal might still carry, so it can't resurface as a garbled custom-looking chip.
+     */
+    private fun launchMineTab(): Job = viewModelScope.launch {
+        _uiState.update { it.copy(isLoading = true, loadError = null) }
+        combine(
+            recipeRepository.observeFavoriteRecipes(),
+            recipeRepository.observeCustomRecipes(),
+            mineSettings,
+        ) { favorites, custom, settings ->
+            val favoriteIds = favorites.map { it.meal.id }.toSet()
+            val customIds = custom.map { it.meal.id }.toSet()
+            val merged = (favorites + custom).distinctBy { it.meal.id }
+            val available = merged.flatMap { it.tags }.filter { RecipeTag.fromStorageKey(it) == null }.distinct().sorted()
+            val counts = MineCounts(all = merged.size, favorite = favoriteIds.size, custom = customIds.size)
+
+            var result = merged.filter { recipe -> settings.customTags.all { it in recipe.tags } }
+            if (settings.query.isNotBlank()) {
+                result = result.filter { it.meal.name.contains(settings.query.trim(), ignoreCase = true) }
+            }
+            result = when (settings.filter) {
+                MineFilter.ALL -> result
+                MineFilter.FAVORITE -> result.filter { it.meal.id in favoriteIds }
+                MineFilter.CUSTOM -> result.filter { it.meal.id in customIds }
+            }
+            if (settings.sortOrder == MineSortOrder.NAME) {
+                result = result.sortedBy { it.meal.name.lowercase() }
+            }
+            Triple(available, result, counts)
+        }.collect { (available, filtered, counts) ->
+            _uiState.update {
+                it.copy(isLoading = false, recipes = filtered, loadError = null, availableCustomTags = available, mineCounts = counts)
             }
         }
+    }
 
     private fun launchBrowseOrSearch(): Job = viewModelScope.launch {
         nextOffset = 0
@@ -336,14 +406,34 @@ class RecipesViewModel(
         }
     }
 
-    /** Toggles [label] in/out of the Favorites/Custom tag filter (see [launchLiveList]) — an AND
-     *  match against every currently selected custom label. No re-fetch needed: both lists are
+    /** Toggles [label] in/out of MINE's custom tag filter (see [launchMineTab]) — an AND match
+     *  against every currently selected custom label. No re-fetch needed: both source lists are
      *  already live-collected in full, this only changes which of them pass the filter. */
     fun toggleCustomTagFilter(label: String) {
         val current = _uiState.value.selectedCustomTags
         val updated = if (label in current) current - label else current + label
         _uiState.update { it.copy(selectedCustomTags = updated) }
         selectedCustomTags.value = updated
+    }
+
+    /** Switches MINE's "Alles/Favoriet/Zelf" chip. */
+    fun setMineFilter(filter: MineFilter) {
+        _uiState.update { it.copy(mineFilter = filter) }
+        mineFilter.value = filter
+    }
+
+    /** Flips MINE's sort between recently-added-first and alphabetical. */
+    fun toggleMineSortOrder() {
+        val next = if (_uiState.value.mineSortOrder == MineSortOrder.RECENT) MineSortOrder.NAME else MineSortOrder.RECENT
+        _uiState.update { it.copy(mineSortOrder = next) }
+        mineSortOrder.value = next
+    }
+
+    /** MINE's own live, client-side name filter — see [RecipesUiState.mineSearchQuery]'s doc for
+     *  why this doesn't go through [search]/[fetchPage] the way BROWSE's does. */
+    fun onMineSearchQueryChange(query: String) {
+        _uiState.update { it.copy(mineSearchQuery = query) }
+        mineSearchQuery.value = query
     }
 
     /** Toggles [allergen] in/out of the exclusion filter and re-fetches. */
