@@ -692,13 +692,15 @@
     <string name="shopping_mode_title">Winkelmodus</string>
     <string name="shopping_mode_close_cd">Sluiten</string>
     <string name="shopping_mode_screen_on_cd">Scherm aan houden</string>
-    <string name="shopping_mode_screen_on_state_on">Aan</string>
-    <string name="shopping_mode_screen_on_state_off">Uit</string>
+    <string name="shopping_mode_screen_on_state_on">Scherm aan</string>
+    <string name="shopping_mode_screen_on_state_off">Scherm uit</string>
     <string name="shopping_mode_planned_format">%1$s gepland</string>
     <string name="shopping_mode_in_cart_format">%1$s in de wagen</string>
     <string name="shopping_mode_aisle_label_format">gang %1$d · %2$s</string>
     <string name="shopping_mode_done_button">Klaar met winkelen</string>
     <string name="shopping_mode_empty">Niets om af te vinken — je lijst is leeg.</string>
+    <string name="shopping_mode_picker_subtitle">Welke winkel ga je nu langs?</string>
+    <string name="shopping_mode_switch_store">Wissel</string>
     <string name="shopping_list_more_options_cd">Meer opties</string>
     <string name="shopping_list_more_options_title">Opties</string>
     <string name="shopping_list_progress_checked_format">%1$d/%2$d afgevinkt</string>

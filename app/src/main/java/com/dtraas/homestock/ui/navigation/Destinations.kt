@@ -15,13 +15,29 @@ sealed class Destination(val route: String) {
     data object Scan : Destination("scan")
     data object Inventory : Destination("inventory")
     data object ShoppingList : Destination("shopping_list")
-    data object ShoppingMode : Destination("shopping_mode?listId={listId}") {
-        // Empty string, not a real "no list" sentinel value, stands in for null here — NavType.StringType
-        // arguments can't be genuinely null unless declared nullable, and a nullable String nav argument
-        // still round-trips awkwardly through the query-string route syntax. The default (unnamed) list's
-        // own id is already null everywhere else in this app (see ShoppingListItemEntity.listId), so "" is
-        // free to mean exactly that here — ShoppingModeScreen turns it back into null before use.
-        fun createRoute(listId: String?) = "shopping_mode?listId=${listId ?: ""}"
+    data object ShoppingMode : Destination("shopping_mode?listId={listId}&storeName={storeName}") {
+        // listId: empty string stands in for null — NavType.StringType arguments can't be
+        // genuinely null unless declared nullable, and a nullable String nav argument still
+        // round-trips awkwardly through the query-string route syntax. The default (unnamed)
+        // list's own id is already null everywhere else in this app (see
+        // ShoppingListItemEntity.listId), so "" is free to mean exactly that here.
+        //
+        // storeName can't reuse that same "" trick — an empty string is [ShoppingListItemEntity.store]'s
+        // own real value for "no store" (see its doc), a store a household can deliberately filter
+        // to (see ShoppingListScreen's StoreChipsRow, "Geen winkel"), so "" passed through here must
+        // stay distinguishable from "nothing pre-selected". NO_STORE_SENTINEL is that placeholder
+        // instead — a household could in principle still type this exact name for a real store,
+        // but StoreRepository.addStore trims every name on save, so this double-underscore,
+        // definitely-not-hand-typed form is safe in practice.
+        private const val NO_STORE_SENTINEL = "__unset__"
+
+        fun createRoute(listId: String?, storeName: String?) =
+            "shopping_mode?listId=${listId ?: ""}&storeName=${storeName ?: NO_STORE_SENTINEL}"
+
+        /** Turns a decoded `storeName` nav argument back into "nothing pre-selected" (null) vs.
+         *  a real pre-selection — which, per this destination's own doc, might itself be the
+         *  empty string ("Geen winkel"). */
+        fun storeNameFromArgument(value: String?): String? = value?.takeUnless { it == NO_STORE_SENTINEL }
     }
     data object Statistics : Destination("statistics")
     data object Notifications : Destination("notifications")

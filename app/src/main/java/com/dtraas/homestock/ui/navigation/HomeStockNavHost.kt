@@ -212,18 +212,23 @@ fun HomeStockApp(
             }
             composable(Destination.ShoppingList.route) {
                 ShoppingListScreen(
-                    onNavigateToShoppingMode = { listId ->
-                        navController.navigate(Destination.ShoppingMode.createRoute(listId))
+                    onNavigateToShoppingMode = { listId, storeName ->
+                        navController.navigate(Destination.ShoppingMode.createRoute(listId, storeName))
                     },
                 )
             }
             composable(
                 route = Destination.ShoppingMode.route,
-                arguments = listOf(navArgument("listId") { type = NavType.StringType; defaultValue = "" }),
+                arguments = listOf(
+                    navArgument("listId") { type = NavType.StringType; defaultValue = "" },
+                    navArgument("storeName") { type = NavType.StringType; defaultValue = "" },
+                ),
             ) { entry ->
                 val listId = entry.arguments?.getString("listId")?.takeIf { it.isNotBlank() }
+                val initialStoreName = Destination.ShoppingMode.storeNameFromArgument(entry.arguments?.getString("storeName"))
                 ShoppingModeScreen(
                     listId = listId,
+                    initialStoreName = initialStoreName,
                     onClose = { navController.popBackStack() },
                 )
             }

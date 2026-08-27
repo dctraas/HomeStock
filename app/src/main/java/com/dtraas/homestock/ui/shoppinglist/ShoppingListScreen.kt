@@ -191,7 +191,7 @@ private fun buildShoppingListShareText(
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun ShoppingListScreen(onNavigateToShoppingMode: (String?) -> Unit = {}) {
+fun ShoppingListScreen(onNavigateToShoppingMode: (listId: String?, storeName: String?) -> Unit = { _, _ -> }) {
     val context = LocalContext.current
     val application = context.applicationContext as HomeStockApplication
     val defaultListName = stringResource(R.string.shopping_list_title)
@@ -496,7 +496,11 @@ fun ShoppingListScreen(onNavigateToShoppingMode: (String?) -> Unit = {}) {
                 onLowStockSuggestionClick = { suggestion ->
                     viewModel.addItem(suggestion.name, suggestion.category, "", 1)
                 },
-                onShoppingModeClick = { onNavigateToShoppingMode(activeList.id) },
+                // Neemt het huidige winkel-filterchip mee, indien actief, zodat Winkelmodus
+                // direct opent voor de winkel die je al aan het bekijken was — anders (bij
+                // "Alle winkels") vraagt Winkelmodus het zelf, want daar zie je toch maar één
+                // winkel tegelijk.
+                onShoppingModeClick = { onNavigateToShoppingMode(activeList.id, selectedStoreFilter) },
                 onAddClick = { showAddDialog = true },
             )
         }
