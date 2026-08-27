@@ -997,6 +997,17 @@
         <item quantity="other">%1$d dîners sur 7 planifiés</item>
     </plurals>
     <string name="meal_plan_servings_format">%1$d portions</string>
+    <plurals name="meal_plan_dinner_servings_format">
+        <item quantity="one">%d personne</item>
+        <item quantity="other">%d personnes</item>
+    </plurals>
+    <plurals name="meal_plan_dinner_missing_format">
+        <item quantity="one">%d manquant</item>
+        <item quantity="other">%d manquants</item>
+    </plurals>
+    <string name="meal_plan_dinner_stock_pill_format">%1$d/%2$d en stock</string>
+    <string name="meal_plan_dinner_expiring_pill_format">utilise %1$s</string>
+    <string name="meal_plan_plan_action">Planifier</string>
     <string name="meal_plan_add_cd">Ajouter un repas</string>
     <string name="meal_plan_add_chooser_title">Que voulez-vous ajouter ?</string>
     <string name="meal_plan_previous_week_cd">Semaine précédente</string>

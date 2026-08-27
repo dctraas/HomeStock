@@ -48,6 +48,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.filled.WorkspacePremium
@@ -63,7 +64,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedIconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -126,6 +126,7 @@ import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SageGreenPrimary
 import com.dtraas.homestock.ui.theme.SoftCardShape
+import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -269,13 +270,14 @@ fun MealPlanScreen(
                 }
 
                 // Avondeten first and visually featured — the one meal of the day a household most
-                // reliably plans ahead for — with the other three slots stacked below it in their
-                // usual order.
+                // reliably plans ahead for — with the other three slots below it: Ontbijt/Lunch
+                // side by side (per the Claude Design mockup), Tussendoor still full-width.
                 DinnerCard(
                     planned = uiState.plan[MealSlot.DINNER].orEmpty(),
                     detail = uiState.dinnerDetail,
                     isLoading = uiState.isDinnerDetailLoading,
-                    allInStock = uiState.dinnerAllIngredientsInStock,
+                    matchedIngredientCount = uiState.dinnerMatchedIngredientCount,
+                    expiringIngredientUsed = uiState.dinnerExpiringIngredientUsed,
                     onOpenRecipe = onRecipeClick,
                     onOpenProduct = onProductClick,
                     onAddClick = { viewModel.openPicker(MealSlot.DINNER) },
@@ -285,24 +287,40 @@ fun MealPlanScreen(
                     },
                     onRemove = { meal -> removeWithUndo(MealSlot.DINNER, meal) },
                     onAddToShoppingList = { meal -> viewModel.addProductToShoppingList(meal.name) },
+                    onAddMissingToShoppingList = viewModel::addMissingIngredientsForDinner,
                     onMarkEaten = { meal -> viewModel.markMealEaten(MealSlot.DINNER, meal) },
                     onMarkWasted = { meal -> viewModel.markMealWasted(MealSlot.DINNER, meal) },
                     onStartCookMode = onNavigateToCookMode,
                 )
-                MealSlot.ORDERED.filter { it != MealSlot.DINNER }.forEach { slot ->
-                    CompactSlotCard(
-                        slot = slot,
-                        label = stringResource(slot.labelRes),
-                        planned = uiState.plan[slot].orEmpty(),
-                        onAddClick = { viewModel.openPicker(slot) },
-                        onOpenRecipe = onRecipeClick,
-                        onOpenProduct = onProductClick,
-                        onRemove = { meal -> removeWithUndo(slot, meal) },
-                        onAddToShoppingList = { meal -> viewModel.addProductToShoppingList(meal.name) },
-                        onMarkEaten = { meal -> viewModel.markMealEaten(slot, meal) },
-                        onMarkWasted = { meal -> viewModel.markMealWasted(slot, meal) },
-                    )
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    listOf(MealSlot.BREAKFAST, MealSlot.LUNCH).forEach { slot ->
+                        MealSlotTile(
+                            slot = slot,
+                            label = stringResource(slot.labelRes),
+                            planned = uiState.plan[slot].orEmpty(),
+                            onAddClick = { viewModel.openPicker(slot) },
+                            onOpenRecipe = onRecipeClick,
+                            onOpenProduct = onProductClick,
+                            onRemove = { meal -> removeWithUndo(slot, meal) },
+                            onAddToShoppingList = { meal -> viewModel.addProductToShoppingList(meal.name) },
+                            onMarkEaten = { meal -> viewModel.markMealEaten(slot, meal) },
+                            onMarkWasted = { meal -> viewModel.markMealWasted(slot, meal) },
+                            modifier = Modifier.weight(1f),
+                        )
+                    }
                 }
+                CompactSlotCard(
+                    slot = MealSlot.SNACK,
+                    label = stringResource(MealSlot.SNACK.labelRes),
+                    planned = uiState.plan[MealSlot.SNACK].orEmpty(),
+                    onAddClick = { viewModel.openPicker(MealSlot.SNACK) },
+                    onOpenRecipe = onRecipeClick,
+                    onOpenProduct = onProductClick,
+                    onRemove = { meal -> removeWithUndo(MealSlot.SNACK, meal) },
+                    onAddToShoppingList = { meal -> viewModel.addProductToShoppingList(meal.name) },
+                    onMarkEaten = { meal -> viewModel.markMealEaten(MealSlot.SNACK, meal) },
+                    onMarkWasted = { meal -> viewModel.markMealWasted(MealSlot.SNACK, meal) },
+                )
             }
         }
     }
@@ -506,25 +524,31 @@ private fun WeekDayStrip(
 
 /**
  * Avondeten's own card — the one meal of the day households most reliably plan ahead for, so
- * once a real recipe is planned (not a plain product or hand-typed name) it gets a full photo
- * card with cook-time/servings/"alles in huis" and a "Kookmodus" shortcut, rather than the same
- * compact treatment as [CompactSlotCard]'s other three slots. Falls back to that same compact
- * treatment when nothing's planned yet, or only a product/hand-typed name is — there's no recipe
- * detail to feature in that case. Multi-meal support (see [PlannedMeal]'s doc) still applies:
- * any planned dinner entries beyond the featured recipe render as compact rows underneath it.
+ * once a real recipe is planned (not a plain product or hand-typed name) it gets a featured
+ * treatment: a small thumbnail next to the name, an "N/M in huis" pill and — when tonight's
+ * recipe would also use up something close to expiring — an orange "gebruikt X" pill, then a
+ * "N missend"/"Kookstand" action line, per the Claude Design mockup (which replaces the earlier
+ * full-width photo banner + primary "Kookmodus" button). Falls back to the same compact
+ * treatment as [CompactSlotCard]'s other slots when nothing's planned yet, or only a product/
+ * hand-typed name is — there's no recipe detail to feature in that case. Multi-meal support (see
+ * [PlannedMeal]'s doc) still applies: any planned dinner entries beyond the featured recipe
+ * render as compact rows underneath it.
  */
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun DinnerCard(
     planned: List<PlannedMeal>,
     detail: RecipeDetail?,
     isLoading: Boolean,
-    allInStock: Boolean,
+    matchedIngredientCount: Int?,
+    expiringIngredientUsed: String?,
     onOpenRecipe: (String) -> Unit,
     onOpenProduct: (String) -> Unit,
     onAddClick: () -> Unit,
     onSwap: (PlannedMeal) -> Unit,
     onRemove: (PlannedMeal) -> Unit,
     onAddToShoppingList: (PlannedMeal) -> Unit,
+    onAddMissingToShoppingList: () -> Unit,
     onMarkEaten: (PlannedMeal) -> Unit,
     onMarkWasted: (PlannedMeal) -> Unit,
     onStartCookMode: (String) -> Unit,
@@ -537,92 +561,117 @@ private fun DinnerCard(
                 text = stringResource(MealSlot.DINNER.labelRes),
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.padding(start = 8.dp),
+                modifier = Modifier.padding(start = 8.dp).weight(1f),
             )
+            // Even a plain product/typed-name dinner has no [detail], so this only ever shows
+            // for a real featured recipe — a plain entry has no serving count to report.
+            detail?.servings?.let { servings ->
+                Text(
+                    text = pluralStringResource(R.plurals.meal_plan_dinner_servings_format, servings, servings),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
         if (featuredRecipe != null) {
             var showOverflow by remember { mutableStateOf(false) }
+            val totalIngredients = detail?.ingredients?.size
+            val missingCount = if (matchedIngredientCount != null && totalIngredients != null) {
+                totalIngredients - matchedIngredientCount
+            } else {
+                null
+            }
             Card(
+                onClick = { onOpenRecipe(featuredRecipe.recipeId!!) },
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
                 shape = SoftCardShape,
             ) {
-                Column {
-                    Box(modifier = Modifier.fillMaxWidth().height(118.dp)) {
-                        if (featuredRecipe.thumbnailUrl != null) {
-                            AsyncImage(
-                                model = featuredRecipe.thumbnailUrl,
-                                contentDescription = null,
-                                contentScale = ContentScale.Crop,
-                                modifier = Modifier.fillMaxSize().clip(SoftImageShape).clickable { onOpenRecipe(featuredRecipe.recipeId!!) },
-                            )
-                        } else {
-                            Box(
-                                modifier = Modifier.fillMaxSize().clip(SoftImageShape)
-                                    .background(MaterialTheme.colorScheme.tertiaryContainer)
-                                    .clickable { onOpenRecipe(featuredRecipe.recipeId!!) },
-                                contentAlignment = Alignment.Center,
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Filled.Restaurant,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                                    modifier = Modifier.size(40.dp),
-                                )
-                            }
-                        }
-                        Surface(
-                            shape = RoundedCornerShape(percent = 50),
-                            color = Color.Black.copy(alpha = 0.55f),
-                            modifier = Modifier.align(Alignment.TopStart).padding(10.dp),
+                Row(modifier = Modifier.padding(12.dp), verticalAlignment = Alignment.Top) {
+                    if (featuredRecipe.thumbnailUrl != null) {
+                        AsyncImage(
+                            model = featuredRecipe.thumbnailUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.size(64.dp).clip(SoftImageShape),
+                        )
+                    } else {
+                        Box(
+                            modifier = Modifier.size(64.dp).clip(SoftImageShape).background(MaterialTheme.colorScheme.tertiaryContainer),
+                            contentAlignment = Alignment.Center,
                         ) {
-                            Text(
-                                text = stringResource(MealSlot.DINNER.labelRes),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = Color.White,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            Icon(
+                                imageVector = Icons.Filled.Restaurant,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                                modifier = Modifier.size(28.dp),
                             )
                         }
                     }
-                    Column(modifier = Modifier.padding(16.dp)) {
-                        Text(featuredRecipe.name, style = MaterialTheme.typography.titleLarge, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                        val metaParts = listOfNotNull(
-                            detail?.readyInMinutes?.let { stringResource(R.string.recipes_ready_in_minutes_format, it) },
-                            detail?.servings?.let { stringResource(R.string.meal_plan_servings_format, it) },
-                            if (allInStock) stringResource(R.string.meal_plan_all_in_stock) else null,
-                        )
+                    Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+                        Text(featuredRecipe.name, style = MaterialTheme.typography.titleMedium, maxLines = 2, overflow = TextOverflow.Ellipsis)
                         if (isLoading) {
-                            CircularProgressIndicator(modifier = Modifier.padding(top = 6.dp).size(14.dp), strokeWidth = 2.dp)
-                        } else if (metaParts.isNotEmpty()) {
-                            Text(
-                                text = metaParts.joinToString(" · "),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(top = 4.dp),
-                            )
-                        }
-                        Row(
-                            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Button(onClick = { onStartCookMode(featuredRecipe.recipeId!!) }, modifier = Modifier.weight(1f)) {
-                                Icon(Icons.Filled.Restaurant, contentDescription = null, modifier = Modifier.size(16.dp))
-                                Text(stringResource(R.string.meal_plan_start_cook_mode), modifier = Modifier.padding(start = 6.dp))
-                            }
-                            OutlinedIconButton(onClick = { onSwap(featuredRecipe) }, modifier = Modifier.size(44.dp)) {
-                                Icon(Icons.Filled.SwapHoriz, contentDescription = stringResource(R.string.meal_plan_swap_cd))
-                            }
-                            Box {
-                                OutlinedIconButton(onClick = { showOverflow = true }, modifier = Modifier.size(44.dp)) {
-                                    Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.meal_plan_overflow_cd))
+                            CircularProgressIndicator(modifier = Modifier.padding(top = 8.dp).size(14.dp), strokeWidth = 2.dp)
+                        } else {
+                            FlowRow(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalArrangement = Arrangement.spacedBy(6.dp),
+                                modifier = Modifier.padding(top = 8.dp),
+                            ) {
+                                if (matchedIngredientCount != null && totalIngredients != null) {
+                                    DinnerPill(
+                                        text = stringResource(R.string.meal_plan_dinner_stock_pill_format, matchedIngredientCount, totalIngredients),
+                                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                    )
                                 }
-                                DropdownMenu(expanded = showOverflow, onDismissRequest = { showOverflow = false }) {
-                                    DropdownMenuItem(
-                                        text = { Text(stringResource(R.string.meal_plan_clear_cd)) },
-                                        onClick = { showOverflow = false; onRemove(featuredRecipe) },
+                                if (expiringIngredientUsed != null) {
+                                    DinnerPill(
+                                        text = stringResource(R.string.meal_plan_dinner_expiring_pill_format, expiringIngredientUsed),
+                                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                                     )
                                 }
                             }
+                            Row(
+                                modifier = Modifier.padding(top = 10.dp),
+                                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                if (missingCount != null && missingCount > 0) {
+                                    DinnerActionLink(
+                                        icon = Icons.Filled.ShoppingCart,
+                                        text = pluralStringResource(R.plurals.meal_plan_dinner_missing_format, missingCount, missingCount),
+                                        onClick = onAddMissingToShoppingList,
+                                    )
+                                }
+                                DinnerActionLink(
+                                    icon = Icons.Filled.Restaurant,
+                                    text = stringResource(R.string.meal_plan_start_cook_mode),
+                                    onClick = { onStartCookMode(featuredRecipe.recipeId!!) },
+                                )
+                            }
+                        }
+                    }
+                    Box {
+                        IconButton(onClick = { showOverflow = true }, modifier = Modifier.size(32.dp)) {
+                            Icon(
+                                Icons.Filled.MoreVert,
+                                contentDescription = stringResource(R.string.meal_plan_overflow_cd),
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        }
+                        DropdownMenu(expanded = showOverflow, onDismissRequest = { showOverflow = false }) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.meal_plan_swap_cd)) },
+                                leadingIcon = { Icon(Icons.Filled.SwapHoriz, contentDescription = null) },
+                                onClick = { showOverflow = false; onSwap(featuredRecipe) },
+                            )
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.meal_plan_clear_cd)) },
+                                leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
+                                onClick = { showOverflow = false; onRemove(featuredRecipe) },
+                            )
                         }
                     }
                 }
@@ -667,8 +716,41 @@ private fun DinnerCard(
     }
 }
 
-/** Ontbijt/Lunch/Tussendoor — the same compact treatment throughout, no featured-recipe photo
- *  card the way avondeten gets (see [DinnerCard]). */
+/** Small display-only pill for [DinnerCard]'s "8/10 in huis"/"gebruikt spinazie" badges. */
+@Composable
+private fun DinnerPill(text: String, containerColor: Color, contentColor: Color) {
+    Surface(shape = RoundedCornerShape(percent = 50), color = containerColor) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = contentColor,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+        )
+    }
+}
+
+/** Small icon+text tappable line — [DinnerCard]'s "N missend"/"Kookstand" action row, a much
+ *  lower-emphasis pair than the old full-width primary button, per the Claude Design mockup. */
+@Composable
+private fun DinnerActionLink(icon: ImageVector, text: String, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier.clickable(onClick = onClick),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(14.dp))
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(start = 4.dp),
+        )
+    }
+}
+
+/** Tussendoor's own compact treatment — no featured-recipe thumbnail card the way avondeten gets
+ *  (see [DinnerCard]); Ontbijt/Lunch use the two-column [MealSlotTile] instead. */
 @Composable
 private fun CompactSlotCard(
     slot: MealSlot,
@@ -708,6 +790,90 @@ private fun CompactSlotCard(
             )
         }
         EmptySlotAddButton(onAddClick, contentDescription = stringResource(R.string.meal_plan_add_cd))
+    }
+}
+
+/**
+ * Ontbijt/Lunch's own two-column card treatment, per the Claude Design mockup — a solid-bordered
+ * card once something's planned, a dashed one (echoing [EmptySlotAddButton]'s own dashed style)
+ * with a "+ Plannen" prompt when the slot is still empty, side by side with its sibling via the
+ * caller's [Modifier.weight]. A planned slot still offers the same "add another" affordance
+ * underneath its entries as [CompactSlotCard] — multi-meal support isn't lost, just less
+ * prominent than the empty-slot prompt.
+ */
+@Composable
+private fun MealSlotTile(
+    slot: MealSlot,
+    label: String,
+    planned: List<PlannedMeal>,
+    onAddClick: () -> Unit,
+    onOpenRecipe: (String) -> Unit,
+    onOpenProduct: (String) -> Unit,
+    onRemove: (PlannedMeal) -> Unit,
+    onAddToShoppingList: (PlannedMeal) -> Unit,
+    onMarkEaten: (PlannedMeal) -> Unit,
+    onMarkWasted: (PlannedMeal) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val shape = SoftCardShapeCompact
+    val borderModifier = if (planned.isEmpty()) {
+        Modifier.dashedBorder(MaterialTheme.colorScheme.outlineVariant, cornerRadius = 12.dp)
+    } else {
+        Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
+    }
+    Column(
+        modifier = modifier
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .then(borderModifier)
+            .padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Icon(slot.icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(16.dp))
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(start = 6.dp),
+            )
+        }
+        if (planned.isEmpty()) {
+            Row(
+                modifier = Modifier.fillMaxWidth().clickable(onClick = onAddClick),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    Icons.Filled.AddCircleOutline,
+                    contentDescription = stringResource(R.string.meal_plan_add_cd),
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp),
+                )
+                Text(
+                    text = stringResource(R.string.meal_plan_plan_action),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 6.dp),
+                )
+            }
+        } else {
+            planned.forEach { meal ->
+                CompactPlannedRow(
+                    meal = meal,
+                    onClick = {
+                        when {
+                            meal.recipeId != null -> onOpenRecipe(meal.recipeId)
+                            meal.productBarcode != null -> onOpenProduct(meal.productBarcode)
+                        }
+                    },
+                    onRemove = { onRemove(meal) },
+                    onAddToShoppingList = { onAddToShoppingList(meal) },
+                    onMarkEaten = { onMarkEaten(meal) },
+                    onMarkWasted = { onMarkWasted(meal) },
+                )
+            }
+            EmptySlotAddButton(onAddClick, contentDescription = stringResource(R.string.meal_plan_add_cd))
+        }
     }
 }
 

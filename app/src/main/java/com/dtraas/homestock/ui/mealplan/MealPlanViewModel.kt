@@ -77,6 +77,13 @@ data class MealPlanUiState(
     val dinnerDetail: RecipeDetail? = null,
     val isDinnerDetailLoading: Boolean = false,
     val dinnerAllIngredientsInStock: Boolean = false,
+    /** How many of [dinnerDetail]'s ingredients are already in stock — the "8/10 in huis" pill.
+     *  Null until [dinnerDetail] itself has loaded. */
+    val dinnerMatchedIngredientCount: Int? = null,
+    /** Name of one inventory item close to expiring that [dinnerDetail] also uses — the "gebruikt
+     *  spinazie" pill — see [RecipeRepository.expiringIngredientUsedIn]. Null when nothing's
+     *  close to expiring, or it isn't used by tonight's recipe. */
+    val dinnerExpiringIngredientUsed: String? = null,
 )
 
 class MealPlanViewModel(
@@ -165,6 +172,13 @@ class MealPlanViewModel(
         viewModelScope.launch { recipeRepository.addIngredientsToShoppingList(ingredients) }
     }
 
+    /** Same idea as [addMissingIngredientsForWeekToShoppingList], but scoped to just tonight's
+     *  featured avondeten recipe — the DinnerCard's "N missend" pill. */
+    fun addMissingIngredientsForDinner() {
+        val detail = _uiState.value.dinnerDetail ?: return
+        viewModelScope.launch { recipeRepository.addMissingIngredientsToShoppingList(detail) }
+    }
+
     /** Loads (or clears) the featured avondeten card's [MealPlanUiState.dinnerDetail] — the
      *  first planned dinner entry that's an actual recipe, if any; a plain product or hand-typed
      *  name has no detail to show. */
@@ -173,17 +187,31 @@ class MealPlanViewModel(
         if (recipeId == _uiState.value.dinnerDetail?.id) return
         dinnerDetailJob?.cancel()
         if (recipeId == null) {
-            _uiState.update { it.copy(dinnerDetail = null, isDinnerDetailLoading = false, dinnerAllIngredientsInStock = false) }
+            _uiState.update {
+                it.copy(
+                    dinnerDetail = null,
+                    isDinnerDetailLoading = false,
+                    dinnerAllIngredientsInStock = false,
+                    dinnerMatchedIngredientCount = null,
+                    dinnerExpiringIngredientUsed = null,
+                )
+            }
             return
         }
         dinnerDetailJob = viewModelScope.launch {
             _uiState.update { it.copy(isDinnerDetailLoading = true) }
             val detail = recipeRepository.getRecipeDetail(recipeId).getOrNull()
-            val allInStock = detail != null &&
-                detail.ingredients.isNotEmpty() &&
-                recipeRepository.matchedIngredients(detail).size >= detail.ingredients.size
+            val matchedCount = detail?.let { recipeRepository.matchedIngredients(it).size }
+            val allInStock = detail != null && detail.ingredients.isNotEmpty() && (matchedCount ?: 0) >= detail.ingredients.size
+            val expiringUsed = detail?.let { recipeRepository.expiringIngredientUsedIn(it) }
             _uiState.update {
-                it.copy(dinnerDetail = detail, isDinnerDetailLoading = false, dinnerAllIngredientsInStock = allInStock)
+                it.copy(
+                    dinnerDetail = detail,
+                    isDinnerDetailLoading = false,
+                    dinnerAllIngredientsInStock = allInStock,
+                    dinnerMatchedIngredientCount = matchedCount,
+                    dinnerExpiringIngredientUsed = expiringUsed,
+                )
             }
         }
     }

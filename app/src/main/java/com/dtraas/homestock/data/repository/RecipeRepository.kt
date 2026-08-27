@@ -594,6 +594,25 @@ class RecipeRepository(
             .toSet()
     }
 
+    /**
+     * The name of one inventory item close to expiring (within [withinDays]) that [detail] also
+     * uses as an ingredient, if any — the maaltijdplanner's "gebruikt spinazie" badge, a concrete
+     * nudge that cooking tonight's planned dinner also uses up something about to go off. Same
+     * fuzzy English/Dutch matching as [matchedIngredients]; first match by soonest expiry wins.
+     */
+    suspend fun expiringIngredientUsedIn(detail: RecipeDetail, withinDays: Long = 3): String? {
+        val now = System.currentTimeMillis()
+        val cutoff = now + withinDays * 86_400_000L
+        val expiringSoon = inventoryRepository.observeInventoryWithProduct().first()
+            .filter { it.expirationDate != null && it.expirationDate in now..cutoff }
+            .sortedBy { it.expirationDate }
+        for (item in expiringSoon) {
+            val used = detail.ingredients.any { (ingredient, _) -> inventoryHasIngredient(ingredient, listOf(item.name)) }
+            if (used) return item.name
+        }
+        return null
+    }
+
     /** Adds every ingredient of [detail] that isn't already in inventory to the shopping list. */
     suspend fun addMissingIngredientsToShoppingList(detail: RecipeDetail) {
         addIngredientsToShoppingList(missingIngredients(listOf(detail)))
