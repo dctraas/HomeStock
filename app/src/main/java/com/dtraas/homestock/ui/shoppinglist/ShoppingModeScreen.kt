@@ -376,10 +376,17 @@ private fun ShoppingModeStoreScreen(
                             aisleNumber += 1
                             previousRank = rank
                         }
+                        // Captured into a val before the item{} lambda — that lambda isn't run
+                        // immediately (LazyListScope defers it to actual composition, after this
+                        // whole forEach has already finished), so closing over the `var` itself
+                        // would have every header read aisleNumber's *final* value instead of
+                        // the one at this point in the loop — exactly the "every aisle says the
+                        // same number" bug this fixes.
+                        val displayedAisleNumber = aisleNumber
                         item(key = "header_${category.storageKey}") {
                             ShoppingModeCategoryHeader(
                                 category = category,
-                                aisleNumber = aisleNumber,
+                                aisleNumber = displayedAisleNumber,
                                 itemCount = itemsInCategory.size,
                                 modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
                             )
