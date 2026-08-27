@@ -187,7 +187,7 @@ fun RecipeDetailScreen(
                     RecipeBadge(icon = Icons.Filled.AutoAwesome, label = stringResource(R.string.recipes_ai_generated_badge))
                 } else if (detail.isCustom) {
                     RecipeBadge(icon = Icons.Filled.Edit, label = stringResource(R.string.recipes_custom_badge))
-                } else if (detail.translatedForLocale != null) {
+                } else if (detail.hasTranslation) {
                     RecipeBadge(icon = Icons.Filled.Translate, label = stringResource(R.string.recipes_translated_badge))
                 }
 

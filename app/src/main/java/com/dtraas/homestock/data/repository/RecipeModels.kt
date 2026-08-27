@@ -1,5 +1,17 @@
 package com.dtraas.homestock.data.repository
 
+/**
+ * Recipe translation (see [RecipeRepository.translatedDetailIfNeeded]/
+ * [RecipeRepository.withTranslatedTitles], and [RecipeDetail.hasTranslation] below) is
+ * temporarily switched off — the machine-translated bereidingswijze steps sometimes came back
+ * not actually translated, or a stale/mixed-language result got stuck in the cache and kept
+ * resurfacing on reopen. With this false, [RecipeRepository] never calls the `translateRecipe`
+ * Cloud Function, and [RecipeDetail.hasTranslation] ignores even an already-cached
+ * [RecipeDetail.translatedForLocale] from before this was switched off, so every recipe just
+ * shows its plain English content until this is flipped back on.
+ */
+const val RECIPE_TRANSLATIONS_ENABLED = false
+
 /** A recipe as returned in list/search results — summary fields only, no ingredients/instructions. */
 data class RecipeSummary(val id: String, val name: String, val thumbnailUrl: String?)
 
@@ -62,7 +74,13 @@ data class RecipeDetail(
     val translatedInstructions: String? = null,
     val translatedIngredients: List<Pair<String, String>>? = null,
 ) {
-    private val hasTranslation: Boolean get() = translatedForLocale != null
+    /** Public (not just an internal `displayX` implementation detail) so RecipeDetailScreen's
+     *  "Vertaald met AI" badge can check the exact same condition the `displayX` getters below
+     *  use, instead of its own separate `translatedForLocale != null` check — otherwise, while
+     *  [RECIPE_TRANSLATIONS_ENABLED] is off, an already-cached [translatedForLocale] from before
+     *  it was switched off would still show that badge even though every `displayX` getter below
+     *  is now quietly falling back to the plain English field. */
+    val hasTranslation: Boolean get() = RECIPE_TRANSLATIONS_ENABLED && translatedForLocale != null
     // Every translatedX field falls back to its English original when the translation call
     // didn't come back with that particular field — translatedForLocale being set only means
     // "a translation attempt happened for this locale", not "every field in it succeeded".

@@ -803,6 +803,7 @@ class RecipeRepository(
         suggestions: List<RecipeSuggestion>,
         languageTag: String?,
     ): List<RecipeSuggestion> {
+        if (!RECIPE_TRANSLATIONS_ENABLED) return suggestions
         if (languageTag == null || languageTag == "en" || suggestions.isEmpty()) return suggestions
         return try {
             val householdId = householdSession.householdId.value ?: return suggestions
@@ -845,6 +846,7 @@ class RecipeRepository(
      * content is still useful.
      */
     private suspend fun translatedDetailIfNeeded(detail: RecipeDetail, languageTag: String?): RecipeDetail {
+        if (!RECIPE_TRANSLATIONS_ENABLED) return detail
         if (languageTag == null || languageTag == "en") return detail
         if (detail.isAiGenerated || detail.isCustom) return detail
         if (detail.translatedForLocale == languageTag) return detail
