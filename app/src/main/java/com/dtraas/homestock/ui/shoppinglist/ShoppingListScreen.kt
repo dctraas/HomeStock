@@ -305,6 +305,27 @@ fun ShoppingListScreen(onNavigateToShoppingMode: (listId: String?, storeName: St
         }
     }
 
+    // Shared by the swipe-to-delete row and ItemEditSheet's own delete button — both remove
+    // the item straight away and offer the same "ongedaan maken" snackbar to undo it. Declared
+    // at this outer scope (not inside the Column below) so it's reachable from editingItem's own
+    // dialog block, a sibling of that Column rather than nested inside it.
+    fun deleteWithUndo(item: ShoppingListItemEntity) {
+        viewModel.removeItem(item.id)
+        coroutineScope.launch {
+            // showSnackbar defaults to SnackbarDuration.Indefinite whenever an actionLabel is
+            // set, so without an explicit duration the "ongedaan maken" snackbar would never
+            // auto-dismiss.
+            val result = snackbarHostState.showSnackbar(
+                message = removedFormat.format(item.name),
+                actionLabel = undoLabel,
+                duration = SnackbarDuration.Short,
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                viewModel.restoreItem(item)
+            }
+        }
+    }
+
     val historySuggestions by viewModel.historySuggestions.collectAsState()
     val lowStockSuggestions by viewModel.lowStockSuggestions.collectAsState()
 
@@ -375,23 +396,6 @@ fun ShoppingListScreen(onNavigateToShoppingMode: (listId: String?, storeName: St
                 } else {
                     byStore.mapValues { (_, items) -> items.filter { it.name.contains(query, ignoreCase = true) } }
                         .filterValues { it.isNotEmpty() }
-                }
-            }
-
-            fun deleteWithUndo(item: ShoppingListItemEntity) {
-                viewModel.removeItem(item.id)
-                coroutineScope.launch {
-                    // showSnackbar defaults to SnackbarDuration.Indefinite whenever an
-                    // actionLabel is set, so without an explicit duration the "ongedaan
-                    // maken" snackbar would never auto-dismiss.
-                    val result = snackbarHostState.showSnackbar(
-                        message = removedFormat.format(item.name),
-                        actionLabel = undoLabel,
-                        duration = SnackbarDuration.Short,
-                    )
-                    if (result == SnackbarResult.ActionPerformed) {
-                        viewModel.restoreItem(item)
-                    }
                 }
             }
 
@@ -2179,6 +2183,7 @@ private val itemEditTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPatte
  * that field existed just falls back to the plain "Toegevoegd op" phrasing instead of a
  * fabricated name.
  */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ItemEditSheet(
     shoppingItem: ShoppingListItemEntity,
