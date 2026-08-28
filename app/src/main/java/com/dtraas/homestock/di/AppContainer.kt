@@ -5,6 +5,7 @@ import com.dtraas.homestock.BuildConfig
 import com.dtraas.homestock.data.remote.OpenFoodFactsApi
 import com.dtraas.homestock.data.repository.AccountLinkRepository
 import com.dtraas.homestock.data.repository.ActivityLogRepository
+import com.dtraas.homestock.data.repository.ActivityReadStore
 import com.dtraas.homestock.data.repository.AiRecognitionRepository
 import com.dtraas.homestock.data.repository.AnalyticsRepository
 import com.dtraas.homestock.data.repository.BillingRepository
@@ -61,6 +62,7 @@ class AppContainer(context: Context) {
     val notificationPreferences: NotificationPreferences = NotificationPreferences(context)
     val deviceProfile: DeviceProfile = DeviceProfile(context)
     val dismissedNoticesStore: DismissedNoticesStore = DismissedNoticesStore(context)
+    val activityReadStore: ActivityReadStore = ActivityReadStore(context)
     val themePreferences: ThemePreferences = ThemePreferences(context)
     val exportPreferences: ExportPreferences = ExportPreferences(context)
     val inventoryPreferences: InventoryPreferences = InventoryPreferences(context)

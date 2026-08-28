@@ -2,11 +2,13 @@ package com.dtraas.homestock.ui.notifications
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,9 +19,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddShoppingCart
@@ -47,6 +51,7 @@ import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -82,6 +87,9 @@ import com.dtraas.homestock.data.model.ActivityType
 import com.dtraas.homestock.data.model.DeveloperNotice
 import com.dtraas.homestock.data.repository.HouseholdMember
 import com.dtraas.homestock.data.repository.photoUrlFor
+import com.dtraas.homestock.ui.components.HomeStockBottomSheet
+import com.dtraas.homestock.ui.components.SheetTitle
+import com.dtraas.homestock.ui.components.sheetContentPadding
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
@@ -106,19 +114,26 @@ fun NotificationsScreen(onBack: () -> Unit, onNavigateToProduct: (String) -> Uni
                     application.container.inventoryRepository,
                     application.container.householdMembersRepository,
                     application.container.dismissedNoticesStore,
+                    application.container.activityReadStore,
                 )
             }
         },
     )
     val developerNotices by viewModel.developerNotices.collectAsState()
-    val appActivity by viewModel.appActivity.collectAsState()
+    val appActivity by viewModel.filteredActivity.collectAsState()
     val members by viewModel.members.collectAsState()
     val urgentItem by viewModel.urgentItem.collectAsState()
-    val filter by viewModel.filter.collectAsState()
+    val selectedMemberUid by viewModel.selectedMemberUid.collectAsState()
+    val lastActivitySeenAt by viewModel.lastActivitySeenAt.collectAsState()
+    val unreadActivityCount by viewModel.unreadActivityCount.collectAsState()
 
-    // Opening this screen (any filter) is what the unread badge on Voorraad's Activiteit icon
-    // counts — same "what's new" inbox semantics as before, just no longer tied to a specific
-    // tab index now that tabs are gone.
+    // Meldingen (het oude "Tips"-tabblad) is geen aparte modus meer — het leeft nu als de
+    // "Berichten van HomeStock"-rij onderaan de tijdlijn, die deze sheet opent in plaats van het
+    // hele scherm te vervangen.
+    var showTipsSheet by remember { mutableStateOf(false) }
+
+    // Opening this screen is what the unread badge on Voorraad's Meldingen icon counts — separate
+    // from [lastActivitySeenAt] below, which only the banner's own "Markeer gelezen" action moves.
     LaunchedEffect(Unit) { viewModel.markNoticesSeen() }
 
     Scaffold(
@@ -129,64 +144,56 @@ fun NotificationsScreen(onBack: () -> Unit, onNavigateToProduct: (String) -> Uni
         contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // Terugknop/titel + de filterchips zaten voorheen in een platte HomeStockTopAppBar
-            // met de chips los daaronder op wit; ze verhuizen hier naar dezelfde groene
-            // gradient-header als de andere herbouwde schermen, zoals artboard 1i in het
-            // geuploade Claude Design-canvas laat zien. "Alles" is op verzoek geschrapt — twee
-            // chips blijven over, Huishouden en Meldingen (het oude "Tips").
+            // Terugknop/titel + filterchips zaten voorheen in een platte HomeStockTopAppBar met
+            // de chips los daaronder op wit; ze verhuizen hier naar dezelfde groene
+            // gradient-header als de andere herbouwde schermen. De Huishouden/Meldingen-chips
+            // zijn vervangen door "Iedereen" + één chip per huisgenoot.
             NotificationsHeader(
                 onBack = onBack,
-                filter = filter,
-                onFilterChange = viewModel::onFilterChange,
+                members = members,
+                selectedMemberUid = selectedMemberUid,
+                onSelectMember = viewModel::onMemberFilterChange,
             )
 
-            if (filter == ActivityFilter.TIPS) {
-                if (developerNotices.isEmpty()) {
-                    EmptyState(stringResource(R.string.notifications_history_empty))
-                } else {
-                    LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
-                        items(developerNotices, key = { it.id }) { notice ->
-                            DeveloperNoticeRow(
-                                notice = notice,
-                                onDismiss = { viewModel.dismissNotice(notice.id) },
-                                modifier = Modifier.animateItem(),
-                            )
-                        }
-                    }
-                }
+            if (appActivity.isEmpty() && urgentItem == null) {
+                EmptyState(stringResource(R.string.notifications_history_empty))
             } else {
-                if (appActivity.isEmpty() && urgentItem == null) {
-                    EmptyState(stringResource(R.string.notifications_history_empty))
-                } else {
-                    // Huishouden is nu de enige "hoofd"-weergave (Alles bestaat niet meer), dus
-                    // de teaser naar Meldingen hoort hier thuis in plaats van achter een aparte
-                    // Alles-modus.
-                    val showTipsTeaser = filter == ActivityFilter.HOUSEHOLD && developerNotices.isNotEmpty()
-                    ActivityTimeline(
-                        urgentItem = urgentItem,
-                        activity = appActivity,
-                        members = members,
-                        showTipsTeaser = showTipsTeaser,
-                        tipsCount = developerNotices.size,
-                        onNavigateToProduct = onNavigateToProduct,
-                        onTipsTeaserClick = { viewModel.onFilterChange(ActivityFilter.TIPS) },
-                    )
-                }
+                ActivityTimeline(
+                    urgentItem = urgentItem,
+                    activity = appActivity,
+                    members = members,
+                    lastSeenAt = lastActivitySeenAt,
+                    unreadCount = unreadActivityCount,
+                    onMarkSeen = viewModel::markActivitySeen,
+                    tipsCount = developerNotices.size,
+                    onNavigateToProduct = onNavigateToProduct,
+                    onTipsTeaserClick = { showTipsSheet = true },
+                )
             }
         }
+    }
+
+    if (showTipsSheet) {
+        TipsSheet(
+            notices = developerNotices,
+            onDismissNotice = viewModel::dismissNotice,
+            onDismiss = { showTipsSheet = false },
+        )
     }
 }
 
 /**
- * The fixed (non-scrolling) green gradient header — back button + title row, then the two
- * filter chips (Huishouden / Meldingen). Replaces the old flat HomeStockTopAppBar with the chips
- * on plain white background underneath it.
+ * The fixed (non-scrolling) green gradient header — back button + title row, then a horizontally
+ * scrollable row of member filter chips ("Iedereen" plus one per household member). Replaces the
+ * old Huishouden/Meldingen tab pair — Meldingen now lives as the "Berichten van HomeStock" teaser
+ * at the bottom of the timeline, see [TipsTeaserRow].
  */
 @Composable
 private fun NotificationsHeader(
     onBack: () -> Unit,
-    filter: ActivityFilter,
-    onFilterChange: (ActivityFilter) -> Unit,
+    members: List<HouseholdMember>,
+    selectedMemberUid: String?,
+    onSelectMember: (String?) -> Unit,
 ) {
     val contentColor = LocalTopAppBarContentColor.current
     Column(
@@ -207,20 +214,33 @@ private fun NotificationsHeader(
                 color = contentColor,
             )
         }
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            NotificationsFilterChip(
-                label = stringResource(R.string.notifications_tab_history),
-                selected = filter == ActivityFilter.HOUSEHOLD,
-                onClick = { onFilterChange(ActivityFilter.HOUSEHOLD) },
-            )
-            NotificationsFilterChip(
-                label = stringResource(R.string.notifications_tab_notices),
-                selected = filter == ActivityFilter.TIPS,
-                onClick = { onFilterChange(ActivityFilter.TIPS) },
-            )
+        // Solo households have nothing to narrow down — the row only earns its place once
+        // there's more than one member to filter by.
+        if (members.size > 1) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+                    .padding(top = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                NotificationsFilterChip(
+                    label = stringResource(R.string.notifications_member_filter_everyone),
+                    selected = selectedMemberUid == null,
+                    onClick = { onSelectMember(null) },
+                )
+                members.forEach { member ->
+                    // First name only, per the mockup ("Dennis"/"Marit") — the actual filter
+                    // match in the ViewModel still keys off the member's full display name.
+                    val label = member.displayName?.trim()?.substringBefore(' ')?.takeIf { it.isNotEmpty() }
+                        ?: return@forEach
+                    NotificationsFilterChip(
+                        label = label,
+                        selected = selectedMemberUid == member.uid,
+                        onClick = { onSelectMember(member.uid) },
+                    )
+                }
+            }
         }
     }
 }
@@ -263,17 +283,20 @@ private fun dayHeaderLabel(date: LocalDate, today: LocalDate): String = when (da
 }
 
 /**
- * The merged "Alles"/"Huishouden" view: an optional urgent card at the top, the household
- * activity log grouped under date-eyebrow headers ("VANDAAG", "GISTEREN", …), and — only on
- * "Alles" — one collapsed teaser row for developer tips at the very end, rather than
- * interleaving individual tips into a dated timeline they don't actually have real dates for.
+ * The main (and now only) timeline view: an optional urgent card, an unread banner when there's
+ * anything new since [lastSeenAt], the household activity log grouped under date-eyebrow headers
+ * ("VANDAAG", "GISTEREN", …) with an unread dot per row, and one collapsed teaser row for
+ * developer tips at the very end — always there once any exist, rather than interleaving
+ * individual tips into a dated timeline they don't actually have real dates for.
  */
 @Composable
 private fun ActivityTimeline(
     urgentItem: InventoryItemWithProduct?,
     activity: List<ActivityLogWithProduct>,
     members: List<HouseholdMember>,
-    showTipsTeaser: Boolean,
+    lastSeenAt: Long,
+    unreadCount: Int,
+    onMarkSeen: () -> Unit,
     tipsCount: Int,
     onNavigateToProduct: (String) -> Unit,
     onTipsTeaserClick: () -> Unit,
@@ -283,6 +306,18 @@ private fun ActivityTimeline(
         if (urgentItem != null) {
             item(key = "urgent") {
                 UrgentCard(item = urgentItem, today = today, onClick = { onNavigateToProduct(urgentItem.barcode) })
+            }
+        }
+
+        if (unreadCount > 0) {
+            item(key = "unread_banner") {
+                UnreadBanner(
+                    count = unreadCount,
+                    since = lastSeenAt,
+                    today = today,
+                    onMarkSeen = onMarkSeen,
+                    modifier = Modifier.padding(bottom = 12.dp),
+                )
             }
         }
 
@@ -303,12 +338,49 @@ private fun ActivityTimeline(
                     }) 0.dp else 16.dp, bottom = 6.dp),
                 )
             }
-            HouseholdActivityRow(entry = entry, photoUrl = members.photoUrlFor(entry.actorName), entryDate = entryDate, today = today)
+            HouseholdActivityRow(
+                entry = entry,
+                photoUrl = members.photoUrlFor(entry.actorName),
+                entryDate = entryDate,
+                today = today,
+                isUnread = entry.timestamp > lastSeenAt,
+            )
         }
 
-        if (showTipsTeaser) {
+        if (tipsCount > 0) {
             item(key = "tips_teaser") {
                 TipsTeaserRow(count = tipsCount, onClick = onTipsTeaserClick, modifier = Modifier.padding(top = 16.dp))
+            }
+        }
+    }
+}
+
+/** "N wijzigingen sinds [dag] [tijd] · Markeer gelezen" — shown only while [count] (see
+ *  [com.dtraas.homestock.ui.notifications.NotificationsViewModel.unreadActivityCount]) is above
+ *  zero; tapping the action calls [onMarkSeen], which is what makes it (and every row's own
+ *  unread dot) disappear. */
+@Composable
+private fun UnreadBanner(count: Int, since: Long, today: LocalDate, onMarkSeen: () -> Unit, modifier: Modifier = Modifier) {
+    val sinceDate = remember(since) { Instant.ofEpochMilli(since).atZone(ZoneId.systemDefault()).toLocalDate() }
+    val sinceDay = dayHeaderLabel(sinceDate, today)
+    val sinceTime = remember(since) { timeOnlyFormatter.format(Instant.ofEpochMilli(since).atZone(ZoneId.systemDefault())) }
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.primaryContainer,
+        shape = SoftCardShapeCompact,
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(start = 14.dp, end = 6.dp, top = 6.dp, bottom = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = pluralStringResource(R.plurals.notifications_unread_banner_format, count, count, sinceDay, sinceTime),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                modifier = Modifier.weight(1f),
+            )
+            TextButton(onClick = onMarkSeen) {
+                Text(stringResource(R.string.notifications_mark_read_action))
             }
         }
     }
@@ -372,14 +444,14 @@ private fun activityIcon(type: ActivityType): ImageVector = when (type) {
     ActivityType.WASTED -> Icons.Filled.DeleteSweep
 }
 
-/** A household event: a 34dp member avatar (photo, or a fallback icon when the best-effort
- *  name match in [NotificationsViewModel.members] finds nothing) at the far left of the row,
- *  then exactly two lines — "<naam> <actie>" (the product name folded into the action text,
- *  bold) and "<dag> <tijdstip>" — matching the design review's mockup format. No background of
- *  its own, per the same review ("activiteit meldingen hoeven ook geen aparte achtergrondkleur
- *  te hebben"). */
+/** A household event: an unread dot (only while [isUnread]), a 34dp member avatar (photo, or a
+ *  fallback icon when the best-effort name match in [NotificationsViewModel.members] finds
+ *  nothing), then exactly two lines — "<naam> <actie>" (the product name folded into the action
+ *  text, bold) and "<dag> <tijdstip>" — matching the design review's mockup format. No background
+ *  of its own, per the same review ("activiteit meldingen hoeven ook geen aparte
+ *  achtergrondkleur te hebben"). */
 @Composable
-private fun HouseholdActivityRow(entry: ActivityLogWithProduct, photoUrl: String?, entryDate: LocalDate, today: LocalDate) {
+private fun HouseholdActivityRow(entry: ActivityLogWithProduct, photoUrl: String?, entryDate: LocalDate, today: LocalDate, isUnread: Boolean) {
     val type = ActivityType.fromStorageKey(entry.type)
     val time = remember(entry.timestamp) {
         timeOnlyFormatter.format(Instant.ofEpochMilli(entry.timestamp).atZone(ZoneId.systemDefault()))
@@ -403,6 +475,19 @@ private fun HouseholdActivityRow(entry: ActivityLogWithProduct, photoUrl: String
         modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
+        // Fixed-width slot whether or not the dot itself renders, so every row's avatar lines up
+        // in the same column regardless of read state.
+        Box(modifier = Modifier.size(8.dp), contentAlignment = Alignment.Center) {
+            if (isUnread) {
+                Box(
+                    modifier = Modifier
+                        .size(8.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                )
+            }
+        }
+        Spacer(modifier = Modifier.width(8.dp))
         Surface(
             shape = CircleShape,
             color = MaterialTheme.colorScheme.secondaryContainer,
@@ -444,9 +529,11 @@ private fun HouseholdActivityRow(entry: ActivityLogWithProduct, photoUrl: String
     }
 }
 
-/** Collapsed teaser for developer tips, shown at the end of "Alles" only — tapping it switches
- *  straight to the Tips filter chip instead of interleaving each tip into the dated timeline
- *  above, which (unlike household events) has no real per-tip date to group under. */
+/** Collapsed teaser for developer tips, always shown once any exist — tapping it opens
+ *  [TipsSheet] instead of interleaving each tip into the dated timeline above, which (unlike
+ *  household events) has no real per-tip date to group under. Used to be behind its own
+ *  "Meldingen" tab chip; now it's this row's only entry point, styled as a message from the app
+ *  itself ("Berichten van HomeStock") rather than a settings-y tab label. */
 @Composable
 private fun TipsTeaserRow(count: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
@@ -465,7 +552,7 @@ private fun TipsTeaserRow(count: Int, onClick: () -> Unit, modifier: Modifier = 
                 modifier = Modifier.size(20.dp),
             )
             Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
-                Text(stringResource(R.string.notifications_tab_notices), style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.notifications_tips_teaser_title), style = MaterialTheme.typography.titleSmall)
                 Text(
                     text = pluralStringResource(R.plurals.notifications_tips_teaser_subtitle_format, count, count),
                     style = MaterialTheme.typography.bodySmall,
@@ -477,6 +564,36 @@ private fun TipsTeaserRow(count: Int, onClick: () -> Unit, modifier: Modifier = 
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+/** The Meldingen list (developer tips), now opened from [TipsTeaserRow] as a bottom sheet
+ *  instead of swapping the whole screen into a second "tab" — the same swipe-to-dismiss
+ *  [DeveloperNoticeRow]s as before, just presented over the timeline rather than replacing it. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun TipsSheet(notices: List<DeveloperNotice>, onDismissNotice: (String) -> Unit, onDismiss: () -> Unit) {
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
+        Column(modifier = Modifier.padding(sheetContentPadding)) {
+            SheetTitle(title = stringResource(R.string.notifications_tab_notices))
+            if (notices.isEmpty()) {
+                // Rare — the teaser row that opens this sheet only shows up while there's at
+                // least one notice, so this only triggers if the last one gets dismissed while
+                // the sheet is already open.
+                Text(
+                    text = stringResource(R.string.notifications_history_empty),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 24.dp),
+                )
+            } else {
+                Column {
+                    notices.forEach { notice ->
+                        DeveloperNoticeRow(notice = notice, onDismiss = { onDismissNotice(notice.id) })
+                    }
+                }
+            }
         }
     }
 }

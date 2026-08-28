@@ -578,8 +578,14 @@
 
     <!-- News -->
     <string name="notifications_tab_notices">Notifications</string>
-    <string name="notifications_tab_history">Household</string>
     <string name="notifications_history_empty">Scans and changes will appear here.</string>
+    <string name="notifications_member_filter_everyone">Everyone</string>
+    <string name="notifications_mark_read_action">Mark as read</string>
+    <string name="notifications_tips_teaser_title">Messages from HomeStock</string>
+    <plurals name="notifications_unread_banner_format">
+        <item quantity="one">%1$d change since %2$s %3$s</item>
+        <item quantity="other">%1$d changes since %2$s %3$s</item>
+    </plurals>
     <string name="notifications_date_today">Today</string>
     <string name="notifications_date_yesterday">Yesterday</string>
     <string name="notifications_urgent_action">View</string>
@@ -610,7 +616,6 @@
     <string name="product_detail_overflow_cd">More options</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_nutriscore_unavailable">Nutri-Score not available</string>
-    <string name="product_detail_nutrition_ingredients_title">Nutrition &amp; ingredients</string>
     <string name="product_detail_nutrition_title">Nutrition</string>
     <string name="product_detail_nutrition_energy">Energy</string>
     <string name="product_detail_nutrition_fat">Fat</string>
@@ -639,7 +644,6 @@
     <string name="product_detail_stat_scan_count_format">%1$d×</string>
     <string name="product_detail_stat_price_delta_format">%1$s vs. %2$s</string>
     <string name="product_detail_edit_cd">Edit</string>
-    <string name="product_detail_editable_title">Edit details</string>
     <string name="product_detail_field_brand">Brand</string>
     <string name="product_detail_field_unit">Unit</string>
     <string name="product_detail_field_location">Location in the house</string>
@@ -649,9 +653,24 @@
     <string name="location_freezer">Freezer</string>
     <string name="product_detail_field_last_price">Last paid</string>
     <string name="product_detail_price_history_title">Price history</string>
-    <string name="product_detail_allergens_diet_title">Allergens &amp; diet labels</string>
     <string name="product_detail_note_title">Personal note</string>
     <string name="product_detail_note_placeholder">E.g. a recipe idea, favorite way to prepare it, or where you bought it</string>
+    <string name="product_detail_tab_overview">Overview</string>
+    <string name="product_detail_tab_nutrition">Nutrition</string>
+    <string name="product_detail_tab_edit">Details</string>
+    <string name="product_detail_nutrition_per_100">per 100 g</string>
+    <string name="product_detail_nutrition_per_portion_format">per serving (%1$s)</string>
+    <string name="product_detail_macro_protein">Protein</string>
+    <string name="product_detail_macro_sugars">Sugars</string>
+    <string name="product_detail_macro_fat">Fat</string>
+    <string name="product_detail_allergens_watch_title">Watch out for</string>
+    <string name="product_detail_diet_suitable_title">Suitable for</string>
+    <string name="product_detail_allergen_member_warning_format">%1$s has excluded %2$s in their own profile</string>
+    <string name="product_detail_ingredients_title">Ingredients</string>
+    <string name="product_detail_ingredients_source_format">Source: Open Food Facts · updated %1$s</string>
+    <string name="product_detail_catalog_title">Product details</string>
+    <string name="product_detail_catalog_shared_caption">Changes are instantly visible to your whole household</string>
+    <string name="product_detail_stock_title">My stock</string>
     <plurals name="product_detail_stat_scan_frequency_days">
         <item quantity="one">≈ every day</item>
         <item quantity="other">≈ every %1$d days</item>

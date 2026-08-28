@@ -4,7 +4,9 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.homestock.data.local.entity.ProductEntity
+import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.model.Category
+import com.dtraas.homestock.data.repository.HouseholdMembersRepository
 import com.dtraas.homestock.data.repository.InventoryRepository
 import com.dtraas.homestock.data.repository.ProductRepository
 import com.dtraas.homestock.data.repository.ShoppingListRepository
@@ -18,6 +20,12 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+/** One household member who has excluded one or more allergens (in their own profile, see
+ *  [HouseholdMembersRepository.updateExcludedAllergens]) that this product actually contains —
+ *  surfaced on the Voeding tab's "Let op" card so a scan doesn't quietly ignore a housemate's own
+ *  restriction just because it wasn't *this* device that set it. */
+data class MemberAllergenWarning(val memberName: String, val allergens: Set<Allergen>)
+
 data class ProductDetailUiState(
     val product: ProductEntity? = null,
     val quantityInInventory: Int? = null,
@@ -27,6 +35,7 @@ data class ProductDetailUiState(
     val isFavorite: Boolean = false,
     val scanCount: Int = 0,
     val avgDaysBetweenScans: Int? = null,
+    val memberAllergenWarnings: List<MemberAllergenWarning> = emptyList(),
     val isLoading: Boolean = true,
 )
 
@@ -35,13 +44,15 @@ class ProductDetailViewModel(
     private val productRepository: ProductRepository,
     private val inventoryRepository: InventoryRepository,
     private val shoppingListRepository: ShoppingListRepository,
+    private val householdMembersRepository: HouseholdMembersRepository,
 ) : ViewModel() {
 
     val uiState: StateFlow<ProductDetailUiState> = combine(
         productRepository.observeProduct(barcode),
         inventoryRepository.observeInventoryItem(barcode),
         inventoryRepository.observeScanHistoryForBarcode(barcode),
-    ) { product, inventoryItem, scanHistory ->
+        householdMembersRepository.observeMembers(),
+    ) { product, inventoryItem, scanHistory, members ->
         // Average interval between scans, spanning the oldest to the newest recorded scan —
         // needs at least two scans to mean anything; one scan alone has no interval to show.
         val avgDaysBetweenScans = if (scanHistory.size >= 2) {
@@ -52,6 +63,18 @@ class ProductDetailViewModel(
         } else {
             null
         }
+        val productAllergens = product?.allergens
+            ?.mapNotNullTo(mutableSetOf()) { name -> Allergen.entries.find { it.name == name } }
+            .orEmpty()
+        val memberAllergenWarnings = if (productAllergens.isEmpty()) {
+            emptyList()
+        } else {
+            members.mapNotNull { member ->
+                val matched = member.excludedAllergens intersect productAllergens
+                val name = member.displayName?.trim()
+                if (matched.isEmpty() || name.isNullOrEmpty()) null else MemberAllergenWarning(name, matched)
+            }
+        }
         ProductDetailUiState(
             product = product,
             quantityInInventory = inventoryItem?.quantity,
@@ -61,6 +84,7 @@ class ProductDetailViewModel(
             isFavorite = inventoryItem?.isFavorite ?: false,
             scanCount = scanHistory.size,
             avgDaysBetweenScans = avgDaysBetweenScans,
+            memberAllergenWarnings = memberAllergenWarnings,
             isLoading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProductDetailUiState())

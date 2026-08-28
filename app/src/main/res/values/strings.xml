@@ -582,8 +582,14 @@
 
     <!-- Nieuws -->
     <string name="notifications_tab_notices">Meldingen</string>
-    <string name="notifications_tab_history">Huishouden</string>
     <string name="notifications_history_empty">Scans en aanpassingen verschijnen hier.</string>
+    <string name="notifications_member_filter_everyone">Iedereen</string>
+    <string name="notifications_mark_read_action">Markeer gelezen</string>
+    <string name="notifications_tips_teaser_title">Berichten van HomeStock</string>
+    <plurals name="notifications_unread_banner_format">
+        <item quantity="one">%1$d wijziging sinds %2$s %3$s</item>
+        <item quantity="other">%1$d wijzigingen sinds %2$s %3$s</item>
+    </plurals>
     <string name="notifications_date_today">Vandaag</string>
     <string name="notifications_date_yesterday">Gisteren</string>
     <string name="notifications_urgent_action">Bekijk</string>
@@ -614,7 +620,6 @@
     <string name="product_detail_overflow_cd">Meer opties</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_nutriscore_unavailable">Nutri-Score niet beschikbaar</string>
-    <string name="product_detail_nutrition_ingredients_title">Voedingswaarden &amp; ingrediënten</string>
     <string name="product_detail_nutrition_title">Voedingswaarden</string>
     <string name="product_detail_nutrition_energy">Energie</string>
     <string name="product_detail_nutrition_fat">Vet</string>
@@ -643,7 +648,6 @@
     <string name="product_detail_stat_scan_count_format">%1$d×</string>
     <string name="product_detail_stat_price_delta_format">%1$s t.o.v. %2$s</string>
     <string name="product_detail_edit_cd">Bewerken</string>
-    <string name="product_detail_editable_title">Gegevens bewerken</string>
     <string name="product_detail_field_brand">Merk</string>
     <string name="product_detail_field_unit">Eenheid</string>
     <string name="product_detail_field_location">Locatie in huis</string>
@@ -653,9 +657,24 @@
     <string name="location_freezer">Vriezer</string>
     <string name="product_detail_field_last_price">Laatst betaald</string>
     <string name="product_detail_price_history_title">Prijsgeschiedenis</string>
-    <string name="product_detail_allergens_diet_title">Allergenen &amp; dieetlabels</string>
     <string name="product_detail_note_title">Persoonlijke notitie</string>
     <string name="product_detail_note_placeholder">Bijv. een recept-idee, favoriete bereidingswijze of waar je dit hebt gekocht</string>
+    <string name="product_detail_tab_overview">Overzicht</string>
+    <string name="product_detail_tab_nutrition">Voeding</string>
+    <string name="product_detail_tab_edit">Gegevens</string>
+    <string name="product_detail_nutrition_per_100">per 100 g</string>
+    <string name="product_detail_nutrition_per_portion_format">per portie (%1$s)</string>
+    <string name="product_detail_macro_protein">Eiwit</string>
+    <string name="product_detail_macro_sugars">Suikers</string>
+    <string name="product_detail_macro_fat">Vet</string>
+    <string name="product_detail_allergens_watch_title">Let op</string>
+    <string name="product_detail_diet_suitable_title">Geschikt voor</string>
+    <string name="product_detail_allergen_member_warning_format">%1$s heeft %2$s uitgesloten in het eigen profiel</string>
+    <string name="product_detail_ingredients_title">Ingrediënten</string>
+    <string name="product_detail_ingredients_source_format">Bron: Open Food Facts · bijgewerkt %1$s</string>
+    <string name="product_detail_catalog_title">Productgegevens</string>
+    <string name="product_detail_catalog_shared_caption">Wijzigingen zijn direct zichtbaar voor je hele huishouden</string>
+    <string name="product_detail_stock_title">Mijn voorraad</string>
     <plurals name="product_detail_stat_scan_frequency_days">
         <item quantity="one">≈ elke dag</item>
         <item quantity="other">≈ elke %1$d dagen</item>

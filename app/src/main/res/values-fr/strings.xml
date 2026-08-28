@@ -578,8 +578,14 @@
 
     <!-- Actualités -->
     <string name="notifications_tab_notices">Notifications</string>
-    <string name="notifications_tab_history">Foyer</string>
     <string name="notifications_history_empty">Les scans et modifications apparaîtront ici.</string>
+    <string name="notifications_member_filter_everyone">Tout le monde</string>
+    <string name="notifications_mark_read_action">Marquer comme lu</string>
+    <string name="notifications_tips_teaser_title">Messages de HomeStock</string>
+    <plurals name="notifications_unread_banner_format">
+        <item quantity="one">%1$d modification depuis %2$s %3$s</item>
+        <item quantity="other">%1$d modifications depuis %2$s %3$s</item>
+    </plurals>
     <string name="notifications_date_today">Aujourd\'hui</string>
     <string name="notifications_date_yesterday">Hier</string>
     <string name="notifications_urgent_action">Voir</string>
@@ -610,7 +616,6 @@
     <string name="product_detail_overflow_cd">Plus d\'options</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_nutriscore_unavailable">Nutri-Score non disponible</string>
-    <string name="product_detail_nutrition_ingredients_title">Valeurs nutritionnelles et ingrédients</string>
     <string name="product_detail_nutrition_title">Valeurs nutritionnelles</string>
     <string name="product_detail_nutrition_energy">Énergie</string>
     <string name="product_detail_nutrition_fat">Matières grasses</string>
@@ -639,7 +644,6 @@
     <string name="product_detail_stat_scan_count_format">%1$d×</string>
     <string name="product_detail_stat_price_delta_format">%1$s p/r à %2$s</string>
     <string name="product_detail_edit_cd">Modifier</string>
-    <string name="product_detail_editable_title">Modifier les informations</string>
     <string name="product_detail_field_brand">Marque</string>
     <string name="product_detail_field_unit">Unité</string>
     <string name="product_detail_field_location">Emplacement dans la maison</string>
@@ -649,9 +653,24 @@
     <string name="location_freezer">Congélateur</string>
     <string name="product_detail_field_last_price">Dernier prix payé</string>
     <string name="product_detail_price_history_title">Historique des prix</string>
-    <string name="product_detail_allergens_diet_title">Allergènes et labels alimentaires</string>
     <string name="product_detail_note_title">Note personnelle</string>
     <string name="product_detail_note_placeholder">Par ex. une idée de recette, votre façon préférée de le préparer, ou où vous l\'avez acheté</string>
+    <string name="product_detail_tab_overview">Aperçu</string>
+    <string name="product_detail_tab_nutrition">Nutrition</string>
+    <string name="product_detail_tab_edit">Informations</string>
+    <string name="product_detail_nutrition_per_100">pour 100 g</string>
+    <string name="product_detail_nutrition_per_portion_format">par portion (%1$s)</string>
+    <string name="product_detail_macro_protein">Protéines</string>
+    <string name="product_detail_macro_sugars">Sucres</string>
+    <string name="product_detail_macro_fat">Matières grasses</string>
+    <string name="product_detail_allergens_watch_title">Attention</string>
+    <string name="product_detail_diet_suitable_title">Convient pour</string>
+    <string name="product_detail_allergen_member_warning_format">%1$s a exclu %2$s dans son propre profil</string>
+    <string name="product_detail_ingredients_title">Ingrédients</string>
+    <string name="product_detail_ingredients_source_format">Source : Open Food Facts · mis à jour le %1$s</string>
+    <string name="product_detail_catalog_title">Informations produit</string>
+    <string name="product_detail_catalog_shared_caption">Les modifications sont immédiatement visibles pour tout le foyer</string>
+    <string name="product_detail_stock_title">Mon stock</string>
     <plurals name="product_detail_stat_scan_frequency_days">
         <item quantity="one">≈ chaque jour</item>
         <item quantity="other">≈ tous les %1$d jours</item>

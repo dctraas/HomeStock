@@ -578,8 +578,14 @@
 
     <!-- Neuigkeiten -->
     <string name="notifications_tab_notices">Meldungen</string>
-    <string name="notifications_tab_history">Haushalt</string>
     <string name="notifications_history_empty">Scans und Änderungen erscheinen hier.</string>
+    <string name="notifications_member_filter_everyone">Alle</string>
+    <string name="notifications_mark_read_action">Als gelesen markieren</string>
+    <string name="notifications_tips_teaser_title">Nachrichten von HomeStock</string>
+    <plurals name="notifications_unread_banner_format">
+        <item quantity="one">%1$d Änderung seit %2$s %3$s</item>
+        <item quantity="other">%1$d Änderungen seit %2$s %3$s</item>
+    </plurals>
     <string name="notifications_date_today">Heute</string>
     <string name="notifications_date_yesterday">Gestern</string>
     <string name="notifications_urgent_action">Ansehen</string>
@@ -610,7 +616,6 @@
     <string name="product_detail_overflow_cd">Weitere Optionen</string>
     <string name="product_detail_nutriscore_format">Nutri-Score %1$s</string>
     <string name="product_detail_nutriscore_unavailable">Nutri-Score nicht verfügbar</string>
-    <string name="product_detail_nutrition_ingredients_title">Nährwerte &amp; Zutaten</string>
     <string name="product_detail_nutrition_title">Nährwerte</string>
     <string name="product_detail_nutrition_energy">Energie</string>
     <string name="product_detail_nutrition_fat">Fett</string>
@@ -639,7 +644,6 @@
     <string name="product_detail_stat_scan_count_format">%1$d×</string>
     <string name="product_detail_stat_price_delta_format">%1$s ggü. %2$s</string>
     <string name="product_detail_edit_cd">Bearbeiten</string>
-    <string name="product_detail_editable_title">Angaben bearbeiten</string>
     <string name="product_detail_field_brand">Marke</string>
     <string name="product_detail_field_unit">Einheit</string>
     <string name="product_detail_field_location">Standort im Haus</string>
@@ -649,9 +653,24 @@
     <string name="location_freezer">Gefrierfach</string>
     <string name="product_detail_field_last_price">Zuletzt bezahlt</string>
     <string name="product_detail_price_history_title">Preisverlauf</string>
-    <string name="product_detail_allergens_diet_title">Allergene &amp; Ernährungslabel</string>
     <string name="product_detail_note_title">Persönliche Notiz</string>
     <string name="product_detail_note_placeholder">Z. B. eine Rezeptidee, Lieblingszubereitung oder wo du es gekauft hast</string>
+    <string name="product_detail_tab_overview">Überblick</string>
+    <string name="product_detail_tab_nutrition">Nährwerte</string>
+    <string name="product_detail_tab_edit">Angaben</string>
+    <string name="product_detail_nutrition_per_100">pro 100 g</string>
+    <string name="product_detail_nutrition_per_portion_format">pro Portion (%1$s)</string>
+    <string name="product_detail_macro_protein">Eiweiß</string>
+    <string name="product_detail_macro_sugars">Zucker</string>
+    <string name="product_detail_macro_fat">Fett</string>
+    <string name="product_detail_allergens_watch_title">Achtung</string>
+    <string name="product_detail_diet_suitable_title">Geeignet für</string>
+    <string name="product_detail_allergen_member_warning_format">%1$s hat %2$s im eigenen Profil ausgeschlossen</string>
+    <string name="product_detail_ingredients_title">Zutaten</string>
+    <string name="product_detail_ingredients_source_format">Quelle: Open Food Facts · aktualisiert am %1$s</string>
+    <string name="product_detail_catalog_title">Produktangaben</string>
+    <string name="product_detail_catalog_shared_caption">Änderungen sind sofort für den ganzen Haushalt sichtbar</string>
+    <string name="product_detail_stock_title">Mein Vorrat</string>
     <plurals name="product_detail_stat_scan_frequency_days">
         <item quantity="one">≈ jeden Tag</item>
         <item quantity="other">≈ alle %1$d Tage</item>
