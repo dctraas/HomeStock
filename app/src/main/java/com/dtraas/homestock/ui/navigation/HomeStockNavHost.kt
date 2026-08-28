@@ -461,7 +461,10 @@ fun HomeStockApp(
                 HouseholdSettingsScreen(onBack = { navController.popBackStack() })
             }
             composable(Destination.AccountLink.route) {
-                AccountLinkScreen(onBack = { navController.popBackStack() })
+                AccountLinkScreen(
+                    onBack = { navController.popBackStack() },
+                    onNavigateToPrivacyPolicy = { navController.navigate(Destination.PrivacyPolicy.route) },
+                )
             }
             }
         }
