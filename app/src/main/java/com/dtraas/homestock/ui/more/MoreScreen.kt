@@ -177,10 +177,8 @@ import com.dtraas.homestock.ui.theme.LinenInk
 import com.dtraas.homestock.ui.theme.LinenInkDark
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
-import com.dtraas.homestock.ui.theme.OnSageGreenPrimaryContainer
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SageGreenPrimary
-import com.dtraas.homestock.ui.theme.SageGreenPrimaryContainer
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
@@ -1793,20 +1791,21 @@ private fun MoreScreenHeader(searchQuery: String, onSearchQueryChange: (String) 
 }
 
 /**
- * Profile identity row — a plain generic-icon avatar (never this device's own photo or
- * initials, see below) standing in for the usual leading icon, the device's own name, and the
- * household's name as subtitle. Flat row, no Card/background of its own — same [SettingsRow]
- * structure/padding/typography every other settings row uses, per explicit request ("dezelfde
- * layout als de overige menu items, niet hetzelfde als HomeStock Premium"): this is a row among
- * rows, not a second promotional card. Used to be pinned inside [MoreScreenHeader]'s green
- * gradient; now the scrolling list's own first row instead, once the header needed the room for
- * a settings search field.
+ * Profile identity row — a plain generic person icon (never this device's own photo or
+ * initials, see below), the same bare 22dp size/tint every other row's leading [Icon] uses (no
+ * colored circular avatar surface around it — that read as noticeably bigger/heavier than every
+ * other row's flat icon, even though the glyph itself was already the same size), standing in
+ * for the usual leading icon, the device's own name, and the household's name as subtitle. Flat
+ * row, no Card/background of its own — same [SettingsRow] structure/padding/typography every
+ * other settings row uses, per explicit request ("dezelfde layout als de overige menu items,
+ * niet hetzelfde als HomeStock Premium"): this is a row among rows, not a second promotional
+ * card. Used to be pinned inside [MoreScreenHeader]'s green gradient; now the scrolling list's
+ * own first row instead, once the header needed the room for a settings search field.
  *
  * Deliberately ignores [photoPath] here — a household member's real photo (still picked and
  * synced the same way, see [ProfileEditDialog]) belongs in places that are actually *about*
  * telling people apart, like the Huishouden member list; this row is just this device's own menu
- * entry point, and a real photo there read as heavier/more personal than every other row's plain
- * flat icon.
+ * entry point.
  */
 @Composable
 private fun ProfileRow(
@@ -1823,24 +1822,15 @@ private fun ProfileRow(
             .padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Surface(
-            shape = CircleShape,
-            color = SageGreenPrimaryContainer,
-            modifier = Modifier.size(40.dp),
-        ) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                // A plain person silhouette rather than AccountCircle — AccountCircle's own
-                // glyph is itself a circle-in-a-circle, which on top of this row's already-
-                // circular avatar surface read as one big double-ringed icon, noticeably
-                // heavier than every other row's plain flat icon (see SettingsRow).
-                Icon(
-                    imageVector = Icons.Filled.Person,
-                    contentDescription = null,
-                    tint = OnSageGreenPrimaryContainer,
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-        }
+        // A plain person silhouette rather than AccountCircle — AccountCircle's own glyph is
+        // itself a circle-in-a-circle, which read as heavier than every other row's plain flat
+        // icon even without a background surface behind it (see SettingsRow).
+        Icon(
+            imageVector = Icons.Filled.Person,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(22.dp),
+        )
         Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
             Text(
                 text = trimmedName ?: stringResource(R.string.more_household_member_unnamed),
@@ -2591,6 +2581,14 @@ private fun ReorderableStoreList(
             }
             val activePaths = pathsWithCounts.filter { (_, count) -> count > 0 }.map { (path, _) -> path }
             val customized = store.aisleOrder.isNotEmpty()
+            // Measured continuously, not just while this row is the one being dragged — gating
+            // it behind isDragging left draggingRowHeightPx still at 0 for the first several
+            // onDrag deltas after a long-press (a fresh layout pass reporting the height back
+            // is asynchronous relative to the drag gesture actually starting), which made
+            // dragging feel completely unresponsive. Always-on measurement means the height is
+            // already known the instant a drag starts, same as ShoppingListScreen's own
+            // ReorderableShoppingList.
+            var rowHeightPx by remember { mutableFloatStateOf(0f) }
 
             Surface(
                 shape = SoftCardShape,
@@ -2605,7 +2603,7 @@ private fun ReorderableStoreList(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .onGloballyPositioned { if (isDragging) draggingRowHeightPx = it.size.height.toFloat() }
+                        .onGloballyPositioned { rowHeightPx = it.size.height.toFloat() }
                         .padding(start = 4.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
                 ) {
                     Row(verticalAlignment = Alignment.Top) {
@@ -2618,7 +2616,7 @@ private fun ReorderableStoreList(
                                 .padding(4.dp)
                                 .pointerInput(store.id) {
                                     detectDragGesturesAfterLongPress(
-                                        onDragStart = { draggingId = store.id; dragOffsetPx = 0f },
+                                        onDragStart = { draggingId = store.id; dragOffsetPx = 0f; draggingRowHeightPx = rowHeightPx },
                                         onDragEnd = { commitDrag() },
                                         onDragCancel = { commitDrag() },
                                         onDrag = { change, dragAmount -> change.consume(); handleDrag(dragAmount.y) },
@@ -2950,8 +2948,12 @@ private fun AisleOrderContent(
                         isMergeTarget = pathKey == mergeTargetKey,
                         canMergeNext = index < orderedPaths.lastIndex,
                         canSplit = path.size > 1,
-                        onRowHeightMeasured = { draggingRowHeightPx = it },
-                        onDragStart = { draggingKey = pathKey; dragOffsetPx = 0f; mergeTargetKey = null },
+                        onDragStart = { measuredHeightPx ->
+                            draggingKey = pathKey
+                            dragOffsetPx = 0f
+                            mergeTargetKey = null
+                            draggingRowHeightPx = measuredHeightPx
+                        },
                         onDrag = ::handleDrag,
                         onDragEnd = ::commitDrag,
                         onMergeNext = { mergeWithNext(index) },
@@ -2976,7 +2978,9 @@ private fun AisleOrderContent(
  *  one means "merged", shown with a soft highlight and a tap-to-split shortcut on top of the
  *  "⋮" menu's own Split entry. [isMergeTarget] is a separate, transient highlight — another row
  *  currently being dragged onto this one far enough to merge on release, see
- *  [AisleOrderContent]'s own hover/swap zone doc. */
+ *  [AisleOrderContent]'s own hover/swap zone doc. [onDragStart] hands back this row's own
+ *  already-measured height (see [rowHeightPx] below) so the caller has it the instant the drag
+ *  starts, rather than needing an extra, asynchronous relayout to find out. */
 @Composable
 private fun AisleOrderRow(
     index: Int,
@@ -2987,14 +2991,20 @@ private fun AisleOrderRow(
     isMergeTarget: Boolean,
     canMergeNext: Boolean,
     canSplit: Boolean,
-    onRowHeightMeasured: (Float) -> Unit,
-    onDragStart: () -> Unit,
+    onDragStart: (rowHeightPx: Float) -> Unit,
     onDrag: (Float) -> Unit,
     onDragEnd: () -> Unit,
     onMergeNext: () -> Unit,
     onSplit: () -> Unit,
 ) {
     var menuExpanded by remember { mutableStateOf(false) }
+    // Measured continuously, not just while this row is being dragged — gating it behind
+    // isDragging left the caller's height still at 0 for the first several onDrag deltas after
+    // a long-press, since a fresh layout pass reporting the height back only happens once
+    // isDragging itself has already flipped to true, which is asynchronous relative to the drag
+    // gesture actually starting. Always-on measurement means it's already known the instant a
+    // drag starts, same as ShoppingListScreen's own ReorderableShoppingList.
+    var rowHeightPx by remember { mutableFloatStateOf(0f) }
     val merged = path.size > 1
     // stringResource() can't be called inside joinToString's transform lambda — resolved via
     // .map (inline) first, then joined as a plain string operation.
@@ -3021,7 +3031,7 @@ private fun AisleOrderRow(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .onGloballyPositioned { if (isDragging) onRowHeightMeasured(it.size.height.toFloat()) }
+                .onGloballyPositioned { rowHeightPx = it.size.height.toFloat() }
                 .padding(horizontal = 10.dp, vertical = 10.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -3092,7 +3102,7 @@ private fun AisleOrderRow(
                         .padding(4.dp)
                         .pointerInput(Unit) {
                             detectDragGesturesAfterLongPress(
-                                onDragStart = { onDragStart() },
+                                onDragStart = { onDragStart(rowHeightPx) },
                                 onDragEnd = { onDragEnd() },
                                 onDragCancel = { onDragEnd() },
                                 onDrag = { change, dragAmount -> change.consume(); onDrag(dragAmount.y) },
