@@ -329,7 +329,7 @@
     <string name="more_stores_menu_subtitle">Noms, ordre et rayons de tes magasins</string>
     <string name="more_aisle_order_title">Ordre des rayons</string>
     <string name="more_aisle_order_store_subtitle">Classe les catégories dans l\'ordre où tu les croises dans ce magasin</string>
-    <string name="more_aisle_order_merge_hint">Fais glisser pour réorganiser. Touche ⋮ pour fusionner des rayons ou les séparer.</string>
+    <string name="more_aisle_order_merge_hint">Fais glisser deux rayons l\'un sur l\'autre pour les fusionner.</string>
     <string name="more_aisle_order_merge_next">Fusionner avec le rayon suivant</string>
     <string name="more_aisle_order_split">Séparer ce rayon</string>
     <string name="more_aisle_order_row_options_cd">Plus d\'options pour ce rayon</string>
@@ -377,6 +377,7 @@
     <string name="more_aisle_order_screen_subtitle_format">%1$s · comme tu la parcours</string>
     <string name="more_aisle_order_empty_count">vide</string>
     <string name="more_aisle_order_merged_hint">Même rayon · touche pour séparer</string>
+    <string name="more_aisle_order_merge_target_hint">Relâche pour fusionner</string>
     <string name="more_aisle_order_preview_title">VOICI TA LISTE</string>
     <plurals name="more_stores_paths_count_format">
         <item quantity="one">%1$d rayon</item>

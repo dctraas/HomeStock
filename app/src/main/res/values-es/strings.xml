@@ -329,7 +329,7 @@
     <string name="more_stores_menu_subtitle">Nombres, orden y pasillos de tus tiendas</string>
     <string name="more_aisle_order_title">Orden de pasillos</string>
     <string name="more_aisle_order_store_subtitle">Ordena las categorías como las encuentras en esta tienda</string>
-    <string name="more_aisle_order_merge_hint">Arrastra para reordenar. Toca ⋮ para combinar pasillos o separarlos.</string>
+    <string name="more_aisle_order_merge_hint">Arrastra dos pasillos uno sobre otro para combinarlos.</string>
     <string name="more_aisle_order_merge_next">Combinar con el siguiente pasillo</string>
     <string name="more_aisle_order_split">Separar este pasillo</string>
     <string name="more_aisle_order_row_options_cd">Más opciones para este pasillo</string>
@@ -377,6 +377,7 @@
     <string name="more_aisle_order_screen_subtitle_format">%1$s · como tú recorres la tienda</string>
     <string name="more_aisle_order_empty_count">vacío</string>
     <string name="more_aisle_order_merged_hint">Mismo pasillo · toca para separar</string>
+    <string name="more_aisle_order_merge_target_hint">Suelta para combinar</string>
     <string name="more_aisle_order_preview_title">ASÍ QUEDARÁ TU LISTA</string>
     <plurals name="more_stores_paths_count_format">
         <item quantity="one">%1$d pasillo</item>

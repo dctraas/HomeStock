@@ -329,7 +329,7 @@
     <string name="more_stores_menu_subtitle">Names, order, and aisle layout of your stores</string>
     <string name="more_aisle_order_title">Aisle order</string>
     <string name="more_aisle_order_store_subtitle">Put categories in the order you pass them in this store</string>
-    <string name="more_aisle_order_merge_hint">Drag to reorder. Tap ⋮ to merge aisles together or split them apart.</string>
+    <string name="more_aisle_order_merge_hint">Drag two aisles onto each other to merge them.</string>
     <string name="more_aisle_order_merge_next">Merge with next aisle</string>
     <string name="more_aisle_order_split">Split this aisle</string>
     <string name="more_aisle_order_row_options_cd">More options for this aisle</string>
@@ -377,6 +377,7 @@
     <string name="more_aisle_order_screen_subtitle_format">%1$s · the way you walk it</string>
     <string name="more_aisle_order_empty_count">empty</string>
     <string name="more_aisle_order_merged_hint">Same aisle · tap to split</string>
+    <string name="more_aisle_order_merge_target_hint">Release to merge</string>
     <string name="more_aisle_order_preview_title">HOW YOUR LIST WILL LOOK</string>
     <plurals name="more_stores_paths_count_format">
         <item quantity="one">%1$d aisle</item>

@@ -2861,33 +2861,67 @@ private fun AisleOrderContent(
     var draggingKey by remember { mutableStateOf<String?>(null) }
     var dragOffsetPx by remember { mutableFloatStateOf(0f) }
     var draggingRowHeightPx by remember { mutableFloatStateOf(0f) }
+    // Set while a drag is hovering far enough onto a neighbor to merge with it (rather than just
+    // reorder past it) — see the merge/swap zones inside handleDrag. Cleared the moment a swap
+    // actually fires, or the drag drifts back out of the hover zone; consumed by commitDrag.
+    var mergeTargetKey by remember { mutableStateOf<String?>(null) }
 
     fun keyOf(path: List<Category>) = path.joinToString(",") { it.storageKey }
     fun commit() = onSetOrder(orderedPaths.toList())
 
+    // Dragging one gang onto a neighbor has two distinct outcomes depending on how far it
+    // travels: past HOVER_ZONE but short of SWAP_ZONE, it's "hovering" a merge target — the
+    // neighbor highlights, but nothing reorders yet, so a household can back out without losing
+    // the current order. Past SWAP_ZONE it commits to a real reorder instead (same continuous
+    // swap-past-the-midpoint behavior as ReorderableStoreList), and merge hover is dropped since
+    // the drag has clearly moved on to "place it here", not "combine these two".
     fun handleDrag(deltaY: Float) {
         val key = draggingKey ?: return
         dragOffsetPx += deltaY
         val rowHeight = draggingRowHeightPx.takeIf { it > 0f } ?: return
+        val hoverZone = rowHeight * 0.35f
+        val swapZone = rowHeight * 0.9f
         while (true) {
             val index = orderedPaths.indexOfFirst { keyOf(it) == key }
             if (index < 0) break
-            if (dragOffsetPx > rowHeight / 2f && index < orderedPaths.lastIndex) {
+            if (dragOffsetPx > swapZone && index < orderedPaths.lastIndex) {
                 orderedPaths.add(index, orderedPaths.removeAt(index + 1))
                 dragOffsetPx -= rowHeight
-            } else if (dragOffsetPx < -rowHeight / 2f && index > 0) {
+                mergeTargetKey = null
+            } else if (dragOffsetPx < -swapZone && index > 0) {
                 orderedPaths.add(index - 1, orderedPaths.removeAt(index))
                 dragOffsetPx += rowHeight
+                mergeTargetKey = null
             } else {
+                mergeTargetKey = when {
+                    dragOffsetPx > hoverZone && index < orderedPaths.lastIndex -> keyOf(orderedPaths[index + 1])
+                    dragOffsetPx < -hoverZone && index > 0 -> keyOf(orderedPaths[index - 1])
+                    else -> null
+                }
                 break
             }
         }
     }
 
+    fun mergePaths(firstKey: String, secondKey: String) {
+        val firstIndex = orderedPaths.indexOfFirst { keyOf(it) == firstKey }
+        val secondIndex = orderedPaths.indexOfFirst { keyOf(it) == secondKey }
+        if (firstIndex < 0 || secondIndex < 0) return
+        val merged = orderedPaths[firstIndex] + orderedPaths[secondIndex]
+        val insertAt = minOf(firstIndex, secondIndex)
+        orderedPaths.removeAt(maxOf(firstIndex, secondIndex))
+        orderedPaths.removeAt(minOf(firstIndex, secondIndex))
+        orderedPaths.add(insertAt, merged)
+    }
+
     fun commitDrag() {
+        val key = draggingKey
+        val targetKey = mergeTargetKey
+        if (key != null && targetKey != null) mergePaths(key, targetKey)
         draggingKey = null
         dragOffsetPx = 0f
         draggingRowHeightPx = 0f
+        mergeTargetKey = null
         commit()
     }
 
@@ -2926,10 +2960,11 @@ private fun AisleOrderContent(
                         itemCount = itemCount,
                         isDragging = isDragging,
                         dragOffsetPx = if (isDragging) dragOffsetPx else 0f,
+                        isMergeTarget = pathKey == mergeTargetKey,
                         canMergeNext = index < orderedPaths.lastIndex,
                         canSplit = path.size > 1,
                         onRowHeightMeasured = { draggingRowHeightPx = it },
-                        onDragStart = { draggingKey = pathKey; dragOffsetPx = 0f },
+                        onDragStart = { draggingKey = pathKey; dragOffsetPx = 0f; mergeTargetKey = null },
                         onDrag = ::handleDrag,
                         onDragEnd = ::commitDrag,
                         onMergeNext = { mergeWithNext(index) },
@@ -2952,7 +2987,9 @@ private fun AisleOrderContent(
 
 /** One gang row — [path] is one or more [Category] sharing the same physical aisle; more than
  *  one means "merged", shown with a soft highlight and a tap-to-split shortcut on top of the
- *  "⋮" menu's own Split entry. */
+ *  "⋮" menu's own Split entry. [isMergeTarget] is a separate, transient highlight — another row
+ *  currently being dragged onto this one far enough to merge on release, see
+ *  [AisleOrderContent]'s own hover/swap zone doc. */
 @Composable
 private fun AisleOrderRow(
     index: Int,
@@ -2960,6 +2997,7 @@ private fun AisleOrderRow(
     itemCount: Int,
     isDragging: Boolean,
     dragOffsetPx: Float,
+    isMergeTarget: Boolean,
     canMergeNext: Boolean,
     canSplit: Boolean,
     onRowHeightMeasured: (Float) -> Unit,
@@ -2977,8 +3015,16 @@ private fun AisleOrderRow(
 
     Surface(
         shape = SoftCardShapeCompact,
-        color = if (merged) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f) else Color.Transparent,
-        border = if (merged) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)) else null,
+        color = when {
+            isMergeTarget -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.6f)
+            merged -> MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f)
+            else -> Color.Transparent
+        },
+        border = when {
+            isMergeTarget -> BorderStroke(2.dp, MaterialTheme.colorScheme.primary)
+            merged -> BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f))
+            else -> null
+        },
         modifier = Modifier
             .fillMaxWidth()
             .zIndex(if (isDragging) 1f else 0f)
@@ -3067,7 +3113,15 @@ private fun AisleOrderRow(
                         },
                 )
             }
-            if (merged) {
+            if (isMergeTarget) {
+                Text(
+                    text = stringResource(R.string.more_aisle_order_merge_target_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 22.dp, top = 2.dp),
+                )
+            } else if (merged) {
                 Text(
                     text = stringResource(R.string.more_aisle_order_merged_hint),
                     style = MaterialTheme.typography.labelSmall,

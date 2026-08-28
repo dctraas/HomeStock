@@ -333,7 +333,7 @@
     <string name="more_stores_menu_subtitle">Namen, volgorde en gangindeling van je winkels</string>
     <string name="more_aisle_order_title">Gangvolgorde</string>
     <string name="more_aisle_order_store_subtitle">Zet categorieën in de volgorde waarin je ze in deze winkel tegenkomt</string>
-    <string name="more_aisle_order_merge_hint">Sleep om te herschikken. Tik op ⋮ om gangen samen te voegen of te splitsen.</string>
+    <string name="more_aisle_order_merge_hint">Sleep twee gangpaden op elkaar om ze samen te voegen.</string>
     <string name="more_aisle_order_merge_next">Voeg samen met volgende gang</string>
     <string name="more_aisle_order_split">Splits deze gang op</string>
     <string name="more_aisle_order_row_options_cd">Meer opties voor deze gang</string>
@@ -381,6 +381,7 @@
     <string name="more_aisle_order_screen_subtitle_format">%1$s · zoals jij loopt</string>
     <string name="more_aisle_order_empty_count">leeg</string>
     <string name="more_aisle_order_merged_hint">Zelfde gangpad · tik om te splitsen</string>
+    <string name="more_aisle_order_merge_target_hint">Laat los om samen te voegen</string>
     <string name="more_aisle_order_preview_title">ZO WORDT JE LIJST</string>
     <plurals name="more_stores_paths_count_format">
         <item quantity="one">%1$d gangpad</item>

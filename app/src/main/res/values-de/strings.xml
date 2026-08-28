@@ -329,7 +329,7 @@
     <string name="more_stores_menu_subtitle">Namen, Reihenfolge und Ganganordnung deiner Geschäfte</string>
     <string name="more_aisle_order_title">Gangreihenfolge</string>
     <string name="more_aisle_order_store_subtitle">Ordne die Kategorien in der Reihenfolge, in der du sie in diesem Geschäft triffst</string>
-    <string name="more_aisle_order_merge_hint">Ziehe zum Umordnen. Tippe auf ⋮, um Gänge zusammenzufügen oder zu trennen.</string>
+    <string name="more_aisle_order_merge_hint">Ziehe zwei Gänge aufeinander, um sie zusammenzufügen.</string>
     <string name="more_aisle_order_merge_next">Mit nächstem Gang zusammenfügen</string>
     <string name="more_aisle_order_split">Diesen Gang trennen</string>
     <string name="more_aisle_order_row_options_cd">Weitere Optionen für diesen Gang</string>
@@ -377,6 +377,7 @@
     <string name="more_aisle_order_screen_subtitle_format">%1$s · so wie du läufst</string>
     <string name="more_aisle_order_empty_count">leer</string>
     <string name="more_aisle_order_merged_hint">Gleicher Gang · zum Trennen tippen</string>
+    <string name="more_aisle_order_merge_target_hint">Loslassen zum Zusammenfügen</string>
     <string name="more_aisle_order_preview_title">SO WIRD DEINE LISTE</string>
     <plurals name="more_stores_paths_count_format">
         <item quantity="one">%1$d Gang</item>
