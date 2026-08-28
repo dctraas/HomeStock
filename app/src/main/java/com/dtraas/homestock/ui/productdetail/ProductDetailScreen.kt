@@ -1277,11 +1277,16 @@ private fun AllergensAndDietCard(
                                 tint = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.size(16.dp),
                             )
+                            // joinToString's own transform lambda isn't inline, so a
+                            // stringResource() call inside it doesn't count as composable
+                            // context — resolve every label first (map is inline), then join
+                            // the plain strings.
+                            val allergenLabels = warning.allergens.sortedBy { it.ordinal }.map { stringResource(it.labelRes) }
                             Text(
                                 text = stringResource(
                                     R.string.product_detail_allergen_member_warning_format,
                                     warning.memberName,
-                                    warning.allergens.sortedBy { it.ordinal }.joinToString(", ") { stringResource(it.labelRes) },
+                                    allergenLabels.joinToString(", "),
                                 ),
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error,
