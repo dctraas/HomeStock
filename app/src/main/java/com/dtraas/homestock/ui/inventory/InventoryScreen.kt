@@ -1608,7 +1608,7 @@ private fun InventoryGridTile(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                     onClick = onAddToShoppingList,
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp),
+                    modifier = Modifier.align(Alignment.BottomEnd).padding(2.dp),
                 ) {
                     Icon(
                         Icons.Filled.AddShoppingCart,
