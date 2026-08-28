@@ -173,7 +173,7 @@ class AppContainer(context: Context) {
     }
 
     val shoppingListRepository: ShoppingListRepository by lazy {
-        ShoppingListRepository(appContext, firestore, householdSession, productRepository)
+        ShoppingListRepository(appContext, firestore, householdSession, productRepository, deviceProfile)
     }
 
     val storeRepository: StoreRepository by lazy {

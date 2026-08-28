@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
@@ -118,6 +119,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
@@ -160,6 +162,10 @@ import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlin.math.roundToInt
 
@@ -550,21 +556,12 @@ fun ShoppingListScreen(onNavigateToShoppingMode: (listId: String?, storeName: St
         }
 
         editingItem?.let { item ->
-            ItemFormDialog(
-                title = stringResource(R.string.shopping_list_item_edit_title),
-                confirmLabel = stringResource(R.string.shopping_list_save_confirm),
-                initialName = item.name,
-                initialCategory = Category.fromStorageKey(item.category),
-                initialStore = item.store,
-                initialQuantity = item.quantity,
-                initialNote = item.note ?: "",
-                initialUnit = MeasurementUnit.fromStorageKey(item.unit),
-                initialPrice = item.price,
-                imageUrl = item.imageUrl,
+            ItemEditSheet(
+                shoppingItem = item,
                 stores = stores,
                 onAddStore = viewModel::addStore,
                 onDismiss = { editingItem = null },
-                onVoiceInputUnavailable = onVoiceInputUnavailable,
+                onDelete = { deleteWithUndo(item); editingItem = null },
                 onConfirm = { name, category, store, quantity, note, unit, price ->
                     viewModel.updateItem(
                         item.copy(
@@ -2152,6 +2149,227 @@ private fun ItemFormDialog(
                         )
                     }
                 }
+            }
+        }
+    }
+
+    if (showAddStoreDialog) {
+        AddStoreDialog(
+            onConfirm = { newStoreName ->
+                onAddStore(newStoreName)
+                store = newStoreName
+                showAddStoreDialog = false
+            },
+            onDismiss = { showAddStoreDialog = false },
+        )
+    }
+}
+
+private val itemEditDayFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMMM", Locale.getDefault())
+private val itemEditTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm", Locale.getDefault())
+
+/**
+ * A dedicated edit-only sheet for an existing shopping list line (2026-08 design review) —
+ * deliberately separate from [ItemFormDialog] rather than another mode of it: an existing item
+ * has real attribution/history to show (who added it, when) and a name that's already settled
+ * (tap the pencil to change it) rather than the one-line-first name field a brand-new item
+ * starts on, plus a delete action and — back on request — a real editable price field, none of
+ * which the create flow needs cluttered with. [shoppingItem]'s own [ShoppingListItemEntity.addedByName]/
+ * [ShoppingListItemEntity.addedAt] back the attribution line; a pre-existing item written before
+ * that field existed just falls back to the plain "Toegevoegd op" phrasing instead of a
+ * fabricated name.
+ */
+@Composable
+private fun ItemEditSheet(
+    shoppingItem: ShoppingListItemEntity,
+    stores: List<StoreEntity>,
+    onAddStore: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onDelete: () -> Unit,
+    onConfirm: (
+        name: String,
+        category: Category,
+        store: String,
+        quantity: Int,
+        note: String,
+        unit: MeasurementUnit,
+        price: Double?,
+    ) -> Unit,
+) {
+    var name by remember { mutableStateOf(shoppingItem.name) }
+    var isEditingName by remember { mutableStateOf(false) }
+    var category by remember { mutableStateOf(Category.fromStorageKey(shoppingItem.category)) }
+    var store by remember { mutableStateOf(shoppingItem.store) }
+    var quantity by remember { mutableIntStateOf(shoppingItem.quantity) }
+    var unit by remember { mutableStateOf(MeasurementUnit.fromStorageKey(shoppingItem.unit)) }
+    var priceText by remember { mutableStateOf(shoppingItem.price?.let { formatPrice(it).removePrefix("€") } ?: "") }
+    var note by remember { mutableStateOf(shoppingItem.note ?: "") }
+    var showAddStoreDialog by remember { mutableStateOf(false) }
+
+    val addedZoned = remember(shoppingItem.addedAt) { Instant.ofEpochMilli(shoppingItem.addedAt).atZone(ZoneId.systemDefault()) }
+    val today = remember { LocalDate.now() }
+    val addedDay = when (addedZoned.toLocalDate()) {
+        today -> stringResource(R.string.notifications_date_today)
+        today.minusDays(1) -> stringResource(R.string.notifications_date_yesterday)
+        else -> itemEditDayFormatter.format(addedZoned)
+    }
+    val addedTime = remember(shoppingItem.addedAt) { itemEditTimeFormatter.format(addedZoned) }
+    val attributionText = shoppingItem.addedByName?.takeIf { it.isNotBlank() }
+        ?.let { stringResource(R.string.shopping_list_item_added_by_format, it, addedDay, addedTime) }
+        ?: stringResource(R.string.shopping_list_item_added_at_format, addedDay, addedTime)
+
+    fun confirm() {
+        val price = priceText.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it >= 0 }
+        onConfirm(name, category, store, quantity, note, unit, price)
+    }
+
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier.fillMaxWidth().padding(sheetContentPadding),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+        ) {
+            Row(verticalAlignment = Alignment.Top, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                ProductImage(
+                    imageUrl = shoppingItem.imageUrl,
+                    fallbackIcon = category.icon,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier.size(48.dp).padding(top = 2.dp),
+                )
+                Column(modifier = Modifier.weight(1f)) {
+                    if (isEditingName) {
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it },
+                            singleLine = true,
+                            textStyle = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    } else {
+                        Text(
+                            text = name,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    Text(
+                        text = attributionText,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 3.dp),
+                    )
+                }
+                IconButton(onClick = { isEditingName = !isEditingName }) {
+                    Icon(
+                        imageVector = if (isEditingName) Icons.Filled.Check else Icons.Filled.Edit,
+                        contentDescription = stringResource(R.string.shopping_list_item_edit_name_cd),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                SheetEyebrow(text = stringResource(R.string.common_quantity))
+                Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHigh) {
+                    QuantityStepper(
+                        quantity = quantity,
+                        onDecrease = { quantity = (quantity - unit.step).coerceAtLeast(1) },
+                        onIncrease = { quantity += unit.step },
+                        minQuantity = 1,
+                        displayText = formatQuantityWithUnit(quantity, unit),
+                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                    )
+                }
+            }
+
+            Column {
+                SheetEyebrow(text = stringResource(R.string.store_dropdown_label), modifier = Modifier.padding(bottom = 8.dp))
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    item {
+                        SheetChip(label = stringResource(R.string.store_geen), selected = store.isBlank(), onClick = { store = "" })
+                    }
+                    items(stores) { entity ->
+                        SheetChip(
+                            label = entity.name,
+                            selected = store == entity.name,
+                            onClick = { store = entity.name },
+                            leadingIcon = {
+                                Icon(Icons.Filled.Storefront, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize))
+                            },
+                        )
+                    }
+                    item {
+                        SheetChip(
+                            label = stringResource(R.string.store_add_menu_item),
+                            selected = false,
+                            onClick = { showAddStoreDialog = true },
+                            leadingIcon = {
+                                Icon(Icons.Filled.Add, contentDescription = null, modifier = Modifier.size(FilterChipDefaults.IconSize))
+                            },
+                        )
+                    }
+                }
+            }
+
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(modifier = Modifier.weight(1f)) {
+                    SheetEyebrow(text = stringResource(R.string.category_dropdown_label), modifier = Modifier.padding(bottom = 4.dp))
+                    CategoryDropdown(selected = category, onSelected = { category = it }, modifier = Modifier.fillMaxWidth())
+                }
+                Column(modifier = Modifier.weight(1f)) {
+                    SheetEyebrow(text = stringResource(R.string.shopping_list_price_label), modifier = Modifier.padding(bottom = 4.dp))
+                    OutlinedTextField(
+                        value = priceText,
+                        onValueChange = { input -> if (input.all { it.isDigit() || it == ',' || it == '.' }) priceText = input },
+                        singleLine = true,
+                        placeholder = { Text(stringResource(R.string.shopping_list_price_placeholder)) },
+                        prefix = { Text("€") },
+                        suffix = {
+                            Text(
+                                text = stringResource(R.string.shopping_list_price_per_unit_format, stringResource(unit.shortLabelRes)),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        shape = RoundedCornerShape(16.dp),
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            OutlinedTextField(
+                value = note,
+                onValueChange = { note = it },
+                label = { Text(stringResource(R.string.shopping_list_note_label)) },
+                placeholder = { Text(stringResource(R.string.shopping_list_note_placeholder)) },
+                minLines = 2,
+                modifier = Modifier.fillMaxWidth(),
+            )
+
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                FilledIconButton(
+                    onClick = onDelete,
+                    modifier = Modifier.size(56.dp),
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.errorContainer,
+                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                    ),
+                ) {
+                    Icon(Icons.Filled.Delete, contentDescription = stringResource(R.string.shopping_list_delete_cd))
+                }
+                SheetPrimaryButton(
+                    text = stringResource(R.string.shopping_list_save_confirm),
+                    enabled = name.isNotBlank(),
+                    onClick = ::confirm,
+                    modifier = Modifier.weight(1f),
+                )
             }
         }
     }

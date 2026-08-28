@@ -20,6 +20,7 @@ class ShoppingListRepository(
     private val firestore: FirebaseFirestore,
     private val householdSession: HouseholdSession,
     private val productRepository: ProductRepository,
+    private val deviceProfile: DeviceProfile,
 ) {
     private fun shoppingListCollection(householdId: String) =
         firestore.collection("households").document(householdId).collection("shoppingList")
@@ -99,6 +100,7 @@ class ShoppingListRepository(
             unit = unit.storageKey,
             price = price,
             listId = listId,
+            addedByName = deviceProfile.displayName.value?.trim()?.takeIf { it.isNotEmpty() },
         )
         val ref = shoppingListCollection(householdId).add(entity.toMap()).await()
         refreshWidget()

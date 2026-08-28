@@ -43,6 +43,14 @@ data class ShoppingListItemEntity(
     // field existed simply has it absent from Firestore, which reads back as null here too, so
     // it's automatically "on the default list" with no migration needed.
     val listId: String? = null,
+    // Whoever's device added this line — stamped once at creation (see
+    // ShoppingListRepository.addItem) from that device's own DeviceProfile.displayName, same
+    // source ActivityLogRepository stamps its own actorName from. Never rewritten by a later
+    // edit (ShoppingListRepository.updateItem only ever `.copy()`s the rest of the entity), so
+    // it answers "who put this on the list", not "who last touched it". Null for anything
+    // written before this field existed, or added by a device with no name set — ItemEditSheet
+    // falls back to a plain "toegevoegd op" line rather than a fabricated name in that case.
+    val addedByName: String? = null,
 ) {
     fun toMap(): Map<String, Any?> = mapOf(
         "barcode" to barcode,
@@ -58,6 +66,7 @@ data class ShoppingListItemEntity(
         "unit" to unit,
         "price" to price,
         "listId" to listId,
+        "addedByName" to addedByName,
     )
 
     companion object {
@@ -94,6 +103,7 @@ data class ShoppingListItemEntity(
                 unit = document.getString("unit") ?: MeasurementUnit.STUKS.storageKey,
                 price = document.getDouble("price"),
                 listId = document.getString("listId"),
+                addedByName = document.getString("addedByName"),
             )
         }
     }

@@ -828,6 +828,11 @@
         <item quantity="one">%1$d item verwijderd</item>
         <item quantity="other">%1$d items verwijderd</item>
     </plurals>
+    <string name="shopping_list_item_edit_name_cd">Naam bewerken</string>
+    <string name="shopping_list_item_added_by_format">%1$s zette dit erop · %2$s %3$s</string>
+    <string name="shopping_list_item_added_at_format">Toegevoegd op %1$s %2$s</string>
+    <string name="shopping_list_price_label">Prijs</string>
+    <string name="shopping_list_price_per_unit_format">per %1$s</string>
     <string name="shopping_list_delete_cd">Verwijderen</string>
     <string name="shopping_list_mark_unchecked_cd">Zet terug als niet afgevinkt</string>
     <string name="shopping_list_mark_checked_cd">Markeer als afgevinkt</string>

@@ -824,6 +824,11 @@
         <item quantity="one">%1$d artículo eliminado</item>
         <item quantity="other">%1$d artículos eliminados</item>
     </plurals>
+    <string name="shopping_list_item_edit_name_cd">Editar nombre</string>
+    <string name="shopping_list_item_added_by_format">%1$s añadió esto · %2$s %3$s</string>
+    <string name="shopping_list_item_added_at_format">Añadido el %1$s %2$s</string>
+    <string name="shopping_list_price_label">Precio</string>
+    <string name="shopping_list_price_per_unit_format">por %1$s</string>
     <string name="shopping_list_delete_cd">Eliminar</string>
     <string name="shopping_list_mark_unchecked_cd">Marcar como no marcado</string>
     <string name="shopping_list_mark_checked_cd">Marcar como completado</string>
