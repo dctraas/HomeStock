@@ -792,12 +792,11 @@
     <string name="shopping_list_voice_input_cd">Namen einsprechen</string>
     <string name="shopping_list_voice_input_prompt">Sag den Produktnamen</string>
     <string name="shopping_list_voice_input_unavailable">Spracherkennung ist auf diesem Gerät nicht verfügbar</string>
+    <string name="shopping_list_search_cd">Suchen</string>
     <string name="shopping_list_search_placeholder">Einkaufsliste durchsuchen…</string>
     <!-- "Keuken" redesign (2026-08) -->
     <string name="shopping_list_bottom_shopping_mode_label">Einkaufsmodus</string>
     <string name="shopping_list_quick_add_item_cd">Artikel hinzufügen</string>
-    <string name="shopping_list_voice_quick_add_cd">Per Sprache hinzufügen</string>
-
     <string name="shopping_mode_title">Einkaufsmodus</string>
     <string name="shopping_mode_close_cd">Schließen</string>
     <string name="shopping_mode_screen_on_cd">Bildschirm eingeschaltet lassen</string>

@@ -796,12 +796,11 @@
     <string name="shopping_list_voice_input_cd">Naam inspreken</string>
     <string name="shopping_list_voice_input_prompt">Zeg de naam van het product</string>
     <string name="shopping_list_voice_input_unavailable">Spraakherkenning is niet beschikbaar op dit toestel</string>
+    <string name="shopping_list_search_cd">Zoeken</string>
     <string name="shopping_list_search_placeholder">Zoek in boodschappenlijst…</string>
     <!-- "Keuken" redesign (2026-08) -->
     <string name="shopping_list_bottom_shopping_mode_label">Winkelmodus</string>
     <string name="shopping_list_quick_add_item_cd">Item toevoegen</string>
-    <string name="shopping_list_voice_quick_add_cd">Toevoegen via spraak</string>
-
     <string name="shopping_mode_title">Winkelmodus</string>
     <string name="shopping_mode_close_cd">Sluiten</string>
     <string name="shopping_mode_screen_on_cd">Scherm aan houden</string>
