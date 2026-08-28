@@ -124,6 +124,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -2528,6 +2529,13 @@ private fun ReorderableStoreList(
     var draggingId by remember { mutableStateOf<String?>(null) }
     var dragOffsetPx by remember { mutableFloatStateOf(0f) }
     var draggingRowHeightPx by remember { mutableFloatStateOf(0f) }
+    // The Column below lays rows out with Arrangement.spacedBy(10.dp) — each row's actual pitch
+    // (how far it needs to move to land on its neighbor's position) is its measured content
+    // height PLUS this gap, not the content height alone. handleDrag used to swap using bare
+    // row height, so every swap left dragOffsetPx short by one gap's worth; that undershoot
+    // compounded across swaps until the dragged row visibly overlapped whatever it passed.
+    val density = LocalDensity.current
+    val rowGapPx = with(density) { 10.dp.toPx() }
 
     if (draggingId == null) {
         LaunchedEffect(stores) {
@@ -2539,16 +2547,16 @@ private fun ReorderableStoreList(
     fun handleDrag(deltaY: Float) {
         val id = draggingId ?: return
         dragOffsetPx += deltaY
-        val rowHeight = draggingRowHeightPx.takeIf { it > 0f } ?: return
+        val rowPitch = draggingRowHeightPx.takeIf { it > 0f }?.plus(rowGapPx) ?: return
         while (true) {
             val index = orderedStores.indexOfFirst { it.id == id }
             if (index < 0) break
-            if (dragOffsetPx > rowHeight / 2f && index < orderedStores.lastIndex) {
+            if (dragOffsetPx > rowPitch / 2f && index < orderedStores.lastIndex) {
                 orderedStores.add(index, orderedStores.removeAt(index + 1))
-                dragOffsetPx -= rowHeight
-            } else if (dragOffsetPx < -rowHeight / 2f && index > 0) {
+                dragOffsetPx -= rowPitch
+            } else if (dragOffsetPx < -rowPitch / 2f && index > 0) {
                 orderedStores.add(index - 1, orderedStores.removeAt(index))
-                dragOffsetPx += rowHeight
+                dragOffsetPx += rowPitch
             } else {
                 break
             }
