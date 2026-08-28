@@ -2579,6 +2579,14 @@ private fun ReorderableStoreList(
 
     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         orderedStores.forEachIndexed { index, store ->
+          // Keyed on the store's own id, not just its position in the list — without this, a
+          // plain forEachIndexed reuses each row's composable (and its remembered rowHeightPx,
+          // menuExpanded, etc.) by SLOT rather than by which store it's showing. A swap during
+          // drag then hands one row's stale remembered state to whatever store just moved into
+          // that slot, which is what made a settled reorder still show one card's content
+          // bleeding into its neighbor's space. Same fix already applied to AisleOrderContent's
+          // rows and TipsSheet's DeveloperNoticeRow for the same underlying reason.
+          key(store.id) {
             val isDragging = store.id == draggingId
             val isDefault = index == 0
             val itemCount = itemCountByStore[store.name] ?: 0
@@ -2744,6 +2752,7 @@ private fun ReorderableStoreList(
                     }
                 }
             }
+          }
         }
     }
 }
