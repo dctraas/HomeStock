@@ -2,10 +2,14 @@ package com.dtraas.homestock.ui.recipes
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dtraas.homestock.data.local.entity.PlannedMeal
+import com.dtraas.homestock.data.model.MealSlot
 import com.dtraas.homestock.data.model.RecipeTag
 import com.dtraas.homestock.data.repository.HouseholdMembersRepository
+import com.dtraas.homestock.data.repository.MealPlanRepository
 import com.dtraas.homestock.data.repository.RecipeDetail
 import com.dtraas.homestock.data.repository.RecipeRepository
+import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -26,6 +30,11 @@ data class RecipeDetailUiState(
     // shows halved amounts. Null (rather than some made-up default like 4) whenever the recipe
     // has no serving count at all, so RecipeDetailScreen knows to hide the stepper entirely.
     val targetServings: Int? = null,
+    // The soonest upcoming date this recipe is already planned for, if any — see
+    // [MealPlanRepository.findUpcomingPlan] — backs the hero's "MAANDAG GEPLAND" badge.
+    val plannedDate: LocalDate? = null,
+    val showPlanSheet: Boolean = false,
+    val isPlanning: Boolean = false,
 )
 
 class RecipeDetailViewModel(
@@ -33,6 +42,7 @@ class RecipeDetailViewModel(
     private val languageTag: String?,
     private val recipeRepository: RecipeRepository,
     private val householdMembersRepository: HouseholdMembersRepository,
+    private val mealPlanRepository: MealPlanRepository,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(RecipeDetailUiState())
@@ -67,6 +77,7 @@ class RecipeDetailViewModel(
                     val defaultServings = detail.servings?.let { original ->
                         householdSize?.coerceAtLeast(1) ?: original
                     }
+                    val plannedDate = runCatching { mealPlanRepository.findUpcomingPlan(detail.id) }.getOrNull()
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -74,12 +85,32 @@ class RecipeDetailViewModel(
                             matchedIngredients = matched,
                             hasError = false,
                             targetServings = defaultServings,
+                            plannedDate = plannedDate,
                         )
                     }
                 }
                 .onFailure {
                     _uiState.update { it.copy(isLoading = false, hasError = true) }
                 }
+        }
+    }
+
+    fun requestPlan() = _uiState.update { it.copy(showPlanSheet = true) }
+    fun dismissPlanSheet() = _uiState.update { it.copy(showPlanSheet = false) }
+
+    /** "Nog een keer inplannen" — same [PlannedMeal] shape MealPlanViewModel.pickMeal builds when
+     *  planning a recipe from the picker, just triggered from here instead. */
+    fun planForDate(date: LocalDate, slot: MealSlot) {
+        val detail = _uiState.value.detail ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isPlanning = true) }
+            mealPlanRepository.addMeal(
+                date = date,
+                slot = slot,
+                meal = PlannedMeal(id = detail.id, name = detail.displayName, thumbnailUrl = detail.thumbnailUrl, recipeId = detail.id),
+            )
+            val plannedDate = runCatching { mealPlanRepository.findUpcomingPlan(detail.id) }.getOrNull()
+            _uiState.update { it.copy(isPlanning = false, showPlanSheet = false, plannedDate = plannedDate) }
         }
     }
 

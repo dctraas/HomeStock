@@ -128,6 +128,18 @@ class MealPlanRepository(
         }
     }
 
+    /**
+     * The soonest date (today included) this [recipeId] is already planned for, within the next
+     * [daysAhead] days — RecipeDetailScreen's "MAANDAG GEPLAND" badge. A rolling window from
+     * today rather than the calendar week the day-strip uses: opening a recipe on a Sunday
+     * should still surface a Monday plan without waiting for "this week" to turn over.
+     */
+    suspend fun findUpcomingPlan(recipeId: String, from: LocalDate = LocalDate.now(), daysAhead: Long = 6): LocalDate? =
+        fetchDateRange(from, from.plusDays(daysAhead))
+            .filterValues { slots -> slots.values.any { meals -> meals.any { it.recipeId == recipeId } } }
+            .keys
+            .minOrNull()
+
     private companion object {
         val DATE_FORMATTER: DateTimeFormatter = DateTimeFormatter.ISO_LOCAL_DATE
     }

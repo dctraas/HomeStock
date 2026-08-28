@@ -1,17 +1,26 @@
 package com.dtraas.homestock.ui.recipes
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -20,24 +29,32 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.PlaylistAdd
+import androidx.compose.material.icons.filled.RestaurantMenu
+import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.AssistChip
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -52,25 +69,41 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
+import com.dtraas.homestock.data.model.MealSlot
 import com.dtraas.homestock.data.model.RecipeTag
-import com.dtraas.homestock.ui.components.HomeStockTopAppBar
+import com.dtraas.homestock.data.repository.RecipeDetail
+import com.dtraas.homestock.ui.components.HomeStockBottomSheet
 import com.dtraas.homestock.ui.components.QuantityStepper
+import com.dtraas.homestock.ui.components.SheetTitle
+import com.dtraas.homestock.ui.components.sheetContentPadding
 import com.dtraas.homestock.ui.theme.SoftCardShape
+import java.time.LocalDate
+import java.time.format.TextStyle
 import java.util.Locale
 import kotlin.math.roundToInt
+
+/** Which of the three sections below the primary actions is showing — replaces what used to be
+ *  one long scroll through ingrediënten → voeding → bereiding all at once. [NUTRITION] is the
+ *  only one ever hidden (see [RecipeDetailTabRow]'s `showNutrition`), same reasoning as
+ *  ProductDetailScreen's own Voeding tab: nothing to show for a recipe with no nutrition data at
+ *  all (always true for a custom/AI recipe, sometimes true for a Spoonacular one). */
+private enum class RecipeDetailTab { INGREDIENTS, INSTRUCTIONS, NUTRITION }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,42 +123,17 @@ fun RecipeDetailScreen(
                     languageTag,
                     application.container.recipeRepository,
                     application.container.householdMembersRepository,
+                    application.container.mealPlanRepository,
                 )
             }
         },
     )
     val uiState by viewModel.uiState.collectAsState()
     val detail = uiState.detail
+    var selectedTab by remember(mealId) { mutableStateOf(RecipeDetailTab.INGREDIENTS) }
 
     Scaffold(
-        topBar = {
-            HomeStockTopAppBar(
-                title = { Text(detail?.displayName ?: stringResource(R.string.recipes_title)) },
-                navigationIcon = {
-                    IconButton(onClick = onBack) {
-                        Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
-                    }
-                },
-                actions = {
-                    if (detail != null) {
-                        IconButton(onClick = viewModel::toggleFavorite) {
-                            Icon(
-                                imageVector = if (uiState.isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                                contentDescription = stringResource(
-                                    if (uiState.isFavorite) R.string.recipes_favorite_remove_cd else R.string.recipes_favorite_add_cd,
-                                ),
-                                tint = if (uiState.isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
-                            )
-                        }
-                        if (detail.isCustom) {
-                            IconButton(onClick = { onEdit(mealId) }) {
-                                Icon(Icons.Filled.Edit, contentDescription = stringResource(R.string.recipes_edit_custom_cd))
-                            }
-                        }
-                    }
-                },
-            )
-        },
+        contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
     ) { padding ->
         when {
             uiState.isLoading -> Box(
@@ -151,61 +159,7 @@ fun RecipeDetailScreen(
                     modifier = Modifier.padding(top = 16.dp),
                 )
             }
-            else -> Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-            ) {
-                detail.thumbnailUrl?.let { url ->
-                    AsyncImage(
-                        model = url,
-                        contentDescription = detail.displayName,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(180.dp)
-                            .clip(RoundedCornerShape(20.dp)),
-                    )
-                }
-
-                val subtitle = listOfNotNull(
-                    detail.displayCategory,
-                    detail.displayArea,
-                    detail.readyInMinutes?.let { stringResource(R.string.recipes_ready_in_minutes_format, it) },
-                ).joinToString(" · ")
-                if (subtitle.isNotEmpty()) {
-                    Text(
-                        text = subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 12.dp),
-                    )
-                }
-                if (detail.isAiGenerated) {
-                    RecipeBadge(icon = Icons.Filled.AutoAwesome, label = stringResource(R.string.recipes_ai_generated_badge))
-                } else if (detail.isCustom) {
-                    RecipeBadge(icon = Icons.Filled.Edit, label = stringResource(R.string.recipes_custom_badge))
-                } else if (detail.hasTranslation) {
-                    RecipeBadge(icon = Icons.Filled.Translate, label = stringResource(R.string.recipes_translated_badge))
-                }
-
-                // Editable only for recipes the household actually kept a durable copy of — see
-                // RecipeRepository.setRecipeTags' doc for why a plain unfavorited Spoonacular
-                // browse result has no tag editor at all rather than a dead-end one.
-                if (detail.isCustom || uiState.isFavorite) {
-                    RecipeTagEditor(
-                        customTags = detail.tags.filter { RecipeTag.fromStorageKey(it) == null },
-                        onAddCustom = viewModel::addCustomTag,
-                        onRemoveCustom = viewModel::removeCustomTag,
-                    )
-                }
-
-                // Portion scaling — only offered when the recipe actually has a serving count
-                // (see RecipeDetail.servings' doc); [scaleFactor] stays 1.0 (a no-op through
-                // scaleMeasure) whenever it doesn't, so the ingredient list below always renders
-                // correctly whether or not scaling is available.
+            else -> {
                 val originalServings = detail.servings
                 val targetServings = uiState.targetServings
                 val scaleFactor = if (originalServings != null && originalServings > 0 && targetServings != null) {
@@ -213,203 +167,513 @@ fun RecipeDetailScreen(
                 } else {
                     1.0
                 }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(
-                        text = stringResource(R.string.recipes_ingredients_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    if (originalServings != null && originalServings > 0 && targetServings != null) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = stringResource(R.string.recipes_servings_label),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(end = 8.dp),
-                            )
-                            QuantityStepper(
-                                quantity = targetServings,
-                                onDecrease = { viewModel.setTargetServings(targetServings - 1) },
-                                onIncrease = { viewModel.setTargetServings(targetServings + 1) },
-                                minQuantity = 1,
-                                dense = true,
-                            )
-                        }
-                    }
-                }
-                Card(
-                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                    shape = SoftCardShape,
-                ) {
-                    Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
-                        // Zipped rather than iterating displayIngredients alone: matching against
-                        // inventory (uiState.matchedIngredients) only works on the original
-                        // English ingredient names — see [RecipeDetail]'s doc — while the shown
-                        // name/measure should still prefer the translation.
-                        val zipped = detail.ingredients.zip(detail.displayIngredients)
-                        zipped.forEachIndexed { index, (original, display) ->
-                            val haveIt = uiState.matchedIngredients.contains(original.first)
-                            val measure = scaleMeasure(display.second, scaleFactor)
-                            if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-                            Row(
-                                modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                if (haveIt) {
-                                    Icon(
-                                        imageVector = Icons.Filled.Check,
-                                        contentDescription = stringResource(R.string.recipes_ingredient_in_inventory_cd),
-                                        tint = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.size(18.dp),
-                                    )
-                                } else {
-                                    Box(modifier = Modifier.size(18.dp))
-                                }
-                                if (measure.isNotBlank()) {
-                                    Text(
-                                        text = measure,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = MaterialTheme.colorScheme.primary,
-                                        modifier = Modifier.padding(start = 10.dp).widthIn(min = 64.dp),
-                                    )
-                                    Text(
-                                        text = display.first,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.padding(start = 4.dp),
-                                    )
-                                } else {
-                                    Text(
-                                        text = display.first,
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        modifier = Modifier.padding(start = 10.dp),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // Per serving (Spoonacular's own breakdown, see RecipeDetail's doc) — absent
-                // entirely for AI-generated/custom recipes and any Spoonacular recipe that
-                // simply has no nutrition data, so the whole section is skipped rather than
-                // showing a card of dashes.
+                val missingIngredients = detail.ingredients.filter { it.first !in uiState.matchedIngredients }
                 val hasNutrition = detail.calories != null || detail.protein != null ||
                     detail.fat != null || detail.carbohydrates != null
-                if (hasNutrition) {
-                    Row(
-                        verticalAlignment = Alignment.Bottom,
-                        modifier = Modifier.padding(top = 20.dp),
-                    ) {
-                        Text(
-                            text = stringResource(R.string.product_detail_nutrition_title),
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.primary,
-                        )
-                        Text(
-                            text = stringResource(R.string.recipes_nutrition_per_serving),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 6.dp, bottom = 1.dp),
-                        )
-                    }
-                    Card(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                        shape = SoftCardShape,
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            detail.calories?.let {
-                                NutritionValueRow(stringResource(R.string.product_detail_nutrition_energy), formatRecipeKcal(it))
+                val stepCount = detail.displayInstructions?.trim()?.takeIf { it.isNotBlank() }?.let { splitIntoSteps(it).size } ?: 0
+
+                Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                    RecipeHeroHeader(
+                        detail = detail,
+                        isFavorite = uiState.isFavorite,
+                        plannedDate = uiState.plannedDate,
+                        onBack = onBack,
+                        onToggleFavorite = viewModel::toggleFavorite,
+                        onEditClick = { onEdit(mealId) },
+                    )
+                    Column(modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                            Row(verticalAlignment = Alignment.Top) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(detail.displayName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+                                    val subtitle = listOfNotNull(
+                                        detail.displayCategory,
+                                        detail.displayArea,
+                                        detail.readyInMinutes?.let { stringResource(R.string.recipes_ready_in_minutes_format, it) },
+                                    ).joinToString(" · ")
+                                    if (subtitle.isNotEmpty()) {
+                                        Text(
+                                            text = subtitle,
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            modifier = Modifier.padding(top = 4.dp),
+                                        )
+                                    }
+                                }
+                                if (detail.ingredients.isNotEmpty()) {
+                                    RecipeMatchRing(
+                                        matched = detail.ingredients.size - missingIngredients.size,
+                                        total = detail.ingredients.size,
+                                        modifier = Modifier.padding(start = 12.dp),
+                                    )
+                                }
                             }
-                            detail.fat?.let {
-                                NutritionValueRow(stringResource(R.string.product_detail_nutrition_fat), formatRecipeGrams(it))
+
+                            if (detail.hasTranslation) {
+                                RecipeBadge(icon = Icons.Filled.Translate, label = stringResource(R.string.recipes_translated_badge))
+                            } else if (detail.isAiGenerated) {
+                                RecipeBadge(icon = Icons.Filled.AutoAwesome, label = stringResource(R.string.recipes_ai_generated_badge))
                             }
-                            detail.carbohydrates?.let {
-                                NutritionValueRow(stringResource(R.string.product_detail_nutrition_carbohydrates), formatRecipeGrams(it))
+
+                            if (detail.isCustom || uiState.isFavorite) {
+                                RecipeTagEditor(
+                                    customTags = detail.tags.filter { RecipeTag.fromStorageKey(it) == null },
+                                    onAddCustom = viewModel::addCustomTag,
+                                    onRemoveCustom = viewModel::removeCustomTag,
+                                )
                             }
-                            detail.protein?.let {
-                                NutritionValueRow(stringResource(R.string.product_detail_nutrition_proteins), formatRecipeGrams(it))
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                            ) {
+                                if (missingIngredients.isNotEmpty()) {
+                                    Button(
+                                        onClick = viewModel::addMissingIngredientsToShoppingList,
+                                        enabled = !uiState.addedToShoppingList,
+                                        shape = RoundedCornerShape(18.dp),
+                                        modifier = Modifier.weight(1f).height(52.dp),
+                                    ) {
+                                        Icon(Icons.Filled.ShoppingCart, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Text(
+                                            text = if (uiState.addedToShoppingList) {
+                                                stringResource(R.string.recipes_detail_added_short)
+                                            } else {
+                                                stringResource(R.string.recipes_detail_add_missing_format, missingIngredients.size)
+                                            },
+                                            modifier = Modifier.padding(start = 8.dp),
+                                        )
+                                    }
+                                }
+                                if (stepCount > 1) {
+                                    OutlinedButton(
+                                        onClick = onStartCookMode,
+                                        shape = RoundedCornerShape(18.dp),
+                                        modifier = Modifier.weight(1f).height(52.dp),
+                                    ) {
+                                        Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
+                                        Text(stringResource(R.string.recipes_detail_cook_action), modifier = Modifier.padding(start = 8.dp))
+                                    }
+                                }
                             }
                         }
+
+                        RecipeDetailTabRow(
+                            selected = selectedTab,
+                            showNutrition = hasNutrition,
+                            onSelect = { selectedTab = it },
+                            stepCount = stepCount,
+                        )
+
+                        Column(modifier = Modifier.fillMaxWidth().padding(16.dp)) {
+                            when (selectedTab) {
+                                RecipeDetailTab.INGREDIENTS -> RecipeIngredientsTab(
+                                    detail = detail,
+                                    matchedIngredients = uiState.matchedIngredients,
+                                    missingIngredients = missingIngredients,
+                                    targetServings = targetServings,
+                                    originalServings = originalServings,
+                                    scaleFactor = scaleFactor,
+                                    onSetTargetServings = viewModel::setTargetServings,
+                                )
+                                RecipeDetailTab.INSTRUCTIONS -> RecipeInstructionsTab(detail.displayInstructions?.trim())
+                                RecipeDetailTab.NUTRITION -> RecipeNutritionTab(detail)
+                            }
+                        }
+
+                        PlanAgainRow(onClick = viewModel::requestPlan, modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp))
                     }
                 }
+            }
+        }
+    }
 
-                if (uiState.addedToShoppingList) {
-                    Text(
-                        text = stringResource(R.string.recipes_added_to_shopping_list),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 12.dp),
+    if (uiState.showPlanSheet) {
+        RecipePlanSheet(
+            isPlanning = uiState.isPlanning,
+            onConfirm = viewModel::planForDate,
+            onDismiss = viewModel::dismissPlanSheet,
+        )
+    }
+}
+
+/** The fixed (non-scrolling) hero — a photo (or, absent one, the same
+ *  [Icons.Filled.RestaurantMenu] placeholder every other recipe tile falls back to) on a sage
+ *  surface, back/favorite/overflow floating in white circles over it, and "EIGEN"/"[dag]
+ *  GEPLAND" badges pinned to its bottom-left corner. */
+@Composable
+private fun RecipeHeroHeader(
+    detail: RecipeDetail,
+    isFavorite: Boolean,
+    plannedDate: LocalDate?,
+    onBack: () -> Unit,
+    onToggleFavorite: () -> Unit,
+    onEditClick: () -> Unit,
+) {
+    var showOverflowMenu by remember { mutableStateOf(false) }
+    Box(modifier = Modifier.fillMaxWidth().height(220.dp)) {
+        Surface(color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.fillMaxSize()) {
+            if (detail.thumbnailUrl != null) {
+                AsyncImage(
+                    model = detail.thumbnailUrl,
+                    contentDescription = detail.displayName,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(
+                        imageVector = Icons.Filled.RestaurantMenu,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                        modifier = Modifier.size(56.dp),
                     )
-                } else {
-                    // Kleiner en rechts uitgelijnd op de regel in plaats van een volle-breedte
-                    // knop — per de design review. Icon-only blijft: de knop se eigen vorm/
-                    // kleur leest al als "tap me", en de actie is nog steeds beschikbaar voor
-                    // screenreaders via de icon's contentDescription.
-                    Row(modifier = Modifier.fillMaxWidth().padding(top = 12.dp), horizontalArrangement = Arrangement.End) {
-                        FilledIconButton(
-                            onClick = viewModel::addMissingIngredientsToShoppingList,
-                            modifier = Modifier.size(40.dp),
-                        ) {
-                            Icon(
-                                Icons.Filled.PlaylistAdd,
-                                contentDescription = stringResource(R.string.recipes_add_missing_to_shopping_list),
-                                modifier = Modifier.size(20.dp),
+                }
+            }
+        }
+        Row(
+            modifier = Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars).padding(8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            RecipeHeroIconButton(onClick = onBack) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                RecipeHeroIconButton(onClick = onToggleFavorite) {
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        contentDescription = stringResource(if (isFavorite) R.string.recipes_favorite_remove_cd else R.string.recipes_favorite_add_cd),
+                        tint = if (isFavorite) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface,
+                    )
+                }
+                if (detail.isCustom) {
+                    Box {
+                        RecipeHeroIconButton(onClick = { showOverflowMenu = true }) {
+                            Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.product_detail_overflow_cd))
+                        }
+                        DropdownMenu(expanded = showOverflowMenu, onDismissRequest = { showOverflowMenu = false }) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.recipes_edit_custom_cd)) },
+                                leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                                onClick = { showOverflowMenu = false; onEditClick() },
                             )
                         }
                     }
                 }
+            }
+        }
+        Row(
+            modifier = Modifier.align(Alignment.BottomStart).padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            if (detail.isCustom) {
+                RecipeHeroBadge(stringResource(R.string.recipes_custom_badge_short))
+            }
+            if (plannedDate != null) {
+                val dayName = plannedDate.dayOfWeek.getDisplayName(TextStyle.FULL, Locale.getDefault()).replaceFirstChar { it.titlecase(Locale.getDefault()) }
+                RecipeHeroBadge(stringResource(R.string.recipes_detail_planned_badge_format, dayName))
+            }
+        }
+    }
+}
 
-                val instructions = detail.displayInstructions?.trim()
-                Row(
-                    modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(
-                        text = stringResource(R.string.recipes_instructions_title),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    // Only worth its own mode once there's more than one step to walk
-                    // through — a single-paragraph recipe has nothing for "Volgende" to do.
-                    if (!instructions.isNullOrBlank() && splitIntoSteps(instructions).size > 1) {
-                        TextButton(onClick = onStartCookMode) {
-                            Icon(Icons.Filled.PlayArrow, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Text(stringResource(R.string.cook_mode_start), modifier = Modifier.padding(start = 6.dp))
+@Composable
+private fun RecipeHeroIconButton(onClick: () -> Unit, content: @Composable () -> Unit) {
+    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f), modifier = Modifier.size(40.dp)) {
+        IconButton(onClick = onClick, modifier = Modifier.fillMaxSize()) { content() }
+    }
+}
+
+@Composable
+private fun RecipeHeroBadge(label: String) {
+    Surface(shape = RoundedCornerShape(50), color = Color.Black.copy(alpha = 0.55f)) {
+        Text(
+            text = label.uppercase(Locale.getDefault()),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = Color.White,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+        )
+    }
+}
+
+/** "7/8 IN HUIS" — a filled ring (0 → 1 sweep of [matched]/[total]) around the fraction itself,
+ *  same "how much of this do I already have" idea as ProductDetailScreen's StockCard, just as a
+ *  ring instead of a plain number since this is a recipe-wide summary rather than one product's
+ *  own quantity. */
+@Composable
+private fun RecipeMatchRing(matched: Int, total: Int, modifier: Modifier = Modifier) {
+    val ringColor = if (matched == total) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
+    Box(
+        modifier = modifier
+            .size(56.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh)
+            .padding(3.dp)
+            .clip(CircleShape)
+            .background(ringColor.copy(alpha = 0.15f)),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(text = "$matched/$total", style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.Bold, color = ringColor)
+            Text(
+                text = stringResource(R.string.recipes_detail_in_stock_ring_label),
+                style = MaterialTheme.typography.labelSmall.copy(fontSize = 8.sp),
+                color = ringColor,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RecipeDetailTabRow(selected: RecipeDetailTab, showNutrition: Boolean, stepCount: Int, onSelect: (RecipeDetailTab) -> Unit) {
+    Row(
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        FilterChip(
+            selected = selected == RecipeDetailTab.INGREDIENTS,
+            onClick = { onSelect(RecipeDetailTab.INGREDIENTS) },
+            label = { Text(stringResource(R.string.recipes_detail_tab_ingredients)) },
+        )
+        FilterChip(
+            selected = selected == RecipeDetailTab.INSTRUCTIONS,
+            onClick = { onSelect(RecipeDetailTab.INSTRUCTIONS) },
+            label = {
+                Text(
+                    if (stepCount > 0) stringResource(R.string.recipes_detail_tab_instructions_count_format, stepCount)
+                    else stringResource(R.string.recipes_detail_tab_instructions),
+                )
+            },
+        )
+        if (showNutrition) {
+            FilterChip(
+                selected = selected == RecipeDetailTab.NUTRITION,
+                onClick = { onSelect(RecipeDetailTab.NUTRITION) },
+                label = { Text(stringResource(R.string.recipes_detail_tab_nutrition)) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun RecipeIngredientsTab(
+    detail: RecipeDetail,
+    matchedIngredients: Set<String>,
+    missingIngredients: List<Pair<String, String>>,
+    targetServings: Int?,
+    originalServings: Int?,
+    scaleFactor: Double,
+    onSetTargetServings: (Int) -> Unit,
+) {
+    Column {
+        if (originalServings != null && originalServings > 0 && targetServings != null) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = stringResource(R.string.recipes_servings_for_format, targetServings).uppercase(Locale.getDefault()),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                QuantityStepper(
+                    quantity = targetServings,
+                    onDecrease = { onSetTargetServings(targetServings - 1) },
+                    onIncrease = { onSetTargetServings(targetServings + 1) },
+                    minQuantity = 1,
+                    dense = true,
+                )
+            }
+        }
+
+        if (missingIngredients.isNotEmpty()) {
+            MissingIngredientsBanner(missingIngredients.map { it.first }, modifier = Modifier.padding(top = 12.dp))
+        }
+
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            shape = SoftCardShape,
+        ) {
+            Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+                // Zipped rather than iterating displayIngredients alone: matching against
+                // inventory (matchedIngredients) only works on the original English ingredient
+                // names — see [RecipeDetail]'s doc — while the shown name/measure should still
+                // prefer the translation.
+                val zipped = detail.ingredients.zip(detail.displayIngredients)
+                zipped.forEachIndexed { index, (original, display) ->
+                    val haveIt = original.first in matchedIngredients
+                    val measure = scaleMeasure(display.second, scaleFactor)
+                    if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+                    Row(
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (haveIt) {
+                            Icon(
+                                imageVector = Icons.Filled.Check,
+                                contentDescription = stringResource(R.string.recipes_ingredient_in_inventory_cd),
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp),
+                            )
+                        } else {
+                            Box(modifier = Modifier.size(18.dp))
+                        }
+                        if (measure.isNotBlank()) {
+                            Text(
+                                text = measure,
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (haveIt) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(start = 10.dp).widthIn(min = 64.dp),
+                            )
+                            Text(
+                                text = display.first,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (haveIt) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(start = 4.dp),
+                            )
+                        } else {
+                            Text(
+                                text = display.first,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (haveIt) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(start = 10.dp),
+                            )
                         }
                     }
                 }
-                if (!instructions.isNullOrBlank()) {
-                    Surface(
-                        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-                        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-                        shape = SoftCardShape,
-                    ) {
-                        Text(
-                            text = instructions,
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(16.dp),
-                        )
-                    }
+            }
+        }
+    }
+}
+
+/** "Je mist alleen spekblokjes" / "Je mist nog N ingrediënten" — [names] are the original
+ *  (English) ingredient names, same source [RecipeIngredientsTab]'s own rows are colored coral
+ *  from; shown as their un-translated form is a rare, acceptable simplification here since the
+ *  common case is exactly one missing name anyway. */
+@Composable
+private fun MissingIngredientsBanner(names: List<String>, modifier: Modifier = Modifier) {
+    Surface(modifier = modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.errorContainer, shape = SoftCardShape) {
+        Row(modifier = Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Filled.ShoppingCart,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = if (names.size == 1) {
+                    stringResource(R.string.recipes_missing_ingredients_banner_one, names.single())
                 } else {
-                    // Explicit rather than just omitting the whole section — a recipe (usually
-                    // one sourced from Spoonacular) can genuinely have no instructions text in
-                    // its own data, and a silently missing section reads as "this app is
-                    // broken" rather than "this particular recipe's source has a gap".
-                    Text(
-                        text = stringResource(R.string.recipes_instructions_unavailable),
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 8.dp),
-                    )
+                    pluralStringResource(R.plurals.recipes_missing_ingredients_banner_many, names.size, names.size)
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onErrorContainer,
+                modifier = Modifier.padding(start = 10.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun RecipeInstructionsTab(instructions: String?) {
+    if (!instructions.isNullOrBlank()) {
+        Surface(modifier = Modifier.fillMaxWidth(), color = MaterialTheme.colorScheme.surfaceContainerHigh, shape = SoftCardShape) {
+            Text(text = instructions, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(16.dp))
+        }
+    } else {
+        // Explicit rather than just an empty tab — a recipe (usually one sourced from
+        // Spoonacular) can genuinely have no instructions text in its own data, and a silently
+        // blank tab reads as "this app is broken" rather than "this source has a gap".
+        Text(
+            text = stringResource(R.string.recipes_instructions_unavailable),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
+@Composable
+private fun RecipeNutritionTab(detail: RecipeDetail) {
+    Column {
+        Text(
+            text = stringResource(R.string.recipes_nutrition_per_serving),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Card(
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+            shape = SoftCardShape,
+        ) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                detail.calories?.let { NutritionValueRow(stringResource(R.string.product_detail_nutrition_energy), formatRecipeKcal(it)) }
+                detail.fat?.let { NutritionValueRow(stringResource(R.string.product_detail_nutrition_fat), formatRecipeGrams(it)) }
+                detail.carbohydrates?.let { NutritionValueRow(stringResource(R.string.product_detail_nutrition_carbohydrates), formatRecipeGrams(it)) }
+                detail.protein?.let { NutritionValueRow(stringResource(R.string.product_detail_nutrition_proteins), formatRecipeGrams(it)) }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PlanAgainRow(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Surface(modifier = modifier.fillMaxWidth().clickable(onClick = onClick), color = Color.Transparent) {
+        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(Icons.Filled.DateRange, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+            Text(
+                text = stringResource(R.string.recipes_detail_plan_again_action),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.weight(1f).padding(start = 10.dp),
+            )
+            Icon(Icons.Filled.PlaylistAdd, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+        }
+    }
+}
+
+/** Day (next 7, today included) + maaltijdslot picker for [RecipeDetailViewModel.planForDate] —
+ *  same [PlannedMeal] shape the maaltijdplanner's own recipe picker writes, just reachable from
+ *  here instead of only from Maaltijden. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RecipePlanSheet(isPlanning: Boolean, onConfirm: (LocalDate, MealSlot) -> Unit, onDismiss: () -> Unit) {
+    val today = remember { LocalDate.now() }
+    var selectedDate by remember { mutableStateOf(today) }
+    var selectedSlot by remember { mutableStateOf(MealSlot.DINNER) }
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
+        Column(modifier = Modifier.padding(sheetContentPadding)) {
+            SheetTitle(title = stringResource(R.string.recipes_detail_plan_sheet_title))
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                repeat(7) { offset ->
+                    val date = today.plusDays(offset.toLong())
+                    val label = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale.getDefault()).replaceFirstChar { it.titlecase(Locale.getDefault()) }
+                    FilterChip(selected = date == selectedDate, onClick = { selectedDate = date }, label = { Text(label) })
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                MealSlot.ORDERED.forEach { slot ->
+                    FilterChip(selected = slot == selectedSlot, onClick = { selectedSlot = slot }, label = { Text(stringResource(slot.labelRes)) })
+                }
+            }
+            Button(
+                onClick = { onConfirm(selectedDate, selectedSlot) },
+                enabled = !isPlanning,
+                modifier = Modifier.fillMaxWidth().padding(top = 20.dp),
+            ) {
+                if (isPlanning) {
+                    CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.onPrimary)
+                } else {
+                    Text(stringResource(R.string.recipes_detail_plan_confirm_action))
                 }
             }
         }

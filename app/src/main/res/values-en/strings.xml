@@ -961,15 +961,12 @@
         <item quantity="other">%1$d missing</item>
     </plurals>
     <string name="recipes_detail_error">Couldn\'t load this recipe. Please try again.</string>
-    <string name="recipes_ingredients_title">Ingredients</string>
     <string name="recipes_servings_label">Servings</string>
     <string name="recipes_nutrition_per_serving">per serving</string>
     <string name="recipes_ingredient_in_inventory_cd">Already in stock</string>
     <string name="recipes_added_to_shopping_list">Missing ingredients added to your shopping list</string>
-    <string name="recipes_add_missing_to_shopping_list">Add missing ingredients to shopping list</string>
     <string name="recipes_add_missing_short">Add to list</string>
     <string name="recipes_hero_missing_format">Missing: %1$s</string>
-    <string name="recipes_instructions_title">Instructions</string>
     <string name="recipes_instructions_unavailable">No instructions available for this recipe.</string>
     <string name="recipes_ready_in_minutes_format">%1$d min</string>
     <plurals name="recipes_inventory_subtitle">
@@ -983,7 +980,6 @@
     </plurals>
 
     <!-- Kookmodus -->
-    <string name="cook_mode_start">Start cooking</string>
     <string name="cook_mode_title">Cook mode</string>
     <string name="cook_mode_step_counter_format">Step %1$d of %2$d</string>
     <string name="cook_mode_no_instructions">No instructions available for this recipe.</string>
@@ -1052,7 +1048,24 @@
     <string name="recipes_favorite_add_cd">Add to favorites</string>
     <string name="recipes_favorite_remove_cd">Remove from favorites</string>
     <string name="recipes_edit_custom_cd">Edit recipe</string>
-    <string name="recipes_custom_badge">Your own recipe</string>
+    <string name="recipes_detail_add_missing_format">Add %1$d to the list</string>
+    <string name="recipes_detail_added_short">Added</string>
+    <string name="recipes_detail_cook_action">Cook</string>
+    <string name="recipes_detail_in_stock_ring_label">in stock</string>
+    <string name="recipes_detail_plan_again_action">Plan again</string>
+    <string name="recipes_detail_plan_confirm_action">Add to plan</string>
+    <string name="recipes_detail_plan_sheet_title">Plan this recipe</string>
+    <string name="recipes_detail_planned_badge_format">Planned for %1$s</string>
+    <string name="recipes_detail_tab_ingredients">Ingredients</string>
+    <string name="recipes_detail_tab_instructions">Method</string>
+    <string name="recipes_detail_tab_instructions_count_format">Method · %1$d</string>
+    <string name="recipes_detail_tab_nutrition">Nutrition</string>
+    <string name="recipes_servings_for_format">For %1$d servings</string>
+    <string name="recipes_missing_ingredients_banner_one">You\'re only missing %1$s</string>
+    <plurals name="recipes_missing_ingredients_banner_many">
+        <item quantity="one">You\'re missing %1$d ingredient</item>
+        <item quantity="other">You\'re missing %1$d ingredients</item>
+    </plurals>
     <string name="recipe_tag_quick">Quick</string>
     <string name="recipe_tag_kid_friendly">Kid-friendly</string>
     <string name="recipe_tag_leftovers">Leftovers</string>

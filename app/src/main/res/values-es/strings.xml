@@ -961,15 +961,12 @@
         <item quantity="other">Faltan %1$d</item>
     </plurals>
     <string name="recipes_detail_error">No se pudo cargar esta receta. Inténtalo de nuevo.</string>
-    <string name="recipes_ingredients_title">Ingredientes</string>
     <string name="recipes_servings_label">Raciones</string>
     <string name="recipes_nutrition_per_serving">por ración</string>
     <string name="recipes_ingredient_in_inventory_cd">Ya en el inventario</string>
     <string name="recipes_added_to_shopping_list">Ingredientes que faltan añadidos a tu lista de la compra</string>
-    <string name="recipes_add_missing_to_shopping_list">Añadir ingredientes que faltan a la lista de la compra</string>
     <string name="recipes_add_missing_short">A la lista</string>
     <string name="recipes_hero_missing_format">Falta: %1$s</string>
-    <string name="recipes_instructions_title">Instrucciones</string>
     <string name="recipes_instructions_unavailable">No hay instrucciones disponibles para esta receta.</string>
     <string name="recipes_ready_in_minutes_format">%1$d min</string>
     <plurals name="recipes_inventory_subtitle">
@@ -983,7 +980,6 @@
     </plurals>
 
     <!-- Kookmodus -->
-    <string name="cook_mode_start">Empezar a cocinar</string>
     <string name="cook_mode_title">Modo cocina</string>
     <string name="cook_mode_step_counter_format">Paso %1$d de %2$d</string>
     <string name="cook_mode_no_instructions">No hay instrucciones disponibles para esta receta.</string>
@@ -1052,7 +1048,24 @@
     <string name="recipes_favorite_add_cd">Añadir a favoritos</string>
     <string name="recipes_favorite_remove_cd">Quitar de favoritos</string>
     <string name="recipes_edit_custom_cd">Editar receta</string>
-    <string name="recipes_custom_badge">Receta propia</string>
+    <string name="recipes_detail_add_missing_format">Añadir %1$d a la lista</string>
+    <string name="recipes_detail_added_short">Añadido</string>
+    <string name="recipes_detail_cook_action">Cocinar</string>
+    <string name="recipes_detail_in_stock_ring_label">en casa</string>
+    <string name="recipes_detail_plan_again_action">Planificar de nuevo</string>
+    <string name="recipes_detail_plan_confirm_action">Planificar</string>
+    <string name="recipes_detail_plan_sheet_title">Planificar esta receta</string>
+    <string name="recipes_detail_planned_badge_format">Planificado para %1$s</string>
+    <string name="recipes_detail_tab_ingredients">Ingredientes</string>
+    <string name="recipes_detail_tab_instructions">Preparación</string>
+    <string name="recipes_detail_tab_instructions_count_format">Preparación · %1$d</string>
+    <string name="recipes_detail_tab_nutrition">Nutrición</string>
+    <string name="recipes_servings_for_format">Para %1$d raciones</string>
+    <string name="recipes_missing_ingredients_banner_one">Solo te falta %1$s</string>
+    <plurals name="recipes_missing_ingredients_banner_many">
+        <item quantity="one">Te falta %1$d ingrediente</item>
+        <item quantity="other">Te faltan %1$d ingredientes</item>
+    </plurals>
     <string name="recipe_tag_quick">Rápido</string>
     <string name="recipe_tag_kid_friendly">Apto para niños</string>
     <string name="recipe_tag_leftovers">Sobras</string>

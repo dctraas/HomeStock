@@ -965,15 +965,12 @@
         <item quantity="other">%1$d missend</item>
     </plurals>
     <string name="recipes_detail_error">Kon dit recept niet laden. Probeer het opnieuw.</string>
-    <string name="recipes_ingredients_title">Ingrediënten</string>
     <string name="recipes_servings_label">Porties</string>
     <string name="recipes_nutrition_per_serving">per portie</string>
     <string name="recipes_ingredient_in_inventory_cd">Al in voorraad</string>
     <string name="recipes_added_to_shopping_list">Ontbrekende ingrediënten toegevoegd aan je boodschappenlijst</string>
-    <string name="recipes_add_missing_to_shopping_list">Ontbrekende ingrediënten toevoegen aan boodschappenlijst</string>
     <string name="recipes_add_missing_short">Op lijst</string>
     <string name="recipes_hero_missing_format">Mist: %1$s</string>
-    <string name="recipes_instructions_title">Instructies</string>
     <string name="recipes_instructions_unavailable">Geen bereidingswijze beschikbaar voor dit recept.</string>
     <string name="recipes_ready_in_minutes_format">%1$d min</string>
     <plurals name="recipes_inventory_subtitle">
@@ -987,7 +984,6 @@
     </plurals>
 
     <!-- Kookmodus -->
-    <string name="cook_mode_start">Start koken</string>
     <string name="cook_mode_title">Kookmodus</string>
     <string name="cook_mode_step_counter_format">Stap %1$d van %2$d</string>
     <string name="cook_mode_no_instructions">Geen instructies beschikbaar voor dit recept.</string>
@@ -1056,7 +1052,24 @@
     <string name="recipes_favorite_add_cd">Toevoegen aan favorieten</string>
     <string name="recipes_favorite_remove_cd">Verwijderen uit favorieten</string>
     <string name="recipes_edit_custom_cd">Recept bewerken</string>
-    <string name="recipes_custom_badge">Eigen recept</string>
+    <string name="recipes_detail_add_missing_format">Zet %1$d op de lijst</string>
+    <string name="recipes_detail_added_short">Toegevoegd</string>
+    <string name="recipes_detail_cook_action">Koken</string>
+    <string name="recipes_detail_in_stock_ring_label">in huis</string>
+    <string name="recipes_detail_plan_again_action">Nog een keer inplannen</string>
+    <string name="recipes_detail_plan_confirm_action">Inplannen</string>
+    <string name="recipes_detail_plan_sheet_title">Inplannen</string>
+    <string name="recipes_detail_planned_badge_format">%1$s gepland</string>
+    <string name="recipes_detail_tab_ingredients">Ingrediënten</string>
+    <string name="recipes_detail_tab_instructions">Bereiding</string>
+    <string name="recipes_detail_tab_instructions_count_format">Bereiding · %1$d</string>
+    <string name="recipes_detail_tab_nutrition">Voeding</string>
+    <string name="recipes_servings_for_format">Voor %1$d personen</string>
+    <string name="recipes_missing_ingredients_banner_one">Je mist alleen %1$s</string>
+    <plurals name="recipes_missing_ingredients_banner_many">
+        <item quantity="one">Je mist nog %1$d ingrediënt</item>
+        <item quantity="other">Je mist nog %1$d ingrediënten</item>
+    </plurals>
     <string name="recipe_tag_quick">Snel</string>
     <string name="recipe_tag_kid_friendly">Kindvriendelijk</string>
     <string name="recipe_tag_leftovers">Restjes</string>
