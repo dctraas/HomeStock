@@ -1023,15 +1023,32 @@
         <item quantity="one">%1$d día</item>
         <item quantity="other">%1$d días</item>
     </plurals>
-    <string name="recipes_import_url_title">Importar receta desde una URL</string>
-    <string name="recipes_import_url_hint">Pega el enlace a una página de recetas — extraeremos los ingredientes y la preparación. Podrás editarlo todo antes de guardarlo.</string>
     <string name="recipes_import_url_placeholder">https://…</string>
     <string name="recipes_import_url_paste_action">Pegar desde el portapapeles</string>
-    <string name="recipes_import_url_action">Importar</string>
     <string name="recipes_import_url_loading">Obteniendo receta…</string>
     <string name="recipes_import_url_failed_no_connection">Sin conexión. Comprueba tu conexión a internet e inténtalo de nuevo.</string>
     <string name="recipes_import_url_failed_premium">Esta función solo está disponible con Premium.</string>
     <string name="recipes_import_url_failed_unknown">No se pudo importar una receta desde esa página. Comprueba el enlace e inténtalo de nuevo.</string>
+    <string name="recipes_import_title">Importar receta</string>
+    <string name="recipes_import_subtitle">Desde un enlace, blog o tienda online</string>
+    <string name="recipes_import_pasted_caption">Pegado desde tu portapapeles</string>
+    <string name="recipes_import_change_url_action">Cambiar</string>
+    <string name="recipes_import_fetch_action">Obtener receta</string>
+    <string name="recipes_import_found_badge">Encontrada</string>
+    <string name="recipes_import_stat_ingredients">ingredientes</string>
+    <string name="recipes_import_stat_steps">pasos</string>
+    <string name="recipes_import_stat_in_stock">en casa</string>
+    <string name="recipes_import_found_ingredients_title">Lo que se encontró</string>
+    <string name="recipes_import_overflow_format">+%1$d</string>
+    <string name="recipes_import_disclaimer">El texto importado no siempre es perfecto — revisa los pasos antes de cocinar.</string>
+    <string name="recipes_import_share_hint_title">Más rápido: comparte desde tu navegador</string>
+    <string name="recipes_import_share_hint_subtitle">Elige HomeStock en el menú para compartir</string>
+    <string name="recipes_import_save_action">Guardar en mis recetas</string>
+    <string name="recipes_import_review_action">Revisar y editar primero</string>
+    <plurals name="recipes_import_servings_format">
+        <item quantity="one">%d ración</item>
+        <item quantity="other">%d raciones</item>
+    </plurals>
     <string name="recipes_favorite_add_cd">Añadir a favoritos</string>
     <string name="recipes_favorite_remove_cd">Quitar de favoritos</string>
     <string name="recipes_edit_custom_cd">Editar receta</string>

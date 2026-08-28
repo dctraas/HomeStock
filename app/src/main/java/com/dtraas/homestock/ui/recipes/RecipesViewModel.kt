@@ -6,6 +6,7 @@ import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.model.RecipeTag
 import com.dtraas.homestock.data.repository.GenerateRecipeResult
 import com.dtraas.homestock.data.repository.HouseholdMembersRepository
+import com.dtraas.homestock.data.repository.RecipeDetail
 import com.dtraas.homestock.data.repository.RecipePage
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
@@ -30,6 +31,22 @@ enum class GenerateRecipeError { NO_CONNECTION, PREMIUM_REQUIRED, UNKNOWN }
  *  distinct "geen recept gevonden op deze pagina" case for import, which generation has no
  *  equivalent of). */
 enum class ImportRecipeError { NO_CONNECTION, PREMIUM_REQUIRED, UNKNOWN }
+
+/**
+ * What [RecipesViewModel.importRecipeFromUrl] found, shown on the import screen before the
+ * household commits to anything — [matchedIngredientCount]/[totalIngredientCount] and
+ * [stepCount] are all real counts off the fetched [detail] (see
+ * [com.dtraas.homestock.data.repository.RecipeRepository.matchedIngredients] and
+ * [splitIntoSteps]), not placeholders. [sourceUrl] is the exact text the household
+ * pasted/shared, kept around so "Wijzigen" can hand it back to the URL field unchanged.
+ */
+data class RecipeImportPreview(
+    val detail: RecipeDetail,
+    val sourceUrl: String,
+    val matchedIngredientCount: Int,
+    val totalIngredientCount: Int,
+    val stepCount: Int,
+)
 
 /** Which recipe source RecipesScreen is currently showing — see [RecipesViewModel.selectTab].
  *  [MINE] ("Mijn recepten") replaces what used to be two separate tabs, Favorieten and Eigen
@@ -88,6 +105,10 @@ data class RecipesUiState(
     val generateError: GenerateRecipeError? = null,
     val isImporting: Boolean = false,
     val importError: ImportRecipeError? = null,
+    /** Set once [RecipesViewModel.importRecipeFromUrl] actually finds something — the import
+     *  screen shows this preview instead of navigating anywhere immediately, so the household
+     *  can choose "Opslaan bij mijn recepten" or "Eerst nakijken en bewerken" first. */
+    val importPreview: RecipeImportPreview? = null,
     /** Whether a further [RecipesViewModel.loadMore] call would return anything — mirrors Spoonacular's own `totalResults` for the current browse/search query (see [RecipeRepository.browseAllRecipes]). Only ever true for [RecipesTab.BROWSE]: Favorites/Custom are short, fully-loaded live lists. */
     val hasMore: Boolean = false,
     /** True only while a "load more" page is in flight — distinct from [isLoading], which covers the *first* page of a fresh browse/search so the existing list can stay visible (with a small footer spinner) while more loads. */
@@ -137,12 +158,21 @@ class RecipesViewModel(
     private val _generatedRecipeId = MutableSharedFlow<String>()
     val generatedRecipeId: SharedFlow<String> = _generatedRecipeId
 
-    /** Emits the imported draft's (temporary, cache-only) id once [importRecipeFromUrl]
-     *  succeeds — the screen navigates to CustomRecipeEditScreen's importId flow with it,
-     *  unlike [generatedRecipeId] which goes straight to RecipeDetailScreen (see
-     *  [RecipeRepository.importRecipeFromUrl]'s doc for why an import needs review first). */
+    /** Emits the imported draft's (temporary, cache-only) id once [reviewImportedRecipe] is
+     *  called — the screen navigates to CustomRecipeEditScreen's importId flow with it, unlike
+     *  [generatedRecipeId] which goes straight to RecipeDetailScreen (see
+     *  [RecipeRepository.importRecipeFromUrl]'s doc for why an import needs review first). Only
+     *  reachable from [RecipesUiState.importPreview]'s "Eerst nakijken en bewerken" action now —
+     *  [importRecipeFromUrl] itself just populates the preview, it doesn't emit here directly
+     *  any more. */
     private val _importedRecipeId = MutableSharedFlow<String>()
     val importedRecipeId: SharedFlow<String> = _importedRecipeId
+
+    /** Emits the *saved* recipe's real id once [saveImportedRecipe] succeeds — the screen
+     *  navigates straight to RecipeDetailScreen with it, the "Opslaan bij mijn recepten" branch
+     *  of the import preview that skips [reviewImportedRecipe]'s editor entirely. */
+    private val _savedImportedRecipeId = MutableSharedFlow<String>()
+    val savedImportedRecipeId: SharedFlow<String> = _savedImportedRecipeId
 
     /** Emitted by [addMissingIngredientsToShoppingList] once it actually adds something — the
      *  screen surfaces this as an undo snackbar naming the recipe, [itemIds] going straight to
@@ -471,11 +501,23 @@ class RecipesViewModel(
     /** Imports one recipe from a household-pasted [url] — see [RecipeRepository.importRecipeFromUrl]. */
     fun importRecipeFromUrl(url: String) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isImporting = true, importError = null) }
+            _uiState.update { it.copy(isImporting = true, importError = null, importPreview = null) }
             when (val result = recipeRepository.importRecipeFromUrl(url, languageTag)) {
                 is GenerateRecipeResult.Success -> {
-                    _uiState.update { it.copy(isImporting = false) }
-                    _importedRecipeId.emit(result.detail.id)
+                    val detail = result.detail
+                    val matched = recipeRepository.matchedIngredients(detail)
+                    _uiState.update {
+                        it.copy(
+                            isImporting = false,
+                            importPreview = RecipeImportPreview(
+                                detail = detail,
+                                sourceUrl = url,
+                                matchedIngredientCount = matched.size,
+                                totalIngredientCount = detail.ingredients.size,
+                                stepCount = splitIntoSteps(detail.instructions.orEmpty()).size,
+                            ),
+                        )
+                    }
                 }
                 GenerateRecipeResult.PremiumRequired ->
                     _uiState.update { it.copy(isImporting = false, importError = ImportRecipeError.PREMIUM_REQUIRED) }
@@ -489,5 +531,50 @@ class RecipesViewModel(
 
     fun dismissImportError() {
         _uiState.update { it.copy(importError = null) }
+    }
+
+    /** Clears the preview without saving anything — "Wijzigen" on the URL card routes here
+     *  (back to a plain, editable URL field) rather than to [dismissImportError], which is for
+     *  the separate "the fetch itself failed" case. */
+    fun dismissImportPreview() {
+        _uiState.update { it.copy(importPreview = null) }
+    }
+
+    /** "Eerst nakijken en bewerken" — hands the already-fetched draft to
+     *  [CustomRecipeEditViewModel]'s importId flow, same destination importing always used to go
+     *  straight to before this preview step existed. */
+    fun reviewImportedRecipe() {
+        val id = _uiState.value.importPreview?.detail?.id ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(importPreview = null) }
+            _importedRecipeId.emit(id)
+        }
+    }
+
+    /** "Opslaan bij mijn recepten" — saves the previewed draft exactly as fetched, skipping the
+     *  editor. Reuses [RecipeRepository.saveCustomRecipe] the same way
+     *  [CustomRecipeEditViewModel.save] does, just pre-filled from [detail] instead of typed
+     *  form fields. */
+    fun saveImportedRecipe() {
+        val detail = _uiState.value.importPreview?.detail ?: return
+        viewModelScope.launch {
+            _uiState.update { it.copy(isImporting = true) }
+            recipeRepository.saveCustomRecipe(
+                id = null,
+                name = detail.name,
+                category = detail.category,
+                area = detail.area,
+                readyInMinutes = detail.readyInMinutes,
+                servings = detail.servings,
+                instructions = detail.instructions,
+                ingredients = detail.ingredients,
+                tags = detail.tags,
+            ).onSuccess { saved ->
+                _uiState.update { it.copy(isImporting = false, importPreview = null) }
+                _savedImportedRecipeId.emit(saved.id)
+            }.onFailure {
+                _uiState.update { it.copy(isImporting = false, importError = ImportRecipeError.UNKNOWN) }
+            }
+        }
     }
 }

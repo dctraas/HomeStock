@@ -1027,15 +1027,32 @@
         <item quantity="one">%1$d dag</item>
         <item quantity="other">%1$d dgn</item>
     </plurals>
-    <string name="recipes_import_url_title">Recept importeren van URL</string>
-    <string name="recipes_import_url_hint">Plak de link naar een receptenpagina — wij halen de ingrediënten en bereidingswijze eruit. Je kunt alles nog aanpassen voordat je het opslaat.</string>
     <string name="recipes_import_url_placeholder">https://…</string>
     <string name="recipes_import_url_paste_action">Plak uit klembord</string>
-    <string name="recipes_import_url_action">Importeren</string>
     <string name="recipes_import_url_loading">Recept ophalen…</string>
     <string name="recipes_import_url_failed_no_connection">Geen verbinding. Controleer je internetverbinding en probeer het opnieuw.</string>
     <string name="recipes_import_url_failed_premium">Deze functie is alleen beschikbaar met Premium.</string>
     <string name="recipes_import_url_failed_unknown">Kon geen recept van deze pagina importeren. Controleer de link en probeer het opnieuw.</string>
+    <string name="recipes_import_title">Recept importeren</string>
+    <string name="recipes_import_subtitle">Van een link, blog of webshop</string>
+    <string name="recipes_import_pasted_caption">Van je klembord geplakt</string>
+    <string name="recipes_import_change_url_action">Wijzigen</string>
+    <string name="recipes_import_fetch_action">Recept ophalen</string>
+    <string name="recipes_import_found_badge">Gevonden</string>
+    <string name="recipes_import_stat_ingredients">ingrediënten</string>
+    <string name="recipes_import_stat_steps">stappen</string>
+    <string name="recipes_import_stat_in_stock">in huis</string>
+    <string name="recipes_import_found_ingredients_title">Wat er gevonden is</string>
+    <string name="recipes_import_overflow_format">+%1$d</string>
+    <string name="recipes_import_disclaimer">Geïmporteerde tekst is niet altijd perfect — controleer de stappen voordat je gaat koken.</string>
+    <string name="recipes_import_share_hint_title">Sneller: deel vanuit je browser</string>
+    <string name="recipes_import_share_hint_subtitle">Kies HomeStock in het deelmenu</string>
+    <string name="recipes_import_save_action">Opslaan bij mijn recepten</string>
+    <string name="recipes_import_review_action">Eerst nakijken en bewerken</string>
+    <plurals name="recipes_import_servings_format">
+        <item quantity="one">%d persoon</item>
+        <item quantity="other">%d personen</item>
+    </plurals>
     <string name="recipes_favorite_add_cd">Toevoegen aan favorieten</string>
     <string name="recipes_favorite_remove_cd">Verwijderen uit favorieten</string>
     <string name="recipes_edit_custom_cd">Recept bewerken</string>

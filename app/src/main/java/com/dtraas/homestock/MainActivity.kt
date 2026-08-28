@@ -58,6 +58,12 @@ class MainActivity : AppCompatActivity() {
     // step; not consumed/cleared the way pendingRoute is; there's nothing to conflict with.
     private var pendingJoinCode by mutableStateOf<String?>(null)
 
+    // Another app's share sheet ("HomeStock" chosen while sharing a recipe page, most often a
+    // browser) — see sharedRecipeUrlFromIntent and the ACTION_SEND intent-filter in
+    // AndroidManifest.xml. Consumed the same one-shot way as [pendingRoute]: RecipesScreen reads
+    // it once to open the import screen prefilled, then clears it.
+    private var pendingSharedRecipeUrl by mutableStateOf<String?>(null)
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // Must run before super.onCreate() — this is what applies Theme.HomeStock.Starting's
         // splash (see AndroidManifest.xml/themes.xml) and switches the window to
@@ -69,6 +75,7 @@ class MainActivity : AppCompatActivity() {
         pendingShowExpiringSoon = intent.action == ACTION_SHOW_EXPIRING_SOON
         pendingShowLowStock = intent.action == ACTION_SHOW_LOW_STOCK
         pendingJoinCode = HouseholdInviteLink.codeFrom(intent.data)
+        pendingSharedRecipeUrl = sharedRecipeUrlFromIntent(intent)
         setContent {
             val application = LocalContext.current.applicationContext as HomeStockApplication
             val themeMode by application.container.themePreferences.themeMode.collectAsState()
@@ -108,6 +115,8 @@ class MainActivity : AppCompatActivity() {
                             onPendingShowExpiringSoonConsumed = { pendingShowExpiringSoon = false },
                             pendingShowLowStock = pendingShowLowStock,
                             onPendingShowLowStockConsumed = { pendingShowLowStock = false },
+                            pendingSharedRecipeUrl = pendingSharedRecipeUrl,
+                            onPendingSharedRecipeUrlConsumed = { pendingSharedRecipeUrl = null },
                         )
                     }
                 }
@@ -122,17 +131,31 @@ class MainActivity : AppCompatActivity() {
         if (intent.action == ACTION_SHOW_EXPIRING_SOON) pendingShowExpiringSoon = true
         if (intent.action == ACTION_SHOW_LOW_STOCK) pendingShowLowStock = true
         HouseholdInviteLink.codeFrom(intent.data)?.let { pendingJoinCode = it }
+        sharedRecipeUrlFromIntent(intent)?.let { pendingSharedRecipeUrl = it }
     }
 
-    private fun shortcutRouteForIntent(intent: Intent?): String? = when (intent?.action) {
-        ACTION_SHORTCUT_SCAN -> Destination.Scan.route
-        ACTION_SHORTCUT_SHOPPING_LIST -> Destination.ShoppingList.route
-        ACTION_SHOW_EXPIRING_SOON -> Destination.Inventory.route
-        ACTION_SHOW_LOW_STOCK -> Destination.Inventory.route
-        ACTION_SHOW_WASTE_SUMMARY -> Destination.Statistics.route
-        ACTION_SHOW_PREMIUM_TRIAL -> Destination.Premium.route
-        ACTION_SHOW_HOUSEHOLD_ACTIVITY -> Destination.Notifications.route
+    private fun shortcutRouteForIntent(intent: Intent?): String? = when {
+        intent?.action == ACTION_SHORTCUT_SCAN -> Destination.Scan.route
+        intent?.action == ACTION_SHORTCUT_SHOPPING_LIST -> Destination.ShoppingList.route
+        intent?.action == ACTION_SHOW_EXPIRING_SOON -> Destination.Inventory.route
+        intent?.action == ACTION_SHOW_LOW_STOCK -> Destination.Inventory.route
+        intent?.action == ACTION_SHOW_WASTE_SUMMARY -> Destination.Statistics.route
+        intent?.action == ACTION_SHOW_PREMIUM_TRIAL -> Destination.Premium.route
+        intent?.action == ACTION_SHOW_HOUSEHOLD_ACTIVITY -> Destination.Notifications.route
+        // A shared recipe link also needs to land on Recepten, same as the shortcuts above —
+        // see sharedRecipeUrlFromIntent for what actually gets read out of it there.
+        sharedRecipeUrlFromIntent(intent) != null -> Destination.Recipes.route
         else -> null
+    }
+
+    /** The shared text from another app's "Delen" sheet — a browser sharing the recipe page
+     *  currently open, in practice — when it's a plain-text share this activity's ACTION_SEND
+     *  intent-filter (see AndroidManifest.xml) actually matched. Trimmed and blank-checked since
+     *  some apps share an empty EXTRA_TEXT alongside a separate image/attachment this app has no
+     *  filter for anyway. */
+    private fun sharedRecipeUrlFromIntent(intent: Intent?): String? {
+        if (intent?.action != Intent.ACTION_SEND || intent.type != "text/plain") return null
+        return intent.getStringExtra(Intent.EXTRA_TEXT)?.trim()?.takeIf { it.isNotEmpty() }
     }
 
     companion object {

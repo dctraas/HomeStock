@@ -81,6 +81,8 @@ fun HomeStockApp(
     onPendingShowExpiringSoonConsumed: () -> Unit = {},
     pendingShowLowStock: Boolean = false,
     onPendingShowLowStockConsumed: () -> Unit = {},
+    pendingSharedRecipeUrl: String? = null,
+    onPendingSharedRecipeUrlConsumed: () -> Unit = {},
 ) {
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -347,6 +349,11 @@ fun HomeStockApp(
                     onImportedRecipe = { importId ->
                         navController.navigate(Destination.CustomRecipeEdit.createRoute(importId = importId))
                     },
+                    onSavedImportedRecipe = { recipeId ->
+                        navController.navigate(Destination.RecipeDetail.createRoute(recipeId))
+                    },
+                    prefillImportUrl = pendingSharedRecipeUrl,
+                    onPrefillImportUrlConsumed = onPendingSharedRecipeUrlConsumed,
                 )
             }
             composable(

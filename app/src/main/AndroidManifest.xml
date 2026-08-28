@@ -57,6 +57,16 @@
                 <data android:scheme="homestock" android:host="join" />
             </intent-filter>
 
+            <!-- "HomeStock" in another app's share sheet (a browser sharing the page you're
+                 reading, most often) — see MainActivity.sharedRecipeUrlFromIntent and
+                 RecipesScreen's import screen, which this routes straight into with the shared
+                 text prefilled as the URL. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/plain" />
+            </intent-filter>
+
             <meta-data
                 android:name="android.app.shortcuts"
                 android:resource="@xml/shortcuts" />

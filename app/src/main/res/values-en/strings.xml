@@ -1023,15 +1023,32 @@
         <item quantity="one">%1$d day</item>
         <item quantity="other">%1$d days</item>
     </plurals>
-    <string name="recipes_import_url_title">Import a recipe from a URL</string>
-    <string name="recipes_import_url_hint">Paste the link to a recipe page — we\'ll pull out the ingredients and instructions. You can still edit everything before saving.</string>
     <string name="recipes_import_url_placeholder">https://…</string>
     <string name="recipes_import_url_paste_action">Paste from clipboard</string>
-    <string name="recipes_import_url_action">Import</string>
     <string name="recipes_import_url_loading">Fetching recipe…</string>
     <string name="recipes_import_url_failed_no_connection">No connection. Check your internet connection and try again.</string>
     <string name="recipes_import_url_failed_premium">This feature is only available with Premium.</string>
     <string name="recipes_import_url_failed_unknown">Couldn\'t import a recipe from that page. Check the link and try again.</string>
+    <string name="recipes_import_title">Import recipe</string>
+    <string name="recipes_import_subtitle">From a link, blog, or webshop</string>
+    <string name="recipes_import_pasted_caption">Pasted from your clipboard</string>
+    <string name="recipes_import_change_url_action">Change</string>
+    <string name="recipes_import_fetch_action">Fetch recipe</string>
+    <string name="recipes_import_found_badge">Found</string>
+    <string name="recipes_import_stat_ingredients">ingredients</string>
+    <string name="recipes_import_stat_steps">steps</string>
+    <string name="recipes_import_stat_in_stock">in stock</string>
+    <string name="recipes_import_found_ingredients_title">What was found</string>
+    <string name="recipes_import_overflow_format">+%1$d</string>
+    <string name="recipes_import_disclaimer">Imported text isn\'t always perfect — check the steps before you start cooking.</string>
+    <string name="recipes_import_share_hint_title">Faster: share from your browser</string>
+    <string name="recipes_import_share_hint_subtitle">Choose HomeStock in the share menu</string>
+    <string name="recipes_import_save_action">Save to my recipes</string>
+    <string name="recipes_import_review_action">Review and edit first</string>
+    <plurals name="recipes_import_servings_format">
+        <item quantity="one">%d serving</item>
+        <item quantity="other">%d servings</item>
+    </plurals>
     <string name="recipes_favorite_add_cd">Add to favorites</string>
     <string name="recipes_favorite_remove_cd">Remove from favorites</string>
     <string name="recipes_edit_custom_cd">Edit recipe</string>

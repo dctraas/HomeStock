@@ -1,5 +1,7 @@
 package com.dtraas.homestock.ui.recipes
 
+import android.net.Uri
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -41,6 +43,7 @@ import androidx.compose.material.icons.filled.ArrowForward
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CloudOff
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
@@ -49,6 +52,7 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.RestaurantMenu
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material.icons.filled.Timer
 import androidx.compose.material.icons.filled.Tune
@@ -106,6 +110,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -143,6 +149,9 @@ fun RecipesScreen(
     onRecipeClick: (String) -> Unit,
     onAddCustomRecipe: () -> Unit = {},
     onImportedRecipe: (String) -> Unit = {},
+    onSavedImportedRecipe: (String) -> Unit = {},
+    prefillImportUrl: String? = null,
+    onPrefillImportUrlConsumed: () -> Unit = {},
 ) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: RecipesViewModel = viewModel(
@@ -201,6 +210,27 @@ fun RecipesScreen(
             showImportDialog = false
             importUrl = ""
             onImportedRecipe(id)
+        }
+    }
+
+    // "Opslaan bij mijn recepten" on the import preview — the other of its two exits, straight
+    // to the saved recipe's own detail screen instead of [onImportedRecipe]'s editor.
+    LaunchedEffect(Unit) {
+        viewModel.savedImportedRecipeId.collect { id ->
+            showImportDialog = false
+            importUrl = ""
+            onSavedImportedRecipe(id)
+        }
+    }
+
+    // Arrived here via another app's share sheet (see MainActivity.sharedRecipeUrlFromIntent) —
+    // open the import screen already fetching, same as pasting the link by hand would.
+    LaunchedEffect(prefillImportUrl) {
+        prefillImportUrl?.let { url ->
+            importUrl = url
+            showImportDialog = true
+            viewModel.importRecipeFromUrl(url)
+            onPrefillImportUrlConsumed()
         }
     }
 
@@ -479,16 +509,22 @@ fun RecipesScreen(
     }
 
     if (showImportDialog) {
-        ImportRecipeDialog(
+        ImportRecipeScreen(
             url = importUrl,
             onUrlChange = { importUrl = it },
             isImporting = uiState.isImporting,
             error = uiState.importError,
+            preview = uiState.importPreview,
             onImport = { viewModel.importRecipeFromUrl(importUrl) },
+            onChangeUrl = viewModel::dismissImportPreview,
+            onSave = viewModel::saveImportedRecipe,
+            onReview = viewModel::reviewImportedRecipe,
             onDismiss = {
                 if (!uiState.isImporting) {
                     showImportDialog = false
+                    importUrl = ""
                     viewModel.dismissImportError()
+                    viewModel.dismissImportPreview()
                 }
             },
         )
@@ -700,96 +736,483 @@ private fun InfoChip(text: String, containerColor: Color, contentColor: Color) {
     }
 }
 
-/** Lets the user paste a recipe page's URL for [RecipesViewModel.importRecipeFromUrl] to parse —
- *  same loading/error-inline pattern as [AiRecipeTabContent]. Confirming navigates to
- *  CustomRecipeEditScreen's import-prefill flow (not straight to RecipeDetailScreen the way
- *  AI-generation does) so the household reviews the scraped/AI-extracted result before it's
- *  actually saved — see [RecipeRepository.importRecipeFromUrl]'s doc for why. */
+/**
+ * Full-screen import flow (used to be an [AlertDialog]) for
+ * [RecipesViewModel.importRecipeFromUrl] — a URL card (auto-filled from the clipboard the
+ * moment this opens, if there's a plausible link already there), then once [preview] is in, a
+ * found-recipe summary with real stat counts, a peek at the parsed ingredients, an honest
+ * "scraped text isn't always perfect" disclaimer, and a hint about the faster share-sheet route
+ * in (see MainActivity.sharedRecipeUrlFromIntent). The household still chooses between saving
+ * the draft as-is or reviewing it first in CustomRecipeEditScreen — see [RecipeRepository.importRecipeFromUrl]'s
+ * doc for why an import is never saved silently.
+ */
 @Composable
-private fun ImportRecipeDialog(
+private fun ImportRecipeScreen(
     url: String,
     onUrlChange: (String) -> Unit,
     isImporting: Boolean,
     error: ImportRecipeError?,
+    preview: RecipeImportPreview?,
     onImport: () -> Unit,
+    onChangeUrl: () -> Unit,
+    onSave: () -> Unit,
+    onReview: () -> Unit,
     onDismiss: () -> Unit,
 ) {
     val clipboardManager = LocalClipboardManager.current
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.recipes_import_url_title)) },
-        text = {
-            Column {
+    var isEditingUrl by remember { mutableStateOf(url.isBlank()) }
+    var pastedFromClipboard by remember { mutableStateOf(false) }
+
+    // Auto-detects a URL already on the clipboard the instant this screen opens — almost always
+    // true in practice (a browser/another app's share sheet is how a link ends up here to begin
+    // with) — and fetches it right away, same as MainActivity's share-sheet entry point does.
+    // Only when nothing was already typed/shared in, so this never clobbers that.
+    LaunchedEffect(Unit) {
+        if (url.isBlank()) {
+            val clipped = clipboardManager.getText()?.text?.trim()
+            if (!clipped.isNullOrEmpty() && looksLikeUrl(clipped)) {
+                onUrlChange(clipped)
+                pastedFromClipboard = true
+                isEditingUrl = false
+                onImport()
+            }
+        }
+    }
+
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Scaffold(
+            contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
+        ) { padding ->
+            Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                ImportRecipeHeader(onDismiss = onDismiss)
+                Column(
+                    modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                ) {
+                    if (isEditingUrl) {
+                        ImportUrlEditor(
+                            url = url,
+                            onUrlChange = onUrlChange,
+                            enabled = !isImporting,
+                            onPaste = { clipboardManager.getText()?.text?.let(onUrlChange) },
+                        )
+                    } else {
+                        ImportUrlCard(
+                            url = url,
+                            pastedFromClipboard = pastedFromClipboard,
+                            onChangeClick = {
+                                isEditingUrl = true
+                                onChangeUrl()
+                            },
+                        )
+                    }
+
+                    if (isImporting) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            Text(
+                                text = stringResource(R.string.recipes_import_url_loading),
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(start = 12.dp),
+                            )
+                        }
+                    }
+
+                    if (error != null) {
+                        val (icon, messageRes) = when (error) {
+                            ImportRecipeError.PREMIUM_REQUIRED -> Icons.Filled.WorkspacePremium to R.string.recipes_import_url_failed_premium
+                            ImportRecipeError.NO_CONNECTION -> Icons.Filled.CloudOff to R.string.recipes_import_url_failed_no_connection
+                            ImportRecipeError.UNKNOWN -> Icons.Filled.WifiOff to R.string.recipes_import_url_failed_unknown
+                        }
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
+                            Text(
+                                text = stringResource(messageRes),
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(start = 12.dp),
+                            )
+                        }
+                    }
+
+                    if (preview != null) {
+                        ImportFoundCard(preview)
+                        ImportFoundIngredientsCard(preview.detail.ingredients)
+                        ImportDisclaimerBanner()
+                    }
+
+                    ImportShareHintCard()
+                }
+
+                Column(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    if (preview != null) {
+                        Button(
+                            onClick = onSave,
+                            enabled = !isImporting,
+                            shape = RoundedCornerShape(18.dp),
+                            modifier = Modifier.fillMaxWidth().height(52.dp),
+                        ) {
+                            Icon(Icons.Filled.Check, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text(stringResource(R.string.recipes_import_save_action), modifier = Modifier.padding(start = 8.dp))
+                        }
+                        OutlinedButton(
+                            onClick = onReview,
+                            enabled = !isImporting,
+                            shape = RoundedCornerShape(18.dp),
+                            modifier = Modifier.fillMaxWidth().height(52.dp),
+                        ) {
+                            Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Text(stringResource(R.string.recipes_import_review_action), modifier = Modifier.padding(start = 8.dp))
+                        }
+                    } else {
+                        Button(
+                            onClick = {
+                                isEditingUrl = false
+                                onImport()
+                            },
+                            enabled = !isImporting && url.isNotBlank(),
+                            shape = RoundedCornerShape(18.dp),
+                            modifier = Modifier.fillMaxWidth().height(52.dp),
+                        ) {
+                            Text(stringResource(R.string.recipes_import_fetch_action))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** True for a plain, single-token `http(s)://…` string — the only shape worth auto-fetching
+ *  without asking; anything else (a sentence, a search query someone happened to have copied)
+ *  just leaves the URL field for manual entry instead of firing a doomed fetch. */
+private fun looksLikeUrl(text: String): Boolean =
+    !text.contains(" ") && (text.startsWith("http://", ignoreCase = true) || text.startsWith("https://", ignoreCase = true))
+
+/** The registrable domain a [url] was fetched from ("leukerecepten.nl", "www." stripped) — for
+ *  the found-recipe card's subtitle, since [RecipeRepository.importRecipeFromUrl]'s
+ *  [com.dtraas.homestock.data.repository.RecipeDetail] itself carries no source-site field of
+ *  its own. Null for anything [Uri] can't make sense of, rather than showing a raw URL fragment. */
+private fun hostNameOf(url: String): String? = Uri.parse(url).host?.removePrefix("www.")?.takeIf { it.isNotBlank() }
+
+@Composable
+private fun ImportRecipeHeader(onDismiss: () -> Unit) {
+    val contentColor = LocalTopAppBarContentColor.current
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(LocalTopAppBarContainerColor.current)
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(start = 4.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
+    ) {
+        IconButton(onClick = onDismiss) {
+            Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.common_close), tint = contentColor)
+        }
+        Text(
+            text = stringResource(R.string.recipes_import_title),
+            style = MaterialTheme.typography.titleLarge,
+            color = contentColor,
+            modifier = Modifier.padding(start = 16.dp),
+        )
+        Text(
+            text = stringResource(R.string.recipes_import_subtitle),
+            style = MaterialTheme.typography.bodySmall,
+            color = OnTopAppBarContainerAccent,
+            modifier = Modifier.padding(start = 16.dp, top = 2.dp),
+        )
+    }
+}
+
+/** The URL, editable — shown instead of [ImportUrlCard] until there's something worth locking
+ *  into a read-only pill, or right after tapping "Wijzigen" on that pill. */
+@Composable
+private fun ImportUrlEditor(url: String, onUrlChange: (String) -> Unit, enabled: Boolean, onPaste: () -> Unit) {
+    Column {
+        OutlinedTextField(
+            value = url,
+            onValueChange = onUrlChange,
+            placeholder = { Text(stringResource(R.string.recipes_import_url_placeholder)) },
+            singleLine = true,
+            enabled = enabled,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        // A link is almost always shared into this flow from somewhere else (a browser, another
+        // app's share sheet), so it's already on the clipboard more often than not — one tap
+        // beats switching apps to copy it, then switching back to paste.
+        TextButton(onClick = onPaste, enabled = enabled, modifier = Modifier.padding(top = 4.dp)) {
+            Icon(Icons.Filled.ContentPaste, contentDescription = null, modifier = Modifier.size(18.dp))
+            Text(stringResource(R.string.recipes_import_url_paste_action), modifier = Modifier.padding(start = 6.dp))
+        }
+    }
+}
+
+/** The URL, read-only — a clipboard icon, the link itself (clipped, not wrapped — this card is
+ *  about confirming *which* link, not reading it in full), and a caption naming where it came
+ *  from with a "Wijzigen" escape hatch back to [ImportUrlEditor]. */
+@Composable
+private fun ImportUrlCard(url: String, pastedFromClipboard: Boolean, onChangeClick: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = SoftCardShape,
+    ) {
+        Row(modifier = Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.Top) {
+            Icon(
+                imageVector = Icons.Filled.ContentPaste,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(20.dp).padding(top = 2.dp),
+            )
+            Column(modifier = Modifier.weight(1f).padding(start = 10.dp)) {
                 Text(
-                    text = stringResource(R.string.recipes_import_url_hint),
+                    text = url,
                     style = MaterialTheme.typography.bodyMedium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                Row(modifier = Modifier.padding(top = 2.dp)) {
+                    if (pastedFromClipboard) {
+                        Text(
+                            text = stringResource(R.string.recipes_import_pasted_caption),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Text(
+                            text = " · ",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    Text(
+                        text = stringResource(R.string.recipes_import_change_url_action),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.clickable(onClick = onChangeClick),
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** The found-recipe summary — a thumbnail (or the same [Icons.Filled.RestaurantMenu] placeholder
+ *  every other recipe tile falls back to), a "Gevonden" badge, the title, a "bron · tijd ·
+ *  porties" line built only from whichever of those [RecipeImportPreview.detail] actually has,
+ *  and three real stat tiles. */
+@Composable
+private fun ImportFoundCard(preview: RecipeImportPreview) {
+    val detail = preview.detail
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = SoftCardShape,
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.Top) {
+                Surface(
+                    shape = SoftImageShape,
+                    color = MaterialTheme.colorScheme.primaryContainer,
+                    modifier = Modifier.size(64.dp),
+                ) {
+                    if (detail.thumbnailUrl != null) {
+                        AsyncImage(
+                            model = detail.thumbnailUrl,
+                            contentDescription = null,
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier.fillMaxSize(),
+                        )
+                    } else {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Icon(
+                                imageVector = Icons.Filled.RestaurantMenu,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                                modifier = Modifier.size(28.dp),
+                            )
+                        }
+                    }
+                }
+                Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            imageVector = Icons.Filled.Check,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Text(
+                            text = stringResource(R.string.recipes_import_found_badge).uppercase(Locale.getDefault()),
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(start = 4.dp),
+                        )
+                    }
+                    Text(
+                        text = detail.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                    val metaParts = listOfNotNull(
+                        hostNameOf(preview.sourceUrl),
+                        detail.readyInMinutes?.let { stringResource(R.string.recipes_ready_in_minutes_format, it) },
+                        detail.servings?.let { pluralStringResource(R.plurals.recipes_import_servings_format, it, it) },
+                    )
+                    if (metaParts.isNotEmpty()) {
+                        Text(
+                            text = metaParts.joinToString(" · "),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                ImportStatTile(
+                    value = preview.totalIngredientCount.toString(),
+                    label = stringResource(R.string.recipes_import_stat_ingredients),
+                    modifier = Modifier.weight(1f),
+                )
+                ImportStatTile(
+                    value = preview.stepCount.toString(),
+                    label = stringResource(R.string.recipes_import_stat_steps),
+                    modifier = Modifier.weight(1f),
+                )
+                ImportStatTile(
+                    value = "${preview.matchedIngredientCount}/${preview.totalIngredientCount}",
+                    label = stringResource(R.string.recipes_import_stat_in_stock),
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ImportStatTile(value: String, label: String, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 2.dp),
+        )
+    }
+}
+
+/** A peek at the parsed ingredients — the first few as chips, the rest folded into a single
+ *  "+N" chip rather than listing all of them here; the full list is what the save/review buttons
+ *  below lead to either way. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ImportFoundIngredientsCard(ingredients: List<Pair<String, String>>, modifier: Modifier = Modifier) {
+    val visibleCount = 4
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+        shape = SoftCardShape,
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = stringResource(R.string.recipes_import_found_ingredients_title).uppercase(Locale.getDefault()),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(bottom = 10.dp),
+            )
+            FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                ingredients.take(visibleCount).forEach { (name, measure) ->
+                    val label = listOf(measure, name).filter { it.isNotBlank() }.joinToString(" ")
+                    IngredientFoundChip(label)
+                }
+                val overflow = ingredients.size - visibleCount
+                if (overflow > 0) {
+                    IngredientFoundChip(stringResource(R.string.recipes_import_overflow_format, overflow))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun IngredientFoundChip(label: String) {
+    Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.secondaryContainer) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+        )
+    }
+}
+
+/** Honest on purpose — nothing in [RecipeRepository.importRecipeFromUrl]'s response actually
+ *  flags *which* step or ingredient might be wrong (there's no per-line confidence score coming
+ *  back from the schema.org/Claude-fallback parse), so this stays a general nudge toward "Eerst
+ *  nakijken en bewerken" rather than pointing at a specific line it has no real signal for. */
+@Composable
+private fun ImportDisclaimerBanner(modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.tertiaryContainer,
+        shape = SoftCardShapeCompact,
+    ) {
+        Row(modifier = Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.Top) {
+            Icon(
+                imageVector = Icons.Filled.Edit,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = stringResource(R.string.recipes_import_disclaimer),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.padding(start = 10.dp),
+            )
+        }
+    }
+}
+
+/** Points at the real ACTION_SEND entry point (see MainActivity.sharedRecipeUrlFromIntent and
+ *  its intent-filter in AndroidManifest.xml) — purely informational, not a button, since there's
+ *  nothing this screen itself can do to trigger another app's share sheet. */
+@Composable
+private fun ImportShareHintCard(modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        shape = SoftCardShape,
+    ) {
+        Row(modifier = Modifier.fillMaxWidth().padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Surface(shape = SoftBadgeShape, color = MaterialTheme.colorScheme.surfaceContainerHigh, modifier = Modifier.size(36.dp)) {
+                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                    Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                }
+            }
+            Column(modifier = Modifier.padding(start = 12.dp)) {
+                Text(stringResource(R.string.recipes_import_share_hint_title), style = MaterialTheme.typography.titleSmall)
+                Text(
+                    text = stringResource(R.string.recipes_import_share_hint_subtitle),
+                    style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                OutlinedTextField(
-                    value = url,
-                    onValueChange = onUrlChange,
-                    placeholder = { Text(stringResource(R.string.recipes_import_url_placeholder)) },
-                    singleLine = true,
-                    enabled = !isImporting,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
-                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
-                )
-                // A link is almost always shared into this flow from somewhere else (a browser,
-                // another app's share sheet), so it's already on the clipboard more often than
-                // not — one tap beats switching apps to copy it, then switching back to paste.
-                TextButton(
-                    onClick = { clipboardManager.getText()?.text?.let(onUrlChange) },
-                    enabled = !isImporting,
-                    modifier = Modifier.padding(top = 4.dp),
-                ) {
-                    Icon(Icons.Filled.ContentPaste, contentDescription = null, modifier = Modifier.size(18.dp))
-                    Text(stringResource(R.string.recipes_import_url_paste_action), modifier = Modifier.padding(start = 6.dp))
-                }
-                if (isImporting) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 16.dp),
-                    ) {
-                        CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        Text(
-                            text = stringResource(R.string.recipes_import_url_loading),
-                            style = MaterialTheme.typography.bodyMedium,
-                            modifier = Modifier.padding(start = 12.dp),
-                        )
-                    }
-                }
-                if (error != null) {
-                    val (icon, messageRes) = when (error) {
-                        ImportRecipeError.PREMIUM_REQUIRED -> Icons.Filled.WorkspacePremium to R.string.recipes_import_url_failed_premium
-                        ImportRecipeError.NO_CONNECTION -> Icons.Filled.CloudOff to R.string.recipes_import_url_failed_no_connection
-                        ImportRecipeError.UNKNOWN -> Icons.Filled.WifiOff to R.string.recipes_import_url_failed_unknown
-                    }
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 16.dp),
-                    ) {
-                        Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(20.dp))
-                        Text(
-                            text = stringResource(messageRes),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.error,
-                            modifier = Modifier.padding(start = 12.dp),
-                        )
-                    }
-                }
             }
-        },
-        confirmButton = {
-            Button(onClick = onImport, enabled = !isImporting && url.isNotBlank()) {
-                Text(stringResource(R.string.recipes_import_url_action))
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss, enabled = !isImporting) {
-                Text(stringResource(R.string.common_cancel))
-            }
-        },
-    )
+        }
+    }
 }
 
 /** Switches between the household's own merged favorites+custom list, its inventory-matched
