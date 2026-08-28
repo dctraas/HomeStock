@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Groups
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PlaylistAdd
@@ -112,9 +113,8 @@ import com.dtraas.homestock.data.local.entity.ProductEntity
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.DietLabel
-import com.dtraas.homestock.ui.components.CategoryDropdown
+import com.dtraas.homestock.data.model.Location
 import com.dtraas.homestock.ui.components.HomeStockBottomSheet
-import com.dtraas.homestock.ui.components.LocationDropdown
 import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.components.SheetActionRow
 import com.dtraas.homestock.ui.components.SheetTitle
@@ -965,7 +965,11 @@ private fun ProductEditScreen(
                                 value = brand,
                                 onValueChange = { brand = it },
                             )
-                            DropdownFieldSlot { CategoryDropdown(selected = category, onSelected = onCategoryChange, modifier = Modifier.fillMaxWidth()) }
+                            CategoryFieldRow(
+                                label = stringResource(R.string.category_dropdown_label),
+                                selected = category,
+                                onSelected = onCategoryChange,
+                            )
                             EditableFieldRow(
                                 label = stringResource(R.string.product_detail_field_unit),
                                 value = unit,
@@ -988,7 +992,11 @@ private fun ProductEditScreen(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     modifier = Modifier.padding(bottom = 8.dp),
                                 )
-                                DropdownFieldSlot { LocationDropdown(selected = product.location, onSelected = onLocationChange, modifier = Modifier.fillMaxWidth()) }
+                                LocationFieldRow(
+                                    label = stringResource(R.string.product_detail_field_location),
+                                    selected = product.location,
+                                    onSelected = onLocationChange,
+                                )
                                 Column(modifier = Modifier.padding(bottom = 12.dp)) {
                                     Row(
                                         modifier = Modifier.fillMaxWidth(),
@@ -1283,14 +1291,109 @@ private fun EditableFieldRow(
     }
 }
 
-/** Wraps [CategoryDropdown]/[LocationDropdown] with the same bottom spacing [EditableFieldRow]
- *  uses, so a boxed dropdown field lines up with the borderless text rows around it — those two
- *  are shared components used elsewhere in their own boxed [OutlinedTextField] style, which this
- *  deliberately leaves alone rather than forking a second visual variant just for this screen. */
+/** The same label-above-bold-value-and-divider look as [EditableFieldRow], but for a value that
+ *  opens a [DropdownMenu] instead of being typed — a trailing chevron replaces the cursor as the
+ *  "there's more here" cue, and the whole row is the tap target rather than just an icon.
+ *  [CategoryFieldRow]/[LocationFieldRow] below build on this with each field's own real option
+ *  list, rather than reusing the shared [CategoryDropdown]/[LocationDropdown] components (kept
+ *  as-is for their own boxed-[OutlinedTextField] look everywhere else they're used) here. */
 @Composable
-private fun DropdownFieldSlot(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
-    Box(modifier = modifier.fillMaxWidth().padding(bottom = 12.dp)) {
-        content()
+private fun DropdownFieldRow(
+    label: String,
+    value: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    showDivider: Boolean = true,
+    menu: @Composable () -> Unit,
+) {
+    Box(modifier = modifier.fillMaxWidth()) {
+        Column(modifier = Modifier.fillMaxWidth().padding(bottom = if (showDivider) 12.dp else 0.dp)) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable(onClick = onClick)
+                    .padding(top = 4.dp, bottom = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Text(
+                    text = value,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Bold,
+                )
+                Icon(
+                    imageVector = Icons.Filled.KeyboardArrowDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            if (showDivider) {
+                HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+            }
+        }
+        menu()
+    }
+}
+
+@Composable
+private fun CategoryFieldRow(label: String, selected: Category, onSelected: (Category) -> Unit, modifier: Modifier = Modifier) {
+    var expanded by remember { mutableStateOf(false) }
+    DropdownFieldRow(
+        label = label,
+        value = stringResource(selected.displayNameRes),
+        onClick = { expanded = true },
+        modifier = modifier,
+    ) {
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            Category.entries.sortedBy { it.sortOrder }.forEach { category ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(category.displayNameRes)) },
+                    leadingIcon = { Icon(category.icon, contentDescription = null) },
+                    onClick = {
+                        onSelected(category)
+                        expanded = false
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun LocationFieldRow(label: String, selected: String?, onSelected: (String?) -> Unit, modifier: Modifier = Modifier) {
+    var expanded by remember { mutableStateOf(false) }
+    val displayValue = selected
+        ?.let { raw -> Location.fromStorageKey(raw)?.let { stringResource(it.labelRes) } ?: raw }
+        ?: stringResource(R.string.inventory_no_location_label)
+    DropdownFieldRow(
+        label = label,
+        value = displayValue,
+        onClick = { expanded = true },
+        modifier = modifier,
+    ) {
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.inventory_no_location_label)) },
+                onClick = {
+                    onSelected(null)
+                    expanded = false
+                },
+            )
+            Location.entries.forEach { location ->
+                DropdownMenuItem(
+                    text = { Text(stringResource(location.labelRes)) },
+                    onClick = {
+                        onSelected(location.storageKey)
+                        expanded = false
+                    },
+                )
+            }
+        }
     }
 }
 
