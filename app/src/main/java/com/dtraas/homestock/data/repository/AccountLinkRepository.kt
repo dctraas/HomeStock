@@ -71,6 +71,21 @@ class AccountLinkRepository(
         get() = auth.currentUser?.providerData?.firstOrNull { it.providerId == GoogleAuthProvider.PROVIDER_ID }?.email
 
     /**
+     * When this Firebase session itself was first created, or null if not linked — the closest
+     * real proxy this app has for "since when" a Google account has been attached, since Firebase
+     * doesn't separately track per-provider link timestamps and linking never changes the
+     * session's own uid/creation time (see [linkWithGoogleIdToken]'s doc). For the common flow
+     * (anonymous session created on first launch, linked to Google soon after) this is close
+     * enough to "linked since" to show; for a session recovered via
+     * [switchToExistingGoogleAccount] it's that *other*, older account's own creation time,
+     * which is an even more accurate answer to "since when has this Google account been able to
+     * get back into a HomeStock household" — the actual question AccountLinkScreen's linked-state
+     * card is answering.
+     */
+    val linkedSinceMillis: Long?
+        get() = auth.currentUser?.takeIf { isGoogleLinked(it) }?.metadata?.creationTimestamp
+
+    /**
      * Links the current anonymous session to the Google account identified by [idToken].
      *
      * Can fail with [com.google.firebase.auth.FirebaseAuthUserCollisionException] if that

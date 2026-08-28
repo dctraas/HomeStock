@@ -265,8 +265,6 @@
     <string name="account_link_footer_eyebrow">Appareil lié</string>
     <string name="account_link_footer_none">Aucun compte lié pour l\'instant</string>
     <string name="account_link_google_button">Continuer avec Google</string>
-    <string name="account_link_linked_title">Compte lié</string>
-    <string name="account_link_linked_subtitle_format">Lié à %1$s. Votre accès à ce foyer est conservé, même après une réinstallation.</string>
     <string name="account_link_recover_dialog_title">Basculer vers le compte existant ?</string>
     <string name="account_link_recover_dialog_text">Cet appareil basculera vers le compte déjà lié à ce compte Google. Tout ce que vous avez créé sur cet appareil depuis la réinstallation (comme un nouveau foyer) reste intact, mais cet appareil en perdra l\'accès — vous pourrez le rejoindre plus tard avec son code de foyer.</string>
     <string name="account_link_recover_confirm">Basculer</string>
@@ -275,6 +273,23 @@
     <string name="account_link_recover_picker_title">Quel foyer voulez-vous rouvrir ?</string>
     <string name="account_link_recover_picker_text">Ce compte est lié au foyer ci-dessous. Choisissez-le pour reconnecter cet appareil.</string>
     <string name="account_link_recover_retry">Réessayer</string>
+    <string name="account_link_linked_header_title">Compte</string>
+    <string name="account_link_via_google_no_date">Lié via Google</string>
+    <string name="account_link_since_format">Lié via Google · depuis le %1$s</string>
+    <string name="account_link_household_eyebrow">Foyer</string>
+    <string name="account_link_secured_eyebrow">Protégé</string>
+    <string name="account_link_secured_none">Pas encore de données</string>
+    <string name="account_link_benefits_eyebrow">Ce que cela t\'apporte</string>
+    <string name="account_link_benefit_check_new_device">Nouvel appareil ? Se connecter suffit.</string>
+    <string name="account_link_benefit_check_owner_format">Tu restes propriétaire de %1$s.</string>
+    <string name="account_link_switch_account_title">Passer à un autre compte</string>
+    <string name="account_link_switch_account_subtitle">Retrouve les foyers de ce compte</string>
+    <string name="account_link_unlink_row_title">Dissocier le compte</string>
+    <string name="account_link_unlink_row_subtitle">Cet appareil perd son chemin de récupération</string>
+    <plurals name="account_link_secured_months_format">
+        <item quantity="one">%1$d mois de données</item>
+        <item quantity="other">%1$d mois de données</item>
+    </plurals>
     <string name="account_link_error_generic">Impossible de lier le compte. Réessayez.</string>
     <string name="account_link_prompt_title">Liez votre compte</string>
     <string name="account_link_prompt_message">Évitez de perdre l\'accès à ce foyer si vous désinstallez l\'application ou changez d\'appareil. Cela ne prend que quelques instants, et vous pouvez aussi le faire plus tard via Plus.</string>

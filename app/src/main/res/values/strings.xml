@@ -269,8 +269,23 @@
     <string name="account_link_footer_eyebrow">Gekoppeld toestel</string>
     <string name="account_link_footer_none">Nog geen account gekoppeld</string>
     <string name="account_link_google_button">Doorgaan met Google</string>
-    <string name="account_link_linked_title">Account gekoppeld</string>
-    <string name="account_link_linked_subtitle_format">Gekoppeld met %1$s. Je toegang tot dit huishouden blijft behouden, ook na een nieuwe installatie.</string>
+    <string name="account_link_linked_header_title">Account</string>
+    <string name="account_link_via_google_no_date">Gekoppeld via Google</string>
+    <string name="account_link_since_format">Gekoppeld via Google · sinds %1$s</string>
+    <string name="account_link_household_eyebrow">Huishouden</string>
+    <string name="account_link_secured_eyebrow">Beveiligd</string>
+    <string name="account_link_secured_none">Nog geen data</string>
+    <string name="account_link_benefits_eyebrow">Wat dit voor je doet</string>
+    <string name="account_link_benefit_check_new_device">Nieuw toestel? Inloggen is genoeg.</string>
+    <string name="account_link_benefit_check_owner_format">Je blijft eigenaar van %1$s.</string>
+    <string name="account_link_switch_account_title">Overstappen naar een ander account</string>
+    <string name="account_link_switch_account_subtitle">Zoek de huishoudens van dat account op</string>
+    <string name="account_link_unlink_row_title">Account ontkoppelen</string>
+    <string name="account_link_unlink_row_subtitle">Dit toestel verliest zijn herstelpad</string>
+    <plurals name="account_link_secured_months_format">
+        <item quantity="one">%1$d maand data</item>
+        <item quantity="other">%1$d maanden data</item>
+    </plurals>
     <string name="account_link_error_generic">Koppelen is niet gelukt. Probeer het opnieuw.</string>
     <string name="account_link_recover_dialog_title">Overstappen naar bestaand account?</string>
     <string name="account_link_recover_dialog_text">Dit toestel schakelt over naar het account dat al aan dit Google-account gekoppeld is. Gegevens die je op dit toestel al hebt aangemaakt sinds de herinstallatie (zoals een nieuw huishouden) blijven bestaan, maar dit toestel raakt de toegang ertoe kwijt — je kunt daar later weer bij met de huishouden-code.</string>

@@ -1,6 +1,7 @@
 package com.dtraas.homestock.ui.account
 
 import android.content.Context
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -9,20 +10,25 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Link
+import androidx.compose.material.icons.filled.LinkOff
 import androidx.compose.material.icons.filled.PhoneAndroid
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -49,6 +55,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -63,15 +70,19 @@ import com.dtraas.homestock.R
 import com.dtraas.homestock.data.repository.RecoverableHousehold
 import com.dtraas.homestock.ui.components.HomeStockBottomSheet
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
+import com.dtraas.homestock.ui.components.SheetEyebrow
 import com.dtraas.homestock.ui.components.SheetPrimaryButton
 import com.dtraas.homestock.ui.components.SheetTitle
+import com.dtraas.homestock.ui.components.initialsOf
 import com.dtraas.homestock.ui.components.sheetContentPadding
-import com.dtraas.homestock.ui.theme.SoftBadgeShape
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.google.android.libraries.identity.googleid.GetSignInWithGoogleOption
 import com.google.android.libraries.identity.googleid.GoogleIdTokenCredential
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.launch
 
@@ -272,7 +283,13 @@ fun AccountLinkScreen(onBack: () -> Unit, onNavigateToPrivacyPolicy: () -> Unit 
             HomeStockTopAppBar(
                 title = {
                     Column {
-                        Text(stringResource(R.string.account_link_row_title))
+                        Text(
+                            text = if (isLinked) {
+                                stringResource(R.string.account_link_linked_header_title)
+                            } else {
+                                stringResource(R.string.account_link_row_title)
+                            },
+                        )
                         if (!isLinked) {
                             Text(
                                 text = stringResource(R.string.account_link_header_subtitle),
@@ -303,8 +320,12 @@ fun AccountLinkScreen(onBack: () -> Unit, onNavigateToPrivacyPolicy: () -> Unit 
             if (isLinked) {
                 LinkedState(
                     email = accountLinkRepository.linkedEmail,
+                    linkedSinceMillis = accountLinkRepository.linkedSinceMillis,
+                    householdName = householdName?.takeIf { it.isNotBlank() },
+                    historyMonths = historyMonths,
                     isUnlinking = isUnlinking,
                     errorMessage = errorMessage,
+                    onSwitchAccountClick = ::findExistingAccount,
                     onUnlinkClick = { showUnlinkConfirm = true },
                 )
             } else {
@@ -625,51 +646,186 @@ private fun LinkedDeviceFooter() {
     }
 }
 
+private val linkedSinceDateFormatter = SimpleDateFormat("d MMMM", Locale.getDefault())
+
+/**
+ * Rebuilt per screenshot (2026-08 review): an identity card (email + since-when, household name
+ * and how much history is protected), a "wat dit voor je doet" reassurance card, a real
+ * "overstappen naar een ander account" entry point (the same [findExistingAccount] flow the
+ * unlinked screen's own "Ik had al een account" row already runs — switching accounts works
+ * exactly the same whether or not one is already linked), and the destructive unlink action
+ * moved into its own coral danger card instead of a plain centered text button. Deliberately
+ * doesn't show a device list — there's no real per-device presence tracking anywhere in this app
+ * (Firebase Auth's client SDK has no such API, and building one would mean new server-side
+ * infrastructure well beyond this screen) — inventing device names/timestamps here would just be
+ * fabricated data with nothing behind it.
+ */
 @Composable
-private fun LinkedState(email: String?, isUnlinking: Boolean, errorMessage: String?, onUnlinkClick: () -> Unit) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth().padding(top = 24.dp)) {
+private fun LinkedState(
+    email: String?,
+    linkedSinceMillis: Long?,
+    householdName: String?,
+    historyMonths: Int?,
+    isUnlinking: Boolean,
+    errorMessage: String?,
+    onSwitchAccountClick: () -> Unit,
+    onUnlinkClick: () -> Unit,
+) {
+    val resolvedHouseholdName = householdName ?: stringResource(R.string.more_household_default_name)
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Surface(shape = SoftCardShape, color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
+            Column {
+                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.primaryContainer, modifier = Modifier.size(48.dp)) {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                            Text(
+                                text = initialsOf(email?.substringBefore("@") ?: "?"),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                            )
+                        }
+                    }
+                    Column(modifier = Modifier.padding(start = 12.dp)) {
+                        Text(text = email ?: "—", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Bold)
+                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                            Icon(
+                                imageVector = Icons.Filled.CheckCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp),
+                            )
+                            Text(
+                                text = linkedSinceMillis?.let {
+                                    stringResource(R.string.account_link_since_format, linkedSinceDateFormatter.format(Date(it)))
+                                } ?: stringResource(R.string.account_link_via_google_no_date),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 4.dp),
+                            )
+                        }
+                    }
+                }
+                HorizontalDivider()
+                Row(modifier = Modifier.padding(16.dp)) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        SheetEyebrow(text = stringResource(R.string.account_link_household_eyebrow))
+                        Text(
+                            text = resolvedHouseholdName,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .width(1.dp)
+                            .height(32.dp)
+                            .background(MaterialTheme.colorScheme.outlineVariant),
+                    )
+                    Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
+                        SheetEyebrow(text = stringResource(R.string.account_link_secured_eyebrow))
+                        Text(
+                            text = historyMonths?.let { pluralStringResource(R.plurals.account_link_secured_months_format, it, it) }
+                                ?: stringResource(R.string.account_link_secured_none),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
+                    }
+                }
+            }
+        }
+
+        Surface(shape = SoftCardShape, color = MaterialTheme.colorScheme.surfaceContainerLow, modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+                SheetEyebrow(text = stringResource(R.string.account_link_benefits_eyebrow))
+                AccountLinkCheckRow(stringResource(R.string.account_link_benefit_check_new_device))
+                AccountLinkCheckRow(stringResource(R.string.account_link_benefit_reinstall_title))
+                AccountLinkCheckRow(stringResource(R.string.account_link_benefit_check_owner_format, resolvedHouseholdName))
+            }
+        }
+
         Surface(
-            shape = SoftBadgeShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier.size(96.dp),
+            shape = SoftCardShape,
+            color = MaterialTheme.colorScheme.surfaceContainerLow,
+            modifier = Modifier.fillMaxWidth().clickable(onClick = onSwitchAccountClick),
         ) {
-            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+            Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(imageVector = Icons.Filled.SwapHoriz, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+                    Text(
+                        text = stringResource(R.string.account_link_switch_account_title),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Text(
+                        text = stringResource(R.string.account_link_switch_account_subtitle),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
                 Icon(
-                    imageVector = Icons.Filled.CheckCircle,
+                    imageVector = Icons.Filled.ChevronRight,
                     contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    modifier = Modifier.size(48.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
         }
-        Text(
-            text = stringResource(R.string.account_link_linked_title),
-            style = MaterialTheme.typography.titleMedium,
-            modifier = Modifier.padding(top = 20.dp),
-        )
-        Text(
-            text = stringResource(R.string.account_link_linked_subtitle_format, email ?: "—"),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.padding(top = 4.dp),
-        )
+
         if (errorMessage != null) {
-            Text(
-                text = errorMessage,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.error,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.padding(top = 12.dp),
-            )
+            Text(text = errorMessage, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
         }
-        TextButton(onClick = onUnlinkClick, enabled = !isUnlinking, modifier = Modifier.padding(top = 20.dp)) {
-            if (isUnlinking) {
-                CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
-            } else {
-                Text(stringResource(R.string.account_link_unlink_button), color = MaterialTheme.colorScheme.error)
+
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            SheetEyebrow(text = stringResource(R.string.household_danger_zone_eyebrow), color = MaterialTheme.colorScheme.error)
+            Surface(
+                shape = SoftCardShape,
+                color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f),
+                border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.3f)),
+                modifier = Modifier.fillMaxWidth().clickable(enabled = !isUnlinking, onClick = onUnlinkClick),
+            ) {
+                Row(modifier = Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(imageVector = Icons.Filled.LinkOff, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                    Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+                        Text(
+                            text = stringResource(R.string.account_link_unlink_row_title),
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error,
+                        )
+                        Text(
+                            text = stringResource(R.string.account_link_unlink_row_subtitle),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                        )
+                    }
+                    if (isUnlinking) {
+                        CircularProgressIndicator(modifier = Modifier.size(18.dp), strokeWidth = 2.dp, color = MaterialTheme.colorScheme.error)
+                    }
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun AccountLinkCheckRow(text: String) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Box(
+            modifier = Modifier
+                .size(20.dp)
+                .background(MaterialTheme.colorScheme.primary, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.CheckCircle,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(14.dp),
+            )
+        }
+        Text(text = text, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(start = 10.dp))
     }
 }
 

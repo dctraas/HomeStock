@@ -265,8 +265,6 @@
     <string name="account_link_footer_eyebrow">Linked device</string>
     <string name="account_link_footer_none">No account linked yet</string>
     <string name="account_link_google_button">Continue with Google</string>
-    <string name="account_link_linked_title">Account linked</string>
-    <string name="account_link_linked_subtitle_format">Linked with %1$s. Your access to this household is preserved, even after a reinstall.</string>
     <string name="account_link_recover_dialog_title">Switch to existing account?</string>
     <string name="account_link_recover_dialog_text">This device will switch to the account already linked to this Google account. Anything you created on this device since reinstalling (like a new household) stays intact, but this device loses access to it — you can rejoin later with its household code.</string>
     <string name="account_link_recover_confirm">Switch</string>
@@ -275,6 +273,23 @@
     <string name="account_link_recover_picker_title">Which household do you want to reopen?</string>
     <string name="account_link_recover_picker_text">This account is linked to the household below. Choose it to reconnect this device.</string>
     <string name="account_link_recover_retry">Try again</string>
+    <string name="account_link_linked_header_title">Account</string>
+    <string name="account_link_via_google_no_date">Linked via Google</string>
+    <string name="account_link_since_format">Linked via Google · since %1$s</string>
+    <string name="account_link_household_eyebrow">Household</string>
+    <string name="account_link_secured_eyebrow">Secured</string>
+    <string name="account_link_secured_none">No data yet</string>
+    <string name="account_link_benefits_eyebrow">What this does for you</string>
+    <string name="account_link_benefit_check_new_device">New device? Signing in is enough.</string>
+    <string name="account_link_benefit_check_owner_format">You stay the owner of %1$s.</string>
+    <string name="account_link_switch_account_title">Switch to a different account</string>
+    <string name="account_link_switch_account_subtitle">Look up that account\'s households</string>
+    <string name="account_link_unlink_row_title">Unlink account</string>
+    <string name="account_link_unlink_row_subtitle">This device loses its recovery path</string>
+    <plurals name="account_link_secured_months_format">
+        <item quantity="one">%1$d month of data</item>
+        <item quantity="other">%1$d months of data</item>
+    </plurals>
     <string name="account_link_error_generic">Couldn\'t link your account. Please try again.</string>
     <string name="account_link_prompt_title">Link your account</string>
     <string name="account_link_prompt_message">Prevent losing access to this household if you uninstall the app or switch devices. It only takes a couple of taps, and you can also do this later via More.</string>

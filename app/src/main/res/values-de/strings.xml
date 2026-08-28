@@ -265,8 +265,6 @@
     <string name="account_link_footer_eyebrow">Verknüpftes Gerät</string>
     <string name="account_link_footer_none">Noch kein Konto verknüpft</string>
     <string name="account_link_google_button">Weiter mit Google</string>
-    <string name="account_link_linked_title">Konto verknüpft</string>
-    <string name="account_link_linked_subtitle_format">Verknüpft mit %1$s. Dein Zugriff auf diesen Haushalt bleibt erhalten, auch nach einer Neuinstallation.</string>
     <string name="account_link_recover_dialog_title">Zu bestehendem Konto wechseln?</string>
     <string name="account_link_recover_dialog_text">Dieses Gerät wechselt zu dem Konto, das bereits mit diesem Google-Konto verknüpft ist. Alles, was du seit der Neuinstallation auf diesem Gerät erstellt hast (z. B. einen neuen Haushalt), bleibt erhalten, aber dieses Gerät verliert den Zugriff darauf — du kannst später mit dem Haushalt-Code wieder beitreten.</string>
     <string name="account_link_recover_confirm">Wechseln</string>
@@ -275,6 +273,23 @@
     <string name="account_link_recover_picker_title">Welchen Haushalt möchtest du wieder öffnen?</string>
     <string name="account_link_recover_picker_text">Dieses Konto ist mit dem unten stehenden Haushalt verknüpft. Wähle ihn, um dieses Gerät wieder damit zu verbinden.</string>
     <string name="account_link_recover_retry">Erneut versuchen</string>
+    <string name="account_link_linked_header_title">Konto</string>
+    <string name="account_link_via_google_no_date">Verknüpft über Google</string>
+    <string name="account_link_since_format">Verknüpft über Google · seit %1$s</string>
+    <string name="account_link_household_eyebrow">Haushalt</string>
+    <string name="account_link_secured_eyebrow">Gesichert</string>
+    <string name="account_link_secured_none">Noch keine Daten</string>
+    <string name="account_link_benefits_eyebrow">Was das für dich bedeutet</string>
+    <string name="account_link_benefit_check_new_device">Neues Gerät? Anmelden reicht.</string>
+    <string name="account_link_benefit_check_owner_format">Du bleibst Eigentümer von %1$s.</string>
+    <string name="account_link_switch_account_title">Zu einem anderen Konto wechseln</string>
+    <string name="account_link_switch_account_subtitle">Haushalte dieses Kontos suchen</string>
+    <string name="account_link_unlink_row_title">Konto entkoppeln</string>
+    <string name="account_link_unlink_row_subtitle">Dieses Gerät verliert seinen Wiederherstellungsweg</string>
+    <plurals name="account_link_secured_months_format">
+        <item quantity="one">%1$d Monat Daten</item>
+        <item quantity="other">%1$d Monate Daten</item>
+    </plurals>
     <string name="account_link_error_generic">Verknüpfen ist fehlgeschlagen. Bitte versuche es erneut.</string>
     <string name="account_link_prompt_title">Konto verknüpfen</string>
     <string name="account_link_prompt_message">Verhindere, dass du den Zugriff auf diesen Haushalt verlierst, wenn du die App deinstallierst oder das Gerät wechselst. Das dauert nur ein paar Klicks und geht später auch noch über Mehr.</string>

@@ -265,8 +265,6 @@
     <string name="account_link_footer_eyebrow">Dispositivo vinculado</string>
     <string name="account_link_footer_none">Aún no hay ninguna cuenta vinculada</string>
     <string name="account_link_google_button">Continuar con Google</string>
-    <string name="account_link_linked_title">Cuenta vinculada</string>
-    <string name="account_link_linked_subtitle_format">Vinculada con %1$s. Tu acceso a este hogar se conserva, incluso después de reinstalar.</string>
     <string name="account_link_recover_dialog_title">¿Cambiar a la cuenta existente?</string>
     <string name="account_link_recover_dialog_text">Este dispositivo cambiará a la cuenta ya vinculada a esta cuenta de Google. Lo que hayas creado en este dispositivo desde la reinstalación (como un nuevo hogar) se conserva, pero este dispositivo perderá el acceso a ello; podrás volver a unirte más tarde con su código de hogar.</string>
     <string name="account_link_recover_confirm">Cambiar</string>
@@ -275,6 +273,23 @@
     <string name="account_link_recover_picker_title">¿Qué hogar quieres volver a abrir?</string>
     <string name="account_link_recover_picker_text">Esta cuenta está vinculada al siguiente hogar. Elígelo para reconectar este dispositivo.</string>
     <string name="account_link_recover_retry">Intentar de nuevo</string>
+    <string name="account_link_linked_header_title">Cuenta</string>
+    <string name="account_link_via_google_no_date">Vinculada con Google</string>
+    <string name="account_link_since_format">Vinculada con Google · desde %1$s</string>
+    <string name="account_link_household_eyebrow">Hogar</string>
+    <string name="account_link_secured_eyebrow">Protegido</string>
+    <string name="account_link_secured_none">Aún sin datos</string>
+    <string name="account_link_benefits_eyebrow">Qué hace esto por ti</string>
+    <string name="account_link_benefit_check_new_device">¿Dispositivo nuevo? Con iniciar sesión basta.</string>
+    <string name="account_link_benefit_check_owner_format">Sigues siendo el propietario de %1$s.</string>
+    <string name="account_link_switch_account_title">Cambiar a otra cuenta</string>
+    <string name="account_link_switch_account_subtitle">Busca los hogares de esa cuenta</string>
+    <string name="account_link_unlink_row_title">Desvincular cuenta</string>
+    <string name="account_link_unlink_row_subtitle">Este dispositivo pierde su vía de recuperación</string>
+    <plurals name="account_link_secured_months_format">
+        <item quantity="one">%1$d mes de datos</item>
+        <item quantity="other">%1$d meses de datos</item>
+    </plurals>
     <string name="account_link_error_generic">No se pudo vincular la cuenta. Inténtalo de nuevo.</string>
     <string name="account_link_prompt_title">Vincula tu cuenta</string>
     <string name="account_link_prompt_message">Evita perder el acceso a este hogar si desinstalas la app o cambias de dispositivo. Solo lleva un par de toques, y también puedes hacerlo más tarde desde Más.</string>
