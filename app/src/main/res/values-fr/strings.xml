@@ -611,7 +611,7 @@
     <string name="notifications_history_empty">Les scans et modifications apparaîtront ici.</string>
     <string name="notifications_member_filter_everyone">Tout le monde</string>
     <string name="notifications_mark_read_action">Marquer comme lu</string>
-    <string name="notifications_tips_teaser_title">Messages de HomeStock</string>
+    <string name="notifications_tips_teaser_title">Messages</string>
     <plurals name="notifications_unread_banner_format">
         <item quantity="one">%1$d modification depuis %2$s %3$s</item>
         <item quantity="other">%1$d modifications depuis %2$s %3$s</item>

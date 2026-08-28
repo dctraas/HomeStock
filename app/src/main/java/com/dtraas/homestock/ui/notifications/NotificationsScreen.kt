@@ -155,19 +155,34 @@ fun NotificationsScreen(onBack: () -> Unit, onNavigateToProduct: (String) -> Uni
                 onSelectMember = viewModel::onMemberFilterChange,
             )
 
-            if (appActivity.isEmpty() && urgentItem == null) {
-                EmptyState(stringResource(R.string.notifications_history_empty))
-            } else {
-                ActivityTimeline(
-                    urgentItem = urgentItem,
-                    activity = appActivity,
-                    members = members,
-                    lastSeenAt = lastActivitySeenAt,
-                    unreadCount = unreadActivityCount,
-                    onMarkSeen = viewModel::markActivitySeen,
-                    tipsCount = developerNotices.size,
-                    onNavigateToProduct = onNavigateToProduct,
-                    onTipsTeaserClick = { showTipsSheet = true },
+            Box(modifier = Modifier.weight(1f)) {
+                if (appActivity.isEmpty() && urgentItem == null) {
+                    EmptyState(stringResource(R.string.notifications_history_empty))
+                } else {
+                    ActivityTimeline(
+                        urgentItem = urgentItem,
+                        activity = appActivity,
+                        members = members,
+                        lastSeenAt = lastActivitySeenAt,
+                        unreadCount = unreadActivityCount,
+                        onMarkSeen = viewModel::markActivitySeen,
+                        onNavigateToProduct = onNavigateToProduct,
+                    )
+                }
+            }
+
+            // Pinned below the (independently scrolling, weight(1f)'d) timeline above rather
+            // than as its own last LazyColumn item — a message *from the app itself* stays put
+            // as the household scrolls through their own activity, the same way the header stays
+            // put above it. Shown whenever there's at least one notice, regardless of whether the
+            // timeline itself has anything in it (previously tied to ActivityTimeline's own
+            // content, which meant an empty activity log hid this row too, even with notices
+            // waiting).
+            if (developerNotices.isNotEmpty()) {
+                TipsTeaserRow(
+                    count = developerNotices.size,
+                    onClick = { showTipsSheet = true },
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
                 )
             }
         }
@@ -284,10 +299,10 @@ private fun dayHeaderLabel(date: LocalDate, today: LocalDate): String = when (da
 
 /**
  * The main (and now only) timeline view: an optional urgent card, an unread banner when there's
- * anything new since [lastSeenAt], the household activity log grouped under date-eyebrow headers
- * ("VANDAAG", "GISTEREN", …) with an unread dot per row, and one collapsed teaser row for
- * developer tips at the very end — always there once any exist, rather than interleaving
- * individual tips into a dated timeline they don't actually have real dates for.
+ * anything new since [lastSeenAt], and the household activity log grouped under date-eyebrow
+ * headers ("VANDAAG", "GISTEREN", …) with an unread dot per row. The developer-tips teaser row
+ * used to be the last item here; it's now pinned below this whole timeline instead (see
+ * [NotificationsScreen]), so it isn't part of this list any more.
  */
 @Composable
 private fun ActivityTimeline(
@@ -297,9 +312,7 @@ private fun ActivityTimeline(
     lastSeenAt: Long,
     unreadCount: Int,
     onMarkSeen: () -> Unit,
-    tipsCount: Int,
     onNavigateToProduct: (String) -> Unit,
-    onTipsTeaserClick: () -> Unit,
 ) {
     val today = remember { LocalDate.now() }
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
@@ -345,12 +358,6 @@ private fun ActivityTimeline(
                 today = today,
                 isUnread = entry.timestamp > lastSeenAt,
             )
-        }
-
-        if (tipsCount > 0) {
-            item(key = "tips_teaser") {
-                TipsTeaserRow(count = tipsCount, onClick = onTipsTeaserClick, modifier = Modifier.padding(top = 16.dp))
-            }
         }
     }
 }
@@ -530,10 +537,12 @@ private fun HouseholdActivityRow(entry: ActivityLogWithProduct, photoUrl: String
 }
 
 /** Collapsed teaser for developer tips, always shown once any exist — tapping it opens
- *  [TipsSheet] instead of interleaving each tip into the dated timeline above, which (unlike
- *  household events) has no real per-tip date to group under. Used to be behind its own
- *  "Meldingen" tab chip; now it's this row's only entry point, styled as a message from the app
- *  itself ("Berichten van HomeStock") rather than a settings-y tab label. */
+ *  [TipsSheet] instead of interleaving each tip into the dated timeline, which (unlike household
+ *  events) has no real per-tip date to group under. Used to be behind its own "Meldingen" tab
+ *  chip; now it's this row's only entry point, styled as a message from the app itself
+ *  ("Berichten") rather than a settings-y tab label. Pinned below the scrolling timeline (see
+ *  [NotificationsScreen]) rather than living inside it, so it stays on screen the same way the
+ *  header above the timeline does. */
 @Composable
 private fun TipsTeaserRow(count: Int, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Surface(

@@ -615,7 +615,7 @@
     <string name="notifications_history_empty">Scans en aanpassingen verschijnen hier.</string>
     <string name="notifications_member_filter_everyone">Iedereen</string>
     <string name="notifications_mark_read_action">Markeer gelezen</string>
-    <string name="notifications_tips_teaser_title">Berichten van HomeStock</string>
+    <string name="notifications_tips_teaser_title">Berichten</string>
     <plurals name="notifications_unread_banner_format">
         <item quantity="one">%1$d wijziging sinds %2$s %3$s</item>
         <item quantity="other">%1$d wijzigingen sinds %2$s %3$s</item>
