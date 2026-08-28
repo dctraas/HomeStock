@@ -327,28 +327,22 @@
     <string name="more_language_option_es">Spanisch</string>
     <string name="more_stores_title">Geschäfte</string>
     <string name="more_stores_menu_subtitle">Namen, Reihenfolge und Ganganordnung deiner Geschäfte</string>
-    <string name="more_aisle_order_row_title">Gangreihenfolge</string>
-    <string name="more_aisle_order_row_subtitle">Reihenfolge der Produktkategorien pro Geschäft im Einkaufsmodus und in der Gangansicht</string>
     <string name="more_aisle_order_title">Gangreihenfolge</string>
-    <string name="more_aisle_order_subtitle">Wähle ein Geschäft, um seine Gangreihenfolge anzupassen</string>
     <string name="more_aisle_order_store_subtitle">Ordne die Kategorien in der Reihenfolge, in der du sie in diesem Geschäft triffst</string>
-    <string name="more_aisle_order_merge_hint">Tippe bei einem Gang auf ⋮, um Gänge zusammenzufügen oder wieder zu trennen.</string>
+    <string name="more_aisle_order_merge_hint">Ziehe zum Umordnen. Tippe auf ⋮, um Gänge zusammenzufügen oder zu trennen.</string>
     <string name="more_aisle_order_merge_next">Mit nächstem Gang zusammenfügen</string>
     <string name="more_aisle_order_split">Diesen Gang trennen</string>
     <string name="more_aisle_order_row_options_cd">Weitere Optionen für diesen Gang</string>
-    <string name="more_aisle_order_no_stores">Füge zuerst unter Geschäfte ein Geschäft hinzu, um dafür eine Gangreihenfolge festzulegen</string>
-    <string name="more_aisle_order_move_up_cd">Nach oben</string>
-    <string name="more_aisle_order_move_down_cd">Nach unten</string>
     <string name="more_aisle_order_reset">Standardreihenfolge wiederherstellen</string>
     <string name="more_stores_empty">Noch keine Geschäfte hinzugefügt.</string>
     <string name="more_stores_remove_format">%1$s entfernen</string>
-    <string name="more_stores_subtitle">Deine Einkaufsliste wird nach Geschäft gruppiert, in dieser Reihenfolge.</string>
+    <string name="more_stores_subtitle">Bestimmt die Reihenfolge deiner Einkaufsliste</string>
 
     <string name="more_stores_add_section">Hinzufügen</string>
 
     <string name="more_stores_other_placeholder">Anderes Geschäft…</string>
 
-    <string name="more_stores_unused">Nicht in Gebrauch</string>
+    <string name="more_stores_unused">Keine Artikel</string>
 
     <string name="more_stores_row_options_cd">Weitere Optionen für %1$s</string>
 
@@ -372,6 +366,25 @@
 
         <item quantity="other">%1$d Artikel auf der Einkaufsliste verlieren ihr Geschäft.</item>
 
+    </plurals>
+    <string name="more_stores_default_badge">STANDARD</string>
+    <string name="more_stores_configure_action">Einrichten</string>
+    <string name="more_stores_edit_aisle_order_action">Gangreihenfolge anpassen</string>
+    <string name="more_stores_default_order_label">Standardreihenfolge</string>
+    <string name="more_stores_paths_overflow_format">+%1$d</string>
+    <string name="more_stores_add_other_short">Andere…</string>
+    <string name="more_stores_hint">Ziehe, um zu bestimmen, welches Geschäft oben in deiner Liste steht. Das Standardgeschäft öffnet den Einkaufsmodus.</string>
+    <string name="more_aisle_order_screen_subtitle_format">%1$s · so wie du läufst</string>
+    <string name="more_aisle_order_empty_count">leer</string>
+    <string name="more_aisle_order_merged_hint">Gleicher Gang · zum Trennen tippen</string>
+    <string name="more_aisle_order_preview_title">SO WIRD DEINE LISTE</string>
+    <plurals name="more_stores_paths_count_format">
+        <item quantity="one">%1$d Gang</item>
+        <item quantity="other">%1$d Gänge</item>
+    </plurals>
+    <plurals name="more_aisle_order_item_count_format">
+        <item quantity="one">%1$d Artikel</item>
+        <item quantity="other">%1$d Artikel</item>
     </plurals>
     <string name="more_statistics_title">Einblick &amp; Verschwendung</string>
     <string name="more_statistics_subtitle">Vorrat, Verschwendung und Scans pro Haushaltsmitglied</string>

@@ -52,6 +52,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.BugReport
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
@@ -61,13 +62,14 @@ import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.ImportExport
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Inventory2
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material.icons.filled.PrivacyTip
+import androidx.compose.material.icons.filled.Restore
+import androidx.compose.material.icons.filled.Route
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material.icons.filled.Star
@@ -83,11 +85,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
@@ -108,6 +108,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -132,6 +133,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
@@ -283,6 +285,17 @@ fun MoreScreen(
     val shoppingListItemCountByStore by remember {
         shoppingListRepository.observeShoppingList().map { items ->
             items.filter { !it.isChecked }.groupingBy { it.store }.eachCount()
+        }
+    }.collectAsState(initial = emptyMap())
+    // Same unchecked-only counts, but broken down by category too — feeds the Winkels screen's
+    // "N gangpaden" count and per-store gangpad chip preview, and the Gangvolgorde screen's
+    // per-gang item counts, without a second Firestore read (StoresScreen/AisleOrderScreen only
+    // ever need store.aislePaths() to bucket these, already available from storeRepository).
+    val shoppingListCategoryCountByStore by remember {
+        shoppingListRepository.observeShoppingList().map { items ->
+            items.filter { !it.isChecked }.groupBy { it.store }.mapValues { (_, storeItems) ->
+                storeItems.groupingBy { it.category }.eachCount()
+            }
         }
     }.collectAsState(initial = emptyMap())
     val inventoryRepository = application.container.inventoryRepository
@@ -982,9 +995,10 @@ fun MoreScreen(
     }
 
     if (showStoresDialog) {
-        StoresDialog(
+        StoresScreen(
             stores = stores,
             itemCountByStore = shoppingListItemCountByStore,
+            categoryCountByStore = shoppingListCategoryCountByStore,
             onAdd = { name -> coroutineScope.launch { storeRepository.addStore(name) } },
             onRemove = { store ->
                 coroutineScope.launch {
@@ -2303,104 +2317,104 @@ private fun AppPreviewCard() {
 }
 
 /**
- * Rebuilt as a bottom sheet (2026-08 dialog review): a subtitle stating what the order is
- * actually for (it's the shopping list's own store-section order), rows the household can
- * drag to reorder instead of a fixed list, a real "N items op de lijst" count per store instead
- * of a bare name, and delete moved off an instant rim `close` button into a per-row overflow
- * that asks first — see [pendingDelete] below.
+ * Full-screen "Winkels" — rebuilt from the bottom sheet above (2026-08 screen review) to match
+ * the rest of the app's other rebuilt settings destinations: a green header (back + "+" to add a
+ * store), drag-to-reorder store cards each showing a real "N items op de lijst · M gangpaden"
+ * (or "standaardvolgorde" when [StoreEntity.aisleOrder] has never been customized) count, a
+ * "STANDAARD" badge on whichever store currently sits at the top of the list — that's the one
+ * [onSwitchStore]'s single-store fallback and the shopping list's own default store-filter chip
+ * land on, so it's the literal answer to "which store does Winkelmodus open" — and a quick-add
+ * chip row for the household's likely next store. Delete stays behind a per-row overflow that
+ * confirms first (see [pendingDelete] below); tapping a card (outside its drag handle/overflow)
+ * opens that store's own Gangvolgorde (see [AisleOrderScreen]).
  */
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
-private fun StoresDialog(
+private fun StoresScreen(
     stores: List<StoreEntity>,
     itemCountByStore: Map<String, Int>,
+    categoryCountByStore: Map<String, Map<String, Int>>,
     onAdd: (String) -> Unit,
     onRemove: (StoreEntity) -> Unit,
     onMove: (store: StoreEntity, previous: StoreEntity?, next: StoreEntity?) -> Unit,
     onSetAisleOrder: (StoreEntity, List<List<Category>>) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var newStoreName by remember { mutableStateOf("") }
     var pendingDelete by remember { mutableStateOf<StoreEntity?>(null) }
-    // Tapping a store row (see ReorderableStoreList) opens its gangvolgorde right here instead
+    var showAddDialog by remember { mutableStateOf(false) }
+    // Tapping a store card (see ReorderableStoreList) opens its gangvolgorde right here instead
     // of a separate menu row + its own store-picker step — this list already *is* the picker.
     var editingAisleOrderStoreId by remember { mutableStateOf<String?>(null) }
 
-    val existingNames = remember(stores) { stores.map { it.name.lowercase() }.toSet() }
-    val suggestedChains = remember(existingNames) {
-        listOf("Aldi", "Plus", "Dirk", "Coop", "Markt").filter { it.lowercase() !in existingNames }
-    }
-
-    HomeStockBottomSheet(onDismissRequest = onDismiss) {
-        // Looked up by id every recomposition (not captured once) so a rename or a live
-        // aisleOrder update from Firestore while this step is open is never edited against a
-        // stale copy.
-        val editingStore = editingAisleOrderStoreId?.let { id -> stores.firstOrNull { it.id == id } }
-        if (editingStore != null) {
-            AislePathEditor(
-                store = editingStore,
-                onSetOrder = { paths -> onSetAisleOrder(editingStore, paths) },
-                onBack = { editingAisleOrderStoreId = null },
-            )
-        } else {
-            Column(
-                modifier = Modifier.fillMaxWidth().padding(sheetContentPadding),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-            ) {
-                SheetTitle(
-                    title = stringResource(R.string.more_stores_title),
-                    subtitle = stringResource(R.string.more_stores_subtitle),
-                )
-
-                if (stores.isEmpty()) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+            topBar = { StoresHeader(onBack = onDismiss, onAddClick = { showAddDialog = true }) },
+        ) { padding ->
+            if (stores.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize().padding(padding), contentAlignment = Alignment.Center) {
                     Text(
                         text = stringResource(R.string.more_stores_empty),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(24.dp),
                     )
-                } else {
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     ReorderableStoreList(
                         stores = stores,
                         itemCountByStore = itemCountByStore,
+                        categoryCountByStore = categoryCountByStore,
                         onMove = onMove,
                         onDeleteRequest = { pendingDelete = it },
                         onEditAisleOrder = { store -> editingAisleOrderStoreId = store.id },
                     )
-                }
 
-                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    SheetEyebrow(text = stringResource(R.string.more_stores_add_section))
-                    if (suggestedChains.isNotEmpty()) {
+                    val existingNames = remember(stores) { stores.map { it.name.lowercase() }.toSet() }
+                    val suggestedChains = remember(existingNames) {
+                        listOf("Aldi", "Plus", "Dirk", "Coop", "Markt").filter { it.lowercase() !in existingNames }
+                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp), modifier = Modifier.padding(top = 4.dp)) {
+                        SheetEyebrow(text = stringResource(R.string.more_stores_add_section))
                         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             suggestedChains.forEach { chain ->
                                 SheetChip(label = "+ $chain", selected = false, onClick = { onAdd(chain) })
                             }
+                            SheetChip(
+                                label = "+ " + stringResource(R.string.more_stores_add_other_short),
+                                selected = false,
+                                onClick = { showAddDialog = true },
+                            )
                         }
                     }
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = newStoreName,
-                            onValueChange = { newStoreName = it },
-                            placeholder = { Text(stringResource(R.string.more_stores_other_placeholder)) },
-                            singleLine = true,
-                            shape = RoundedCornerShape(16.dp),
-                            modifier = Modifier.weight(1f),
-                        )
-                        FilledIconButton(
-                            onClick = { onAdd(newStoreName.trim()); newStoreName = "" },
-                            enabled = newStoreName.isNotBlank(),
-                            modifier = Modifier.size(50.dp),
-                            colors = IconButtonDefaults.filledIconButtonColors(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                            ),
-                        ) {
-                            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.store_add_action))
-                        }
-                    }
+
+                    StoresHintBanner(text = stringResource(R.string.more_stores_hint))
+                    Spacer(modifier = Modifier.height(4.dp))
                 }
             }
         }
+    }
+
+    val editingStore = editingAisleOrderStoreId?.let { id -> stores.firstOrNull { it.id == id } }
+    if (editingStore != null) {
+        AisleOrderScreen(
+            store = editingStore,
+            categoryCounts = categoryCountByStore[editingStore.name].orEmpty(),
+            onSetOrder = { paths -> onSetAisleOrder(editingStore, paths) },
+            onBack = { editingAisleOrderStoreId = null },
+        )
+    }
+
+    if (showAddDialog) {
+        AddStoreDialog(onAdd = { name -> onAdd(name); showAddDialog = false }, onDismiss = { showAddDialog = false })
     }
 
     val deleteTarget = pendingDelete
@@ -2430,154 +2444,89 @@ private fun StoresDialog(
     }
 }
 
-/**
- * [store]'s own gangvolgorde (see [StoreEntity.aisleOrder]/[StoreEntity.aislePaths]) — a list of
- * *paths*, each one or more [Category]s that share the same physical aisle — with up/down arrows
- * to reorder a whole path, and a per-row "⋮" menu to merge it with the next path (two aisles
- * that are really one) or split a merged path back apart. Reached by tapping a store row in
- * [StoresDialog] directly, no separate store-picker step: that list already is the picker.
- */
-@OptIn(ExperimentalMaterial3Api::class)
+/** [StoresScreen]'s own green header — back arrow (left), title + subtitle, and a "+" shortcut
+ *  (right) into the same [AddStoreDialog] the "Andere…" quick-add chip opens. */
 @Composable
-private fun AislePathEditor(store: StoreEntity, onSetOrder: (List<List<Category>>) -> Unit, onBack: () -> Unit) {
-    var paths by remember(store.id) { mutableStateOf(store.aislePaths()) }
-
-    fun update(transform: (MutableList<List<Category>>) -> Unit) {
-        paths = paths.toMutableList().apply(transform)
-        onSetOrder(paths)
-    }
-
-    Column(
+private fun StoresHeader(onBack: () -> Unit, onAddClick: () -> Unit) {
+    val contentColor = LocalTopAppBarContentColor.current
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .verticalScroll(rememberScrollState())
-            .padding(sheetContentPadding),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+            .background(LocalTopAppBarContainerColor.current)
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(start = 4.dp, end = 12.dp, top = 4.dp, bottom = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            IconButton(onClick = onBack, modifier = Modifier.padding(end = 4.dp)) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
-            }
-            SheetTitle(
-                title = store.name,
-                subtitle = stringResource(R.string.more_aisle_order_store_subtitle),
-                modifier = Modifier.weight(1f),
+        IconButton(onClick = onBack) {
+            Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back), tint = contentColor)
+        }
+        Column(modifier = Modifier.weight(1f).padding(start = 4.dp)) {
+            Text(text = stringResource(R.string.more_stores_title), style = MaterialTheme.typography.titleLarge, color = contentColor)
+            Text(
+                text = stringResource(R.string.more_stores_subtitle),
+                style = MaterialTheme.typography.bodySmall,
+                color = OnTopAppBarContainerAccent,
+                modifier = Modifier.padding(top = 2.dp),
             )
         }
-        Text(
-            text = stringResource(R.string.more_aisle_order_merge_hint),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Column {
-            paths.forEachIndexed { index, path ->
-                AislePathRow(
-                    index = index,
-                    path = path,
-                    canMoveUp = index > 0,
-                    canMoveDown = index < paths.lastIndex,
-                    canMergeNext = index < paths.lastIndex,
-                    canSplit = path.size > 1,
-                    onMoveUp = { update { it.add(index - 1, it.removeAt(index)) } },
-                    onMoveDown = { update { it.add(index + 1, it.removeAt(index)) } },
-                    onMergeNext = {
-                        update {
-                            val merged = it[index] + it[index + 1]
-                            it.removeAt(index + 1)
-                            it.removeAt(index)
-                            it.add(index, merged)
-                        }
-                    },
-                    onSplit = {
-                        update {
-                            val split = it.removeAt(index).map { category -> listOf(category) }
-                            it.addAll(index, split)
-                        }
-                    },
-                )
-            }
-        }
-        OutlinedButton(
-            onClick = { update { it.clear(); it.addAll(Category.entries.sortedBy { c -> c.sortOrder }.map { c -> listOf(c) }) } },
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(stringResource(R.string.more_aisle_order_reset))
+        IconButton(onClick = onAddClick) {
+            Icon(Icons.Filled.Add, contentDescription = stringResource(R.string.store_add_menu_item), tint = contentColor)
         }
     }
 }
 
-/** One path (one physical aisle, one or more [Category]s) in [AislePathEditor]'s list. */
+/** The light, rounded "sleep om te bepalen…" info banner pinned under the quick-add chips. */
 @Composable
-private fun AislePathRow(
-    index: Int,
-    path: List<Category>,
-    canMoveUp: Boolean,
-    canMoveDown: Boolean,
-    canMergeNext: Boolean,
-    canSplit: Boolean,
-    onMoveUp: () -> Unit,
-    onMoveDown: () -> Unit,
-    onMergeNext: () -> Unit,
-    onSplit: () -> Unit,
-) {
-    var menuExpanded by remember { mutableStateOf(false) }
-    // stringResource() can't be called inside joinToString's transform lambda (it isn't
-    // guaranteed-inline, so the Compose compiler rejects a @Composable call there) — resolved
-    // via .map (which is inline) first, then joined as a plain string operation.
-    val pathLabel = path.map { stringResource(it.displayNameRes) }.joinToString(" + ")
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
-        verticalAlignment = Alignment.CenterVertically,
+private fun StoresHintBanner(text: String, modifier: Modifier = Modifier) {
+    Surface(
+        shape = SoftCardShapeCompact,
+        color = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f),
+        modifier = modifier.fillMaxWidth(),
     ) {
-        Text(
-            text = (index + 1).toString(),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.width(22.dp),
-        )
-        Row {
-            path.take(3).forEach { category ->
-                Icon(
-                    imageVector = category.icon,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp),
-                )
-            }
-        }
-        Text(
-            text = pathLabel,
-            style = MaterialTheme.typography.bodyLarge,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f).padding(start = 8.dp),
-        )
-        IconButton(onClick = onMoveUp, enabled = canMoveUp) {
-            Icon(Icons.Filled.KeyboardArrowUp, contentDescription = stringResource(R.string.more_aisle_order_move_up_cd))
-        }
-        IconButton(onClick = onMoveDown, enabled = canMoveDown) {
-            Icon(Icons.Filled.KeyboardArrowDown, contentDescription = stringResource(R.string.more_aisle_order_move_down_cd))
-        }
-        Box {
-            IconButton(onClick = { menuExpanded = true }) {
-                Icon(Icons.Filled.MoreVert, contentDescription = stringResource(R.string.more_aisle_order_row_options_cd))
-            }
-            DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                if (canMergeNext) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.more_aisle_order_merge_next)) },
-                        onClick = { menuExpanded = false; onMergeNext() },
-                    )
-                }
-                if (canSplit) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.more_aisle_order_split)) },
-                        onClick = { menuExpanded = false; onSplit() },
-                    )
-                }
-            }
+        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.Top) {
+            Icon(
+                imageVector = Icons.Filled.Info,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(18.dp).padding(top = 1.dp),
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 10.dp),
+            )
         }
     }
+}
+
+/** A minimal "Nieuwe winkel" name-entry dialog — behind both the header's "+" and the "Andere…"
+ *  quick-add chip, since typing a fully custom name needs a keyboard either way. */
+@Composable
+private fun AddStoreDialog(onAdd: (String) -> Unit, onDismiss: () -> Unit) {
+    var name by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.store_add_dialog_title)) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                placeholder = { Text(stringResource(R.string.more_stores_other_placeholder)) },
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onAdd(name.trim()) }, enabled = name.isNotBlank()) {
+                Text(stringResource(R.string.store_add_action))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+        },
+    )
 }
 
 /**
@@ -2585,12 +2534,15 @@ private fun AislePathRow(
  * ShoppingListScreen's `ReorderableShoppingList`, simplified since stores have no
  * checked/unchecked or cross-store-boundary rules to respect: any row can swap with any
  * neighbor. [onDeleteRequest] routes into the confirm-first dialog rather than deleting inline.
+ * The topmost store (index 0, right after any in-flight drag settles) is treated as "the
+ * standaardwinkel" — see [StoresScreen]'s own doc for why that's a real, not decorative, claim.
  */
-@OptIn(ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalLayoutApi::class)
 @Composable
 private fun ReorderableStoreList(
     stores: List<StoreEntity>,
     itemCountByStore: Map<String, Int>,
+    categoryCountByStore: Map<String, Map<String, Int>>,
     onMove: (StoreEntity, StoreEntity?, StoreEntity?) -> Unit,
     onDeleteRequest: (StoreEntity) -> Unit,
     onEditAisleOrder: (StoreEntity) -> Unit,
@@ -2640,99 +2592,149 @@ private fun ReorderableStoreList(
         draggingRowHeightPx = 0f
     }
 
-    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-        orderedStores.forEach { store ->
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        orderedStores.forEachIndexed { index, store ->
             val isDragging = store.id == draggingId
-            val count = itemCountByStore[store.name] ?: 0
-            val inUse = count > 0
+            val isDefault = index == 0
+            val itemCount = itemCountByStore[store.name] ?: 0
+            val inUse = itemCount > 0
+            val categoryCounts = categoryCountByStore[store.name].orEmpty()
+            val pathsWithCounts = remember(store.aisleOrder, categoryCounts) {
+                store.aislePaths().map { path -> path to path.sumOf { c -> categoryCounts[c.storageKey] ?: 0 } }
+            }
+            val activePaths = pathsWithCounts.filter { (_, count) -> count > 0 }.map { (path, _) -> path }
+            val customized = store.aisleOrder.isNotEmpty()
+
             Surface(
-                shape = SoftCardShapeCompact,
+                shape = SoftCardShape,
                 color = if (inUse) MaterialTheme.colorScheme.surfaceContainerHigh else MaterialTheme.colorScheme.surfaceContainerLow,
+                border = if (isDefault) BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary) else null,
                 tonalElevation = if (isDragging) 3.dp else 0.dp,
                 modifier = Modifier
                     .fillMaxWidth()
                     .zIndex(if (isDragging) 1f else 0f)
                     .offset { IntOffset(0, if (isDragging) dragOffsetPx.roundToInt() else 0) },
             ) {
-                Row(
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .onGloballyPositioned { if (isDragging) draggingRowHeightPx = it.size.height.toFloat() }
-                        .padding(start = 4.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
+                        .padding(start = 4.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
                 ) {
-                    Icon(
-                        imageVector = Icons.Filled.DragIndicator,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier
-                            .size(32.dp)
-                            .padding(4.dp)
-                            .pointerInput(store.id) {
-                                detectDragGesturesAfterLongPress(
-                                    onDragStart = { draggingId = store.id; dragOffsetPx = 0f },
-                                    onDragEnd = { commitDrag() },
-                                    onDragCancel = { commitDrag() },
-                                    onDrag = { change, dragAmount -> change.consume(); handleDrag(dragAmount.y) },
-                                )
-                            },
-                    )
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = if (inUse) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surfaceContainer,
-                        modifier = Modifier.size(36.dp),
-                    ) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                            Icon(
-                                imageVector = Icons.Filled.Storefront,
-                                contentDescription = null,
-                                tint = if (inUse) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(18.dp),
-                            )
-                        }
-                    }
-                    // Tapping the name/count opens this store's gangvolgorde (AislePathEditor) —
-                    // the drag handle to its left and the "⋮" menu to its right keep their own
-                    // separate gestures, so this is the one part of the row free to mean "open".
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clickable(onClick = { onEditAisleOrder(store) })
-                            .padding(start = 10.dp),
-                    ) {
-                        Text(
-                            text = store.name,
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                        Text(
-                            text = if (inUse) {
-                                pluralStringResource(R.plurals.more_stores_item_count_format, count, count)
-                            } else {
-                                stringResource(R.string.more_stores_unused)
-                            },
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
-                    var menuExpanded by remember { mutableStateOf(false) }
-                    Box {
-                        IconButton(onClick = { menuExpanded = true }) {
-                            Icon(
-                                imageVector = Icons.Filled.MoreVert,
-                                contentDescription = stringResource(R.string.more_stores_row_options_cd, store.name),
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
-                        }
-                        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                            DropdownMenuItem(
-                                text = {
-                                    Text(stringResource(R.string.more_stores_remove_format, store.name), color = MaterialTheme.colorScheme.error)
+                    Row(verticalAlignment = Alignment.Top) {
+                        Icon(
+                            imageVector = Icons.Filled.DragIndicator,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .size(32.dp)
+                                .padding(4.dp)
+                                .pointerInput(store.id) {
+                                    detectDragGesturesAfterLongPress(
+                                        onDragStart = { draggingId = store.id; dragOffsetPx = 0f },
+                                        onDragEnd = { commitDrag() },
+                                        onDragCancel = { commitDrag() },
+                                        onDrag = { change, dragAmount -> change.consume(); handleDrag(dragAmount.y) },
+                                    )
                                 },
-                                onClick = { menuExpanded = false; onDeleteRequest(store) },
+                        )
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = if (inUse) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surfaceContainer,
+                            modifier = Modifier.size(36.dp),
+                        ) {
+                            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                                Icon(
+                                    imageVector = Icons.Filled.Storefront,
+                                    contentDescription = null,
+                                    tint = if (inUse) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.size(18.dp),
+                                )
+                            }
+                        }
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clickable(onClick = { onEditAisleOrder(store) })
+                                .padding(start = 10.dp, top = 2.dp),
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Text(
+                                    text = store.name,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f, fill = false),
+                                )
+                                if (isDefault) {
+                                    Surface(
+                                        shape = CircleShape,
+                                        color = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.padding(start = 8.dp),
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.more_stores_default_badge),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onPrimary,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                                        )
+                                    }
+                                }
+                            }
+                            Text(
+                                text = if (inUse) {
+                                    val itemsPart = pluralStringResource(R.plurals.more_stores_item_count_format, itemCount, itemCount)
+                                    val secondPart = if (customized) {
+                                        pluralStringResource(R.plurals.more_stores_paths_count_format, activePaths.size, activePaths.size)
+                                    } else {
+                                        stringResource(R.string.more_stores_default_order_label)
+                                    }
+                                    "$itemsPart · $secondPart"
+                                } else {
+                                    stringResource(R.string.more_stores_unused)
+                                },
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                        }
+                        var menuExpanded by remember { mutableStateOf(false) }
+                        Box {
+                            IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(36.dp)) {
+                                Icon(
+                                    imageVector = Icons.Filled.MoreVert,
+                                    contentDescription = stringResource(R.string.more_stores_row_options_cd, store.name),
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                            DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(stringResource(R.string.more_stores_remove_format, store.name), color = MaterialTheme.colorScheme.error)
+                                    },
+                                    onClick = { menuExpanded = false; onDeleteRequest(store) },
+                                )
+                            }
+                        }
+                    }
+
+                    if (inUse) {
+                        val indent = Modifier.padding(start = 50.dp, top = 8.dp)
+                        if (customized) {
+                            StorePathsPreview(paths = activePaths, modifier = indent)
+                            TextButton(onClick = { onEditAisleOrder(store) }, modifier = indent.padding(top = 2.dp)) {
+                                Icon(Icons.Filled.Route, contentDescription = null, modifier = Modifier.size(16.dp))
+                                Text(
+                                    text = stringResource(R.string.more_stores_edit_aisle_order_action),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    modifier = Modifier.padding(start = 6.dp),
+                                )
+                            }
+                        } else {
+                            OutlinedButton(onClick = { onEditAisleOrder(store) }, shape = CircleShape, modifier = indent) {
+                                Text(stringResource(R.string.more_stores_configure_action))
+                            }
                         }
                     }
                 }
@@ -2741,3 +2743,398 @@ private fun ReorderableStoreList(
     }
 }
 
+/** The "Groente > Brood > Zuivel > +6" chip row previewing which gangpaden this store's current
+ *  list items actually fall into, in that store's own [StoreEntity.aislePaths] order — [paths]
+ *  is already filtered down to ones with at least one item by the caller. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun StorePathsPreview(paths: List<List<Category>>, modifier: Modifier = Modifier) {
+    val shown = paths.take(3)
+    val overflow = paths.size - shown.size
+    Row(
+        modifier = modifier.horizontalScroll(rememberScrollState()),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+    ) {
+        shown.forEachIndexed { index, path ->
+            val label = path.map { stringResource(it.displayNameRes) }.joinToString(" + ")
+            AislePreviewPill(label)
+            if (index < shown.lastIndex || overflow > 0) {
+                Icon(
+                    imageVector = Icons.Filled.ChevronRight,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+        }
+        if (overflow > 0) {
+            AislePreviewPill(stringResource(R.string.more_stores_paths_overflow_format, overflow))
+        }
+    }
+}
+
+@Composable
+private fun AislePreviewPill(label: String) {
+    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHighest) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+        )
+    }
+}
+
+/**
+ * Full-screen "Gangvolgorde" — [store]'s own walking order (see [StoreEntity.aisleOrder]/
+ * [StoreEntity.aislePaths]) with a drag handle per row (same mechanics as [ReorderableStoreList],
+ * keyed on each path's own comma-joined storage keys rather than an id, since a path has no id
+ * of its own and — unlike a store — can never share a category with another path at the same
+ * time, so that string is already a stable, unique key). A merged path (more than one category
+ * sharing the same physical aisle) gets a soft highlight and can be tapped directly to split back
+ * apart; the per-row "⋮" offers the same split, plus merging with the next path, for households
+ * who'd rather not carry a whole aisle group in through a single tap target. [onSetOrder] is
+ * called after every edit — there's no separate save step, same as the sheet version before it.
+ */
+@Composable
+private fun AisleOrderScreen(
+    store: StoreEntity,
+    categoryCounts: Map<String, Int>,
+    onSetOrder: (List<List<Category>>) -> Unit,
+    onBack: () -> Unit,
+) {
+    Dialog(onDismissRequest = onBack, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+            topBar = { AisleOrderHeader(storeName = store.name, onBack = onBack) },
+        ) { padding ->
+            AisleOrderContent(
+                store = store,
+                categoryCounts = categoryCounts,
+                onSetOrder = onSetOrder,
+                modifier = Modifier.padding(padding),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AisleOrderHeader(storeName: String, onBack: () -> Unit) {
+    val contentColor = LocalTopAppBarContentColor.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(LocalTopAppBarContainerColor.current)
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(start = 4.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onBack) {
+            Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back), tint = contentColor)
+        }
+        Column(modifier = Modifier.weight(1f).padding(start = 4.dp)) {
+            Text(text = stringResource(R.string.more_aisle_order_title), style = MaterialTheme.typography.titleLarge, color = contentColor)
+            Text(
+                text = stringResource(R.string.more_aisle_order_screen_subtitle_format, storeName),
+                style = MaterialTheme.typography.bodySmall,
+                color = OnTopAppBarContainerAccent,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+        TextButton(onClick = onBack) {
+            Text(text = stringResource(R.string.common_done), color = contentColor)
+        }
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun AisleOrderContent(
+    store: StoreEntity,
+    categoryCounts: Map<String, Int>,
+    onSetOrder: (List<List<Category>>) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val orderedPaths = remember(store.id) { mutableStateListOf<List<Category>>().apply { addAll(store.aislePaths()) } }
+    var draggingKey by remember { mutableStateOf<String?>(null) }
+    var dragOffsetPx by remember { mutableFloatStateOf(0f) }
+    var draggingRowHeightPx by remember { mutableFloatStateOf(0f) }
+
+    fun keyOf(path: List<Category>) = path.joinToString(",") { it.storageKey }
+    fun commit() = onSetOrder(orderedPaths.toList())
+
+    fun handleDrag(deltaY: Float) {
+        val key = draggingKey ?: return
+        dragOffsetPx += deltaY
+        val rowHeight = draggingRowHeightPx.takeIf { it > 0f } ?: return
+        while (true) {
+            val index = orderedPaths.indexOfFirst { keyOf(it) == key }
+            if (index < 0) break
+            if (dragOffsetPx > rowHeight / 2f && index < orderedPaths.lastIndex) {
+                orderedPaths.add(index, orderedPaths.removeAt(index + 1))
+                dragOffsetPx -= rowHeight
+            } else if (dragOffsetPx < -rowHeight / 2f && index > 0) {
+                orderedPaths.add(index - 1, orderedPaths.removeAt(index))
+                dragOffsetPx += rowHeight
+            } else {
+                break
+            }
+        }
+    }
+
+    fun commitDrag() {
+        draggingKey = null
+        dragOffsetPx = 0f
+        draggingRowHeightPx = 0f
+        commit()
+    }
+
+    fun mergeWithNext(index: Int) {
+        val merged = orderedPaths[index] + orderedPaths[index + 1]
+        orderedPaths.removeAt(index + 1)
+        orderedPaths.removeAt(index)
+        orderedPaths.add(index, merged)
+        commit()
+    }
+
+    fun split(index: Int) {
+        val parts = orderedPaths.removeAt(index).map { listOf(it) }
+        orderedPaths.addAll(index, parts)
+        commit()
+    }
+
+    fun reset() {
+        orderedPaths.clear()
+        orderedPaths.addAll(Category.entries.sortedBy { it.sortOrder }.map { listOf(it) })
+        commit()
+    }
+
+    val totalItems = categoryCounts.values.sum()
+
+    Column(modifier = modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+            orderedPaths.forEachIndexed { index, path ->
+                val pathKey = keyOf(path)
+                key(pathKey) {
+                    val isDragging = pathKey == draggingKey
+                    val itemCount = path.sumOf { categoryCounts[it.storageKey] ?: 0 }
+                    AisleOrderRow(
+                        index = index + 1,
+                        path = path,
+                        itemCount = itemCount,
+                        isDragging = isDragging,
+                        dragOffsetPx = if (isDragging) dragOffsetPx else 0f,
+                        canMergeNext = index < orderedPaths.lastIndex,
+                        canSplit = path.size > 1,
+                        onRowHeightMeasured = { draggingRowHeightPx = it },
+                        onDragStart = { draggingKey = pathKey; dragOffsetPx = 0f },
+                        onDrag = ::handleDrag,
+                        onDragEnd = ::commitDrag,
+                        onMergeNext = { mergeWithNext(index) },
+                        onSplit = { split(index) },
+                    )
+                }
+            }
+        }
+        Text(
+            text = stringResource(R.string.more_aisle_order_merge_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(horizontal = 20.dp, vertical = 4.dp),
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        AisleOrderPreviewCard(orderedPaths = orderedPaths, totalItems = totalItems, onReset = ::reset)
+        Spacer(modifier = Modifier.height(24.dp))
+    }
+}
+
+/** One gang row — [path] is one or more [Category] sharing the same physical aisle; more than
+ *  one means "merged", shown with a soft highlight and a tap-to-split shortcut on top of the
+ *  "⋮" menu's own Split entry. */
+@Composable
+private fun AisleOrderRow(
+    index: Int,
+    path: List<Category>,
+    itemCount: Int,
+    isDragging: Boolean,
+    dragOffsetPx: Float,
+    canMergeNext: Boolean,
+    canSplit: Boolean,
+    onRowHeightMeasured: (Float) -> Unit,
+    onDragStart: () -> Unit,
+    onDrag: (Float) -> Unit,
+    onDragEnd: () -> Unit,
+    onMergeNext: () -> Unit,
+    onSplit: () -> Unit,
+) {
+    var menuExpanded by remember { mutableStateOf(false) }
+    val merged = path.size > 1
+    // stringResource() can't be called inside joinToString's transform lambda — resolved via
+    // .map (inline) first, then joined as a plain string operation.
+    val label = path.map { stringResource(it.displayNameRes) }.joinToString(" + ")
+
+    Surface(
+        shape = SoftCardShapeCompact,
+        color = if (merged) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.35f) else Color.Transparent,
+        border = if (merged) BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)) else null,
+        modifier = Modifier
+            .fillMaxWidth()
+            .zIndex(if (isDragging) 1f else 0f)
+            .offset { IntOffset(0, dragOffsetPx.roundToInt()) }
+            .then(if (merged) Modifier.clickable(onClick = onSplit) else Modifier),
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned { if (isDragging) onRowHeightMeasured(it.size.height.toFloat()) }
+                .padding(horizontal = 10.dp, vertical = 10.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = index.toString(),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.width(22.dp),
+                )
+                Row(modifier = Modifier.padding(end = 8.dp)) {
+                    path.take(2).forEach { category ->
+                        Icon(
+                            imageVector = category.icon,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                }
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.Medium,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    text = if (itemCount > 0) {
+                        pluralStringResource(R.plurals.more_aisle_order_item_count_format, itemCount, itemCount)
+                    } else {
+                        stringResource(R.string.more_aisle_order_empty_count)
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(end = 2.dp),
+                )
+                Box {
+                    IconButton(onClick = { menuExpanded = true }, modifier = Modifier.size(32.dp)) {
+                        Icon(
+                            imageVector = Icons.Filled.MoreVert,
+                            contentDescription = stringResource(R.string.more_aisle_order_row_options_cd),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
+                    DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        if (canMergeNext) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.more_aisle_order_merge_next)) },
+                                onClick = { menuExpanded = false; onMergeNext() },
+                            )
+                        }
+                        if (canSplit) {
+                            DropdownMenuItem(
+                                text = { Text(stringResource(R.string.more_aisle_order_split)) },
+                                onClick = { menuExpanded = false; onSplit() },
+                            )
+                        }
+                    }
+                }
+                Icon(
+                    imageVector = Icons.Filled.DragIndicator,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .size(32.dp)
+                        .padding(4.dp)
+                        .pointerInput(Unit) {
+                            detectDragGesturesAfterLongPress(
+                                onDragStart = { onDragStart() },
+                                onDragEnd = { onDragEnd() },
+                                onDragCancel = { onDragEnd() },
+                                onDrag = { change, dragAmount -> change.consume(); onDrag(dragAmount.y) },
+                            )
+                        },
+                )
+            }
+            if (merged) {
+                Text(
+                    text = stringResource(R.string.more_aisle_order_merged_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 22.dp, top = 2.dp),
+                )
+            }
+        }
+    }
+}
+
+/** The dark "ZO WORDT JE LIJST" preview card at the bottom of [AisleOrderScreen] — a live count
+ *  plus the first few gangpaden in their new order, so the household can see the effect of their
+ *  edits without leaving the screen — and the reset link back to Category's own default order. */
+@Composable
+private fun AisleOrderPreviewCard(orderedPaths: List<List<Category>>, totalItems: Int, onReset: () -> Unit) {
+    Column(
+        modifier = Modifier.padding(horizontal = 20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Surface(shape = SoftCardShape, color = MaterialTheme.colorScheme.inverseSurface, modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(
+                        text = stringResource(R.string.more_aisle_order_preview_title),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.inverseOnSurface,
+                    )
+                    Text(
+                        text = pluralStringResource(R.plurals.more_aisle_order_item_count_format, totalItems, totalItems),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.inverseOnSurface,
+                    )
+                }
+                Row(modifier = Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    val shown = orderedPaths.take(3)
+                    shown.forEachIndexed { index, path ->
+                        val label = path.map { stringResource(it.displayNameRes) }.joinToString("+")
+                        AisleOrderPreviewPill("${index + 1} $label")
+                    }
+                    if (orderedPaths.size > shown.size) {
+                        AisleOrderPreviewPill("…")
+                    }
+                }
+            }
+        }
+        TextButton(onClick = onReset, modifier = Modifier.align(Alignment.CenterHorizontally)) {
+            Icon(Icons.Filled.Restore, contentDescription = null, modifier = Modifier.size(16.dp))
+            Text(
+                text = stringResource(R.string.more_aisle_order_reset),
+                modifier = Modifier.padding(start = 6.dp),
+            )
+        }
+    }
+}
+
+@Composable
+private fun AisleOrderPreviewPill(label: String) {
+    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.inverseOnSurface.copy(alpha = 0.14f)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.inverseOnSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+        )
+    }
+}

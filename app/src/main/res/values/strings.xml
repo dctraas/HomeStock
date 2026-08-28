@@ -331,28 +331,22 @@
     <string name="more_language_option_es">Spaans</string>
     <string name="more_stores_title">Winkels</string>
     <string name="more_stores_menu_subtitle">Namen, volgorde en gangindeling van je winkels</string>
-    <string name="more_aisle_order_row_title">Gangvolgorde</string>
-    <string name="more_aisle_order_row_subtitle">Volgorde van productcategorieën per winkel in Winkelmodus en Winkelindeling</string>
     <string name="more_aisle_order_title">Gangvolgorde</string>
-    <string name="more_aisle_order_subtitle">Kies een winkel om de gangvolgorde aan te passen</string>
     <string name="more_aisle_order_store_subtitle">Zet categorieën in de volgorde waarin je ze in deze winkel tegenkomt</string>
-    <string name="more_aisle_order_merge_hint">Tik op ⋮ bij een gang om gangen samen te voegen of weer op te splitsen.</string>
+    <string name="more_aisle_order_merge_hint">Sleep om te herschikken. Tik op ⋮ om gangen samen te voegen of te splitsen.</string>
     <string name="more_aisle_order_merge_next">Voeg samen met volgende gang</string>
     <string name="more_aisle_order_split">Splits deze gang op</string>
     <string name="more_aisle_order_row_options_cd">Meer opties voor deze gang</string>
-    <string name="more_aisle_order_no_stores">Voeg eerst een winkel toe bij Winkels om er een gangvolgorde voor in te stellen</string>
-    <string name="more_aisle_order_move_up_cd">Omhoog</string>
-    <string name="more_aisle_order_move_down_cd">Omlaag</string>
     <string name="more_aisle_order_reset">Standaardvolgorde herstellen</string>
     <string name="more_stores_empty">Nog geen winkels toegevoegd.</string>
     <string name="more_stores_remove_format">%1$s verwijderen</string>
-    <string name="more_stores_subtitle">Je boodschappenlijst wordt per winkel gegroepeerd, in deze volgorde.</string>
+    <string name="more_stores_subtitle">Bepaalt de volgorde van je boodschappenlijst</string>
 
     <string name="more_stores_add_section">Toevoegen</string>
 
     <string name="more_stores_other_placeholder">Andere winkel…</string>
 
-    <string name="more_stores_unused">Niet in gebruik</string>
+    <string name="more_stores_unused">Geen items</string>
 
     <string name="more_stores_row_options_cd">Meer opties voor %1$s</string>
 
@@ -376,6 +370,25 @@
 
         <item quantity="other">%1$d items op de boodschappenlijst krijgen geen winkel meer.</item>
 
+    </plurals>
+    <string name="more_stores_default_badge">STANDAARD</string>
+    <string name="more_stores_configure_action">Instellen</string>
+    <string name="more_stores_edit_aisle_order_action">Gangvolgorde aanpassen</string>
+    <string name="more_stores_default_order_label">standaardvolgorde</string>
+    <string name="more_stores_paths_overflow_format">+%1$d</string>
+    <string name="more_stores_add_other_short">Andere…</string>
+    <string name="more_stores_hint">Sleep om te bepalen welke winkel bovenaan je lijst staat. De standaardwinkel opent winkelmodus.</string>
+    <string name="more_aisle_order_screen_subtitle_format">%1$s · zoals jij loopt</string>
+    <string name="more_aisle_order_empty_count">leeg</string>
+    <string name="more_aisle_order_merged_hint">Zelfde gangpad · tik om te splitsen</string>
+    <string name="more_aisle_order_preview_title">ZO WORDT JE LIJST</string>
+    <plurals name="more_stores_paths_count_format">
+        <item quantity="one">%1$d gangpad</item>
+        <item quantity="other">%1$d gangpaden</item>
+    </plurals>
+    <plurals name="more_aisle_order_item_count_format">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
     </plurals>
     <string name="more_statistics_title">Inzicht &amp; Verspilling</string>
     <string name="more_statistics_subtitle">Voorraad, verspilling en scans per huisgenoot</string>

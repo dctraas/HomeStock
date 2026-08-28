@@ -327,28 +327,22 @@
     <string name="more_language_option_es">Espagnol</string>
     <string name="more_stores_title">Magasins</string>
     <string name="more_stores_menu_subtitle">Noms, ordre et rayons de tes magasins</string>
-    <string name="more_aisle_order_row_title">Ordre des rayons</string>
-    <string name="more_aisle_order_row_subtitle">Ordre des catégories de produits par magasin en Mode course et en vue par rayon</string>
     <string name="more_aisle_order_title">Ordre des rayons</string>
-    <string name="more_aisle_order_subtitle">Choisis un magasin pour personnaliser son ordre des rayons</string>
     <string name="more_aisle_order_store_subtitle">Classe les catégories dans l\'ordre où tu les croises dans ce magasin</string>
-    <string name="more_aisle_order_merge_hint">Touchez ⋮ sur un rayon pour fusionner des rayons ou les séparer à nouveau.</string>
+    <string name="more_aisle_order_merge_hint">Fais glisser pour réorganiser. Touche ⋮ pour fusionner des rayons ou les séparer.</string>
     <string name="more_aisle_order_merge_next">Fusionner avec le rayon suivant</string>
     <string name="more_aisle_order_split">Séparer ce rayon</string>
     <string name="more_aisle_order_row_options_cd">Plus d\'options pour ce rayon</string>
-    <string name="more_aisle_order_no_stores">Ajoute d\'abord un magasin dans Magasins pour lui définir un ordre des rayons</string>
-    <string name="more_aisle_order_move_up_cd">Monter</string>
-    <string name="more_aisle_order_move_down_cd">Descendre</string>
     <string name="more_aisle_order_reset">Rétablir l\'ordre par défaut</string>
     <string name="more_stores_empty">Aucun magasin ajouté pour l\'instant.</string>
     <string name="more_stores_remove_format">Supprimer %1$s</string>
-    <string name="more_stores_subtitle">Ta liste de courses est groupée par magasin, dans cet ordre.</string>
+    <string name="more_stores_subtitle">Détermine l\'ordre de ta liste de courses</string>
 
     <string name="more_stores_add_section">Ajouter</string>
 
     <string name="more_stores_other_placeholder">Autre magasin…</string>
 
-    <string name="more_stores_unused">Non utilisé</string>
+    <string name="more_stores_unused">Aucun article</string>
 
     <string name="more_stores_row_options_cd">Plus d\'options pour %1$s</string>
 
@@ -372,6 +366,25 @@
 
         <item quantity="other">%1$d articles de la liste de courses perdront leur magasin.</item>
 
+    </plurals>
+    <string name="more_stores_default_badge">PAR DÉFAUT</string>
+    <string name="more_stores_configure_action">Configurer</string>
+    <string name="more_stores_edit_aisle_order_action">Ajuster l\'ordre des rayons</string>
+    <string name="more_stores_default_order_label">ordre par défaut</string>
+    <string name="more_stores_paths_overflow_format">+%1$d</string>
+    <string name="more_stores_add_other_short">Autre…</string>
+    <string name="more_stores_hint">Fais glisser pour définir quel magasin est en haut de ta liste. Le magasin par défaut est celui que le mode course ouvre.</string>
+    <string name="more_aisle_order_screen_subtitle_format">%1$s · comme tu la parcours</string>
+    <string name="more_aisle_order_empty_count">vide</string>
+    <string name="more_aisle_order_merged_hint">Même rayon · touche pour séparer</string>
+    <string name="more_aisle_order_preview_title">VOICI TA LISTE</string>
+    <plurals name="more_stores_paths_count_format">
+        <item quantity="one">%1$d rayon</item>
+        <item quantity="other">%1$d rayons</item>
+    </plurals>
+    <plurals name="more_aisle_order_item_count_format">
+        <item quantity="one">%1$d article</item>
+        <item quantity="other">%1$d articles</item>
     </plurals>
     <string name="more_statistics_title">Aperçu et gaspillage</string>
     <string name="more_statistics_subtitle">Stock, gaspillage et scans par membre du foyer</string>

@@ -327,28 +327,22 @@
     <string name="more_language_option_es">Spanish</string>
     <string name="more_stores_title">Stores</string>
     <string name="more_stores_menu_subtitle">Names, order, and aisle layout of your stores</string>
-    <string name="more_aisle_order_row_title">Aisle order</string>
-    <string name="more_aisle_order_row_subtitle">Order of product categories per store in Shopping mode and Aisle view</string>
     <string name="more_aisle_order_title">Aisle order</string>
-    <string name="more_aisle_order_subtitle">Choose a store to customize its aisle order</string>
     <string name="more_aisle_order_store_subtitle">Put categories in the order you pass them in this store</string>
-    <string name="more_aisle_order_merge_hint">Tap ⋮ on an aisle to merge aisles together, or split them apart again.</string>
+    <string name="more_aisle_order_merge_hint">Drag to reorder. Tap ⋮ to merge aisles together or split them apart.</string>
     <string name="more_aisle_order_merge_next">Merge with next aisle</string>
     <string name="more_aisle_order_split">Split this aisle</string>
     <string name="more_aisle_order_row_options_cd">More options for this aisle</string>
-    <string name="more_aisle_order_no_stores">Add a store under Stores first to set an aisle order for it</string>
-    <string name="more_aisle_order_move_up_cd">Move up</string>
-    <string name="more_aisle_order_move_down_cd">Move down</string>
     <string name="more_aisle_order_reset">Reset to default order</string>
     <string name="more_stores_empty">No stores added yet.</string>
     <string name="more_stores_remove_format">Remove %1$s</string>
-    <string name="more_stores_subtitle">Your shopping list is grouped by store, in this order.</string>
+    <string name="more_stores_subtitle">Determines the order of your shopping list</string>
 
     <string name="more_stores_add_section">Add</string>
 
     <string name="more_stores_other_placeholder">Other store…</string>
 
-    <string name="more_stores_unused">Not in use</string>
+    <string name="more_stores_unused">No items</string>
 
     <string name="more_stores_row_options_cd">More options for %1$s</string>
 
@@ -372,6 +366,25 @@
 
         <item quantity="other">%1$d items on the shopping list will lose their store.</item>
 
+    </plurals>
+    <string name="more_stores_default_badge">DEFAULT</string>
+    <string name="more_stores_configure_action">Set up</string>
+    <string name="more_stores_edit_aisle_order_action">Adjust aisle order</string>
+    <string name="more_stores_default_order_label">default order</string>
+    <string name="more_stores_paths_overflow_format">+%1$d</string>
+    <string name="more_stores_add_other_short">Other…</string>
+    <string name="more_stores_hint">Drag to decide which store sits at the top of your list. The default store is the one Shopping mode opens.</string>
+    <string name="more_aisle_order_screen_subtitle_format">%1$s · the way you walk it</string>
+    <string name="more_aisle_order_empty_count">empty</string>
+    <string name="more_aisle_order_merged_hint">Same aisle · tap to split</string>
+    <string name="more_aisle_order_preview_title">HOW YOUR LIST WILL LOOK</string>
+    <plurals name="more_stores_paths_count_format">
+        <item quantity="one">%1$d aisle</item>
+        <item quantity="other">%1$d aisles</item>
+    </plurals>
+    <plurals name="more_aisle_order_item_count_format">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
     </plurals>
     <string name="more_statistics_title">Insight &amp; Waste</string>
     <string name="more_statistics_subtitle">Inventory, waste, and scans per household member</string>

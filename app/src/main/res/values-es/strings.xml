@@ -327,28 +327,22 @@
     <string name="more_language_option_es">Español</string>
     <string name="more_stores_title">Tiendas</string>
     <string name="more_stores_menu_subtitle">Nombres, orden y pasillos de tus tiendas</string>
-    <string name="more_aisle_order_row_title">Orden de pasillos</string>
-    <string name="more_aisle_order_row_subtitle">Orden de las categorías de productos por tienda en Modo compra y Vista por pasillo</string>
     <string name="more_aisle_order_title">Orden de pasillos</string>
-    <string name="more_aisle_order_subtitle">Elige una tienda para personalizar su orden de pasillos</string>
     <string name="more_aisle_order_store_subtitle">Ordena las categorías como las encuentras en esta tienda</string>
-    <string name="more_aisle_order_merge_hint">Toca ⋮ en un pasillo para combinar pasillos o volver a separarlos.</string>
+    <string name="more_aisle_order_merge_hint">Arrastra para reordenar. Toca ⋮ para combinar pasillos o separarlos.</string>
     <string name="more_aisle_order_merge_next">Combinar con el siguiente pasillo</string>
     <string name="more_aisle_order_split">Separar este pasillo</string>
     <string name="more_aisle_order_row_options_cd">Más opciones para este pasillo</string>
-    <string name="more_aisle_order_no_stores">Añade primero una tienda en Tiendas para poder definir su orden de pasillos</string>
-    <string name="more_aisle_order_move_up_cd">Subir</string>
-    <string name="more_aisle_order_move_down_cd">Bajar</string>
     <string name="more_aisle_order_reset">Restablecer orden predeterminado</string>
     <string name="more_stores_empty">Aún no se han añadido tiendas.</string>
     <string name="more_stores_remove_format">Eliminar %1$s</string>
-    <string name="more_stores_subtitle">Tu lista de la compra se agrupa por tienda, en este orden.</string>
+    <string name="more_stores_subtitle">Determina el orden de tu lista de la compra</string>
 
     <string name="more_stores_add_section">Añadir</string>
 
     <string name="more_stores_other_placeholder">Otra tienda…</string>
 
-    <string name="more_stores_unused">No se usa</string>
+    <string name="more_stores_unused">Sin artículos</string>
 
     <string name="more_stores_row_options_cd">Más opciones para %1$s</string>
 
@@ -372,6 +366,25 @@
 
         <item quantity="other">%1$d artículos de la lista de la compra se quedarán sin tienda.</item>
 
+    </plurals>
+    <string name="more_stores_default_badge">PREDETERMINADA</string>
+    <string name="more_stores_configure_action">Configurar</string>
+    <string name="more_stores_edit_aisle_order_action">Ajustar orden de pasillos</string>
+    <string name="more_stores_default_order_label">orden predeterminado</string>
+    <string name="more_stores_paths_overflow_format">+%1$d</string>
+    <string name="more_stores_add_other_short">Otra…</string>
+    <string name="more_stores_hint">Arrastra para decidir qué tienda va arriba en tu lista. La tienda predeterminada es la que abre el modo compra.</string>
+    <string name="more_aisle_order_screen_subtitle_format">%1$s · como tú recorres la tienda</string>
+    <string name="more_aisle_order_empty_count">vacío</string>
+    <string name="more_aisle_order_merged_hint">Mismo pasillo · toca para separar</string>
+    <string name="more_aisle_order_preview_title">ASÍ QUEDARÁ TU LISTA</string>
+    <plurals name="more_stores_paths_count_format">
+        <item quantity="one">%1$d pasillo</item>
+        <item quantity="other">%1$d pasillos</item>
+    </plurals>
+    <plurals name="more_aisle_order_item_count_format">
+        <item quantity="one">%1$d artículo</item>
+        <item quantity="other">%1$d artículos</item>
     </plurals>
     <string name="more_statistics_title">Análisis y desperdicio</string>
     <string name="more_statistics_subtitle">Inventario, desperdicio y escaneos por miembro del hogar</string>
