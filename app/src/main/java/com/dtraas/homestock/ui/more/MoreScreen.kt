@@ -121,7 +121,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -137,7 +136,6 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.zIndex
 import androidx.core.content.ContextCompat
 import androidx.core.os.LocaleListCompat
-import coil.compose.AsyncImage
 import com.dtraas.homestock.BuildConfig
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
@@ -164,7 +162,6 @@ import com.dtraas.homestock.data.repository.ThemeMode
 import com.dtraas.homestock.ui.components.HomeStockBottomSheet
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.ProductImage
-import com.dtraas.homestock.ui.components.initialsOf
 import com.dtraas.homestock.ui.components.ProfileEditDialog
 import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.components.SearchField
@@ -191,7 +188,6 @@ import com.dtraas.homestock.work.ExpiryCheckWorker
 import com.dtraas.homestock.work.LowStockCheckWorker
 import com.dtraas.homestock.work.PremiumTrialCheckWorker
 import com.dtraas.homestock.work.WasteSummaryWorker
-import java.io.File
 import java.text.DateFormat
 import java.util.Date
 import java.time.LocalDate
@@ -1797,13 +1793,20 @@ private fun MoreScreenHeader(searchQuery: String, onSearchQueryChange: (String) 
 }
 
 /**
- * Profile identity row — a 40dp avatar (photo, or this device's initials) standing in for the
- * usual leading icon, the device's own name, and the household's name as subtitle. Flat row, no
- * Card/background of its own — same [SettingsRow] structure/padding/typography every other
- * settings row uses, per explicit request ("dezelfde layout als de overige menu items, niet
- * hetzelfde als HomeStock Premium"): this is a row among rows, not a second promotional card.
- * Used to be pinned inside [MoreScreenHeader]'s green gradient; now the scrolling list's own
- * first row instead, once the header needed the room for a settings search field.
+ * Profile identity row — a plain generic-icon avatar (never this device's own photo or
+ * initials, see below) standing in for the usual leading icon, the device's own name, and the
+ * household's name as subtitle. Flat row, no Card/background of its own — same [SettingsRow]
+ * structure/padding/typography every other settings row uses, per explicit request ("dezelfde
+ * layout als de overige menu items, niet hetzelfde als HomeStock Premium"): this is a row among
+ * rows, not a second promotional card. Used to be pinned inside [MoreScreenHeader]'s green
+ * gradient; now the scrolling list's own first row instead, once the header needed the room for
+ * a settings search field.
+ *
+ * Deliberately ignores [photoPath] here — a household member's real photo (still picked and
+ * synced the same way, see [ProfileEditDialog]) belongs in places that are actually *about*
+ * telling people apart, like the Huishouden member list; this row is just this device's own menu
+ * entry point, and a real photo there read as heavier/more personal than every other row's plain
+ * flat icon.
  */
 @Composable
 private fun ProfileRow(
@@ -1826,32 +1829,16 @@ private fun ProfileRow(
             modifier = Modifier.size(40.dp),
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                if (photoPath != null) {
-                    AsyncImage(
-                        model = File(photoPath),
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                } else if (trimmedName != null) {
-                    Text(
-                        text = initialsOf(trimmedName),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = OnSageGreenPrimaryContainer,
-                    )
-                } else {
-                    // A plain person silhouette rather than AccountCircle — AccountCircle's own
-                    // glyph is itself a circle-in-a-circle, which on top of this row's already-
-                    // circular avatar surface read as one big double-ringed icon, noticeably
-                    // heavier than every other row's plain flat icon (see SettingsRow).
-                    Icon(
-                        imageVector = Icons.Filled.Person,
-                        contentDescription = null,
-                        tint = OnSageGreenPrimaryContainer,
-                        modifier = Modifier.size(22.dp),
-                    )
-                }
+                // A plain person silhouette rather than AccountCircle — AccountCircle's own
+                // glyph is itself a circle-in-a-circle, which on top of this row's already-
+                // circular avatar surface read as one big double-ringed icon, noticeably
+                // heavier than every other row's plain flat icon (see SettingsRow).
+                Icon(
+                    imageVector = Icons.Filled.Person,
+                    contentDescription = null,
+                    tint = OnSageGreenPrimaryContainer,
+                    modifier = Modifier.size(22.dp),
+                )
             }
         }
         Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
