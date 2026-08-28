@@ -1091,9 +1091,6 @@
     <string name="custom_recipe_servings_label">Number of servings</string>
     <string name="custom_recipe_tags_title">Tags</string>
     <string name="custom_recipe_ingredients_title">Ingredients</string>
-    <string name="custom_recipe_ingredient_name_placeholder">Ingredient</string>
-    <string name="custom_recipe_ingredient_measure_placeholder">Amount</string>
-    <string name="custom_recipe_add_ingredient">Add ingredient</string>
     <string name="custom_recipe_remove_ingredient_cd">Remove ingredient</string>
     <string name="custom_recipe_instructions_label">Instructions</string>
     <string name="custom_recipe_instructions_placeholder">Describe the preparation steps…</string>
@@ -1103,6 +1100,17 @@
     <string name="custom_recipe_delete_confirm_message">This recipe will be permanently deleted.</string>
     <string name="custom_recipe_validation_error">Enter a name and at least one ingredient.</string>
     <string name="custom_recipe_save_error">Couldn\'t save. Please try again.</string>
+    <string name="custom_recipe_step_format">%1$d of %2$d</string>
+    <string name="custom_recipe_save_draft_action">Save draft</string>
+    <string name="custom_recipe_next_to_instructions">To the method</string>
+    <string name="custom_recipe_next_to_overview">To overview</string>
+    <string name="custom_recipe_minutes_suffix">min</string>
+    <string name="custom_recipe_photo_label">Photo</string>
+    <string name="custom_recipe_ingredients_in_stock_format">%1$d of %2$d in stock</string>
+    <string name="custom_recipe_ingredient_quick_add_hint">Type the amount and name on one line — we\'ll split them for you.</string>
+    <string name="custom_recipe_ingredient_quick_add_placeholder">E.g. 2 tbsp mustard</string>
+    <string name="custom_recipe_ingredient_quick_add_submit">Enter</string>
+    <string name="custom_recipe_ingredient_in_stock_cd">Already in stock</string>
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Meal planner</string>

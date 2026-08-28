@@ -1095,9 +1095,6 @@
     <string name="custom_recipe_servings_label">Aantal porties</string>
     <string name="custom_recipe_tags_title">Labels</string>
     <string name="custom_recipe_ingredients_title">Ingrediënten</string>
-    <string name="custom_recipe_ingredient_name_placeholder">Ingrediënt</string>
-    <string name="custom_recipe_ingredient_measure_placeholder">Hoeveelheid</string>
-    <string name="custom_recipe_add_ingredient">Ingrediënt toevoegen</string>
     <string name="custom_recipe_remove_ingredient_cd">Ingrediënt verwijderen</string>
     <string name="custom_recipe_instructions_label">Bereidingswijze</string>
     <string name="custom_recipe_instructions_placeholder">Beschrijf de bereidingsstappen…</string>
@@ -1107,6 +1104,17 @@
     <string name="custom_recipe_delete_confirm_message">Dit recept wordt permanent verwijderd.</string>
     <string name="custom_recipe_validation_error">Vul een naam en minstens één ingrediënt in.</string>
     <string name="custom_recipe_save_error">Opslaan is mislukt. Probeer het opnieuw.</string>
+    <string name="custom_recipe_step_format">%1$d van %2$d</string>
+    <string name="custom_recipe_save_draft_action">Concept bewaren</string>
+    <string name="custom_recipe_next_to_instructions">Naar de bereiding</string>
+    <string name="custom_recipe_next_to_overview">Naar overzicht</string>
+    <string name="custom_recipe_minutes_suffix">min</string>
+    <string name="custom_recipe_photo_label">Foto</string>
+    <string name="custom_recipe_ingredients_in_stock_format">%1$d van %2$d in huis</string>
+    <string name="custom_recipe_ingredient_quick_add_hint">Typ maat en naam in één regel — we splitsen ze zelf.</string>
+    <string name="custom_recipe_ingredient_quick_add_placeholder">Bijv. 2 el mosterd</string>
+    <string name="custom_recipe_ingredient_quick_add_submit">Enter</string>
+    <string name="custom_recipe_ingredient_in_stock_cd">Al in huis</string>
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Maaltijdplanner</string>

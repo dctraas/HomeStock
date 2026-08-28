@@ -1091,9 +1091,6 @@
     <string name="custom_recipe_servings_label">Nombre de portions</string>
     <string name="custom_recipe_tags_title">Étiquettes</string>
     <string name="custom_recipe_ingredients_title">Ingrédients</string>
-    <string name="custom_recipe_ingredient_name_placeholder">Ingrédient</string>
-    <string name="custom_recipe_ingredient_measure_placeholder">Quantité</string>
-    <string name="custom_recipe_add_ingredient">Ajouter un ingrédient</string>
     <string name="custom_recipe_remove_ingredient_cd">Retirer l\'ingrédient</string>
     <string name="custom_recipe_instructions_label">Préparation</string>
     <string name="custom_recipe_instructions_placeholder">Décrivez les étapes de préparation…</string>
@@ -1103,6 +1100,17 @@
     <string name="custom_recipe_delete_confirm_message">Cette recette sera définitivement supprimée.</string>
     <string name="custom_recipe_validation_error">Saisissez un nom et au moins un ingrédient.</string>
     <string name="custom_recipe_save_error">Échec de l\'enregistrement. Réessayez.</string>
+    <string name="custom_recipe_step_format">%1$d sur %2$d</string>
+    <string name="custom_recipe_save_draft_action">Enregistrer le brouillon</string>
+    <string name="custom_recipe_next_to_instructions">À la préparation</string>
+    <string name="custom_recipe_next_to_overview">Au résumé</string>
+    <string name="custom_recipe_minutes_suffix">min</string>
+    <string name="custom_recipe_photo_label">Photo</string>
+    <string name="custom_recipe_ingredients_in_stock_format">%1$d sur %2$d en stock</string>
+    <string name="custom_recipe_ingredient_quick_add_hint">Tapez la quantité et le nom sur une ligne — on les sépare pour vous.</string>
+    <string name="custom_recipe_ingredient_quick_add_placeholder">Ex. 2 c. à soupe de moutarde</string>
+    <string name="custom_recipe_ingredient_quick_add_submit">Entrée</string>
+    <string name="custom_recipe_ingredient_in_stock_cd">Déjà en stock</string>
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Planificateur de repas</string>

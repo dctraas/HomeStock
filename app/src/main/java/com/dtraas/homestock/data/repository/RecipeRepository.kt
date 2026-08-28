@@ -1,5 +1,6 @@
 package com.dtraas.homestock.data.repository
 
+import android.net.Uri
 import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.model.Category
@@ -8,6 +9,7 @@ import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.functions.FirebaseFunctionsException
+import com.google.firebase.storage.FirebaseStorage
 import java.io.IOException
 import java.util.Locale
 import java.util.UUID
@@ -107,6 +109,7 @@ sealed interface GenerateRecipeResult {
 class RecipeRepository(
     private val firestore: FirebaseFirestore,
     private val functions: FirebaseFunctions,
+    private val storage: FirebaseStorage,
     private val householdSession: HouseholdSession,
     private val inventoryRepository: InventoryRepository,
     private val shoppingListRepository: ShoppingListRepository,
@@ -495,6 +498,32 @@ class RecipeRepository(
         }
     }
 
+    private fun customRecipePhotoRef(householdId: String, recipeId: String) =
+        storage.reference.child("households/$householdId/recipes/$recipeId/photo.jpg")
+
+    /**
+     * Uploads a hand-picked photo for a self-written recipe and points its Firestore doc's
+     * `thumbnailUrl` at the result — same upload-then-update-field shape as
+     * [ProductRepository.uploadCustomPhoto]. Called right after [saveCustomRecipe] creates the
+     * recipe (so [recipeId] always already exists as a document to update), not as part of that
+     * call itself — the picked [android.net.Uri] only ever needs uploading once, on save, not on
+     * every subsequent edit that doesn't touch the photo.
+     */
+    suspend fun uploadCustomRecipePhoto(recipeId: String, uri: Uri): Result<String> {
+        val householdId = householdSession.householdId.value ?: return Result.failure(IllegalStateException("no_household"))
+        return try {
+            val downloadUrl = customRecipePhotoRef(householdId, recipeId).putFile(uri).await().storage.downloadUrl.await().toString()
+            customRecipesCollection(householdId).document(recipeId).update("thumbnailUrl", downloadUrl).await()
+            if (favoriteRecipesCollection(householdId).document(recipeId).get().await().exists()) {
+                favoriteRecipesCollection(householdId).document(recipeId).update("thumbnailUrl", downloadUrl).await()
+            }
+            detailCache[recipeId]?.let { cacheDetail(it.copy(thumbnailUrl = downloadUrl)) }
+            Result.success(downloadUrl)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     suspend fun deleteCustomRecipe(id: String) {
         val householdId = householdSession.householdId.value ?: return
         customRecipesCollection(householdId).document(id).delete().await()
@@ -704,6 +733,22 @@ class RecipeRepository(
             .map { it.first }
             .filter { ingredient -> inventoryHasIngredient(ingredient, inventoryNames) }
             .toSet()
+    }
+
+    /**
+     * Best-effort "is this already in stock" check for one hand-typed ingredient name — the
+     * custom-recipe editor's own "in huis" row indicator. Unlike [matchedIngredients] (which
+     * matches Spoonacular's *English* ingredient terms through a translation dictionary), a
+     * self-written recipe's ingredients are already typed in the household's own language, so
+     * this just looks for a shared significant word (over 2 characters, to skip stray
+     * articles/units) between the typed name and an inventory item's own name — the same idea
+     * [tokenize] already applies to inventory names, reused here rather than duplicated.
+     */
+    suspend fun inventoryContainsIngredientNamed(ingredientName: String): Boolean {
+        val queryWords = tokenize(ingredientName).filter { it.length > 2 }
+        if (queryWords.isEmpty()) return false
+        val inventoryNames = inventoryRepository.observeInventoryWithProduct().first().map { it.name }
+        return inventoryNames.any { name -> tokenize(name).any { it in queryWords } }
     }
 
     /**

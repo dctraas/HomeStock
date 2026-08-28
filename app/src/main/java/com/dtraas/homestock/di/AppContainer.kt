@@ -201,7 +201,7 @@ class AppContainer(context: Context) {
     }
 
     val recipeRepository: RecipeRepository by lazy {
-        RecipeRepository(firestore, functions, householdSession, inventoryRepository, shoppingListRepository)
+        RecipeRepository(firestore, functions, storage, householdSession, inventoryRepository, shoppingListRepository)
     }
 
     val mealPlanRepository: MealPlanRepository by lazy {

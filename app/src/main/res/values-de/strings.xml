@@ -1091,9 +1091,6 @@
     <string name="custom_recipe_servings_label">Anzahl Portionen</string>
     <string name="custom_recipe_tags_title">Labels</string>
     <string name="custom_recipe_ingredients_title">Zutaten</string>
-    <string name="custom_recipe_ingredient_name_placeholder">Zutat</string>
-    <string name="custom_recipe_ingredient_measure_placeholder">Menge</string>
-    <string name="custom_recipe_add_ingredient">Zutat hinzufügen</string>
     <string name="custom_recipe_remove_ingredient_cd">Zutat entfernen</string>
     <string name="custom_recipe_instructions_label">Zubereitung</string>
     <string name="custom_recipe_instructions_placeholder">Beschreibe die Zubereitungsschritte…</string>
@@ -1103,6 +1100,17 @@
     <string name="custom_recipe_delete_confirm_message">Dieses Rezept wird endgültig gelöscht.</string>
     <string name="custom_recipe_validation_error">Gib einen Namen und mindestens eine Zutat ein.</string>
     <string name="custom_recipe_save_error">Speichern fehlgeschlagen. Bitte versuche es erneut.</string>
+    <string name="custom_recipe_step_format">%1$d von %2$d</string>
+    <string name="custom_recipe_save_draft_action">Entwurf speichern</string>
+    <string name="custom_recipe_next_to_instructions">Zur Zubereitung</string>
+    <string name="custom_recipe_next_to_overview">Zur Übersicht</string>
+    <string name="custom_recipe_minutes_suffix">Min.</string>
+    <string name="custom_recipe_photo_label">Foto</string>
+    <string name="custom_recipe_ingredients_in_stock_format">%1$d von %2$d vorhanden</string>
+    <string name="custom_recipe_ingredient_quick_add_hint">Menge und Name in einer Zeile eingeben — wir trennen sie automatisch.</string>
+    <string name="custom_recipe_ingredient_quick_add_placeholder">Z. B. 2 EL Senf</string>
+    <string name="custom_recipe_ingredient_quick_add_submit">Enter</string>
+    <string name="custom_recipe_ingredient_in_stock_cd">Bereits vorhanden</string>
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Essensplaner</string>

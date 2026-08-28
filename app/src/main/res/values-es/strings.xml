@@ -1091,9 +1091,6 @@
     <string name="custom_recipe_servings_label">Número de raciones</string>
     <string name="custom_recipe_tags_title">Etiquetas</string>
     <string name="custom_recipe_ingredients_title">Ingredientes</string>
-    <string name="custom_recipe_ingredient_name_placeholder">Ingrediente</string>
-    <string name="custom_recipe_ingredient_measure_placeholder">Cantidad</string>
-    <string name="custom_recipe_add_ingredient">Añadir ingrediente</string>
     <string name="custom_recipe_remove_ingredient_cd">Quitar ingrediente</string>
     <string name="custom_recipe_instructions_label">Preparación</string>
     <string name="custom_recipe_instructions_placeholder">Describe los pasos de preparación…</string>
@@ -1103,6 +1100,17 @@
     <string name="custom_recipe_delete_confirm_message">Esta receta se eliminará permanentemente.</string>
     <string name="custom_recipe_validation_error">Introduce un nombre y al menos un ingrediente.</string>
     <string name="custom_recipe_save_error">No se pudo guardar. Inténtalo de nuevo.</string>
+    <string name="custom_recipe_step_format">%1$d de %2$d</string>
+    <string name="custom_recipe_save_draft_action">Guardar borrador</string>
+    <string name="custom_recipe_next_to_instructions">A la preparación</string>
+    <string name="custom_recipe_next_to_overview">Al resumen</string>
+    <string name="custom_recipe_minutes_suffix">min</string>
+    <string name="custom_recipe_photo_label">Foto</string>
+    <string name="custom_recipe_ingredients_in_stock_format">%1$d de %2$d en casa</string>
+    <string name="custom_recipe_ingredient_quick_add_hint">Escribe la cantidad y el nombre en una línea — los separamos por ti.</string>
+    <string name="custom_recipe_ingredient_quick_add_placeholder">P. ej. 2 cdas de mostaza</string>
+    <string name="custom_recipe_ingredient_quick_add_submit">Enter</string>
+    <string name="custom_recipe_ingredient_in_stock_cd">Ya en casa</string>
 
     <!-- Weekmenu -->
     <string name="meal_plan_title">Planificador de comidas</string>
