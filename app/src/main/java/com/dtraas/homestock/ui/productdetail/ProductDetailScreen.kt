@@ -7,6 +7,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -25,6 +26,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -39,6 +41,8 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhotoCamera
 import androidx.compose.material.icons.filled.PlaylistAdd
@@ -84,6 +88,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
@@ -94,6 +99,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -101,7 +108,6 @@ import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.entity.NutritionInfo
-import com.dtraas.homestock.data.local.entity.PricePoint
 import com.dtraas.homestock.data.local.entity.ProductEntity
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.model.Category
@@ -182,12 +188,12 @@ fun ProductDetailScreen(
     ) { uri: Uri? -> uri?.let(viewModel::uploadCustomPhoto) }
 
     val scrollState = rememberScrollState()
-    // Three tabs replace what used to be a single long scroll with three chevron accordions —
-    // Overzicht (stock/houdbaarheid/stats), Voeding (nutrition — only shown when there's any to
-    // show, see [hasNutritionInfo]) and Gegevens (the editable form). The edit button in the
-    // overflow menu (see below) used to expand+scroll to the old accordion; it now just switches
-    // straight to the Gegevens tab.
+    // Overzicht (stock/houdbaarheid/stats) and Voeding (nutrition — only shown when there's any
+    // to show, see [hasNutritionInfo]) are real tabs; Gegevens isn't a third one any more — it's
+    // a full-screen editor (see [ProductEditScreen]) opened via [showEditSheet], same as the
+    // overflow menu's "Bewerken" always did.
     var selectedTab by remember(barcode) { mutableStateOf(ProductDetailTab.OVERZICHT) }
+    var showEditSheet by remember { mutableStateOf(false) }
     LaunchedEffect(hasNutritionInfo) {
         if (!hasNutritionInfo && selectedTab == ProductDetailTab.VOEDING) selectedTab = ProductDetailTab.OVERZICHT
     }
@@ -249,7 +255,7 @@ fun ProductDetailScreen(
                 onBack = onBack,
                 onToggleFavorite = viewModel::toggleFavorite,
                 onEditPhotoClick = { if (isPremium) showPhotoDialog = true else onNavigateToPremium() },
-                onEditDetailsClick = { selectedTab = ProductDetailTab.GEGEVENS },
+                onEditDetailsClick = { showEditSheet = true },
                 onRetryLookupClick = viewModel::retryLookup,
                 onDeleteClick = { showDeleteConfirm = true },
             )
@@ -259,6 +265,7 @@ fun ProductDetailScreen(
                     selected = selectedTab,
                     showNutrition = hasNutritionInfo,
                     onSelect = { selectedTab = it },
+                    onEditClick = { showEditSheet = true },
                 )
             }
 
@@ -379,28 +386,6 @@ fun ProductDetailScreen(
                         )
                     }
                 }
-
-                ProductDetailTab.GEGEVENS -> {
-                    product?.let { p ->
-                        ProductDetailsCard(
-                            product = p,
-                            category = category,
-                            onNameChange = viewModel::updateName,
-                            onBrandChange = viewModel::updateBrand,
-                            onCategoryChange = viewModel::updateCategory,
-                            onUnitChange = viewModel::updateUnit,
-                            onLocationChange = viewModel::updateLocation,
-                            showInventoryFields = stillInInventory,
-                            note = uiState.note,
-                            onNoteChange = viewModel::setNote,
-                            minQuantity = uiState.minQuantity,
-                            onMinQuantityChange = viewModel::setMinQuantity,
-                            lastPrice = p.lastPrice,
-                            priceHistory = p.priceHistory,
-                            onPriceChange = viewModel::setPrice,
-                        )
-                    }
-                }
             }
             }
         }
@@ -455,6 +440,26 @@ fun ProductDetailScreen(
                 onDismiss = { showPhotoDialog = false },
             )
         }
+
+        if (showEditSheet && product != null) {
+            ProductEditScreen(
+                product = product,
+                category = category,
+                showInventoryFields = stillInInventory,
+                note = uiState.note,
+                minQuantity = uiState.minQuantity,
+                otherMemberNames = uiState.otherMemberNames,
+                onNameChange = viewModel::updateName,
+                onBrandChange = viewModel::updateBrand,
+                onCategoryChange = viewModel::updateCategory,
+                onUnitChange = viewModel::updateUnit,
+                onLocationChange = viewModel::updateLocation,
+                onNoteChange = viewModel::setNote,
+                onMinQuantityChange = viewModel::setMinQuantity,
+                onPriceChange = viewModel::setPrice,
+                onDismiss = { showEditSheet = false },
+            )
+        }
     }
 }
 
@@ -497,17 +502,26 @@ private fun PhotoDialog(
     }
 }
 
-/** The three sections this screen is organized into — replaces what used to be one long scroll
- *  with three chevron accordions folded into it. [VOEDING] is the only one that's ever hidden
- *  (see [ProductDetailTabRow]'s `showNutrition`): a manually-entered product with no catalog
- *  match has nothing to show there. */
-private enum class ProductDetailTab { OVERZICHT, VOEDING, GEGEVENS }
+/** The two real sections this screen is organized into — replaces what used to be one long
+ *  scroll with three chevron accordions folded into it. [VOEDING] is the only one that's ever
+ *  hidden (see [ProductDetailTabRow]'s `showNutrition`): a manually-entered product with no
+ *  catalog match has nothing to show there. Gegevens isn't a third destination here any more —
+ *  it opens [ProductEditScreen] as its own full-screen editor instead, see
+ *  [ProductDetailTabRow]'s trailing action chip. */
+private enum class ProductDetailTab { OVERZICHT, VOEDING }
 
 /** Tab chips just below the green header, same visual language as Recepten's own tab row
  *  ([com.dtraas.homestock.ui.recipes.RecipesScreen]'s `RecipesTabRow`) — a horizontally
- *  scrollable [Row] of [FilterChip]s rather than Material3's own `TabRow`, to match. */
+ *  scrollable [Row] of [FilterChip]s rather than Material3's own `TabRow`, to match. The
+ *  trailing "Gegevens" chip is styled distinctly (outlined, pencil icon) and never shows as
+ *  selected — it's a shortcut into [ProductEditScreen], not a third view living in this Row. */
 @Composable
-private fun ProductDetailTabRow(selected: ProductDetailTab, showNutrition: Boolean, onSelect: (ProductDetailTab) -> Unit) {
+private fun ProductDetailTabRow(
+    selected: ProductDetailTab,
+    showNutrition: Boolean,
+    onSelect: (ProductDetailTab) -> Unit,
+    onEditClick: () -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -528,8 +542,9 @@ private fun ProductDetailTabRow(selected: ProductDetailTab, showNutrition: Boole
             )
         }
         FilterChip(
-            selected = selected == ProductDetailTab.GEGEVENS,
-            onClick = { onSelect(ProductDetailTab.GEGEVENS) },
+            selected = false,
+            onClick = onEditClick,
+            leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null, modifier = Modifier.size(16.dp)) },
             label = { Text(stringResource(R.string.product_detail_tab_edit)) },
         )
     }
@@ -831,24 +846,32 @@ private fun StatTile(eyebrow: String, value: String, caption: String?, modifier:
     }
 }
 
+/**
+ * The full-screen "Gegevens bewerken" editor — X/Klaar header over the product's own name,
+ * an optional "wijzigingen zijn direct zichtbaar voor …" banner, and two cards: [product]'s
+ * shared catalog fields, then (only [showInventoryFields]) this household's own stock fields.
+ * Opened from [ProductDetailTabRow]'s trailing chip and [ProductDetailHeader]'s overflow menu —
+ * this used to be a third tab embedded in the same scroll as Overzicht/Voeding, but "bewerken"
+ * reads as an action, not a place to browse, so it's its own [Dialog] now.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ProductDetailsCard(
+private fun ProductEditScreen(
     product: ProductEntity,
     category: Category,
+    showInventoryFields: Boolean,
+    note: String?,
+    minQuantity: Int?,
+    otherMemberNames: List<String>,
     onNameChange: (String) -> Unit,
     onBrandChange: (String?) -> Unit,
     onCategoryChange: (Category) -> Unit,
     onUnitChange: (String?) -> Unit,
     onLocationChange: (String?) -> Unit,
-    showInventoryFields: Boolean,
-    note: String?,
     onNoteChange: (String?) -> Unit,
-    minQuantity: Int?,
     onMinQuantityChange: (Int?) -> Unit,
-    lastPrice: Double?,
-    priceHistory: List<PricePoint>,
     onPriceChange: (Double) -> Unit,
-    modifier: Modifier = Modifier,
+    onDismiss: () -> Unit,
 ) {
     var name by remember(product.barcode) { mutableStateOf(product.name) }
     var brand by remember(product.barcode) { mutableStateOf(product.brand ?: "") }
@@ -862,183 +885,412 @@ private fun ProductDetailsCard(
     // price otherwise gets here: checking off a priced shopping list item
     // (ShoppingListRepository.setChecked) or a receipt scan. All three go through
     // ProductRepository.addPricePoint, so they build one continuous history regardless of path.
+    val lastPrice = product.lastPrice
+    val priceHistory = product.priceHistory
     var priceText by remember(product.barcode) {
         mutableStateOf(lastPrice?.let { formatPrice(it).removePrefix("€") } ?: "")
     }
+    var showPriceHistory by remember { mutableStateOf(false) }
+    // Flips true the moment any field's debounced (or immediate) write actually fires, and
+    // stays true for the rest of this editor session — the "Opgeslagen · zojuist" footer's whole
+    // point is confirming *something* was saved, not tracking exactly which field or exactly how
+    // long ago.
+    var hasSavedAnything by remember(product.barcode) { mutableStateOf(false) }
 
     // Debounced autosave per field: writes shortly after typing pauses instead of on every
     // keystroke or only once the field loses focus (which back-navigation can't reliably catch).
     LaunchedEffect(name) {
         delay(600)
-        if (name != product.name) onNameChange(name)
+        if (name != product.name) { onNameChange(name); hasSavedAnything = true }
     }
     LaunchedEffect(brand) {
         delay(600)
-        if (brand != (product.brand ?: "")) onBrandChange(brand.trim().ifBlank { null })
+        if (brand != (product.brand ?: "")) { onBrandChange(brand.trim().ifBlank { null }); hasSavedAnything = true }
     }
     LaunchedEffect(unit) {
         delay(600)
-        if (unit != (product.unit ?: "")) onUnitChange(unit.trim().ifBlank { null })
+        if (unit != (product.unit ?: "")) { onUnitChange(unit.trim().ifBlank { null }); hasSavedAnything = true }
     }
     LaunchedEffect(noteText) {
         delay(600)
-        if (noteText != (note ?: "")) onNoteChange(noteText.trim().ifBlank { null })
+        if (noteText != (note ?: "")) { onNoteChange(noteText.trim().ifBlank { null }); hasSavedAnything = true }
     }
     LaunchedEffect(priceText) {
         delay(600)
         val parsed = priceText.trim().replace(',', '.').toDoubleOrNull()?.takeIf { it >= 0 }
-        if (parsed != null && parsed != lastPrice) onPriceChange(parsed)
+        if (parsed != null && parsed != lastPrice) { onPriceChange(parsed); hasSavedAnything = true }
     }
 
-    // Two cards, not one — this used to be a single form, but its fields actually split cleanly
-    // along the same line [showInventoryFields] already drew: name/merk/categorie/eenheid/locatie
-    // live on the catalog entry this household cached for the barcode (shared the moment anyone
-    // in the household opens this same product), while minimum/prijs/notitie live on *this*
-    // inventory entry specifically. Splitting the cards makes that boundary visible instead of
-    // just implicit in which fields happened to be gated by [showInventoryFields].
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Card(
-            modifier = Modifier.fillMaxWidth(),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-            shape = SoftCardShape,
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                Text(
-                    text = stringResource(R.string.product_detail_catalog_title),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.common_name)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = brand,
-                    onValueChange = { brand = it },
-                    label = { Text(stringResource(R.string.product_detail_field_brand)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                CategoryDropdown(
-                    selected = category,
-                    onSelected = onCategoryChange,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                OutlinedTextField(
-                    value = unit,
-                    onValueChange = { unit = it },
-                    label = { Text(stringResource(R.string.product_detail_field_unit)) },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                LocationDropdown(
-                    selected = product.location,
-                    onSelected = onLocationChange,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Text(
-                    text = stringResource(R.string.product_detail_catalog_shared_caption),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
+    // The newest price point is what the pill next to "Prijs" shows; the cheapest *different*
+    // store beats it only when it's both attributed to a store (an unattributed manual entry
+    // has nothing to name in "Goedkoopst bij …") and actually cheaper than what's already shown.
+    val latestPricePoint = priceHistory.firstOrNull()
+    val cheaperElsewhere = priceHistory
+        .filter { it.store != null && (latestPricePoint == null || it.price < latestPricePoint.price) }
+        .minByOrNull { it.price }
 
-        // Minimum, price and note are fields on the inventory entry, not the catalog product —
-        // nothing to save them against for a product that isn't (or no longer) in stock.
-        if (showInventoryFields) {
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
-                shape = SoftCardShape,
-            ) {
+    Dialog(onDismissRequest = onDismiss, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+        Scaffold(
+            contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
+        ) { padding ->
+            Column(modifier = Modifier.fillMaxSize().padding(padding)) {
+                ProductEditHeader(productName = product.name, onDismiss = onDismiss)
                 Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    modifier = Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState()).padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
                 ) {
-                    Text(
-                        text = stringResource(R.string.product_detail_stock_title),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(stringResource(R.string.product_detail_min_quantity_label), style = MaterialTheme.typography.bodyMedium)
-                        QuantityStepper(
-                            quantity = minQuantity ?: 0,
-                            onDecrease = {
-                                val next = (minQuantity ?: 0) - 1
-                                onMinQuantityChange(if (next <= 0) null else next)
-                            },
-                            onIncrease = { onMinQuantityChange((minQuantity ?: 0) + 1) },
-                            minQuantity = 0,
-                            dense = true,
-                        )
+                    if (otherMemberNames.isNotEmpty()) {
+                        SharedWithBanner(otherMemberNames)
                     }
-                    OutlinedTextField(
-                        value = priceText,
-                        onValueChange = { priceText = it },
-                        label = { Text(stringResource(R.string.product_detail_field_last_price)) },
-                        placeholder = { Text(stringResource(R.string.shopping_list_price_placeholder)) },
-                        leadingIcon = { Text("€", style = MaterialTheme.typography.bodyLarge) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                        singleLine = true,
+
+                    Card(
                         modifier = Modifier.fillMaxWidth(),
-                    )
-                    if (priceHistory.size > 1) {
-                        Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.fillMaxWidth()) {
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                        shape = SoftCardShape,
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
                             Text(
-                                text = stringResource(R.string.product_detail_price_history_title),
-                                style = MaterialTheme.typography.labelMedium,
+                                text = stringResource(R.string.product_detail_catalog_eyebrow).uppercase(Locale.getDefault()),
+                                style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(bottom = 8.dp),
                             )
-                            // The first entry is already shown above as "Laatste prijs" — this is
-                            // the rest of the trend, oldest of the kept window last.
-                            priceHistory.drop(1).forEach { point ->
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.SpaceBetween,
-                                ) {
-                                    Text(
-                                        text = listOfNotNull(formatPriceDate(point.date), point.store).joinToString(" · "),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    )
-                                    Text(
-                                        text = formatPrice(point.price),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            EditableFieldRow(
+                                label = stringResource(R.string.common_name),
+                                value = name,
+                                onValueChange = { name = it },
+                            )
+                            EditableFieldRow(
+                                label = stringResource(R.string.product_detail_field_brand),
+                                value = brand,
+                                onValueChange = { brand = it },
+                            )
+                            DropdownFieldSlot { CategoryDropdown(selected = category, onSelected = onCategoryChange, modifier = Modifier.fillMaxWidth()) }
+                            EditableFieldRow(
+                                label = stringResource(R.string.product_detail_field_unit),
+                                value = unit,
+                                onValueChange = { unit = it },
+                                showDivider = false,
+                            )
+                        }
+                    }
+
+                    if (showInventoryFields) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerHigh),
+                            shape = SoftCardShape,
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text(
+                                    text = stringResource(R.string.product_detail_stock_title).uppercase(Locale.getDefault()),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(bottom = 8.dp),
+                                )
+                                DropdownFieldSlot { LocationDropdown(selected = product.location, onSelected = onLocationChange, modifier = Modifier.fillMaxWidth()) }
+                                Column(modifier = Modifier.padding(bottom = 12.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                    ) {
+                                        Column {
+                                            Text(stringResource(R.string.product_detail_min_quantity_label), style = MaterialTheme.typography.bodyMedium)
+                                            Text(
+                                                text = stringResource(R.string.product_detail_min_quantity_subtitle),
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            )
+                                        }
+                                        QuantityStepper(
+                                            quantity = minQuantity ?: 0,
+                                            onDecrease = {
+                                                val next = (minQuantity ?: 0) - 1
+                                                onMinQuantityChange(if (next <= 0) null else next)
+                                                hasSavedAnything = true
+                                            },
+                                            onIncrease = {
+                                                onMinQuantityChange((minQuantity ?: 0) + 1)
+                                                hasSavedAnything = true
+                                            },
+                                            minQuantity = 0,
+                                            dense = true,
+                                        )
+                                    }
+                                    HorizontalDivider(
+                                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                        modifier = Modifier.padding(top = 12.dp),
                                     )
                                 }
+
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                ) {
+                                    Column {
+                                        Text(
+                                            text = stringResource(R.string.product_detail_field_last_price),
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        )
+                                        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
+                                            Text(
+                                                text = "€",
+                                                style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                                            )
+                                            BasicTextField(
+                                                value = priceText,
+                                                onValueChange = { priceText = it },
+                                                textStyle = MaterialTheme.typography.bodyLarge.copy(
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = MaterialTheme.colorScheme.onSurface,
+                                                ),
+                                                singleLine = true,
+                                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                                                cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+                                                modifier = Modifier.widthIn(min = 48.dp, max = 100.dp),
+                                            )
+                                        }
+                                    }
+                                    if (latestPricePoint != null) {
+                                        Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.surfaceContainerHighest) {
+                                            Text(
+                                                text = listOfNotNull(latestPricePoint.store, formatPriceDate(latestPricePoint.date)).joinToString(" · "),
+                                                style = MaterialTheme.typography.labelMedium,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                            )
+                                        }
+                                    }
+                                }
+
+                                // The cheaper-elsewhere pill and the "Historie" toggle are
+                                // independent — a product can have plenty of price history
+                                // without any of it beating the current store, and that history
+                                // should still be reachable either way.
+                                if (cheaperElsewhere != null || priceHistory.size > 1) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                    ) {
+                                        if (cheaperElsewhere != null) {
+                                            Surface(shape = RoundedCornerShape(50), color = MaterialTheme.colorScheme.tertiaryContainer) {
+                                                Text(
+                                                    text = stringResource(
+                                                        R.string.product_detail_cheapest_elsewhere_format,
+                                                        cheaperElsewhere.store.orEmpty(),
+                                                        formatPrice(cheaperElsewhere.price),
+                                                        formatPriceDate(cheaperElsewhere.date),
+                                                    ),
+                                                    style = MaterialTheme.typography.labelMedium,
+                                                    color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                                )
+                                            }
+                                        } else {
+                                            Spacer(modifier = Modifier.width(1.dp))
+                                        }
+                                        if (priceHistory.size > 1) {
+                                            TextButton(onClick = { showPriceHistory = !showPriceHistory }) {
+                                                Text(stringResource(R.string.product_detail_history_action))
+                                            }
+                                        }
+                                    }
+                                }
+                                if (showPriceHistory && priceHistory.size > 1) {
+                                    Column(
+                                        verticalArrangement = Arrangement.spacedBy(2.dp),
+                                        modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                                    ) {
+                                        // The first entry is already shown above as the current price — this
+                                        // is the rest of the trend, oldest of the kept window last.
+                                        priceHistory.drop(1).forEach { point ->
+                                            Row(
+                                                modifier = Modifier.fillMaxWidth(),
+                                                horizontalArrangement = Arrangement.SpaceBetween,
+                                            ) {
+                                                Text(
+                                                    text = listOfNotNull(formatPriceDate(point.date), point.store).joinToString(" · "),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                                Text(
+                                                    text = formatPrice(point.price),
+                                                    style = MaterialTheme.typography.bodySmall,
+                                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                                HorizontalDivider(
+                                    color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                                    modifier = Modifier.padding(top = 12.dp, bottom = 12.dp),
+                                )
+
+                                Text(
+                                    text = stringResource(R.string.product_detail_note_title),
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(bottom = 4.dp),
+                                )
+                                OutlinedTextField(
+                                    value = noteText,
+                                    onValueChange = { noteText = it },
+                                    placeholder = { Text(stringResource(R.string.product_detail_note_placeholder)) },
+                                    minLines = 3,
+                                    modifier = Modifier.fillMaxWidth(),
+                                )
                             }
                         }
                     }
-                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(
-                            text = stringResource(R.string.product_detail_note_title),
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                        OutlinedTextField(
-                            value = noteText,
-                            onValueChange = { noteText = it },
-                            placeholder = { Text(stringResource(R.string.product_detail_note_placeholder)) },
-                            minLines = 3,
-                            modifier = Modifier.fillMaxWidth(),
-                        )
+
+                    if (hasSavedAnything) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 8.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.CheckCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(14.dp),
+                            )
+                            Text(
+                                text = stringResource(R.string.product_detail_saved_just_now),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(start = 6.dp),
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+/** The editor's own green header — a close "✕" (left) and "Klaar" (right) rather than the main
+ *  screen's back arrow/overflow, since this is a self-contained modal on top of it, plus the
+ *  product's own name as a subtitle under the "Gegevens bewerken" title. Both actions do the
+ *  same thing (every field autosaves on its own, see [ProductEditScreen]'s debounced
+ *  `LaunchedEffect`s) — there's no separate "discard" concept to distinguish them. */
+@Composable
+private fun ProductEditHeader(productName: String, onDismiss: () -> Unit) {
+    val contentColor = LocalTopAppBarContentColor.current
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(LocalTopAppBarContainerColor.current)
+            .windowInsetsPadding(WindowInsets.statusBars)
+            .padding(start = 4.dp, end = 16.dp, top = 4.dp, bottom = 16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        IconButton(onClick = onDismiss) {
+            Icon(Icons.Filled.Close, contentDescription = stringResource(R.string.common_close), tint = contentColor)
+        }
+        Column(modifier = Modifier.weight(1f).padding(start = 4.dp)) {
+            Text(
+                text = stringResource(R.string.product_detail_edit_title),
+                style = MaterialTheme.typography.titleLarge,
+                color = contentColor,
+            )
+            Text(
+                text = productName,
+                style = MaterialTheme.typography.bodySmall,
+                color = OnTopAppBarContainerAccent,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+        }
+        TextButton(onClick = onDismiss) {
+            Text(
+                text = stringResource(R.string.common_done),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = contentColor,
+            )
+        }
+    }
+}
+
+/** "Wijzigingen hierin zijn direct zichtbaar voor …" — only shown once there's actually someone
+ *  else in the household to say that about; a solo household edits in silence, same as before
+ *  this banner existed. */
+@Composable
+private fun SharedWithBanner(otherMemberNames: List<String>, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        shape = SoftCardShapeCompact,
+    ) {
+        Row(modifier = Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(
+                imageVector = Icons.Filled.Groups,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.size(18.dp),
+            )
+            Text(
+                text = if (otherMemberNames.size == 1) {
+                    stringResource(R.string.product_detail_shared_caption_one_format, otherMemberNames.single())
+                } else {
+                    stringResource(R.string.product_detail_shared_caption_many)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                modifier = Modifier.padding(start = 10.dp),
+            )
+        }
+    }
+}
+
+/** A label-above-bold-value row with a thin divider underneath, borderless — Naam/Merk/Eenheid's
+ *  look in the redesigned editor, replacing the boxed [OutlinedTextField] the old accordion form
+ *  used. [showDivider] is only ever false for the last field in a card, where the card's own
+ *  padding already closes it off. */
+@Composable
+private fun EditableFieldRow(
+    label: String,
+    value: String,
+    onValueChange: (String) -> Unit,
+    modifier: Modifier = Modifier,
+    showDivider: Boolean = true,
+) {
+    Column(modifier = modifier.fillMaxWidth().padding(bottom = if (showDivider) 12.dp else 0.dp)) {
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        BasicTextField(
+            value = value,
+            onValueChange = onValueChange,
+            textStyle = MaterialTheme.typography.bodyLarge.copy(
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+            ),
+            singleLine = true,
+            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
+            modifier = Modifier.fillMaxWidth().padding(top = 4.dp, bottom = 10.dp),
+        )
+        if (showDivider) {
+            HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
+        }
+    }
+}
+
+/** Wraps [CategoryDropdown]/[LocationDropdown] with the same bottom spacing [EditableFieldRow]
+ *  uses, so a boxed dropdown field lines up with the borderless text rows around it — those two
+ *  are shared components used elsewhere in their own boxed [OutlinedTextField] style, which this
+ *  deliberately leaves alone rather than forking a second visual variant just for this screen. */
+@Composable
+private fun DropdownFieldSlot(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    Box(modifier = modifier.fillMaxWidth().padding(bottom = 12.dp)) {
+        content()
     }
 }
 

@@ -36,6 +36,10 @@ data class ProductDetailUiState(
     val scanCount: Int = 0,
     val avgDaysBetweenScans: Int? = null,
     val memberAllergenWarnings: List<MemberAllergenWarning> = emptyList(),
+    // Every other household member's own name (this device's own member excluded) — the Gegevens
+    // editor's "wijzigingen zijn direct zichtbaar voor …" banner uses this to name exactly who
+    // else will see a catalog-field edit, rather than a generic "je huishouden".
+    val otherMemberNames: List<String> = emptyList(),
     val isLoading: Boolean = true,
 )
 
@@ -75,6 +79,9 @@ class ProductDetailViewModel(
                 if (matched.isEmpty() || name.isNullOrEmpty()) null else MemberAllergenWarning(name, matched)
             }
         }
+        val otherMemberNames = members
+            .filterNot { it.isCurrentDevice }
+            .mapNotNull { it.displayName?.trim()?.takeIf { name -> name.isNotEmpty() } }
         ProductDetailUiState(
             product = product,
             quantityInInventory = inventoryItem?.quantity,
@@ -85,6 +92,7 @@ class ProductDetailViewModel(
             scanCount = scanHistory.size,
             avgDaysBetweenScans = avgDaysBetweenScans,
             memberAllergenWarnings = memberAllergenWarnings,
+            otherMemberNames = otherMemberNames,
             isLoading = false,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ProductDetailUiState())

@@ -5,6 +5,7 @@
     <string name="common_back">Terug</string>
     <string name="common_cancel">Annuleren</string>
     <string name="common_close">Sluiten</string>
+    <string name="common_done">Klaar</string>
     <string name="common_name">Naam</string>
     <string name="common_ok">OK</string>
     <string name="common_on">Aan</string>
@@ -659,6 +660,14 @@
     <string name="product_detail_price_history_title">Prijsgeschiedenis</string>
     <string name="product_detail_note_title">Persoonlijke notitie</string>
     <string name="product_detail_note_placeholder">Bijv. een recept-idee, favoriete bereidingswijze of waar je dit hebt gekocht</string>
+    <string name="product_detail_edit_title">Gegevens bewerken</string>
+    <string name="product_detail_catalog_eyebrow">Het product · geldt voor het hele huishouden</string>
+    <string name="product_detail_shared_caption_one_format">Wijzigingen hierin zijn direct zichtbaar voor %1$s.</string>
+    <string name="product_detail_shared_caption_many">Wijzigingen hierin zijn direct zichtbaar voor je huisgenoten.</string>
+    <string name="product_detail_min_quantity_subtitle">Onder dit aantal → op de lijst</string>
+    <string name="product_detail_cheapest_elsewhere_format">Goedkoopst bij %1$s: %2$s (%3$s)</string>
+    <string name="product_detail_history_action">Historie</string>
+    <string name="product_detail_saved_just_now">Opgeslagen · zojuist</string>
     <string name="product_detail_tab_overview">Overzicht</string>
     <string name="product_detail_tab_nutrition">Voeding</string>
     <string name="product_detail_tab_edit">Gegevens</string>
@@ -672,9 +681,7 @@
     <string name="product_detail_allergen_member_warning_format">%1$s heeft %2$s uitgesloten in het eigen profiel</string>
     <string name="product_detail_ingredients_title">Ingrediënten</string>
     <string name="product_detail_ingredients_source_format">Bron: Open Food Facts · bijgewerkt %1$s</string>
-    <string name="product_detail_catalog_title">Productgegevens</string>
-    <string name="product_detail_catalog_shared_caption">Wijzigingen zijn direct zichtbaar voor je hele huishouden</string>
-    <string name="product_detail_stock_title">Mijn voorraad</string>
+    <string name="product_detail_stock_title">Jouw voorraad</string>
     <plurals name="product_detail_stat_scan_frequency_days">
         <item quantity="one">≈ elke dag</item>
         <item quantity="other">≈ elke %1$d dagen</item>

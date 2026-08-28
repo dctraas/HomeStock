@@ -5,6 +5,7 @@
     <string name="common_back">Atrás</string>
     <string name="common_cancel">Cancelar</string>
     <string name="common_close">Cerrar</string>
+    <string name="common_done">Listo</string>
     <string name="common_name">Nombre</string>
     <string name="common_ok">Aceptar</string>
     <string name="common_on">Activado</string>
@@ -655,6 +656,14 @@
     <string name="product_detail_price_history_title">Historial de precios</string>
     <string name="product_detail_note_title">Nota personal</string>
     <string name="product_detail_note_placeholder">Por ejemplo, una idea de receta, tu forma favorita de prepararlo o dónde lo compraste</string>
+    <string name="product_detail_edit_title">Editar datos</string>
+    <string name="product_detail_catalog_eyebrow">El producto · aplica a todo el hogar</string>
+    <string name="product_detail_shared_caption_one_format">Los cambios aquí son visibles al instante para %1$s.</string>
+    <string name="product_detail_shared_caption_many">Los cambios aquí son visibles al instante para tus compañeros de hogar.</string>
+    <string name="product_detail_min_quantity_subtitle">Por debajo de esta cantidad → se añade a la lista</string>
+    <string name="product_detail_cheapest_elsewhere_format">Más barato en %1$s: %2$s (%3$s)</string>
+    <string name="product_detail_history_action">Historial</string>
+    <string name="product_detail_saved_just_now">Guardado · ahora mismo</string>
     <string name="product_detail_tab_overview">Resumen</string>
     <string name="product_detail_tab_nutrition">Nutrición</string>
     <string name="product_detail_tab_edit">Datos</string>
@@ -668,9 +677,7 @@
     <string name="product_detail_allergen_member_warning_format">%1$s ha excluido %2$s en su propio perfil</string>
     <string name="product_detail_ingredients_title">Ingredientes</string>
     <string name="product_detail_ingredients_source_format">Fuente: Open Food Facts · actualizado el %1$s</string>
-    <string name="product_detail_catalog_title">Datos del producto</string>
-    <string name="product_detail_catalog_shared_caption">Los cambios son visibles al instante para todo el hogar</string>
-    <string name="product_detail_stock_title">Mi stock</string>
+    <string name="product_detail_stock_title">Tu stock</string>
     <plurals name="product_detail_stat_scan_frequency_days">
         <item quantity="one">≈ cada día</item>
         <item quantity="other">≈ cada %1$d días</item>
