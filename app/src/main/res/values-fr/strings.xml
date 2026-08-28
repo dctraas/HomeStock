@@ -53,6 +53,7 @@
     <string name="store_add_menu_item">Ajouter un magasin</string>
     <string name="store_add_dialog_title">Nouveau magasin</string>
     <string name="store_add_action">Ajouter</string>
+    <string name="store_rename_dialog_title">Renommer</string>
 
     <!-- Activity type labels (Actualités/Historique) -->
     <string name="activity_type_scanned">Scanné</string>
@@ -350,6 +351,7 @@
     <string name="more_aisle_order_row_options_cd">Plus d\'options pour ce rayon</string>
     <string name="more_aisle_order_reset">Rétablir l\'ordre par défaut</string>
     <string name="more_stores_empty">Aucun magasin ajouté pour l\'instant.</string>
+    <string name="more_stores_rename_action">Renommer</string>
     <string name="more_stores_remove_format">Supprimer %1$s</string>
     <string name="more_stores_subtitle">Détermine l\'ordre de ta liste de courses</string>
 

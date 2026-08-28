@@ -57,6 +57,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.DragIndicator
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Feedback
 import androidx.compose.material.icons.filled.Groups
@@ -999,6 +1000,15 @@ fun MoreScreen(
                 coroutineScope.launch {
                     shoppingListRepository.clearStoreFromItems(store.name)
                     storeRepository.removeStore(store.id)
+                }
+            },
+            onRename = { store, newName ->
+                coroutineScope.launch {
+                    val trimmed = newName.trim()
+                    if (trimmed.isNotEmpty() && trimmed != store.name) {
+                        shoppingListRepository.renameStoreOnItems(store.name, trimmed)
+                        storeRepository.renameStore(store, trimmed)
+                    }
                 }
             },
             onMove = { store, previous, next -> coroutineScope.launch { storeRepository.moveStore(store, previous, next) } },
@@ -2314,11 +2324,13 @@ private fun StoresScreen(
     categoryCountByStore: Map<String, Map<String, Int>>,
     onAdd: (String) -> Unit,
     onRemove: (StoreEntity) -> Unit,
+    onRename: (StoreEntity, String) -> Unit,
     onMove: (store: StoreEntity, previous: StoreEntity?, next: StoreEntity?) -> Unit,
     onSetAisleOrder: (StoreEntity, List<List<Category>>) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var pendingDelete by remember { mutableStateOf<StoreEntity?>(null) }
+    var renamingStore by remember { mutableStateOf<StoreEntity?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
     // Tapping a store card (see ReorderableStoreList) opens its gangvolgorde right here instead
     // of a separate menu row + its own store-picker step — this list already *is* the picker.
@@ -2353,6 +2365,7 @@ private fun StoresScreen(
                         categoryCountByStore = categoryCountByStore,
                         onMove = onMove,
                         onDeleteRequest = { pendingDelete = it },
+                        onRenameRequest = { renamingStore = it },
                         onEditAisleOrder = { store -> editingAisleOrderStoreId = store.id },
                     )
 
@@ -2418,6 +2431,15 @@ private fun StoresScreen(
             dismissButton = {
                 TextButton(onClick = { pendingDelete = null }) { Text(stringResource(R.string.common_cancel)) }
             },
+        )
+    }
+
+    val renameTarget = renamingStore
+    if (renameTarget != null) {
+        RenameStoreDialog(
+            store = renameTarget,
+            onConfirm = { newName -> onRename(renameTarget, newName); renamingStore = null },
+            onDismiss = { renamingStore = null },
         )
     }
 }
@@ -2507,6 +2529,36 @@ private fun AddStoreDialog(onAdd: (String) -> Unit, onDismiss: () -> Unit) {
     )
 }
 
+/** Rename a store in place — reached from its row's overflow menu. Renaming doesn't move it in
+ *  the list or touch its gangvolgorde; MoreScreen's own onRename also repoints any shopping list
+ *  items already sitting on this store's old name (see ShoppingListRepository.renameStoreOnItems)
+ *  so they don't silently fall off its section the moment the name changes. */
+@Composable
+private fun RenameStoreDialog(store: StoreEntity, onConfirm: (String) -> Unit, onDismiss: () -> Unit) {
+    var name by remember(store.id) { mutableStateOf(store.name) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(R.string.store_rename_dialog_title)) },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(name) }, enabled = name.trim().isNotEmpty() && name.trim() != store.name) {
+                Text(stringResource(R.string.common_save))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(R.string.common_cancel)) }
+        },
+    )
+}
+
 /**
  * A flat, freely-swappable drag-to-reorder list — same median-sortOrder swap mechanics as
  * ShoppingListScreen's `ReorderableShoppingList`, simplified since stores have no
@@ -2523,6 +2575,7 @@ private fun ReorderableStoreList(
     categoryCountByStore: Map<String, Map<String, Int>>,
     onMove: (StoreEntity, StoreEntity?, StoreEntity?) -> Unit,
     onDeleteRequest: (StoreEntity) -> Unit,
+    onRenameRequest: (StoreEntity) -> Unit,
     onEditAisleOrder: (StoreEntity) -> Unit,
 ) {
     val orderedStores = remember { mutableStateListOf<StoreEntity>() }
@@ -2722,6 +2775,11 @@ private fun ReorderableStoreList(
                                 )
                             }
                             DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                                DropdownMenuItem(
+                                    text = { Text(stringResource(R.string.more_stores_rename_action)) },
+                                    leadingIcon = { Icon(Icons.Filled.Edit, contentDescription = null) },
+                                    onClick = { menuExpanded = false; onRenameRequest(store) },
+                                )
                                 DropdownMenuItem(
                                     text = {
                                         Text(stringResource(R.string.more_stores_remove_format, store.name), color = MaterialTheme.colorScheme.error)

@@ -49,6 +49,20 @@ class StoreRepository(
         storesCollection(householdId).document(id).delete().await()
     }
 
+    /**
+     * Renames [store] to [newName]. Only touches this store's own document — shopping list
+     * items already reference the OLD name as a plain string (see [StoreEntity.name]'s own
+     * callers and [ShoppingListRepository.renameStoreOnItems]), so MoreScreen's Winkels sheet
+     * calls that alongside this one, same two-step pairing [removeStore] already needs with
+     * [ShoppingListRepository.clearStoreFromItems].
+     */
+    suspend fun renameStore(store: StoreEntity, newName: String) {
+        val trimmed = newName.trim()
+        if (trimmed.isEmpty() || trimmed == store.name) return
+        val householdId = householdSession.householdId.value ?: return
+        storesCollection(householdId).document(store.id).update("name", trimmed).await()
+    }
+
     /** Drag-to-reorder — same median-sortOrder swap as ShoppingListRepository.moveItem, just
      *  over the household's own store list instead of one list's items. Reorders the shopping
      *  list's store sections (see StoreHeader/groupedByStore), not anything about the stores

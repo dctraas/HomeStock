@@ -53,6 +53,7 @@
     <string name="store_add_menu_item">Añadir nueva tienda</string>
     <string name="store_add_dialog_title">Nueva tienda</string>
     <string name="store_add_action">Añadir</string>
+    <string name="store_rename_dialog_title">Cambiar nombre</string>
 
     <!-- Activity type labels (Novedades/Historial) -->
     <string name="activity_type_scanned">Escaneado</string>
@@ -350,6 +351,7 @@
     <string name="more_aisle_order_row_options_cd">Más opciones para este pasillo</string>
     <string name="more_aisle_order_reset">Restablecer orden predeterminado</string>
     <string name="more_stores_empty">Aún no se han añadido tiendas.</string>
+    <string name="more_stores_rename_action">Cambiar nombre</string>
     <string name="more_stores_remove_format">Eliminar %1$s</string>
     <string name="more_stores_subtitle">Determina el orden de tu lista de la compra</string>
 

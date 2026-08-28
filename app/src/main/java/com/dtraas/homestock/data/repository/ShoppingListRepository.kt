@@ -215,6 +215,24 @@ class ShoppingListRepository(
         refreshWidget()
     }
 
+    /**
+     * Repoints every item currently on [oldName] to [newName] — called right after a store
+     * itself is renamed (see StoreRepository.renameStore/MoreScreen's Winkels sheet), since
+     * items reference a store by this plain name string rather than its id (see
+     * ShoppingListItemEntity.store's own doc) and would otherwise silently fall off that
+     * store's section the moment its name changes. Same batch shape as [clearStoreFromItems],
+     * which does the equivalent reassignment when a store is deleted outright instead of renamed.
+     */
+    suspend fun renameStoreOnItems(oldName: String, newName: String) {
+        val householdId = householdSession.householdId.value ?: return
+        val docs = shoppingListCollection(householdId).whereEqualTo("store", oldName).get().await()
+        if (docs.isEmpty) return
+        val batch = firestore.batch()
+        docs.documents.forEach { batch.update(it.reference, "store", newName) }
+        batch.commit().await()
+        refreshWidget()
+    }
+
     suspend fun checkAll() {
         val householdId = householdSession.householdId.value ?: return
         val uncheckedDocs = shoppingListCollection(householdId).whereEqualTo("isChecked", false).get().await()

@@ -53,6 +53,7 @@
     <string name="store_add_menu_item">Add new store</string>
     <string name="store_add_dialog_title">New store</string>
     <string name="store_add_action">Add</string>
+    <string name="store_rename_dialog_title">Rename</string>
 
     <!-- Activity type labels (News/History) -->
     <string name="activity_type_scanned">Scanned</string>
@@ -350,6 +351,7 @@
     <string name="more_aisle_order_row_options_cd">More options for this aisle</string>
     <string name="more_aisle_order_reset">Reset to default order</string>
     <string name="more_stores_empty">No stores added yet.</string>
+    <string name="more_stores_rename_action">Rename</string>
     <string name="more_stores_remove_format">Remove %1$s</string>
     <string name="more_stores_subtitle">Determines the order of your shopping list</string>
 

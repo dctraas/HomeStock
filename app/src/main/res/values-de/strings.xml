@@ -53,6 +53,7 @@
     <string name="store_add_menu_item">Neues Geschäft hinzufügen</string>
     <string name="store_add_dialog_title">Neues Geschäft</string>
     <string name="store_add_action">Hinzufügen</string>
+    <string name="store_rename_dialog_title">Namen ändern</string>
 
     <!-- Activity type labels (Neuigkeiten/Verlauf) -->
     <string name="activity_type_scanned">Gescannt</string>
@@ -350,6 +351,7 @@
     <string name="more_aisle_order_row_options_cd">Weitere Optionen für diesen Gang</string>
     <string name="more_aisle_order_reset">Standardreihenfolge wiederherstellen</string>
     <string name="more_stores_empty">Noch keine Geschäfte hinzugefügt.</string>
+    <string name="more_stores_rename_action">Namen ändern</string>
     <string name="more_stores_remove_format">%1$s entfernen</string>
     <string name="more_stores_subtitle">Bestimmt die Reihenfolge deiner Einkaufsliste</string>
 

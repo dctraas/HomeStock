@@ -54,6 +54,7 @@
     <string name="store_add_menu_item">Nieuwe winkel toevoegen</string>
     <string name="store_add_dialog_title">Nieuwe winkel</string>
     <string name="store_add_action">Toevoegen</string>
+    <string name="store_rename_dialog_title">Naam wijzigen</string>
 
     <!-- Activity type labels (Meldingen/Geschiedenis) -->
     <string name="activity_type_scanned">Gescand</string>
@@ -354,6 +355,7 @@
     <string name="more_aisle_order_row_options_cd">Meer opties voor deze gang</string>
     <string name="more_aisle_order_reset">Standaardvolgorde herstellen</string>
     <string name="more_stores_empty">Nog geen winkels toegevoegd.</string>
+    <string name="more_stores_rename_action">Naam wijzigen</string>
     <string name="more_stores_remove_format">%1$s verwijderen</string>
     <string name="more_stores_subtitle">Bepaalt de volgorde van je boodschappenlijst</string>
 
