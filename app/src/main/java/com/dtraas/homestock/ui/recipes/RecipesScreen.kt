@@ -75,6 +75,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
@@ -136,6 +137,7 @@ import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
 import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
+import java.util.Locale
 
 /**
  * Browses Spoonacular's recipe catalog by default (see RecipeRepository.browseAllRecipes) — not
