@@ -1,20 +1,19 @@
 package com.dtraas.homestock.ui.household
 
-import android.app.Activity
 import android.content.Intent
+import android.graphics.Bitmap
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -25,28 +24,33 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Groups
 import androidx.compose.material.icons.filled.Inventory
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -65,15 +69,18 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
@@ -90,6 +97,8 @@ import com.dtraas.homestock.ui.components.SheetActionRow
 import com.dtraas.homestock.ui.components.SheetEyebrow
 import com.dtraas.homestock.ui.components.SheetPrimaryButton
 import com.dtraas.homestock.ui.components.SheetTitle
+import com.dtraas.homestock.ui.components.dashedBorder
+import com.dtraas.homestock.ui.components.initialsOf
 import com.dtraas.homestock.ui.components.sheetContentPadding
 import com.dtraas.homestock.data.repository.HouseholdCapacityInfo
 import com.dtraas.homestock.data.repository.HouseholdInviteLink
@@ -98,8 +107,12 @@ import com.dtraas.homestock.data.repository.HouseholdMember
 import com.dtraas.homestock.data.repository.HouseholdMembersRepository
 import com.dtraas.homestock.data.repository.HouseholdRepository
 import com.dtraas.homestock.data.repository.RecentHousehold
+import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SoftCardShape
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
+import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.qrcode.QRCodeWriter
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -112,7 +125,7 @@ import kotlinx.coroutines.launch
  * Instellingen > Huishouden — split out of a former [androidx.compose.material3.AlertDialog]
  * into its own screen once it grew a members list on top of the code display and rename
  * field: a small popup doesn't have room to breathe for that much content, and cramming it
- * in obscured the actual save action for a rename (see [NameSection]'s doc).
+ * in obscured the actual save action for a rename (see [NameCard]'s doc).
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -123,6 +136,7 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
     val householdId by householdSession.householdId.collectAsState()
     val householdRepository = application.container.householdRepository
     val householdName by householdRepository.observeHouseholdName().collectAsState(initial = null)
+    val householdCreatedBy by householdRepository.observeHouseholdCreatedBy().collectAsState(initial = null)
     val householdMembersRepository = application.container.householdMembersRepository
     val members by householdMembersRepository.observeMembers().collectAsState(initial = emptyList())
     val capacityInfo by householdMembersRepository.observeCapacityInfo().collectAsState(
@@ -164,11 +178,13 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
     }
 
     val coroutineScope = rememberCoroutineScope()
+    val clipboardManager = LocalClipboardManager.current
     val snackbarHostState = remember { SnackbarHostState() }
     val deleteSuccessMessage = stringResource(R.string.more_delete_household_success)
     val deleteErrorMessage = stringResource(R.string.more_delete_household_error)
     val switchFullMessage = stringResource(R.string.household_join_full_error)
     val switchNotFoundMessage = stringResource(R.string.household_switch_not_found_error)
+    val invitedCopiedMessage = stringResource(R.string.household_invite_copied_message)
 
     // "Eerst exporteren als CSV" in the delete sheet — a full Voorraad + Boodschappenlijst
     // export, same CsvExporter this app's Data-overzetten sheet uses, just always "Alles"
@@ -251,6 +267,7 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
     // or a housemate renaming it on their own device) — but not on every keystroke, since
     // `key1 = householdName` only re-runs this initializer when that upstream value itself changes.
     var nameInput by remember(householdName) { mutableStateOf(householdName.orEmpty()) }
+    var isEditingName by remember { mutableStateOf(false) }
 
     // Keeps the switcher's cached label for *this* household in sync with its live name —
     // covers both "just joined by code, name wasn't known yet" and "a housemate renamed it".
@@ -264,6 +281,7 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
     var isDeleting by remember { mutableStateOf(false) }
     var switchTarget by remember { mutableStateOf<RecentHousehold?>(null) }
     var isSwitching by remember { mutableStateOf(false) }
+    var removeMemberTarget by remember { mutableStateOf<HouseholdMember?>(null) }
 
     fun switchToHousehold(target: RecentHousehold) {
         isSwitching = true
@@ -296,20 +314,40 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
         }
     }
 
-    // There's no explicit save button any more — leaving the screen (either via the app bar's
-    // back arrow or the system back gesture/button, hence both wiring below) is the save
-    // action. Firestore's offline persistence queues this write even without a connection, so
-    // it doesn't need to block navigating away.
-    fun saveNameAndGoBack() {
+    // There's no explicit save button for a rename any more — confirming the NAAM card's edit
+    // field (see NameCard) or leaving the screen (app bar back arrow / system back gesture,
+    // hence both wiring below) both save. Firestore's offline persistence queues this write even
+    // without a connection, so it doesn't need to block navigating away.
+    fun saveNameIfChanged() {
         val trimmed = nameInput.trim()
         val idToRename = householdId
         if (idToRename != null && trimmed.isNotBlank() && trimmed != householdName) {
             coroutineScope.launch { householdRepository.renameHousehold(idToRename, trimmed) }
         }
+    }
+
+    fun saveNameAndGoBack() {
+        saveNameIfChanged()
         onBack()
     }
 
     BackHandler(onBack = ::saveNameAndGoBack)
+
+    fun shareInvite() {
+        val code = householdId ?: return
+        // Pushes the invite's expiry back out to a fresh INVITE_VALIDITY_DAYS window before the
+        // link is actually shared, so a link handed out just now is never already stale — see
+        // HouseholdRepository.refreshInviteExpiry.
+        coroutineScope.launch {
+            householdRepository.refreshInviteExpiry(code)
+            val message = context.getString(R.string.household_share_invite_text_format, HouseholdInviteLink.build(code), code)
+            val sendIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_TEXT, message)
+            }
+            context.startActivity(Intent.createChooser(sendIntent, null))
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -320,84 +358,64 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                         Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back))
                     }
                 },
-                actions = {
-                    val code = householdId
-                    IconButton(
-                        enabled = code != null,
-                        onClick = {
-                            if (code != null) {
-                                // Pushes the invite's expiry back out to a fresh
-                                // INVITE_VALIDITY_DAYS window before the link is actually
-                                // shared, so a link handed out just now is never already
-                                // stale — see HouseholdRepository.refreshInviteExpiry.
-                                coroutineScope.launch {
-                                    householdRepository.refreshInviteExpiry(code)
-                                    val message = context.getString(
-                                        R.string.household_share_invite_text_format,
-                                        HouseholdInviteLink.build(code),
-                                        code,
-                                    )
-                                    val sendIntent = Intent(Intent.ACTION_SEND).apply {
-                                        type = "text/plain"
-                                        putExtra(Intent.EXTRA_TEXT, message)
-                                    }
-                                    context.startActivity(Intent.createChooser(sendIntent, null))
-                                }
-                            }
-                        },
-                    ) {
-                        Icon(
-                            imageVector = Icons.Filled.Share,
-                            contentDescription = stringResource(R.string.household_share_invite_cd),
-                        )
-                    }
-                },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
-        // Split into a scrollable region (weighted) plus a footer sitting outside of it,
-        // rather than putting a weighted Spacer inside the scrollable Column itself — Compose
-        // disallows weight() on a child of a verticalScroll() container (it measures that
-        // container's content with unbounded height, which a weight expects to be bounded, and
-        // crashes). This split is the standard "scrollable content + pinned footer" pattern.
-        Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState())
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                HouseholdSection(
-                    nameInput = nameInput,
-                    onNameInputChange = { if (it.length <= HouseholdRepository.HOUSEHOLD_NAME_MAX_LENGTH) nameInput = it },
-                    isPremium = isPremium,
-                    members = members,
-                    lastActiveByName = lastActiveByName,
-                    capacityInfo = capacityInfo,
-                    isDeleting = isDeleting,
-                    onLeaveClick = { showLeaveConfirm = true },
-                    onDeleteClick = { showDeleteConfirm = true },
-                )
-
-                if (otherHouseholds.isNotEmpty()) {
-                    SwitchHouseholdSection(
-                        households = otherHouseholds,
-                        isSwitching = isSwitching,
-                        onHouseholdClick = { switchTarget = it },
-                        onForgetClick = { householdSession.forgetHousehold(it.id) },
-                    )
-                }
-            }
-
-            CodeSection(
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            InviteCard(
                 householdCode = householdId,
                 inviteExpiresAt = inviteExpiresAt,
-                onRefreshInvite = {
-                    val code = householdId ?: return@CodeSection
-                    coroutineScope.launch { householdRepository.refreshInviteExpiry(code) }
+                onShare = ::shareInvite,
+                onCopy = {
+                    val code = householdId ?: return@InviteCard
+                    clipboardManager.setText(AnnotatedString(HouseholdInviteLink.build(code)))
+                    coroutineScope.launch { snackbarHostState.showSnackbar(invitedCopiedMessage, duration = SnackbarDuration.Short) }
                 },
+            )
+
+            NameCard(
+                name = householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.more_household_default_name),
+                isPremium = isPremium,
+                isEditing = isEditingName,
+                nameInput = nameInput,
+                onNameInputChange = { if (it.length <= HouseholdRepository.HOUSEHOLD_NAME_MAX_LENGTH) nameInput = it },
+                onStartEdit = { isEditingName = true },
+                onConfirmEdit = {
+                    isEditingName = false
+                    saveNameIfChanged()
+                },
+            )
+
+            MembersCard(
+                members = members,
+                capacityInfo = capacityInfo,
+                createdByUid = householdCreatedBy,
+                lastActiveByName = lastActiveByName,
+                onRemoveClick = { removeMemberTarget = it },
+                onInviteMoreClick = ::shareInvite,
+            )
+
+            if (otherHouseholds.isNotEmpty()) {
+                SwitchHouseholdSection(
+                    households = otherHouseholds,
+                    isSwitching = isSwitching,
+                    onHouseholdClick = { switchTarget = it },
+                    onForgetClick = { householdSession.forgetHousehold(it.id) },
+                )
+            }
+
+            DangerZoneSection(
+                isDeleting = isDeleting,
+                onLeaveClick = { showLeaveConfirm = true },
+                onDeleteClick = { showDeleteConfirm = true },
             )
         }
     }
@@ -494,6 +512,26 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
             },
         )
     }
+
+    removeMemberTarget?.let { target ->
+        val targetName = target.displayName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.more_household_member_unnamed)
+        AlertDialog(
+            onDismissRequest = { removeMemberTarget = null },
+            title = { Text(stringResource(R.string.household_remove_member_dialog_title_format, targetName)) },
+            text = { Text(stringResource(R.string.household_remove_member_dialog_text_format, targetName)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        removeMemberTarget = null
+                        coroutineScope.launch { householdMembersRepository.removeMember(target.uid) }
+                    },
+                ) { Text(stringResource(R.string.household_remove_member_confirm), color = MaterialTheme.colorScheme.error) }
+            },
+            dismissButton = {
+                TextButton(onClick = { removeMemberTarget = null }) { Text(stringResource(R.string.common_cancel)) }
+            },
+        )
+    }
 }
 
 @Composable
@@ -507,118 +545,367 @@ private fun SectionCard(content: @Composable ColumnScope.() -> Unit) {
     }
 }
 
+// A plain day-month is enough here — this is a soft "share again soon" nudge, not a
+// precise-to-the-minute deadline, so neither the hour nor the year need to show.
+private val inviteExpiryDateFormatter = SimpleDateFormat("d MMMM", Locale.getDefault())
+
 /**
- * Low-key footer pinned to the very bottom of the screen, outside the scrollable content
- * above it — the code is for sharing, not editing, so it doesn't need a card of its own like
- * the sections above it, and staying put at the bottom keeps it easy to find regardless of
- * how much content (e.g. members) is above it. The share action itself lives in the top app
- * bar (see [HouseholdSettingsScreen]) so this is just the code, centered.
+ * The always-visible way to add someone — was a header icon-button (share) plus a low-key code
+ * footer at the very bottom of the screen; now its own card, first in the list, since inviting
+ * more people is the single most useful thing to do from this screen for most households. Dark
+ * green ([TopAppBarContainerGradientEnd], same token [com.dtraas.homestock.ui.more.PremiumCard]
+ * reuses) so it reads as the one promoted action on the page rather than a card among cards.
+ * [InviteQrCode] lets a second device join by pointing its camera at this screen instead of
+ * typing the code by hand.
  */
 @Composable
-private fun CodeSection(householdCode: String?, inviteExpiresAt: Long?, onRefreshInvite: () -> Unit) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp)
-            .padding(bottom = 16.dp),
+private fun InviteCard(
+    householdCode: String?,
+    inviteExpiresAt: Long?,
+    onShare: () -> Unit,
+    onCopy: () -> Unit,
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = TopAppBarContainerGradientEnd),
+        shape = SoftCardShape,
     ) {
-        Text(
-            text = stringResource(R.string.more_household_code_format, householdCode ?: "—"),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
-        // Only shown once an invite link has actually been shared at least once (see
-        // HouseholdRepository.observeInviteExpiresAt's doc) — a household that's never used
-        // "Deel uitnodiging" has nothing to show here, same as before this existed.
-        if (inviteExpiresAt != null) {
-            val isExpired = inviteExpiresAt < System.currentTimeMillis()
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 2.dp)) {
-                Text(
-                    text = if (isExpired) {
-                        stringResource(R.string.household_invite_expired)
-                    } else {
-                        stringResource(R.string.household_invite_expiry_format, inviteExpiryFormatter.format(Date(inviteExpiresAt)))
-                    },
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isExpired) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                TextButton(onClick = onRefreshInvite, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
-                    Text(stringResource(R.string.household_invite_refresh_action), style = MaterialTheme.typography.labelSmall)
+        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {
+            SheetEyebrow(text = stringResource(R.string.household_invite_card_eyebrow), color = OnTopAppBarContainerAccent)
+            Row(verticalAlignment = Alignment.Top) {
+                Surface(shape = SoftCardShapeCompact, color = Color.White, modifier = Modifier.size(72.dp)) {
+                    if (householdCode != null) {
+                        InviteQrCode(content = HouseholdInviteLink.build(householdCode), modifier = Modifier.padding(8.dp).fillMaxSize())
+                    }
+                }
+                Column(modifier = Modifier.padding(start = 14.dp).weight(1f)) {
+                    Text(
+                        text = householdCode ?: "—",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                    )
+                    // Only shown once an invite link has actually been shared at least once (see
+                    // HouseholdRepository.observeInviteExpiresAt's doc) — a household that's
+                    // never used "Uitnodiging delen" has nothing to show here.
+                    if (inviteExpiresAt != null) {
+                        val isExpired = inviteExpiresAt < System.currentTimeMillis()
+                        Text(
+                            text = if (isExpired) {
+                                stringResource(R.string.household_invite_expired)
+                            } else {
+                                stringResource(R.string.household_invite_valid_until_format, inviteExpiryDateFormatter.format(Date(inviteExpiresAt)))
+                            },
+                            style = MaterialTheme.typography.labelMedium,
+                            color = if (isExpired) MaterialTheme.colorScheme.errorContainer else OnTopAppBarContainerAccent,
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
+                    }
+                }
+            }
+            Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Button(
+                    onClick = onShare,
+                    shape = RoundedCornerShape(percent = 50),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ),
+                    modifier = Modifier.weight(1f),
+                ) {
+                    Icon(Icons.Filled.Share, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Text(stringResource(R.string.household_invite_share_action), modifier = Modifier.padding(start = 8.dp))
+                }
+                Surface(
+                    onClick = onCopy,
+                    shape = SoftCardShapeCompact,
+                    color = Color.Transparent,
+                    border = BorderStroke(1.dp, Color.White.copy(alpha = 0.4f)),
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.ContentCopy,
+                        contentDescription = stringResource(R.string.household_invite_copy_cd),
+                        tint = Color.White,
+                        modifier = Modifier.padding(14.dp).size(18.dp),
+                    )
                 }
             }
         }
     }
 }
 
-// A plain day-month-year is enough here — this is a soft "share again soon" nudge, not a
-// precise-to-the-minute deadline, so the hour doesn't need to be shown.
-private val inviteExpiryFormatter = SimpleDateFormat("d MMM yyyy", Locale.getDefault())
-
-/**
- * Naam, Leden, and the leave/delete actions all in one card rather than three separate ones —
- * they're all "manage this household" actions on the same object, and splitting them into
- * their own cards mostly just added visual weight without actually separating unrelated
- * concerns (unlike [SwitchHouseholdSection] below, which really is a different thing: switching
- * *away* from this household to a different one).
- *
- * No explicit save button for the name field — a rename is saved when the screen is left (see
- * [HouseholdSettingsScreen]'s `saveNameAndGoBack`), which replaces both the old dialog's
- * disconnected "OK" button (that only ever dismissed, never saved) and this screen's earlier
- * always-visible save button.
- */
+/** Renders [content] (the invite URL) as a scannable QR bitmap via zxing-core's plain Java
+ *  encoder — no camera/Android APIs involved, just a matrix of black/white pixels, so this is a
+ *  synchronous, main-thread-safe [remember] rather than something needing a coroutine. */
 @Composable
-private fun HouseholdSection(
-    nameInput: String,
-    onNameInputChange: (String) -> Unit,
-    isPremium: Boolean,
-    members: List<HouseholdMember>,
-    lastActiveByName: Map<String?, Long>,
-    capacityInfo: HouseholdCapacityInfo,
-    isDeleting: Boolean,
-    onLeaveClick: () -> Unit,
-    onDeleteClick: () -> Unit,
-) {
-    SectionCard {
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text(
-                text = stringResource(R.string.household_name_label),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.weight(1f),
-            )
-            if (isPremium) PremiumBadge()
-        }
-        OutlinedTextField(
-            value = nameInput,
-            onValueChange = onNameInputChange,
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-        )
-
-        Text(
-            text = if (capacityInfo.limit != null) {
-                stringResource(R.string.household_members_title_with_limit_format, capacityInfo.memberCount, capacityInfo.limit)
-            } else {
-                stringResource(R.string.more_household_members_title)
-            },
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(top = 4.dp),
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            members.forEach { member -> HouseholdMemberRow(member, lastActiveAt = lastActiveByName[member.displayName]) }
-        }
-
-        ActionButtonsRow(
-            isDeleting = isDeleting,
-            onLeaveClick = onLeaveClick,
-            onDeleteClick = onDeleteClick,
-        )
+private fun InviteQrCode(content: String, modifier: Modifier = Modifier) {
+    // encode() throws a checked WriterException in Java for content it can't fit/represent —
+    // shouldn't happen for a short homestock:// URL, but the code itself (right below the QR in
+    // InviteCard) is still there as a fallback either way, so a null bitmap here just means no
+    // image renders rather than a crash.
+    val qrBitmap = remember(content) {
+        runCatching {
+            val size = 240
+            val matrix = QRCodeWriter().encode(content, BarcodeFormat.QR_CODE, size, size)
+            val bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.RGB_565)
+            for (x in 0 until size) {
+                for (y in 0 until size) {
+                    bitmap.setPixel(x, y, if (matrix[x, y]) android.graphics.Color.BLACK else android.graphics.Color.WHITE)
+                }
+            }
+            bitmap
+        }.getOrNull()
+    }
+    if (qrBitmap != null) {
+        Image(bitmap = qrBitmap.asImageBitmap(), contentDescription = null, modifier = modifier)
     }
 }
 
+/**
+ * The household's display name — a bold read-only row with a "Opgeslagen" checkmark by default
+ * (tapping it opens the [OutlinedTextField] to actually rename it), rather than an always-visible
+ * text field. There's still no explicit save button: confirming (the checkmark button while
+ * editing) saves immediately, and simply leaving the screen without confirming still saves too
+ * (see [HouseholdSettingsScreen]'s `saveNameAndGoBack`) — a stray edit is never silently lost.
+ */
+@Composable
+private fun NameCard(
+    name: String,
+    isPremium: Boolean,
+    isEditing: Boolean,
+    nameInput: String,
+    onNameInputChange: (String) -> Unit,
+    onStartEdit: () -> Unit,
+    onConfirmEdit: () -> Unit,
+) {
+    SectionCard {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            SheetEyebrow(text = stringResource(R.string.household_name_label), modifier = Modifier.weight(1f))
+            if (isPremium) PremiumBadge()
+        }
+        if (isEditing) {
+            OutlinedTextField(
+                value = nameInput,
+                onValueChange = onNameInputChange,
+                singleLine = true,
+                trailingIcon = {
+                    IconButton(onClick = onConfirmEdit) {
+                        Icon(Icons.Filled.Check, contentDescription = stringResource(R.string.common_save))
+                    }
+                },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().clickable(onClick = onStartEdit),
+            ) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.weight(1f),
+                )
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(16.dp),
+                )
+                Text(
+                    text = stringResource(R.string.household_name_saved_label),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(start = 4.dp),
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Every member's row, the free-tier capacity ("2 van 3 · Premium = onbeperkt" — omitted entirely
+ * once Premium lifts the cap, see [HouseholdCapacityInfo.limit]'s doc), and — while a slot is
+ * still free — a dashed "Nog N plekken vrij" row that shares the invite the same way the card
+ * above does, so filling the household doesn't require scrolling back up.
+ */
+@Composable
+private fun MembersCard(
+    members: List<HouseholdMember>,
+    capacityInfo: HouseholdCapacityInfo,
+    createdByUid: String?,
+    lastActiveByName: Map<String?, Long>,
+    onRemoveClick: (HouseholdMember) -> Unit,
+    onInviteMoreClick: () -> Unit,
+) {
+    SectionCard {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            SheetEyebrow(text = stringResource(R.string.more_household_members_title), modifier = Modifier.weight(1f))
+            if (capacityInfo.limit != null) {
+                Text(
+                    text = stringResource(R.string.household_capacity_trailing_format, capacityInfo.memberCount, capacityInfo.limit),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            members.forEach { member ->
+                MemberRow(
+                    member = member,
+                    isOwner = createdByUid != null && member.uid == createdByUid,
+                    lastActiveAt = lastActiveByName[member.displayName],
+                    onRemoveClick = { onRemoveClick(member) },
+                )
+            }
+            val remaining = capacityInfo.limit?.let { limit -> (limit - capacityInfo.memberCount).coerceAtLeast(0) }
+            if (remaining != null && remaining > 0) {
+                InviteMoreRow(remaining = remaining, onClick = onInviteMoreClick)
+            }
+        }
+    }
+}
+
+/**
+ * [lastActiveAt] is the most recent activity-log timestamp matched to this member's display
+ * name (see [HouseholdSettingsScreen]'s `lastActiveByName`) — null for a member who hasn't
+ * logged any activity yet (e.g. joined but hasn't scanned/added anything) or has no name set
+ * at all, in which case nothing extra is shown. The "⋮" overflow (remove from household) only
+ * ever shows on a *different* member's row — removing yourself is "Huishouden verlaten" instead
+ * (see [DangerZoneSection]), which also lets this device forget its own membership locally.
+ */
+@Composable
+private fun MemberRow(member: HouseholdMember, isOwner: Boolean, lastActiveAt: Long?, onRemoveClick: () -> Unit) {
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        val trimmedName = member.displayName?.takeIf { it.isNotBlank() }
+        Surface(
+            shape = CircleShape,
+            color = if (member.isCurrentDevice) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer,
+            modifier = Modifier.size(40.dp),
+        ) {
+            Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+                if (member.photoUrl != null) {
+                    AsyncImage(
+                        model = member.photoUrl,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                } else if (trimmedName != null) {
+                    Text(
+                        text = initialsOf(trimmedName),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = if (member.isCurrentDevice) {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        } else {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        },
+                    )
+                }
+            }
+        }
+        Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = trimmedName ?: stringResource(R.string.more_household_member_unnamed),
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold,
+                )
+                val badgeParts = buildList {
+                    if (member.isCurrentDevice) add(stringResource(R.string.more_household_member_you))
+                    if (isOwner) add(stringResource(R.string.household_owner_badge))
+                }
+                if (badgeParts.isNotEmpty()) {
+                    Surface(
+                        shape = RoundedCornerShape(percent = 50),
+                        color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                        modifier = Modifier.padding(start = 8.dp),
+                    ) {
+                        Text(
+                            text = badgeParts.joinToString(" · ") { it.uppercase() },
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
+                        )
+                    }
+                }
+            }
+            if (lastActiveAt != null) {
+                Text(
+                    text = lastActiveLabel(lastActiveAt),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            // Visible to the whole household — the filter button this app used to offer here to
+            // set your own allergens is gone (removed per explicit request), but a member who
+            // already had some set before that removal still shows them, so the household can
+            // still see at a glance what to avoid when picking recipes together.
+            if (member.excludedAllergens.isNotEmpty()) {
+                // .map { stringResource(...) } (an inline stdlib call) rather than
+                // .joinToString(...) { stringResource(...) } — joinToString's transform lambda
+                // isn't inline, so a @Composable call inside it wouldn't compile.
+                val labels = member.excludedAllergens.sortedBy { it.ordinal }.map { stringResource(it.labelRes) }
+                Text(
+                    text = stringResource(R.string.household_member_allergens_format, labels.joinToString(", ")),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+        }
+        if (!member.isCurrentDevice) {
+            var showMenu by remember { mutableStateOf(false) }
+            Box {
+                IconButton(onClick = { showMenu = true }, modifier = Modifier.size(32.dp)) {
+                    Icon(
+                        imageVector = Icons.Filled.MoreVert,
+                        contentDescription = stringResource(R.string.household_remove_member_cd),
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                DropdownMenu(expanded = showMenu, onDismissRequest = { showMenu = false }) {
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.household_remove_member_cd)) },
+                        leadingIcon = { Icon(Icons.Filled.Close, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                        onClick = { showMenu = false; onRemoveClick() },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InviteMoreRow(remaining: Int, onClick: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .dashedBorder(MaterialTheme.colorScheme.outlineVariant, cornerRadius = 12.dp)
+            .clickable(onClick = onClick)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            modifier = Modifier.size(40.dp).background(MaterialTheme.colorScheme.surfaceContainerHighest, CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                imageVector = Icons.Filled.PersonAdd,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        Text(
+            text = pluralStringResource(R.plurals.household_slots_remaining_format, remaining, remaining),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(start = 12.dp),
+        )
+    }
+}
 
 /**
  * Households this device created or joined before, most-recent-first (see
@@ -634,11 +921,7 @@ private fun SwitchHouseholdSection(
     onForgetClick: (RecentHousehold) -> Unit,
 ) {
     SectionCard {
-        Text(
-            text = stringResource(R.string.household_switch_section_title),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
+        SheetEyebrow(text = stringResource(R.string.household_switch_section_title))
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             households.forEach { household ->
                 RecentHouseholdRow(
@@ -688,41 +971,59 @@ private fun RecentHouseholdRow(
 }
 
 /**
- * Leave/delete as two plain, right-aligned, labeled buttons, side by side on one row. "Verlaten"
- * stays a neutral (theme-aware "black") tint — leaving is reversible, you can always rejoin by
- * code. "Verwijderen" is not: the row itself now carries an error tint, so the danger reads at a
- * glance instead of living only in [DeleteHouseholdSheet]'s copy (2026-08 dialog review).
+ * "Huishouden verlaten"/"Huishouden verwijderen", each its own labeled row rather than two small
+ * icon buttons side by side — the danger tier gets its own "Gevoelig" eyebrow, separate from
+ * [MembersCard], and verwijderen carries a light error-tinted background so the danger reads at
+ * a glance instead of living only in [DeleteHouseholdSheet]'s copy (2026-08 dialog review).
  */
 @Composable
-private fun ActionButtonsRow(isDeleting: Boolean, onLeaveClick: () -> Unit, onDeleteClick: () -> Unit) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.End),
-    ) {
-        OutlinedButton(
+private fun DangerZoneSection(isDeleting: Boolean, onLeaveClick: () -> Unit, onDeleteClick: () -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        SheetEyebrow(text = stringResource(R.string.household_danger_zone_eyebrow), modifier = Modifier.padding(start = 4.dp))
+        DangerRow(
+            icon = Icons.AutoMirrored.Filled.Logout,
+            title = stringResource(R.string.more_leave),
+            subtitle = stringResource(R.string.household_leave_subtitle),
+            titleColor = MaterialTheme.colorScheme.onSurface,
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            enabled = !isDeleting,
             onClick = onLeaveClick,
+        )
+        DangerRow(
+            icon = Icons.Filled.DeleteForever,
+            title = stringResource(R.string.more_delete_household),
+            subtitle = stringResource(R.string.household_delete_subtitle),
+            titleColor = MaterialTheme.colorScheme.error,
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.35f),
             enabled = !isDeleting,
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurface),
-        ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.Logout,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Text(stringResource(R.string.more_leave), modifier = Modifier.padding(start = 6.dp))
-        }
-        OutlinedButton(
             onClick = onDeleteClick,
-            enabled = !isDeleting,
-            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error),
-            border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.5f)),
-        ) {
-            Icon(
-                imageVector = Icons.Filled.DeleteForever,
-                contentDescription = null,
-                modifier = Modifier.size(18.dp),
-            )
-            Text(stringResource(R.string.more_delete_household), modifier = Modifier.padding(start = 6.dp))
+        )
+    }
+}
+
+@Composable
+private fun DangerRow(
+    icon: ImageVector,
+    title: String,
+    subtitle: String,
+    titleColor: Color,
+    containerColor: Color,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    Surface(
+        onClick = onClick,
+        enabled = enabled,
+        shape = SoftCardShapeCompact,
+        color = containerColor,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(modifier = Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(icon, contentDescription = null, tint = titleColor, modifier = Modifier.size(20.dp))
+            Column(modifier = Modifier.padding(start = 12.dp)) {
+                Text(text = title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Bold, color = titleColor)
+                Text(text = subtitle, style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
         }
     }
 }
@@ -900,75 +1201,6 @@ private fun PremiumBadge() {
     }
 }
 
-/**
- * [lastActiveAt] is the most recent activity-log timestamp matched to this member's display
- * name (see [HouseholdSettingsScreen]'s `lastActiveByName`) — null for a member who hasn't
- * logged any activity yet (e.g. joined but hasn't scanned/added anything) or has no name set
- * at all, in which case nothing extra is shown, same as before this existed.
- */
-@Composable
-private fun HouseholdMemberRow(member: HouseholdMember, lastActiveAt: Long?) {
-    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-        Surface(
-            shape = CircleShape,
-            color = MaterialTheme.colorScheme.primaryContainer,
-            modifier = Modifier.size(40.dp),
-        ) {
-            if (member.photoUrl != null) {
-                AsyncImage(
-                    model = member.photoUrl,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize(),
-                )
-            } else {
-                Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                    Icon(
-                        imageVector = Icons.Filled.AccountCircle,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.onPrimaryContainer,
-                    )
-                }
-            }
-        }
-        Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
-            Text(
-                text = member.displayName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.more_household_member_unnamed),
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            if (lastActiveAt != null) {
-                Text(
-                    text = lastActiveLabel(lastActiveAt),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            // Visible to the whole household — the filter button this app used to offer here to
-            // set your own allergens is gone (removed per explicit request), but a member who
-            // already had some set before that removal still shows them, so the household can
-            // still see at a glance what to avoid when picking recipes together.
-            if (member.excludedAllergens.isNotEmpty()) {
-                // .map { stringResource(...) } (an inline stdlib call) rather than
-                // .joinToString(...) { stringResource(...) } — joinToString's transform lambda
-                // isn't inline, so a @Composable call inside it wouldn't compile.
-                val labels = member.excludedAllergens.sortedBy { it.ordinal }.map { stringResource(it.labelRes) }
-                Text(
-                    text = stringResource(R.string.household_member_allergens_format, labels.joinToString(", ")),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-        }
-        if (member.isCurrentDevice) {
-            Text(
-                text = stringResource(R.string.more_household_member_you),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
 /** "Nu actief" / "12 min. geleden" / "3 uur geleden" / … — coarsens as the gap grows, since
  *  precision stops being useful (and starts looking odd, e.g. "127 uur geleden") past a
  *  certain point; caps out at weeks, plenty granular for "does anyone still use this app". */
@@ -983,4 +1215,3 @@ private fun lastActiveLabel(timestampMillis: Long): String {
         else -> stringResource(R.string.household_last_active_weeks_format, (minutes / (60 * 24 * 7)).toInt())
     }
 }
-

@@ -162,6 +162,7 @@ import com.dtraas.homestock.data.repository.ThemeMode
 import com.dtraas.homestock.ui.components.HomeStockBottomSheet
 import com.dtraas.homestock.ui.components.HomeStockTopAppBar
 import com.dtraas.homestock.ui.components.ProductImage
+import com.dtraas.homestock.ui.components.initialsOf
 import com.dtraas.homestock.ui.components.ProfileEditDialog
 import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.components.SearchField
@@ -1729,13 +1730,6 @@ private fun FeedbackCategoryTile(
         }
     }
 }
-
-/** First letters of up to the first two words of [name], uppercased — "Jip de Vries" -> "JD".
- *  Falls back to an empty string for a blank/empty [name] (callers show an icon instead). */
-private fun initialsOf(name: String): String =
-    name.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }.take(2)
-        .mapNotNull { it.firstOrNull()?.uppercaseChar() }
-        .joinToString("")
 
 /**
  * The fixed (non-scrolling) green gradient header — just the "Instellingen" title and a search

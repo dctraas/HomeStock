@@ -50,7 +50,16 @@ class HouseholdRepository(
                 val code = generateCode()
                 val doc = firestore.collection(HOUSEHOLDS_COLLECTION).document(code)
                 if (!doc.get().await().exists()) {
-                    doc.set(mapOf("createdAt" to System.currentTimeMillis(), FIELD_NAME to trimmedName)).await()
+                    doc.set(
+                        mapOf(
+                            "createdAt" to System.currentTimeMillis(),
+                            FIELD_NAME to trimmedName,
+                            // Backs HouseholdSettingsScreen's "EIGENAAR" badge — see
+                            // observeHouseholdCreatedBy's doc for why a household created before
+                            // this field existed simply shows no owner rather than a wrong one.
+                            "createdBy" to auth.currentUser?.uid,
+                        ),
+                    ).await()
                     createdCode = code
                 }
             }
@@ -126,6 +135,23 @@ class HouseholdRepository(
             } else {
                 firestore.collection(HOUSEHOLDS_COLLECTION).document(householdId).observeSnapshot()
                     .map { it.getLong("createdAt") }
+            }
+        }
+
+    /**
+     * The uid of whichever device created this household — HouseholdSettingsScreen compares this
+     * against each [HouseholdMember.uid] to show its "EIGENAAR" badge. Null both for a household
+     * created before this field existed (see [createHousehold]) and while no household is
+     * selected — either way, no member shows the badge rather than guessing one.
+     */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun observeHouseholdCreatedBy(): Flow<String?> =
+        householdSession.householdId.flatMapLatest { householdId ->
+            if (householdId == null) {
+                flowOf(null)
+            } else {
+                firestore.collection(HOUSEHOLDS_COLLECTION).document(householdId).observeSnapshot()
+                    .map { it.getString("createdBy") }
             }
         }
 

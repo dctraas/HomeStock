@@ -8,6 +8,7 @@ composeBom = "2024.12.01"
 navigationCompose = "2.8.5"
 camerax = "1.4.1"
 mlkitBarcode = "17.3.0"
+zxing = "3.5.3"
 retrofit = "2.11.0"
 okhttp = "4.12.0"
 gson = "2.11.0"
@@ -48,6 +49,10 @@ androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycl
 androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
 
 mlkit-barcode-scanning = { group = "com.google.mlkit", name = "barcode-scanning", version.ref = "mlkitBarcode" }
+# QR *generation* for the huishoudcode-uitnodiging (see HouseholdSettingsScreen's InviteQrCode) —
+# mlkit-barcode-scanning above only reads codes, it can't write one. Pure Java, no Android-
+# specific transitive dependencies of its own.
+zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
 
 retrofit-core = { group = "com.squareup.retrofit2", name = "retrofit", version.ref = "retrofit" }
 retrofit-converter-gson = { group = "com.squareup.retrofit2", name = "converter-gson", version.ref = "retrofit" }

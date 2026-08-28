@@ -252,6 +252,24 @@ class HouseholdMembersRepository(
     }
 
     /**
+     * Removes a *different* member from the household (HouseholdSettingsScreen's "⋮" menu on
+     * another member's row) — same effect on that member's own device as them tapping "Huishouden
+     * verlaten" themselves, they'll simply see HouseholdScreen the next time their device
+     * reconnects and notices its own member doc is gone. Not gated on being the household's
+     * "eigenaar" (see [HouseholdRepository.observeHouseholdCreatedBy]) — firestore.rules already
+     * let any signed-in member of a household write anything in it (the household code is the
+     * only real access control, see that file's own doc), so this only ever adds a confirmation
+     * dialog on top of something every member could already technically do; there's no removal
+     * call for your *own* [uid] here on purpose, that's [unregisterCurrentDevice]'s job (paired
+     * with [HouseholdSession.leaveHousehold] client-side) instead of this one.
+     */
+    suspend fun removeMember(uid: String) {
+        val householdId = householdSession.householdId.value ?: return
+        membersCollection(householdId).document(uid).delete().await()
+        runCatching { photoRef(householdId, uid).delete().await() }
+    }
+
+    /**
      * Uploads (or removes) this device's current profile photo for the household to see.
      * Unlike the name, this isn't synced reactively on every app start — re-uploading the
      * actual image file on every cold start would waste data for no benefit — so call this

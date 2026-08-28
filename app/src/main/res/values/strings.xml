@@ -132,16 +132,33 @@
     <string name="household_name_char_count_format">%1$d/%2$d tekens</string>
     <string name="household_share_invite_cd">Deel uitnodiging</string>
     <string name="household_share_invite_text_format">Doe mee met mijn huishouden in HomeStock! Tik op de link om aan te sluiten: %1$s\n\n(Heb je de app nog niet? Installeer HomeStock en voer dan code %2$s in.)</string>
-    <string name="household_invite_expiry_format">Uitnodigingslink geldig tot %1$s</string>
     <string name="household_invite_expired">Uitnodigingslink verlopen</string>
-    <string name="household_invite_refresh_action">Vernieuwen</string>
     <string name="household_invite_expired_error">Deze uitnodigingslink is verlopen. Vraag een huisgenoot om een nieuwe link te delen.</string>
+    <string name="household_invite_card_eyebrow">Iemand toevoegen</string>
+    <string name="household_invite_valid_until_format">Geldig tot %1$s</string>
+    <string name="household_invite_share_action">Uitnodiging delen</string>
+    <string name="household_invite_copy_cd">Kopieer uitnodigingslink</string>
+    <string name="household_invite_copied_message">Link gekopieerd</string>
+    <string name="household_name_saved_label">Opgeslagen</string>
+    <string name="household_capacity_trailing_format">%1$d van %2$d · Premium = onbeperkt</string>
+    <plurals name="household_slots_remaining_format">
+        <item quantity="one">Nog %1$d plek vrij</item>
+        <item quantity="other">Nog %1$d plekken vrij</item>
+    </plurals>
+    <string name="household_owner_badge">Eigenaar</string>
+    <string name="household_remove_member_cd">Verwijderen uit huishouden</string>
+    <string name="household_remove_member_dialog_title_format">%1$s verwijderen?</string>
+    <string name="household_remove_member_dialog_text_format">%1$s verliest direct toegang tot dit huishouden, maar kan met de code weer terugkomen.</string>
+    <string name="household_remove_member_confirm">Verwijderen</string>
+    <string name="household_danger_zone_eyebrow">Gevoelig</string>
+    <string name="household_leave_subtitle">Je kunt met de code terugkomen</string>
+    <string name="household_delete_subtitle">Voor iedereen, definitief</string>
     <string name="household_last_active_now">Nu actief</string>
     <string name="household_last_active_minutes_format">%1$d min. geleden</string>
     <string name="household_last_active_hours_format">%1$d u. geleden</string>
     <string name="household_last_active_days_format">%1$d d. geleden</string>
     <string name="household_last_active_weeks_format">%1$d w. geleden</string>
-    <string name="household_switch_section_title">Eerdere huishoudens</string>
+    <string name="household_switch_section_title">Wisselen</string>
     <string name="household_switch_unnamed_format">Huishouden %1$s</string>
     <string name="household_switch_unnamed_fallback">dit huishouden</string>
     <string name="household_switch_forget_cd">Verwijderen uit lijst</string>
@@ -176,7 +193,6 @@
 
     <!-- Meer -->
     <string name="more_household_title">Huishouden</string>
-    <string name="more_household_code_format">Code: %1$s</string>
     <plurals name="more_household_subtitle_format">
         <item quantity="one">%1$d lid · Code: %2$s</item>
         <item quantity="other">%1$d leden · Code: %2$s</item>
@@ -184,7 +200,6 @@
     <string name="more_household_row_title">Beheer</string>
     <string name="more_household_default_name">Mijn huishouden</string>
     <string name="more_household_members_title">Leden</string>
-    <string name="household_members_title_with_limit_format">Leden (%1$d/%2$d)</string>
     <string name="more_household_member_unnamed">Naamloos lid</string>
     <string name="more_household_member_you">Jij</string>
     <string name="household_allergens_menu_cd">Mijn allergenen en dieetwensen</string>

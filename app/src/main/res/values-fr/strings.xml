@@ -128,16 +128,33 @@
     <string name="household_name_char_count_format">%1$d/%2$d caractères</string>
     <string name="household_share_invite_cd">Partager l\'invitation</string>
     <string name="household_share_invite_text_format">Rejoins mon foyer sur HomeStock ! Touche le lien pour rejoindre : %1$s\n\n(Tu n\'as pas encore l\'appli ? Installe HomeStock puis entre le code %2$s.)</string>
-    <string name="household_invite_expiry_format">Lien d\'invitation valable jusqu\'au %1$s</string>
     <string name="household_invite_expired">Lien d\'invitation expiré</string>
-    <string name="household_invite_refresh_action">Renouveler</string>
     <string name="household_invite_expired_error">Ce lien d\'invitation a expiré. Demande à un colocataire d\'en partager un nouveau.</string>
+    <string name="household_invite_card_eyebrow">Ajouter quelqu\'un</string>
+    <string name="household_invite_valid_until_format">Valable jusqu\'au %1$s</string>
+    <string name="household_invite_share_action">Partager l\'invitation</string>
+    <string name="household_invite_copy_cd">Copier le lien d\'invitation</string>
+    <string name="household_invite_copied_message">Lien copié</string>
+    <string name="household_name_saved_label">Enregistré</string>
+    <string name="household_capacity_trailing_format">%1$d sur %2$d · Premium = illimité</string>
+    <plurals name="household_slots_remaining_format">
+        <item quantity="one">Encore %1$d place libre</item>
+        <item quantity="other">Encore %1$d places libres</item>
+    </plurals>
+    <string name="household_owner_badge">Propriétaire</string>
+    <string name="household_remove_member_cd">Retirer du foyer</string>
+    <string name="household_remove_member_dialog_title_format">Retirer %1$s ?</string>
+    <string name="household_remove_member_dialog_text_format">%1$s perdra immédiatement l\'accès à ce foyer, mais pourra revenir avec le code.</string>
+    <string name="household_remove_member_confirm">Retirer</string>
+    <string name="household_danger_zone_eyebrow">Sensible</string>
+    <string name="household_leave_subtitle">Tu peux revenir avec le code</string>
+    <string name="household_delete_subtitle">Pour tout le monde, définitivement</string>
     <string name="household_last_active_now">Actif maintenant</string>
     <string name="household_last_active_minutes_format">il y a %1$d min</string>
     <string name="household_last_active_hours_format">il y a %1$d h</string>
     <string name="household_last_active_days_format">il y a %1$d j</string>
     <string name="household_last_active_weeks_format">il y a %1$d sem</string>
-    <string name="household_switch_section_title">Foyers précédents</string>
+    <string name="household_switch_section_title">Changer</string>
     <string name="household_switch_unnamed_format">Foyer %1$s</string>
     <string name="household_switch_unnamed_fallback">ce foyer</string>
     <string name="household_switch_forget_cd">Retirer de la liste</string>
@@ -172,7 +189,6 @@
 
     <!-- Plus -->
     <string name="more_household_title">Foyer</string>
-    <string name="more_household_code_format">Code : %1$s</string>
     <plurals name="more_household_subtitle_format">
         <item quantity="one">%1$d membre · Code : %2$s</item>
         <item quantity="other">%1$d membres · Code : %2$s</item>
@@ -180,7 +196,6 @@
     <string name="more_household_row_title">Gestion</string>
     <string name="more_household_default_name">Mon foyer</string>
     <string name="more_household_members_title">Membres</string>
-    <string name="household_members_title_with_limit_format">Membres (%1$d/%2$d)</string>
     <string name="more_household_member_unnamed">Membre sans nom</string>
     <string name="more_household_member_you">Toi</string>
     <string name="household_allergens_menu_cd">Mes allergènes et préférences alimentaires</string>
