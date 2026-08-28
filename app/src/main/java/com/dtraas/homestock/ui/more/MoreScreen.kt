@@ -15,7 +15,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -2607,22 +2607,34 @@ private fun ReorderableStoreList(
                         .padding(start = 4.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
                 ) {
                     Row(verticalAlignment = Alignment.Top) {
-                        Icon(
-                            imageVector = Icons.Filled.DragIndicator,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        // A real (not just long-press-after-a-hold) drag on this dedicated grip —
+                        // this icon has no other gesture to disambiguate from (it isn't also a
+                        // tap target for anything else), so there's no ambiguity a long-press
+                        // requirement would be protecting against, and reacting to the very first
+                        // movement is both snappier and one less thing (a long-press timer racing
+                        // an enclosing scrollable's own touch-slop handling) that could make a
+                        // drag silently never start. The touch target is the full 44dp box, not
+                        // just the 18dp glyph inside it — small icons are hard to land a drag on.
+                        Box(
                             modifier = Modifier
-                                .size(32.dp)
-                                .padding(4.dp)
+                                .size(44.dp)
                                 .pointerInput(store.id) {
-                                    detectDragGesturesAfterLongPress(
+                                    detectDragGestures(
                                         onDragStart = { draggingId = store.id; dragOffsetPx = 0f; draggingRowHeightPx = rowHeightPx },
                                         onDragEnd = { commitDrag() },
                                         onDragCancel = { commitDrag() },
                                         onDrag = { change, dragAmount -> change.consume(); handleDrag(dragAmount.y) },
                                     )
                                 },
-                        )
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.DragIndicator,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(22.dp),
+                            )
+                        }
                         Surface(
                             shape = RoundedCornerShape(12.dp),
                             color = if (inUse) MaterialTheme.colorScheme.surfaceContainerHighest else MaterialTheme.colorScheme.surfaceContainer,
@@ -3093,22 +3105,31 @@ private fun AisleOrderRow(
                         }
                     }
                 }
-                Icon(
-                    imageVector = Icons.Filled.DragIndicator,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                // A real (not long-press-after-a-hold) drag, same reasoning as
+                // ReorderableStoreList's own grip — a dedicated drag handle has nothing else to
+                // disambiguate from, so reacting to the first movement is both snappier and
+                // removes a long-press timer racing this screen's own verticalScroll for the
+                // gesture. 44dp touch target, not just the glyph itself.
+                Box(
                     modifier = Modifier
-                        .size(32.dp)
-                        .padding(4.dp)
+                        .size(44.dp)
                         .pointerInput(Unit) {
-                            detectDragGesturesAfterLongPress(
+                            detectDragGestures(
                                 onDragStart = { onDragStart(rowHeightPx) },
                                 onDragEnd = { onDragEnd() },
                                 onDragCancel = { onDragEnd() },
                                 onDrag = { change, dragAmount -> change.consume(); onDrag(dragAmount.y) },
                             )
                         },
-                )
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.DragIndicator,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
             }
             if (isMergeTarget) {
                 Text(

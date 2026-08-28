@@ -57,6 +57,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -598,8 +599,15 @@ private fun TipsSheet(notices: List<DeveloperNotice>, onDismissNotice: (String) 
                 )
             } else {
                 Column {
+                    // Keyed by notice.id — without this, a dismissed row's positional slot (and
+                    // its own remembered SwipeToDismissBoxState) got reused for whichever notice
+                    // slid up to take its place, so that *other* notice inherited the just-
+                    // dismissed swipe state and rendered with a permanently red background it
+                    // never actually earned ("een lelijk rood vlak blijft staan").
                     notices.forEach { notice ->
-                        DeveloperNoticeRow(notice = notice, onDismiss = { onDismissNotice(notice.id) })
+                        key(notice.id) {
+                            DeveloperNoticeRow(notice = notice, onDismiss = { onDismissNotice(notice.id) })
+                        }
                     }
                 }
             }
