@@ -169,7 +169,8 @@ fun RecipeDetailScreen(
                 }
                 val missingIngredients = detail.ingredients.filter { it.first !in uiState.matchedIngredients }
                 val hasNutrition = detail.calories != null || detail.protein != null ||
-                    detail.fat != null || detail.carbohydrates != null
+                    detail.fat != null || detail.carbohydrates != null || detail.fiber != null ||
+                    detail.sugar != null || detail.saturatedFat != null || detail.sodium != null
                 val stepCount = detail.displayInstructions?.trim()?.takeIf { it.isNotBlank() }?.let { splitIntoSteps(it).size } ?: 0
 
                 Column(modifier = Modifier.fillMaxSize().padding(padding)) {
@@ -213,6 +214,17 @@ fun RecipeDetailScreen(
                                 RecipeBadge(icon = Icons.Filled.Translate, label = stringResource(R.string.recipes_translated_badge))
                             } else if (detail.isAiGenerated) {
                                 RecipeBadge(icon = Icons.Filled.AutoAwesome, label = stringResource(R.string.recipes_ai_generated_badge))
+                            }
+
+                            RecipeDietBadgesRow(detail)
+
+                            detail.summary?.takeIf { it.isNotBlank() }?.let { summary ->
+                                Text(
+                                    text = summary,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(top = 10.dp),
+                                )
                             }
 
                             if (detail.isCustom || uiState.isFavorite) {
@@ -425,6 +437,31 @@ private fun RecipeMatchRing(matched: Int, total: Int, modifier: Modifier = Modif
     }
 }
 
+/** Small pill row for Spoonacular's diet flags + healthScore — [RecipeBadge] above already covers
+ *  the one-badge-at-a-time AI/translation state, but a recipe can carry several of these at once
+ *  (e.g. vegan AND glutenFree), so this is a separate, independently-scrollable row rather than
+ *  reusing that single-badge composable. Renders nothing when the recipe has none of this data
+ *  (always true for AI-generated/custom recipes, and for older cached Spoonacular recipes fetched
+ *  before these fields existed). */
+@Composable
+private fun RecipeDietBadgesRow(detail: RecipeDetail) {
+    val labels = listOfNotNull(
+        stringResource(R.string.recipes_diet_vegetarian).takeIf { detail.vegetarian == true },
+        stringResource(R.string.recipes_diet_vegan).takeIf { detail.vegan == true },
+        stringResource(R.string.recipes_diet_gluten_free).takeIf { detail.glutenFree == true },
+        stringResource(R.string.recipes_diet_dairy_free).takeIf { detail.dairyFree == true },
+        stringResource(R.string.recipes_diet_sustainable).takeIf { detail.sustainable == true },
+        detail.healthScore?.let { stringResource(R.string.recipes_health_score_badge_format, it) },
+    )
+    if (labels.isEmpty()) return
+    Row(
+        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(top = 10.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        labels.forEach { label -> AssistChip(onClick = {}, label = { Text(label) }) }
+    }
+}
+
 @Composable
 private fun RecipeDetailTabRow(selected: RecipeDetailTab, showNutrition: Boolean, stepCount: Int, onSelect: (RecipeDetailTab) -> Unit) {
     Row(
@@ -612,8 +649,12 @@ private fun RecipeNutritionTab(detail: RecipeDetail) {
             Column(modifier = Modifier.padding(16.dp)) {
                 detail.calories?.let { NutritionValueRow(stringResource(R.string.product_detail_nutrition_energy), formatRecipeKcal(it)) }
                 detail.fat?.let { NutritionValueRow(stringResource(R.string.product_detail_nutrition_fat), formatRecipeGrams(it)) }
+                detail.saturatedFat?.let { NutritionValueRow(stringResource(R.string.product_detail_nutrition_saturated_fat), formatRecipeGrams(it)) }
                 detail.carbohydrates?.let { NutritionValueRow(stringResource(R.string.product_detail_nutrition_carbohydrates), formatRecipeGrams(it)) }
+                detail.sugar?.let { NutritionValueRow(stringResource(R.string.product_detail_nutrition_sugars), formatRecipeGrams(it)) }
+                detail.fiber?.let { NutritionValueRow(stringResource(R.string.product_detail_nutrition_fiber), formatRecipeGrams(it)) }
                 detail.protein?.let { NutritionValueRow(stringResource(R.string.product_detail_nutrition_proteins), formatRecipeGrams(it)) }
+                detail.sodium?.let { NutritionValueRow(stringResource(R.string.product_detail_nutrition_sodium), formatRecipeMilligrams(it)) }
             }
         }
     }
@@ -680,7 +721,7 @@ private fun RecipePlanSheet(isPlanning: Boolean, onConfirm: (LocalDate, MealSlot
     }
 }
 
-/** One label/value line in the nutrition card — mirrors ProductDetailScreen's NutritionRow, just without the indented-subtotal styling that only applies there (saturated fat/sugars aren't part of Spoonacular's per-serving breakdown). */
+/** One label/value line in the nutrition card — mirrors ProductDetailScreen's NutritionRow, just without the indented-subtotal styling that only applies there. */
 @Composable
 private fun NutritionValueRow(label: String, value: String) {
     Row(
@@ -694,6 +735,9 @@ private fun NutritionValueRow(label: String, value: String) {
 
 private fun formatRecipeKcal(value: Double): String = String.format(Locale.getDefault(), "%.0f kcal", value)
 private fun formatRecipeGrams(value: Double): String = String.format(Locale.getDefault(), "%.1f g", value)
+// Spoonacular reports sodium in mg, not g like the other nutrients — its own unit, formatted as-is
+// rather than converted to the "Zout" grams figure a product's own NutritionInfo shows.
+private fun formatRecipeMilligrams(value: Double): String = String.format(Locale.getDefault(), "%.0f mg", value)
 
 /** Matches a measure string's leading quantity: a plain number ("300", "2.5", "1,5") optionally
  *  followed by a simple "/denominator" fraction ("1/2"), then whatever's left (unit, free text

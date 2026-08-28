@@ -655,6 +655,7 @@
     <string name="product_detail_nutrition_fiber">Ballaststoffe</string>
     <string name="product_detail_nutrition_proteins">Eiweiß</string>
     <string name="product_detail_nutrition_salt">Salz</string>
+    <string name="product_detail_nutrition_sodium">Natrium</string>
     <string name="product_detail_expiration_label">Mindesthaltbarkeitsdatum</string>
     <string name="product_detail_expiration_section_title">Haltbar bis</string>
     <string name="product_detail_expiration_set">Festlegen</string>
@@ -1023,6 +1024,12 @@
     <string name="cook_mode_timer_done">Fertig!</string>
     <string name="recipes_ai_generated_badge">KI-generiertes Rezept</string>
     <string name="recipes_translated_badge">Mit KI übersetzt</string>
+    <string name="recipes_diet_vegetarian">Vegetarisch</string>
+    <string name="recipes_diet_vegan">Vegan</string>
+    <string name="recipes_diet_gluten_free">Glutenfrei</string>
+    <string name="recipes_diet_dairy_free">Milchfrei</string>
+    <string name="recipes_diet_sustainable">Nachhaltig</string>
+    <string name="recipes_health_score_badge_format">Score %1$d/100</string>
     <string name="recipes_generate_ai_button">Rezept mit KI generieren</string>
     <string name="recipes_generate_fab">KI-Rezept</string>
     <string name="recipes_generate_ai_title">Rezept erfinden</string>

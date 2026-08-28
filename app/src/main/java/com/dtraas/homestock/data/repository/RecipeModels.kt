@@ -60,6 +60,31 @@ data class RecipeDetail(
     val protein: Double? = null,
     val fat: Double? = null,
     val carbohydrates: Double? = null,
+    // Rest of Spoonacular's per-serving breakdown, beyond the four macros above — same
+    // null-for-AI/custom/no-data reasoning as [calories] et al. [sodium] is in mg, not g like
+    // the others (that's how Spoonacular reports it; nothing here converts it to the "Zout"
+    // grams figure a product's own NutritionInfo uses).
+    val fiber: Double? = null,
+    val sugar: Double? = null,
+    val saturatedFat: Double? = null,
+    val sodium: Double? = null,
+    // Spoonacular's diet labels/flags for this recipe. [diets] is the raw label list (can include
+    // labels the booleans below don't cover, e.g. "paleo"); the booleans are null — not false —
+    // when Spoonacular simply didn't report that flag, so the UI can tell "not vegetarian" apart
+    // from "no diet data at all" instead of showing a false negative. Always empty/null for
+    // AI-generated and custom recipes, which have no Spoonacular data to draw this from.
+    val diets: List<String> = emptyList(),
+    val vegetarian: Boolean? = null,
+    val vegan: Boolean? = null,
+    val glutenFree: Boolean? = null,
+    val dairyFree: Boolean? = null,
+    val sustainable: Boolean? = null,
+    // Spoonacular's own 0-100 "how healthy is this recipe" score — null when Spoonacular has none
+    // (or, again, for AI-generated/custom recipes).
+    val healthScore: Int? = null,
+    // Plain-text (HTML already stripped server-side) description of the dish. Null for
+    // AI-generated/custom recipes and any Spoonacular recipe with no summary.
+    val summary: String? = null,
     val isAiGenerated: Boolean = false,
     val isCustom: Boolean = false,
     // RecipeTag storage keys (see that enum's doc for why only favorites/custom recipes ever

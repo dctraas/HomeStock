@@ -655,6 +655,7 @@
     <string name="product_detail_nutrition_fiber">Fibra</string>
     <string name="product_detail_nutrition_proteins">Proteínas</string>
     <string name="product_detail_nutrition_salt">Sal</string>
+    <string name="product_detail_nutrition_sodium">Sodio</string>
     <string name="product_detail_expiration_label">Fecha de caducidad</string>
     <string name="product_detail_expiration_section_title">Caduca el</string>
     <string name="product_detail_expiration_set">Establecer</string>
@@ -1023,6 +1024,12 @@
     <string name="cook_mode_timer_done">¡Listo!</string>
     <string name="recipes_ai_generated_badge">Receta generada por IA</string>
     <string name="recipes_translated_badge">Traducido con IA</string>
+    <string name="recipes_diet_vegetarian">Vegetariano</string>
+    <string name="recipes_diet_vegan">Vegano</string>
+    <string name="recipes_diet_gluten_free">Sin gluten</string>
+    <string name="recipes_diet_dairy_free">Sin lácteos</string>
+    <string name="recipes_diet_sustainable">Sostenible</string>
+    <string name="recipes_health_score_badge_format">Puntuación %1$d/100</string>
     <string name="recipes_generate_ai_button">Generar receta con IA</string>
     <string name="recipes_generate_fab">Receta IA</string>
     <string name="recipes_generate_ai_title">Inventar una receta</string>

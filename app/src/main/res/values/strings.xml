@@ -659,6 +659,7 @@
     <string name="product_detail_nutrition_fiber">Vezels</string>
     <string name="product_detail_nutrition_proteins">Eiwitten</string>
     <string name="product_detail_nutrition_salt">Zout</string>
+    <string name="product_detail_nutrition_sodium">Natrium</string>
     <string name="product_detail_expiration_label">Houdbaarheidsdatum</string>
     <string name="product_detail_expiration_section_title">Houdbaar tot</string>
     <string name="product_detail_expiration_set">Instellen</string>
@@ -1027,6 +1028,12 @@
     <string name="cook_mode_timer_done">Klaar!</string>
     <string name="recipes_ai_generated_badge">AI-gegenereerd recept</string>
     <string name="recipes_translated_badge">Vertaald met AI</string>
+    <string name="recipes_diet_vegetarian">Vegetarisch</string>
+    <string name="recipes_diet_vegan">Vegan</string>
+    <string name="recipes_diet_gluten_free">Glutenvrij</string>
+    <string name="recipes_diet_dairy_free">Zuivelvrij</string>
+    <string name="recipes_diet_sustainable">Duurzaam</string>
+    <string name="recipes_health_score_badge_format">Score %1$d/100</string>
     <string name="recipes_generate_ai_button">Genereer recept met AI</string>
     <string name="recipes_generate_fab">AI-recept</string>
     <string name="recipes_generate_ai_title">Recept bedenken</string>

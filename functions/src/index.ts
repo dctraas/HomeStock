@@ -1040,6 +1040,22 @@ interface SpoonacularInfoResult {
   readyInMinutes?: number;
   servings?: number;
   nutrition?: SpoonacularNutrition;
+  // Diet labels this recipe qualifies for ("vegetarian", "gluten free", ...) plus the same
+  // information again as individual booleans — Spoonacular sends both, and the booleans are
+  // what toRecipeDetail actually maps (diets is kept around too since it can include labels
+  // the booleans don't cover, e.g. "paleo"/"whole30", even though nothing surfaces those yet).
+  diets?: string[];
+  vegetarian?: boolean;
+  vegan?: boolean;
+  glutenFree?: boolean;
+  dairyFree?: boolean;
+  sustainable?: boolean;
+  // HTML fragment describing the dish — cleaned through the same cleanInstructions helper the
+  // instructions field uses, since it's just as much "strip Spoonacular's markup down to plain
+  // text" a job as that one is.
+  summary?: string;
+  // Spoonacular's own 0-100 "how healthy is this recipe" score.
+  healthScore?: number;
 }
 
 interface SpoonacularComplexSearchResponse {
@@ -1119,6 +1135,23 @@ function toRecipeDetail(result: SpoonacularInfoResult) {
     protein: findNutrientAmount(nutrients, "Protein"),
     fat: findNutrientAmount(nutrients, "Fat"),
     carbohydrates: findNutrientAmount(nutrients, "Carbohydrates"),
+    fiber: findNutrientAmount(nutrients, "Fiber"),
+    sugar: findNutrientAmount(nutrients, "Sugar"),
+    saturatedFat: findNutrientAmount(nutrients, "Saturated Fat"),
+    // Spoonacular reports this in mg, unlike the other nutrients above (all grams) — the client
+    // formats it accordingly rather than assuming every nutrient here shares one unit.
+    sodium: findNutrientAmount(nutrients, "Sodium"),
+    diets: result.diets ?? [],
+    // Left null (not defaulted to false) when Spoonacular didn't send the flag at all — "unknown"
+    // and "confirmed not vegetarian" are different things, and collapsing them would let a recipe
+    // with simply no diet data show a confident "niet vegetarisch" a user never actually got told.
+    vegetarian: result.vegetarian ?? null,
+    vegan: result.vegan ?? null,
+    glutenFree: result.glutenFree ?? null,
+    dairyFree: result.dairyFree ?? null,
+    sustainable: result.sustainable ?? null,
+    summary: cleanInstructions(result.summary) ?? null,
+    healthScore: result.healthScore ?? null,
   };
 }
 
