@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -168,6 +169,7 @@ fun InventoryScreen(
     onNavigateToSearch: () -> Unit = {},
     onNavigateToReceiptScan: () -> Unit = {},
     onNavigateToAiRecognize: () -> Unit = {},
+    onNavigateToManualAdd: () -> Unit = {},
     onNavigateToPremium: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
     // True for exactly one composition right after opening the app from the expiry-reminder
@@ -660,6 +662,7 @@ fun InventoryScreen(
             onSearchByName = onNavigateToSearch,
             onReceiptScan = onNavigateToReceiptScan,
             onAiRecognize = onNavigateToAiRecognize,
+            onManualAdd = onNavigateToManualAdd,
             onNavigateToPremium = onNavigateToPremium,
             onDismiss = { showAddMenu = false },
         )
@@ -1053,6 +1056,7 @@ private fun AddMenuDialog(
     onSearchByName: () -> Unit,
     onReceiptScan: () -> Unit,
     onAiRecognize: () -> Unit,
+    onManualAdd: () -> Unit,
     onNavigateToPremium: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -1082,6 +1086,18 @@ private fun AddMenuDialog(
                 title = stringResource(R.string.inventory_add_menu_search),
                 subtitle = stringResource(R.string.inventory_add_menu_search_subtitle),
                 onClick = { onDismiss(); onSearchByName() },
+                containerColor = MaterialTheme.colorScheme.surface,
+                borderColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            )
+            // No barcode at all (zelfgemaakt, van de markt, …) — skips both the camera and the
+            // Open Food Facts/naam-zoeken lookups entirely and goes straight to the same
+            // naam+categorie form ScanResultScreen already shows for an unrecognized barcode
+            // (see its own isManualEntry doc).
+            SheetActionRow(
+                icon = Icons.Filled.Edit,
+                title = stringResource(R.string.inventory_add_menu_manual),
+                subtitle = stringResource(R.string.inventory_add_menu_manual_subtitle),
+                onClick = { onDismiss(); onManualAdd() },
                 containerColor = MaterialTheme.colorScheme.surface,
                 borderColor = MaterialTheme.colorScheme.surfaceContainerHigh,
             )

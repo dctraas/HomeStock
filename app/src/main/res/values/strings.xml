@@ -573,6 +573,8 @@
     <string name="inventory_add_menu_barcode_subtitle">Snelste manier · camera opent direct</string>
     <string name="inventory_add_menu_search">Zoeken op naam</string>
     <string name="inventory_add_menu_search_subtitle">Geen barcode bij de hand</string>
+    <string name="inventory_add_menu_manual">Handmatig toevoegen</string>
+    <string name="inventory_add_menu_manual_subtitle">Geen barcode? Vul zelf naam en categorie in</string>
     <string name="inventory_add_menu_premium_divider">Met Premium</string>
     <string name="inventory_removed_snackbar_format">%1$s verwijderd</string>
     <plurals name="inventory_bulk_removed_snackbar_format">
@@ -771,6 +773,7 @@
     <string name="scan_result_title">Product toevoegen</string>
     <string name="scan_result_loading">Productgegevens ophalen…</string>
     <string name="scan_result_not_found">Dit product is niet gevonden in de database. Vul de gegevens handmatig in.</string>
+    <string name="scan_result_manual_entry_hint">Vul de gegevens van je product in.</string>
     <string name="scan_result_barcode_format">Barcode: %1$s</string>
     <string name="scan_result_brand_format">Merk: %1$s</string>
     <string name="scan_result_unit_format">Inhoud: %1$s</string>

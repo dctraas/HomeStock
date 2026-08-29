@@ -569,6 +569,8 @@
     <string name="inventory_add_menu_barcode_subtitle">Le plus rapide · la caméra s\'ouvre aussitôt</string>
     <string name="inventory_add_menu_search">Rechercher par nom</string>
     <string name="inventory_add_menu_search_subtitle">Pas de code-barres sous la main</string>
+    <string name="inventory_add_menu_manual">Ajouter manuellement</string>
+    <string name="inventory_add_menu_manual_subtitle">Pas de code-barres ? Indiquez vous-même le nom et la catégorie</string>
     <string name="inventory_add_menu_premium_divider">Avec Premium</string>
     <string name="inventory_removed_snackbar_format">%1$s supprimé</string>
     <plurals name="inventory_bulk_removed_snackbar_format">
@@ -767,6 +769,7 @@
     <string name="scan_result_title">Ajouter un produit</string>
     <string name="scan_result_loading">Récupération des données du produit…</string>
     <string name="scan_result_not_found">Ce produit est introuvable dans la base de données. Remplissez les informations manuellement.</string>
+    <string name="scan_result_manual_entry_hint">Renseignez les informations de votre produit.</string>
     <string name="scan_result_barcode_format">Code-barres : %1$s</string>
     <string name="scan_result_brand_format">Marque : %1$s</string>
     <string name="scan_result_unit_format">Contenu : %1$s</string>

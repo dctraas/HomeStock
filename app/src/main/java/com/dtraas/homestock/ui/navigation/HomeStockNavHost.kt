@@ -53,6 +53,7 @@ import com.dtraas.homestock.ui.mealplan.MealPlanScreen
 import com.dtraas.homestock.ui.mealplan.MealPlanViewModel
 import com.dtraas.homestock.ui.mealplan.WeekOverviewScreen
 import java.time.LocalDate
+import java.util.UUID
 import com.dtraas.homestock.ui.more.AppSettingsScreen
 import com.dtraas.homestock.ui.more.LicensesScreen
 import com.dtraas.homestock.ui.more.MoreScreen
@@ -198,6 +199,13 @@ fun HomeStockApp(
                     onNavigateToSearch = { navController.navigate(Destination.SearchProduct.route) },
                     onNavigateToReceiptScan = { navController.navigate(Destination.ReceiptScan.route) },
                     onNavigateToAiRecognize = { navController.navigate(Destination.AiRecognize.route) },
+                    onNavigateToManualAdd = {
+                        // A synthetic id, never a real barcode — see Destination.ScanResult's
+                        // own doc for why this is safe to generate fresh every time rather than
+                        // reusing anything.
+                        val manualId = "manual-${UUID.randomUUID()}"
+                        navController.navigate(Destination.ScanResult.createRoute(barcode = manualId, isManualEntry = true))
+                    },
                     onNavigateToPremium = { navController.navigate(Destination.Premium.route) },
                     onNavigateToNotifications = { navController.navigate(Destination.Notifications.route) },
                     showExpiringSoonOnOpen = pendingShowExpiringSoon || pendingShowExpiringSoonLocal,
@@ -281,13 +289,16 @@ fun HomeStockApp(
                 arguments = listOf(
                     navArgument("barcode") { type = NavType.StringType },
                     navArgument("fromScan") { type = NavType.BoolType; defaultValue = false },
+                    navArgument("isManualEntry") { type = NavType.BoolType; defaultValue = false },
                 ),
             ) { entry ->
                 val barcode = entry.arguments?.getString("barcode").orEmpty()
                 val fromScan = entry.arguments?.getBoolean("fromScan") ?: false
+                val isManualEntry = entry.arguments?.getBoolean("isManualEntry") ?: false
                 ScanResultScreen(
                     barcode = barcode,
                     fromScan = fromScan,
+                    isManualEntry = isManualEntry,
                     onSaved = {
                         if (fromScan) {
                             // Reached mid-batch from the barcode camera (an unknown barcode

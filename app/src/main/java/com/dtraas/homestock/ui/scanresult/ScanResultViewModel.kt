@@ -28,6 +28,13 @@ data class ScanResultUiState(
 
 class ScanResultViewModel(
     private val barcode: String,
+    // True for the "Handmatig toevoegen" entry point (Voorraad's "+" menu, no barcode at all —
+    // see InventoryScreen's AddMenuDialog) — [barcode] is then a synthetic id the caller
+    // generated purely to key this product/inventory row, not a real one to look up. Skips
+    // [loadProduct]'s Open Food Facts round-trip entirely rather than sending it a barcode
+    // that was never going to match anything, which would otherwise cost a real network call
+    // (and require connectivity) for a flow that's meant to work fully offline.
+    private val isManualEntry: Boolean = false,
     private val productRepository: ProductRepository,
     private val inventoryRepository: InventoryRepository,
 ) : ViewModel() {
@@ -40,6 +47,10 @@ class ScanResultViewModel(
     }
 
     private fun loadProduct() {
+        if (isManualEntry) {
+            _uiState.update { it.copy(isLoading = false, wasFoundOnline = false, networkError = false) }
+            return
+        }
         _uiState.update { it.copy(isLoading = true, networkError = false) }
         viewModelScope.launch {
             val result = productRepository.getOrFetchProduct(barcode)

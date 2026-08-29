@@ -49,6 +49,8 @@ fun ScanResultScreen(
     // Batch-scannen: when reached mid-scan from the barcode camera, the confirm button says so
     // and onSaved (wired by the caller) returns straight to the camera instead of Voorraad.
     fromScan: Boolean = false,
+    // See ScanResultViewModel's own doc — [barcode] is a synthetic id, never shown or looked up.
+    isManualEntry: Boolean = false,
 ) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: ScanResultViewModel = viewModel(
@@ -56,6 +58,7 @@ fun ScanResultScreen(
             initializer {
                 ScanResultViewModel(
                     barcode = barcode,
+                    isManualEntry = isManualEntry,
                     productRepository = application.container.productRepository,
                     inventoryRepository = application.container.inventoryRepository,
                 )
@@ -103,7 +106,14 @@ fun ScanResultScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp),
             ) {
-                if (!uiState.wasFoundOnline) {
+                if (isManualEntry) {
+                    // Neither "niet gevonden" (nothing was ever looked up) nor the barcode
+                    // itself (a synthetic id the household never typed or scanned) belong here.
+                    Text(
+                        text = stringResource(R.string.scan_result_manual_entry_hint),
+                        color = MaterialTheme.colorScheme.secondary,
+                    )
+                } else if (!uiState.wasFoundOnline) {
                     Text(
                         text = stringResource(R.string.scan_result_not_found),
                         color = MaterialTheme.colorScheme.secondary,
@@ -120,7 +130,9 @@ fun ScanResultScreen(
                     )
                 }
 
-                Text(text = stringResource(R.string.scan_result_barcode_format, barcode), style = MaterialTheme.typography.bodySmall)
+                if (!isManualEntry) {
+                    Text(text = stringResource(R.string.scan_result_barcode_format, barcode), style = MaterialTheme.typography.bodySmall)
+                }
 
                 OutlinedTextField(
                     value = uiState.name,
