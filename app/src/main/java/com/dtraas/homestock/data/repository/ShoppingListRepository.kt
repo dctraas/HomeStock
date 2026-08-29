@@ -190,8 +190,11 @@ class ShoppingListRepository(
         val householdId = householdSession.householdId.value ?: return
         val newSortOrder = when {
             previous != null && next != null -> (previous.sortOrder + next.sortOrder) / 2.0
-            previous != null -> previous.sortOrder - 1.0
-            next != null -> next.sortOrder + 1.0
+            // See StoreRepository.moveStore's identical fix — these two were swapped, so
+            // landing at either end of the list picked a sortOrder that put the item back
+            // toward the middle instead of actually leaving it at that end.
+            previous != null -> previous.sortOrder + 1.0
+            next != null -> next.sortOrder - 1.0
             else -> return
         }
         if (newSortOrder == item.sortOrder) return

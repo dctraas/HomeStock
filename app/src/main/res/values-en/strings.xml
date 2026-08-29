@@ -196,10 +196,13 @@
         <item quantity="other">%1$d members · Code: %2$s</item>
     </plurals>
     <string name="more_household_row_title">Manage</string>
+    <string name="more_household_row_subtitle">Manage your household\'s name, members, and invite code</string>
     <string name="more_household_default_name">My household</string>
     <string name="more_household_members_title">Members</string>
     <string name="more_household_member_unnamed">Unnamed member</string>
     <string name="more_household_member_you">You</string>
+    <string name="more_account_row_title">Account</string>
+    <string name="more_account_row_subtitle">Change this device\'s name and profile photo</string>
     <string name="household_allergens_menu_cd">My allergens and dietary preferences</string>
     <string name="household_member_allergens_format">Avoids: %1$s</string>
     <string name="more_rename_household_error">Couldn\'t change the name. Please try again.</string>
@@ -250,7 +253,7 @@
     <string name="more_settings_search_empty_format">No settings found for “%1$s”</string>
     <string name="account_link_row_title">Link account</string>
     <string name="account_link_row_subtitle_linked_format">Linked with %1$s</string>
-    <string name="account_link_row_subtitle_unlinked">Prevent data loss on a reinstall</string>
+    <string name="account_link_row_subtitle_unlinked">Link your Google account to back up your data and restore it on a new device</string>
     <string name="account_link_header_subtitle">Your household is now tied only to this device.</string>
     <string name="account_link_status_unlinked">Not linked</string>
     <string name="account_link_benefit_device_title">New device, same kitchen</string>
@@ -305,7 +308,7 @@
     <string name="more_theme_option_system">System default</string>
     <string name="more_theme_option_light">Light</string>
     <string name="more_theme_option_dark">Dark</string>
-    <string name="more_app_settings_title">Display &amp; language</string>
+    <string name="more_app_settings_title">Display and language</string>
     <string name="more_app_settings_subtitle">Theme, text size, contrast and language</string>
     <string name="more_app_settings_preview_product_name">Milk</string>
     <string name="more_app_settings_preview_product_meta">4 days left · 1 L</string>
@@ -315,7 +318,7 @@
     <string name="more_accessibility_high_contrast_title">High contrast</string>
     <string name="more_accessibility_high_contrast_description">Stronger contrast between text and background, for better readability.</string>
     <string name="more_auto_restock_title">Automatically on the list</string>
-    <string name="more_auto_restock_subtitle">when stock is below minimum</string>
+    <string name="more_auto_restock_subtitle">Automatically adds a product to your shopping list once stock drops below its set minimum</string>
     <string name="more_notifications_row_title">Expiry</string>
     <string name="more_inventory_insight_notifications_title">Inventory and waste</string>
     <string name="more_inventory_insight_notifications_subtitle">Weekly, Sunday evening</string>
@@ -404,7 +407,7 @@
         <item quantity="one">%1$d item</item>
         <item quantity="other">%1$d items</item>
     </plurals>
-    <string name="more_statistics_title">Insight &amp; Waste</string>
+    <string name="more_statistics_title">Insight and waste</string>
     <string name="more_statistics_subtitle">Inventory, waste, and scans per household member</string>
     <string name="more_section_household">Household</string>
     <string name="more_data_csv_title">Transfer data</string>
@@ -529,6 +532,7 @@
     <string name="more_beta_receipt_scan_subtitle">The whole receipt in one go</string>
     <string name="more_section_debug">Debug</string>
     <string name="more_debug_premium_title">Simulate Premium</string>
+    <string name="more_debug_premium_subtitle">Temporarily unlock every Premium feature on this device — only visible in a debug build</string>
 
     <!-- Inventory -->
     <string name="inventory_title">Inventory</string>

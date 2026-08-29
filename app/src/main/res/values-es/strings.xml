@@ -196,10 +196,13 @@
         <item quantity="other">%1$d miembros · Código: %2$s</item>
     </plurals>
     <string name="more_household_row_title">Gestión</string>
+    <string name="more_household_row_subtitle">Gestiona el nombre, los miembros y el código de invitación de tu hogar</string>
     <string name="more_household_default_name">Mi hogar</string>
     <string name="more_household_members_title">Miembros</string>
     <string name="more_household_member_unnamed">Miembro sin nombre</string>
     <string name="more_household_member_you">Tú</string>
+    <string name="more_account_row_title">Cuenta</string>
+    <string name="more_account_row_subtitle">Cambia el nombre y la foto de perfil de este dispositivo</string>
     <string name="household_allergens_menu_cd">Mis alérgenos y preferencias alimentarias</string>
     <string name="household_member_allergens_format">Evita: %1$s</string>
     <string name="more_rename_household_error">No se pudo cambiar el nombre. Inténtalo de nuevo.</string>
@@ -250,7 +253,7 @@
     <string name="more_settings_search_empty_format">No se encontraron ajustes para «%1$s»</string>
     <string name="account_link_row_title">Vincular cuenta</string>
     <string name="account_link_row_subtitle_linked_format">Vinculada con %1$s</string>
-    <string name="account_link_row_subtitle_unlinked">Evita perder datos al reinstalar</string>
+    <string name="account_link_row_subtitle_unlinked">Vincula tu cuenta de Google para guardar tus datos y restaurarlos en un nuevo dispositivo</string>
     <string name="account_link_header_subtitle">Tu hogar ahora solo está vinculado a este dispositivo.</string>
     <string name="account_link_status_unlinked">Sin vincular</string>
     <string name="account_link_benefit_device_title">Dispositivo nuevo, misma cocina</string>
@@ -315,7 +318,7 @@
     <string name="more_accessibility_high_contrast_title">Alto contraste</string>
     <string name="more_accessibility_high_contrast_description">Mayor contraste entre el texto y el fondo, para una mejor legibilidad.</string>
     <string name="more_auto_restock_title">Automáticamente en la lista</string>
-    <string name="more_auto_restock_subtitle">cuando el stock baja del mínimo</string>
+    <string name="more_auto_restock_subtitle">Añade un producto automáticamente a tu lista de la compra cuando el stock baja del mínimo establecido</string>
     <string name="more_notifications_row_title">Caducidad</string>
     <string name="more_inventory_insight_notifications_title">Inventario y desperdicio</string>
     <string name="more_inventory_insight_notifications_subtitle">Semanalmente, domingo por la noche</string>
@@ -529,6 +532,7 @@
     <string name="more_beta_receipt_scan_subtitle">Todo el ticket de una vez</string>
     <string name="more_section_debug">Depuración</string>
     <string name="more_debug_premium_title">Simular Premium</string>
+    <string name="more_debug_premium_subtitle">Desbloquea temporalmente todas las funciones Premium en este dispositivo — solo visible en una compilación de depuración</string>
 
     <!-- Inventario -->
     <string name="inventory_title">Inventario</string>

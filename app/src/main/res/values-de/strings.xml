@@ -196,10 +196,13 @@
         <item quantity="other">%1$d Mitglieder · Code: %2$s</item>
     </plurals>
     <string name="more_household_row_title">Verwaltung</string>
+    <string name="more_household_row_subtitle">Name, Mitglieder und Einladungscode deines Haushalts verwalten</string>
     <string name="more_household_default_name">Mein Haushalt</string>
     <string name="more_household_members_title">Mitglieder</string>
     <string name="more_household_member_unnamed">Namenloses Mitglied</string>
     <string name="more_household_member_you">Du</string>
+    <string name="more_account_row_title">Konto</string>
+    <string name="more_account_row_subtitle">Name und Profilfoto dieses Geräts anpassen</string>
     <string name="household_allergens_menu_cd">Meine Allergene und Ernährungswünsche</string>
     <string name="household_member_allergens_format">Vermeidet: %1$s</string>
     <string name="more_rename_household_error">Der Name konnte nicht geändert werden. Bitte versuche es erneut.</string>
@@ -250,7 +253,7 @@
     <string name="more_settings_search_empty_format">Keine Einstellungen gefunden für „%1$s“</string>
     <string name="account_link_row_title">Konto verknüpfen</string>
     <string name="account_link_row_subtitle_linked_format">Verknüpft mit %1$s</string>
-    <string name="account_link_row_subtitle_unlinked">Verhindere Datenverlust bei einer Neuinstallation</string>
+    <string name="account_link_row_subtitle_unlinked">Verknüpfe dein Google-Konto, um deine Daten zu sichern und auf einem neuen Gerät wiederherzustellen</string>
     <string name="account_link_header_subtitle">Dein Haushalt hängt jetzt nur an diesem Gerät.</string>
     <string name="account_link_status_unlinked">Nicht verknüpft</string>
     <string name="account_link_benefit_device_title">Neues Gerät, gleiche Küche</string>
@@ -305,7 +308,7 @@
     <string name="more_theme_option_system">Systemstandard</string>
     <string name="more_theme_option_light">Hell</string>
     <string name="more_theme_option_dark">Dunkel</string>
-    <string name="more_app_settings_title">Anzeige &amp; Sprache</string>
+    <string name="more_app_settings_title">Anzeige und Sprache</string>
     <string name="more_app_settings_subtitle">Design, Textgröße, Kontrast und Sprache</string>
     <string name="more_app_settings_preview_product_name">Milch</string>
     <string name="more_app_settings_preview_product_meta">Noch 4 Tage · 1 L</string>
@@ -315,7 +318,7 @@
     <string name="more_accessibility_high_contrast_title">Hoher Kontrast</string>
     <string name="more_accessibility_high_contrast_description">Stärkerer Kontrast zwischen Text und Hintergrund für bessere Lesbarkeit.</string>
     <string name="more_auto_restock_title">Automatisch auf die Liste</string>
-    <string name="more_auto_restock_subtitle">bei Vorrat unter Minimum</string>
+    <string name="more_auto_restock_subtitle">Fügt ein Produkt automatisch zu deiner Einkaufsliste hinzu, sobald der Vorrat unter das eingestellte Minimum fällt</string>
     <string name="more_notifications_row_title">Haltbarkeit</string>
     <string name="more_inventory_insight_notifications_title">Vorrat und Verschwendung</string>
     <string name="more_inventory_insight_notifications_subtitle">Wöchentlich, Sonntagabend</string>
@@ -404,7 +407,7 @@
         <item quantity="one">%1$d Artikel</item>
         <item quantity="other">%1$d Artikel</item>
     </plurals>
-    <string name="more_statistics_title">Einblick &amp; Verschwendung</string>
+    <string name="more_statistics_title">Einblick und Verschwendung</string>
     <string name="more_statistics_subtitle">Vorrat, Verschwendung und Scans pro Haushaltsmitglied</string>
     <string name="more_section_household">Haushalt</string>
     <string name="more_data_csv_title">Daten übertragen</string>
@@ -529,6 +532,7 @@
     <string name="more_beta_receipt_scan_subtitle">Der ganze Kassenbon auf einmal</string>
     <string name="more_section_debug">Debug</string>
     <string name="more_debug_premium_title">Premium simulieren</string>
+    <string name="more_debug_premium_subtitle">Schaltet vorübergehend alle Premium-Funktionen auf diesem Gerät frei — nur in einem Debug-Build sichtbar</string>
 
     <!-- Vorrat -->
     <string name="inventory_title">Vorrat</string>

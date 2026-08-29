@@ -196,10 +196,13 @@
         <item quantity="other">%1$d membres · Code : %2$s</item>
     </plurals>
     <string name="more_household_row_title">Gestion</string>
+    <string name="more_household_row_subtitle">Gérez le nom, les membres et le code d\'invitation de votre foyer</string>
     <string name="more_household_default_name">Mon foyer</string>
     <string name="more_household_members_title">Membres</string>
     <string name="more_household_member_unnamed">Membre sans nom</string>
     <string name="more_household_member_you">Toi</string>
+    <string name="more_account_row_title">Compte</string>
+    <string name="more_account_row_subtitle">Modifiez le nom et la photo de profil de cet appareil</string>
     <string name="household_allergens_menu_cd">Mes allergènes et préférences alimentaires</string>
     <string name="household_member_allergens_format">Évite : %1$s</string>
     <string name="more_rename_household_error">Impossible de modifier le nom. Réessayez.</string>
@@ -250,7 +253,7 @@
     <string name="more_settings_search_empty_format">Aucun paramètre trouvé pour « %1$s »</string>
     <string name="account_link_row_title">Lier le compte</string>
     <string name="account_link_row_subtitle_linked_format">Lié à %1$s</string>
-    <string name="account_link_row_subtitle_unlinked">Évitez de perdre vos données lors d\'une réinstallation</string>
+    <string name="account_link_row_subtitle_unlinked">Associez votre compte Google pour sauvegarder vos données et les restaurer sur un nouvel appareil</string>
     <string name="account_link_header_subtitle">Ton foyer n\'est désormais lié qu\'à cet appareil.</string>
     <string name="account_link_status_unlinked">Non lié</string>
     <string name="account_link_benefit_device_title">Nouvel appareil, même cuisine</string>
@@ -315,7 +318,7 @@
     <string name="more_accessibility_high_contrast_title">Contraste élevé</string>
     <string name="more_accessibility_high_contrast_description">Contraste plus marqué entre le texte et l\'arrière-plan, pour une meilleure lisibilité.</string>
     <string name="more_auto_restock_title">Automatiquement sur la liste</string>
-    <string name="more_auto_restock_subtitle">si le stock passe sous le minimum</string>
+    <string name="more_auto_restock_subtitle">Ajoute automatiquement un produit à votre liste de courses dès que le stock passe sous le minimum défini</string>
     <string name="more_notifications_row_title">Péremption</string>
     <string name="more_inventory_insight_notifications_title">Stock et gaspillage</string>
     <string name="more_inventory_insight_notifications_subtitle">Chaque semaine, le dimanche soir</string>
@@ -529,6 +532,7 @@
     <string name="more_beta_receipt_scan_subtitle">Tout le ticket de caisse en une fois</string>
     <string name="more_section_debug">Débogage</string>
     <string name="more_debug_premium_title">Simuler Premium</string>
+    <string name="more_debug_premium_subtitle">Débloque temporairement toutes les fonctionnalités Premium sur cet appareil — visible uniquement dans une version de débogage</string>
 
     <!-- Stock -->
     <string name="inventory_title">Stock</string>

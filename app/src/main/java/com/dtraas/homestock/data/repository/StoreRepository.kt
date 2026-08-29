@@ -71,8 +71,13 @@ class StoreRepository(
         val householdId = householdSession.householdId.value ?: return
         val newSortOrder = when {
             previous != null && next != null -> (previous.sortOrder + next.sortOrder) / 2.0
-            previous != null -> previous.sortOrder - 1.0
-            next != null -> next.sortOrder + 1.0
+            // Landed at the very end (nothing after it) — needs a LARGER sortOrder than
+            // previous, not smaller, or it sorts back in front of previous instead of behind
+            // it. Landed at the very start (nothing before it) mirrors this the other way.
+            // These two were swapped, which is exactly why dragging a store to the very top of
+            // the list appeared to snap back instead of sticking there.
+            previous != null -> previous.sortOrder + 1.0
+            next != null -> next.sortOrder - 1.0
             else -> return
         }
         if (newSortOrder == store.sortOrder) return

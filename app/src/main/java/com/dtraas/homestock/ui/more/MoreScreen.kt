@@ -52,7 +52,6 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.BugReport
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Download
@@ -257,8 +256,6 @@ fun MoreScreen(
     val householdActivityNotificationsEnabled by notificationPreferences.householdActivityNotificationsEnabled.collectAsState()
     val inventoryPreferences = application.container.inventoryPreferences
     val autoRestockEnabled by inventoryPreferences.autoRestockEnabled.collectAsState()
-    val householdSession = application.container.householdSession
-    val householdId by householdSession.householdId.collectAsState()
     val householdRepository = application.container.householdRepository
     val householdName by householdRepository.observeHouseholdName().collectAsState(initial = null)
     val deviceProfile = application.container.deviceProfile
@@ -266,7 +263,6 @@ fun MoreScreen(
     val photoPath by deviceProfile.photoPath.collectAsState()
     val householdMembersRepository = application.container.householdMembersRepository
     val isPremium by householdMembersRepository.observeHouseholdIsPremium().collectAsState(initial = false)
-    val memberCount by householdMembersRepository.observeMemberCount().collectAsState(initial = 0)
     val members by householdMembersRepository.observeMembers().collectAsState(initial = emptyList())
     val billingRepository = application.container.billingRepository
     val debugPremiumOverride by billingRepository.debugPremiumOverride.collectAsState()
@@ -755,12 +751,7 @@ fun MoreScreen(
                     if (matches(householdRowTitle)) {
                         {
                             HouseholdMembersRow(
-                                subtitle = pluralStringResource(
-                                    R.plurals.more_household_subtitle_format,
-                                    memberCount,
-                                    memberCount,
-                                    householdId ?: "—",
-                                ),
+                                subtitle = stringResource(R.string.more_household_row_subtitle),
                                 onClick = onNavigateToHousehold,
                             )
                         }
@@ -957,7 +948,10 @@ fun MoreScreen(
                     SettingsGroup(
                         rows = listOf(
                             {
-                                DebugPremiumRow(
+                                SwitchRow(
+                                    icon = Icons.Filled.WorkspacePremium,
+                                    title = stringResource(R.string.more_debug_premium_title),
+                                    subtitle = stringResource(R.string.more_debug_premium_subtitle),
                                     checked = debugPremiumOverride,
                                     onCheckedChange = billingRepository::setDebugPremiumOverride,
                                 )
@@ -1802,21 +1796,24 @@ private fun MoreScreenHeader(searchQuery: String, onSearchQueryChange: (String) 
 }
 
 /**
- * Profile identity row — a plain generic person icon (never this device's own photo or
- * initials, see below), the same bare 22dp size/tint every other row's leading [Icon] uses (no
- * colored circular avatar surface around it — that read as noticeably bigger/heavier than every
- * other row's flat icon, even though the glyph itself was already the same size), standing in
- * for the usual leading icon, the device's own name, and the household's name as subtitle. Flat
- * row, no Card/background of its own — same [SettingsRow] structure/padding/typography every
- * other settings row uses, per explicit request ("dezelfde layout als de overige menu items,
- * niet hetzelfde als HomeStock Premium"): this is a row among rows, not a second promotional
- * card. Used to be pinned inside [MoreScreenHeader]'s green gradient; now the scrolling list's
- * own first row instead, once the header needed the room for a settings search field.
+ * Account entry row — a plain generic person icon (never this device's own photo or initials,
+ * see below), the same bare 22dp size/tint every other row's leading [Icon] uses (no colored
+ * circular avatar surface around it — that read as noticeably bigger/heavier than every other
+ * row's flat icon, even though the glyph itself was already the same size), a static "Account"
+ * title, and a subtitle describing what's actually adjustable behind it. Flat row, no
+ * Card/background of its own — same [SettingsRow] structure/padding/typography every other
+ * settings row uses, per explicit request ("dezelfde layout als de overige menu items, niet
+ * hetzelfde als HomeStock Premium"): this is a row among rows, not a second promotional card.
+ * Used to be pinned inside [MoreScreenHeader]'s green gradient; now the scrolling list's own
+ * first row instead, once the header needed the room for a settings search field.
  *
- * Deliberately ignores [photoPath] here — a household member's real photo (still picked and
- * synced the same way, see [ProfileEditDialog]) belongs in places that are actually *about*
- * telling people apart, like the Huishouden member list; this row is just this device's own menu
- * entry point.
+ * Used to show this device's own name/household as its title/subtitle instead of a static
+ * label — changed on explicit request, since every other row here already describes what
+ * tapping it does rather than the household's current state, and [displayName]/[householdName]
+ * are still visible plenty of other places (the Huishouden member list, the header itself).
+ * [photoPath] stays deliberately unused too, for the same reason it always was: a household
+ * member's real photo (still picked and synced the same way, see [ProfileEditDialog]) belongs
+ * in places that are actually *about* telling people apart, not this generic menu entry point.
  */
 @Composable
 private fun ProfileRow(
@@ -1825,7 +1822,6 @@ private fun ProfileRow(
     householdName: String?,
     onClick: () -> Unit,
 ) {
-    val trimmedName = displayName?.trim().takeUnless { it.isNullOrEmpty() }
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -1843,12 +1839,9 @@ private fun ProfileRow(
             modifier = Modifier.size(22.dp),
         )
         Column(modifier = Modifier.weight(1f).padding(start = 16.dp)) {
+            Text(text = stringResource(R.string.more_account_row_title), style = MaterialTheme.typography.titleSmall)
             Text(
-                text = trimmedName ?: stringResource(R.string.more_household_member_unnamed),
-                style = MaterialTheme.typography.titleSmall,
-            )
-            Text(
-                text = householdName?.takeIf { it.isNotBlank() } ?: stringResource(R.string.more_household_default_name),
+                text = stringResource(R.string.more_account_row_subtitle),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -2074,35 +2067,6 @@ private fun HouseholdMembersRow(subtitle: String, onClick: () -> Unit) {
     }
 }
 
-/**
- * Debug-only row for [BillingRepository.setDebugPremiumOverride] — same visual weight as a
- * plain [SettingsRow] (monochrome icon, title, no explanatory subtitle) but with a trailing
- * [Switch] instead of a click-through, since flipping it is the entire action.
- */
-@Composable
-private fun DebugPremiumRow(checked: Boolean, onCheckedChange: (Boolean) -> Unit) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            imageVector = Icons.Filled.WorkspacePremium,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(22.dp),
-        )
-        Text(
-            text = stringResource(R.string.more_debug_premium_title),
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier
-                .weight(1f)
-                .padding(start = 16.dp),
-        )
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
-    }
-}
 
 /** Not private — [AppSettingsScreen]'s WEERGAVE preview tiles use this same label set. */
 fun ThemeMode.labelRes(): Int = when (this) {
@@ -2793,8 +2757,12 @@ private fun ReorderableStoreList(
                     if (inUse) {
                         val indent = Modifier.padding(start = 50.dp, top = 8.dp)
                         if (customized) {
-                            StorePathsPreview(paths = activePaths, modifier = indent)
-                            TextButton(onClick = { onEditAisleOrder(store) }, modifier = indent.padding(top = 2.dp)) {
+                            // The per-store gangpad chip row (Groente & Fruit > Zuivel > ...)
+                            // used to preview here too, but stacked across every "in use" store
+                            // it made the whole overview feel busy — the item/gangpad counts in
+                            // the subtitle above already say how much there is; the chips added
+                            // detail nobody asked to see until they tap in to actually edit it.
+                            TextButton(onClick = { onEditAisleOrder(store) }, modifier = indent) {
                                 Icon(Icons.Filled.Route, contentDescription = null, modifier = Modifier.size(16.dp))
                                 Text(
                                     text = stringResource(R.string.more_stores_edit_aisle_order_action),
@@ -2812,50 +2780,6 @@ private fun ReorderableStoreList(
             }
           }
         }
-    }
-}
-
-/** The "Groente > Brood > Zuivel > +6" chip row previewing which gangpaden this store's current
- *  list items actually fall into, in that store's own [StoreEntity.aislePaths] order — [paths]
- *  is already filtered down to ones with at least one item by the caller. */
-@OptIn(ExperimentalLayoutApi::class)
-@Composable
-private fun StorePathsPreview(paths: List<List<Category>>, modifier: Modifier = Modifier) {
-    val shown = paths.take(3)
-    val overflow = paths.size - shown.size
-    Row(
-        modifier = modifier.horizontalScroll(rememberScrollState()),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        shown.forEachIndexed { index, path ->
-            val label = path.map { stringResource(it.displayNameRes) }.joinToString(" + ")
-            AislePreviewPill(label)
-            if (index < shown.lastIndex || overflow > 0) {
-                Icon(
-                    imageVector = Icons.Filled.ChevronRight,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(14.dp),
-                )
-            }
-        }
-        if (overflow > 0) {
-            AislePreviewPill(stringResource(R.string.more_stores_paths_overflow_format, overflow))
-        }
-    }
-}
-
-@Composable
-private fun AislePreviewPill(label: String) {
-    Surface(shape = CircleShape, color = MaterialTheme.colorScheme.surfaceContainerHighest) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.labelMedium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-        )
     }
 }
 
