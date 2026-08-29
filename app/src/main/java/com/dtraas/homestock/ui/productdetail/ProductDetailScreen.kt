@@ -84,6 +84,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -183,6 +184,12 @@ fun ProductDetailScreen(
     val retryLookupSuccessMessage = stringResource(R.string.product_detail_retry_lookup_success)
     val retryLookupFailureMessage = stringResource(R.string.product_detail_retry_lookup_failure)
     var showDeleteConfirm by remember { mutableStateOf(false) }
+    // Set from showDeleteConfirm's own two buttons, only when the product's quantity is more
+    // than 1 — holds which action was picked (true = weggegooid, false = opgemaakt) while a
+    // second dialog asks how many, rather than assuming the whole quantity is gone (see
+    // ProductDetailViewModel.removeQuantityFromInventory).
+    var pendingRemovalWasted by remember { mutableStateOf<Boolean?>(null) }
+    var removalQuantity by remember { mutableIntStateOf(1) }
     var showPhotoDialog by remember { mutableStateOf(false) }
     val pickPhoto = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia(),
@@ -408,21 +415,72 @@ fun ProductDetailScreen(
                         TextButton(
                             onClick = {
                                 showDeleteConfirm = false
-                                viewModel.removeFromInventory(wasted = false)
-                                onBack()
+                                val current = uiState.quantityInInventory ?: 1
+                                if (current > 1) {
+                                    removalQuantity = current
+                                    pendingRemovalWasted = false
+                                } else {
+                                    viewModel.removeFromInventory(wasted = false)
+                                    onBack()
+                                }
                             },
                         ) { Text(stringResource(R.string.product_detail_delete_used_up)) }
                         TextButton(
                             onClick = {
                                 showDeleteConfirm = false
-                                viewModel.removeFromInventory(wasted = true)
-                                onBack()
+                                val current = uiState.quantityInInventory ?: 1
+                                if (current > 1) {
+                                    removalQuantity = current
+                                    pendingRemovalWasted = true
+                                } else {
+                                    viewModel.removeFromInventory(wasted = true)
+                                    onBack()
+                                }
                             },
                         ) { Text(stringResource(R.string.product_detail_delete_wasted), color = MaterialTheme.colorScheme.error) }
                     }
                 },
                 dismissButton = {
                     TextButton(onClick = { showDeleteConfirm = false }) { Text(stringResource(R.string.common_cancel)) }
+                },
+            )
+        }
+
+        val removalWasted = pendingRemovalWasted
+        if (removalWasted != null) {
+            // Never more than what's actually there — QuantityStepper's own +/- only disables
+            // the − button at its minQuantity, it has no built-in cap, so the upper bound is
+            // enforced here in onIncrease instead.
+            val maxRemovalQuantity = uiState.quantityInInventory ?: removalQuantity
+            AlertDialog(
+                onDismissRequest = { pendingRemovalWasted = null },
+                title = {
+                    Text(
+                        stringResource(
+                            if (removalWasted) R.string.product_detail_remove_quantity_wasted_title
+                            else R.string.product_detail_remove_quantity_used_up_title,
+                        ),
+                    )
+                },
+                text = {
+                    QuantityStepper(
+                        quantity = removalQuantity,
+                        onDecrease = { removalQuantity = (removalQuantity - 1).coerceAtLeast(1) },
+                        onIncrease = { removalQuantity = (removalQuantity + 1).coerceAtMost(maxRemovalQuantity) },
+                        minQuantity = 1,
+                    )
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = {
+                            viewModel.removeQuantityFromInventory(removalQuantity, removalWasted)
+                            pendingRemovalWasted = null
+                            onBack()
+                        },
+                    ) { Text(stringResource(R.string.product_detail_remove_quantity_confirm_action)) }
+                },
+                dismissButton = {
+                    TextButton(onClick = { pendingRemovalWasted = null }) { Text(stringResource(R.string.common_cancel)) }
                 },
             )
         }

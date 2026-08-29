@@ -647,6 +647,9 @@
     <string name="product_detail_delete_dialog_text_wasted_prompt">Did you use up this product, or did you throw it away?</string>
     <string name="product_detail_delete_used_up">Used up</string>
     <string name="product_detail_delete_wasted">Wasted</string>
+    <string name="product_detail_remove_quantity_used_up_title">How many did you use?</string>
+    <string name="product_detail_remove_quantity_wasted_title">How many did you throw away?</string>
+    <string name="product_detail_remove_quantity_confirm_action">Confirm</string>
     <string name="product_detail_edit_photo_cd">Set custom photo</string>
     <string name="product_detail_edit_photo_title">Custom photo</string>
     <string name="product_detail_choose_photo_action">Choose photo</string>

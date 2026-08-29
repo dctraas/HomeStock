@@ -187,6 +187,14 @@ class ProductDetailViewModel(
         viewModelScope.launch { inventoryRepository.removeFromInventory(barcode, wasted) }
     }
 
+    /** See [InventoryRepository.removeQuantityFromInventory] — used instead of
+     *  [removeFromInventory] whenever the product's own quantity is more than 1 and the
+     *  household said how many were actually used up/wasted, rather than assuming it was all
+     *  of them. */
+    fun removeQuantityFromInventory(amount: Int, wasted: Boolean) {
+        viewModelScope.launch { inventoryRepository.removeQuantityFromInventory(barcode, amount, wasted) }
+    }
+
     fun addToShoppingList() {
         val product = uiState.value.product ?: return
         viewModelScope.launch {

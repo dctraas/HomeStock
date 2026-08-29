@@ -651,6 +651,9 @@
     <string name="product_detail_delete_dialog_text_wasted_prompt">Heb je dit product opgebruikt, of is het weggegooid?</string>
     <string name="product_detail_delete_used_up">Opgebruikt</string>
     <string name="product_detail_delete_wasted">Weggegooid</string>
+    <string name="product_detail_remove_quantity_used_up_title">Hoeveel heb je opgebruikt?</string>
+    <string name="product_detail_remove_quantity_wasted_title">Hoeveel heb je weggegooid?</string>
+    <string name="product_detail_remove_quantity_confirm_action">Bevestigen</string>
     <string name="product_detail_edit_photo_cd">Eigen foto instellen</string>
     <string name="product_detail_edit_photo_title">Eigen foto</string>
     <string name="product_detail_choose_photo_action">Foto kiezen</string>

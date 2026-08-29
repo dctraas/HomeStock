@@ -220,6 +220,33 @@ class InventoryRepository(
         }
     }
 
+    /**
+     * Marks only [amount] of [barcode]'s current stock as used up/wasted, rather than
+     * [removeFromInventory]'s "the whole quantity is gone" assumption — ProductDetailScreen asks
+     * for [amount] instead of just removing outright whenever a product's own quantity is more
+     * than 1, since "opgemaakt"/"weggegooid" on, say, 6 yoghurts on the shelf usually means one
+     * of them, not all six. [amount] is clamped to what's actually there (never negative-
+     * quantities the doc, never logs more than it had); deletes the doc outright once the
+     * remainder hits zero, same as [consumeOneFromMeal] one unit at a time already does.
+     */
+    suspend fun removeQuantityFromInventory(barcode: String, amount: Int, wasted: Boolean = false) {
+        val householdId = householdSession.householdId.value ?: return
+        val inventoryDoc = inventoryCollection(householdId).document(barcode)
+        val existing = InventoryItemEntity.fromDocument(inventoryDoc.get().await()) ?: return
+        val removedAmount = amount.coerceIn(1, existing.quantity)
+        val newQuantity = existing.quantity - removedAmount
+        if (newQuantity <= 0) {
+            inventoryDoc.delete().await()
+        } else {
+            inventoryDoc.set(existing.copy(quantity = newQuantity, updatedAt = System.currentTimeMillis()).toMap()).await()
+        }
+        if (wasted) {
+            activityLogRepository.logWasted(barcode, removedAmount)
+        } else {
+            activityLogRepository.logRemoved(barcode, removedAmount)
+        }
+    }
+
     /** Re-creates an inventory row after an undo action, without touching the activity log. */
     suspend fun restoreItem(
         barcode: String,

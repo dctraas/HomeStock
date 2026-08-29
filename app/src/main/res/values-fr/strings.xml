@@ -647,6 +647,9 @@
     <string name="product_detail_delete_dialog_text_wasted_prompt">Avez-vous consommé ce produit ou l\'avez-vous jeté ?</string>
     <string name="product_detail_delete_used_up">Consommé</string>
     <string name="product_detail_delete_wasted">Gaspillé</string>
+    <string name="product_detail_remove_quantity_used_up_title">Combien avez-vous consommé ?</string>
+    <string name="product_detail_remove_quantity_wasted_title">Combien avez-vous gaspillé ?</string>
+    <string name="product_detail_remove_quantity_confirm_action">Confirmer</string>
     <string name="product_detail_edit_photo_cd">Définir une photo personnalisée</string>
     <string name="product_detail_edit_photo_title">Photo personnalisée</string>
     <string name="product_detail_choose_photo_action">Choisir une photo</string>
