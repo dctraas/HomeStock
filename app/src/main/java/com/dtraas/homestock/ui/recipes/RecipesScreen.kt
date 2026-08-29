@@ -65,8 +65,6 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
@@ -79,6 +77,8 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -121,14 +121,20 @@ import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.model.Allergen
+import com.dtraas.homestock.data.repository.DietPreference
+import com.dtraas.homestock.data.repository.MatchThreshold
+import com.dtraas.homestock.data.repository.MealType
+import com.dtraas.homestock.data.repository.RecipeFilters
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
+import com.dtraas.homestock.ui.components.HomeStockBottomSheet
 import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.components.SheetChip
 import com.dtraas.homestock.ui.components.dashedBorder
 import com.dtraas.homestock.ui.components.SheetEyebrow
 import com.dtraas.homestock.ui.components.SheetPrimaryButton
 import com.dtraas.homestock.ui.components.SheetTitle
+import com.dtraas.homestock.ui.components.sheetContentPadding
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
@@ -139,6 +145,7 @@ import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import com.dtraas.homestock.ui.theme.SoftImageShape
 import com.dtraas.homestock.ui.theme.TopAppBarContainerGradientEnd
 import java.util.Locale
+import kotlin.math.roundToInt
 
 /**
  * Browses Spoonacular's recipe catalog by default (see RecipeRepository.browseAllRecipes) — not
@@ -281,8 +288,8 @@ fun RecipesScreen(
                 onMineSearchQueryChange = viewModel::onMineSearchQueryChange,
                 viewMode = viewMode,
                 onToggleViewMode = { viewMode = viewMode.toggled() },
-                excludedAllergens = uiState.excludedAllergens,
-                onToggleAllergen = viewModel::toggleAllergen,
+                activeFilterCount = uiState.filters.activeCount,
+                onOpenFilters = viewModel::openFilterSheet,
             )
 
             RecipesTabRow(selected = uiState.tab, onSelect = viewModel::selectTab)
@@ -536,6 +543,23 @@ fun RecipesScreen(
                     viewModel.dismissImportPreview()
                 }
             },
+        )
+    }
+
+    if (uiState.showFilterSheet) {
+        RecipesFilterSheet(
+            draftFilters = uiState.draftFilters,
+            allergenOwners = uiState.allergenOwners,
+            resultCount = uiState.filterPreviewCount,
+            isLoadingCount = uiState.isLoadingFilterPreview,
+            onMatchThresholdChange = viewModel::updateDraftMatchThreshold,
+            onReadyMinutesChange = viewModel::updateDraftReadyMinutes,
+            onMealTypeChange = viewModel::updateDraftMealType,
+            onDietPreferenceChange = viewModel::updateDraftDietPreference,
+            onToggleAllergen = viewModel::toggleDraftAllergen,
+            onClearAll = viewModel::clearDraftFilters,
+            onApply = viewModel::applyFilters,
+            onDismiss = viewModel::dismissFilterSheet,
         )
     }
 }
@@ -1509,11 +1533,10 @@ private fun RecipesHeader(
     onMineSearchQueryChange: (String) -> Unit,
     viewMode: RecipesViewMode,
     onToggleViewMode: () -> Unit,
-    excludedAllergens: Set<Allergen>,
-    onToggleAllergen: (Allergen) -> Unit,
+    activeFilterCount: Int,
+    onOpenFilters: () -> Unit,
 ) {
     val contentColor = LocalTopAppBarContentColor.current
-    var menuExpanded by remember { mutableStateOf(false) }
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1603,9 +1626,8 @@ private fun RecipesHeader(
                 // the search field instead of up with the title, per explicit request.
                 if (tab == RecipesTab.BROWSE) {
                     Box {
-                        val hasActiveAllergenFilter = excludedAllergens.isNotEmpty()
                         FilledIconButton(
-                            onClick = { menuExpanded = true },
+                            onClick = onOpenFilters,
                             shape = SoftCardShape,
                             colors = IconButtonDefaults.filledIconButtonColors(
                                 containerColor = Color.White,
@@ -1614,7 +1636,7 @@ private fun RecipesHeader(
                         ) {
                             Icon(Icons.Filled.Tune, contentDescription = stringResource(R.string.recipes_filter_cd))
                         }
-                        if (hasActiveAllergenFilter) {
+                        if (activeFilterCount > 0) {
                             Box(
                                 modifier = Modifier
                                     .align(Alignment.TopEnd)
@@ -1623,27 +1645,315 @@ private fun RecipesHeader(
                                     .background(MaterialTheme.colorScheme.secondary, CircleShape),
                             )
                         }
-                        DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
-                            Text(
-                                text = stringResource(R.string.recipes_allergen_menu_header),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** Ready-time slider steps for [RecipesFilterSheet]'s BEREIDINGSTIJD section — `null` is the
+ *  slider's rightmost "alles" (no cap) position. A fixed discrete list rather than a free-form
+ *  0-120 range: Spoonacular's `maxReadyTime` is a blunt filter anyway, and a handful of round
+ *  numbers reads more predictably on a slider than an arbitrary minute count would. */
+private val readyTimeSliderOptions: List<Int?> = listOf(10, 20, 30, 45, 60, null)
+
+@StringRes
+private fun matchThresholdLabelRes(threshold: MatchThreshold): Int = when (threshold) {
+    MatchThreshold.ALL_IN_HOUSE -> R.string.recipes_filter_match_threshold_all_in_house
+    MatchThreshold.MAX_3_MISSING -> R.string.recipes_filter_match_threshold_max_3_missing
+    MatchThreshold.ANY -> R.string.recipes_filter_match_threshold_any
+}
+
+@StringRes
+private fun mealTypeLabelRes(type: MealType): Int = when (type) {
+    MealType.BREAKFAST -> R.string.recipes_filter_meal_type_breakfast
+    MealType.LUNCH -> R.string.recipes_filter_meal_type_lunch
+    MealType.DINNER -> R.string.recipes_filter_meal_type_dinner
+    MealType.SIDE_DISH -> R.string.recipes_filter_meal_type_side_dish
+    MealType.DESSERT -> R.string.recipes_filter_meal_type_dessert
+}
+
+@StringRes
+private fun dietPreferenceLabelRes(diet: DietPreference): Int = when (diet) {
+    DietPreference.VEGETARIAN -> R.string.recipes_filter_diet_vegetarian
+    DietPreference.VEGAN -> R.string.recipes_filter_diet_vegan
+}
+
+/**
+ * Recepten's "Filters" bottom sheet. Every edit here lands in [draftFilters] only — nothing
+ * changes the recipe list on the screen behind it until [onApply] ("Toon resultaten") is tapped;
+ * dismissing any other way (drag-down, scrim tap, back gesture — all surface as [onDismiss])
+ * discards every edit instead. [resultCount] is [RecipeRepository.countMatchingRecipes]'s real,
+ * debounced live count for [draftFilters] — see that function's doc for why it's cheap enough to
+ * refresh on every edit, and for why it can't (and doesn't try to) reflect
+ * [RecipeFilters.matchThreshold], which only ever narrows an already-fetched page client-side.
+ */
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
+@Composable
+private fun RecipesFilterSheet(
+    draftFilters: RecipeFilters,
+    allergenOwners: Map<Allergen, String>,
+    resultCount: Int?,
+    isLoadingCount: Boolean,
+    onMatchThresholdChange: (MatchThreshold) -> Unit,
+    onReadyMinutesChange: (Int?) -> Unit,
+    onMealTypeChange: (MealType) -> Unit,
+    onDietPreferenceChange: (DietPreference) -> Unit,
+    onToggleAllergen: (Allergen) -> Unit,
+    onClearAll: () -> Unit,
+    onApply: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var allergenSectionExpanded by remember { mutableStateOf(false) }
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(sheetContentPadding),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.weight(1f)) {
+                    SheetTitle(title = stringResource(R.string.recipes_filter_sheet_title))
+                    if (draftFilters.activeCount > 0) {
+                        Text(
+                            text = pluralStringResource(
+                                R.plurals.recipes_filter_sheet_active_count,
+                                draftFilters.activeCount,
+                                draftFilters.activeCount,
+                            ),
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 2.dp),
+                        )
+                    }
+                }
+                if (draftFilters.activeCount > 0) {
+                    TextButton(onClick = onClearAll) {
+                        Text(stringResource(R.string.recipes_filter_sheet_clear_all))
+                    }
+                }
+            }
+
+            // One removable chip per currently active choice — lets the household see (and undo)
+            // everything they've set without opening each section below.
+            if (draftFilters.activeCount > 0) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(top = 14.dp),
+                ) {
+                    if (draftFilters.matchThreshold != MatchThreshold.ANY) {
+                        ActiveFilterChip(
+                            label = stringResource(matchThresholdLabelRes(draftFilters.matchThreshold)),
+                            onRemove = { onMatchThresholdChange(MatchThreshold.ANY) },
+                        )
+                    }
+                    draftFilters.maxReadyMinutes?.let { minutes ->
+                        ActiveFilterChip(
+                            label = stringResource(R.string.recipes_filter_ready_time_chip, minutes),
+                            onRemove = { onReadyMinutesChange(null) },
+                        )
+                    }
+                    draftFilters.mealType?.let { type ->
+                        ActiveFilterChip(
+                            label = stringResource(mealTypeLabelRes(type)),
+                            onRemove = { onMealTypeChange(type) },
+                        )
+                    }
+                    draftFilters.dietPreference?.let { diet ->
+                        ActiveFilterChip(
+                            label = stringResource(dietPreferenceLabelRes(diet)),
+                            onRemove = { onDietPreferenceChange(diet) },
+                        )
+                    }
+                    RecipeRepository.filterableAllergens.filter { it in draftFilters.excludedAllergens }.forEach { allergen ->
+                        ActiveFilterChip(
+                            label = stringResource(allergen.labelRes),
+                            onRemove = { onToggleAllergen(allergen) },
+                        )
+                    }
+                }
+            }
+
+            SheetEyebrow(text = stringResource(R.string.recipes_filter_section_match_threshold), modifier = Modifier.padding(top = 24.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = 10.dp),
+            ) {
+                listOf(MatchThreshold.ALL_IN_HOUSE, MatchThreshold.MAX_3_MISSING, MatchThreshold.ANY).forEach { threshold ->
+                    SheetChip(
+                        label = stringResource(matchThresholdLabelRes(threshold)),
+                        selected = draftFilters.matchThreshold == threshold,
+                        onClick = { onMatchThresholdChange(threshold) },
+                    )
+                }
+            }
+
+            SheetEyebrow(text = stringResource(R.string.recipes_filter_section_ready_time), modifier = Modifier.padding(top = 24.dp))
+            ReadyTimeSlider(minutes = draftFilters.maxReadyMinutes, onChange = onReadyMinutesChange, modifier = Modifier.padding(top = 4.dp))
+
+            SheetEyebrow(text = stringResource(R.string.recipes_filter_section_meal_type), modifier = Modifier.padding(top = 20.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = 10.dp),
+            ) {
+                MealType.entries.forEach { type ->
+                    SheetChip(
+                        label = stringResource(mealTypeLabelRes(type)),
+                        selected = draftFilters.mealType == type,
+                        onClick = { onMealTypeChange(type) },
+                    )
+                }
+            }
+
+            SheetEyebrow(text = stringResource(R.string.recipes_filter_section_diet), modifier = Modifier.padding(top = 20.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = 10.dp),
+            ) {
+                DietPreference.entries.forEach { diet ->
+                    SheetChip(
+                        label = stringResource(dietPreferenceLabelRes(diet)),
+                        selected = draftFilters.dietPreference == diet,
+                        onClick = { onDietPreferenceChange(diet) },
+                    )
+                }
+                // "Glutenvrij" isn't a DietPreference — it toggles Allergen.GLUTEN, the exact same
+                // exclusion the ALLERGENEN VERMIJDEN section below controls, so the two always
+                // agree instead of tracking two independent flags for the same thing.
+                SheetChip(
+                    label = stringResource(R.string.recipes_filter_diet_gluten_free),
+                    selected = Allergen.GLUTEN in draftFilters.excludedAllergens,
+                    onClick = { onToggleAllergen(Allergen.GLUTEN) },
+                )
+            }
+
+            Column(modifier = Modifier.padding(top = 20.dp)) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { allergenSectionExpanded = !allergenSectionExpanded },
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    SheetEyebrow(text = stringResource(R.string.recipes_filter_section_allergens), modifier = Modifier.weight(1f))
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowDown,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.outline,
+                        modifier = Modifier.rotate(if (allergenSectionExpanded) 180f else 0f),
+                    )
+                }
+                if (allergenSectionExpanded) {
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(top = 12.dp),
+                    ) {
+                        RecipeRepository.filterableAllergens.forEach { allergen ->
+                            SheetChip(
+                                label = stringResource(allergen.labelRes),
+                                selected = allergen in draftFilters.excludedAllergens,
+                                onClick = { onToggleAllergen(allergen) },
                             )
-                            RecipeRepository.filterableAllergens.forEach { allergen ->
-                                val selected = allergen in excludedAllergens
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(allergen.labelRes)) },
-                                    trailingIcon = {
-                                        if (selected) Icon(Icons.Filled.Check, contentDescription = null)
-                                    },
-                                    onClick = { onToggleAllergen(allergen) },
-                                )
+                        }
+                    }
+                    // "X heeft dit in hun profiel staan" — only for an allergen that's both
+                    // currently excluded and actually traceable to a household member's own
+                    // profile (see RecipesViewModel's allergenOwners doc); an allergen the
+                    // household just toggled on themselves gets no banner, since there's nothing
+                    // true to attribute it to.
+                    val attributed = RecipeRepository.filterableAllergens
+                        .filter { it in draftFilters.excludedAllergens }
+                        .mapNotNull { allergen -> allergenOwners[allergen]?.let { owner -> allergen to owner } }
+                    if (attributed.isNotEmpty()) {
+                        Column(modifier = Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            attributed.forEach { (allergen, owner) ->
+                                val allergenLabel = stringResource(allergen.labelRes)
+                                Surface(color = MaterialTheme.colorScheme.surfaceContainerHigh, shape = SoftCardShapeCompact) {
+                                    Text(
+                                        text = stringResource(R.string.recipes_filter_allergen_owner_banner, owner, allergenLabel),
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                    )
+                                }
                             }
                         }
                     }
                 }
             }
+
+            val footerCountText = when {
+                isLoadingCount -> stringResource(R.string.recipes_filter_footer_counting)
+                resultCount != null -> pluralStringResource(R.plurals.recipes_filter_footer_result_count, resultCount, resultCount)
+                else -> null
+            }
+            Column(modifier = Modifier.padding(top = 28.dp)) {
+                if (footerCountText != null) {
+                    Text(
+                        text = footerCountText,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(bottom = 10.dp),
+                    )
+                }
+                SheetPrimaryButton(text = stringResource(R.string.recipes_filter_footer_show_results), onClick = onApply)
+            }
+        }
+    }
+}
+
+/** A single active-filter pill in [RecipesFilterSheet]'s own removable-chip row — a thin,
+ *  always-selected [FilterChip] with a trailing "✕" rather than [SheetChip] (which only ever
+ *  supports a *leading* icon, wrong side for "tap to remove"). */
+@Composable
+private fun ActiveFilterChip(label: String, onRemove: () -> Unit) {
+    FilterChip(
+        selected = true,
+        onClick = onRemove,
+        label = { Text(label, style = MaterialTheme.typography.labelLarge) },
+        trailingIcon = {
+            Icon(
+                imageVector = Icons.Filled.Close,
+                contentDescription = stringResource(R.string.recipes_filter_remove_chip_cd),
+                modifier = Modifier.size(16.dp),
+            )
+        },
+        shape = CircleShape,
+    )
+}
+
+/** [RecipesFilterSheet]'s BEREIDINGSTIJD control — a discrete slider over [readyTimeSliderOptions] rather than a free-form range, see that list's doc. */
+@Composable
+private fun ReadyTimeSlider(minutes: Int?, onChange: (Int?) -> Unit, modifier: Modifier = Modifier) {
+    val index = readyTimeSliderOptions.indexOf(minutes).takeIf { it >= 0 } ?: readyTimeSliderOptions.lastIndex
+    Column(modifier = modifier) {
+        Slider(
+            value = index.toFloat(),
+            onValueChange = { raw ->
+                val snapped = raw.roundToInt().coerceIn(0, readyTimeSliderOptions.lastIndex)
+                onChange(readyTimeSliderOptions[snapped])
+            },
+            valueRange = 0f..readyTimeSliderOptions.lastIndex.toFloat(),
+            steps = readyTimeSliderOptions.size - 2,
+            colors = SliderDefaults.colors(activeTrackColor = SageGreenPrimary, thumbColor = SageGreenPrimary),
+        )
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+            Text(
+                text = stringResource(R.string.recipes_filter_ready_time_min, readyTimeSliderOptions.first()!!),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Text(
+                text = stringResource(R.string.recipes_filter_ready_time_alles),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }

@@ -59,8 +59,54 @@ data class RecipeSuggestion(
     val expiringIngredientUsed: String? = null,
 )
 
-/** One page of [RecipeRepository.browseAllRecipes]/[RecipeRepository.searchRecipesByName] — [hasMore] mirrors Spoonacular's own `totalResults` for that exact query, so the caller knows whether a further [loadMore]-style call (same params, next `offset`) is worth making. */
-data class RecipePage(val suggestions: List<RecipeSuggestion>, val hasMore: Boolean)
+/** One page of [RecipeRepository.browseAllRecipes]/[RecipeRepository.searchRecipesByName] — [hasMore] mirrors Spoonacular's own `totalResults` for that exact query, so the caller knows whether a further [loadMore]-style call (same params, next `offset`) is worth making. [totalResults] is that same Spoonacular count, surfaced as-is (not fabricated/estimated) for [RecipesFilterSheet]'s result-count footer — null only if Spoonacular's response itself omitted it. It reflects every server-enforceable filter in the request ([RecipeFilters.excludedAllergens]/[RecipeFilters.maxReadyMinutes]/[RecipeFilters.mealType]/[RecipeFilters.dietPreference]) but *not* [RecipeFilters.matchThreshold], which Spoonacular has no concept of — that one only narrows [suggestions] itself, client-side, after the fact. */
+data class RecipePage(val suggestions: List<RecipeSuggestion>, val hasMore: Boolean, val totalResults: Int? = null)
+
+/** "WAT JE IN HUIS HEBT" section of the Recepten filter sheet — narrows [RecipeRepository.browseAllRecipes]/
+ *  [RecipeRepository.searchRecipesByName] results by how many ingredients the household is still
+ *  missing, using each result's own real [RecipeSuggestion.matchCount]/[RecipeSuggestion.totalIngredientCount]
+ *  (already computed against actual inventory for every fetched page — see `annotateWithInventory`)
+ *  rather than a fabricated preview count. [ANY] keeps every recipe regardless of missing count. */
+enum class MatchThreshold { ANY, MAX_3_MISSING, ALL_IN_HOUSE }
+
+/** "MAALTIJD" section — maps to Spoonacular's `type` (dishType) request param. Spoonacular's own
+ *  dishType taxonomy has no separate lunch/dinner distinction, so [LUNCH] and [DINNER] both
+ *  resolve to the same "main course" filter server-side (see `spoonacularMealType`) — kept as two
+ *  separate choices in the UI anyway since picking one still communicates real intent, even though
+ *  today the server can't tell the two apart any more precisely than that. */
+enum class MealType { BREAKFAST, LUNCH, DINNER, SIDE_DISH, DESSERT }
+
+/** "DIEET" section — [VEGAN] implies [VEGETARIAN] (Spoonacular's own `diet` request param only
+ *  ever accepts one value), so the two are mutually exclusive in the UI rather than combinable.
+ *  "Glutenvrij" isn't a third case here — it reuses [RecipeFilters.excludedAllergens] (adding
+ *  [com.dtraas.homestock.data.model.Allergen.GLUTEN]) instead, the same mechanism the ALLERGENEN
+ *  VERMIJDEN section already uses, rather than a second, parallel gluten-free flag. */
+enum class DietPreference { VEGETARIAN, VEGAN }
+
+/**
+ * Everything the Recepten filter sheet can narrow [RecipeRepository.browseAllRecipes]/
+ * [RecipeRepository.searchRecipesByName] results by. [maxReadyMinutes] null means "alles" (no
+ * ready-time cap). [RecipesViewModel] keeps two copies of this: one already applied to the current
+ * recipe list, one for the sheet's own in-progress edits — see that class's `filters`/`draftFilters`
+ * doc for why adjusting a slider or tapping a chip doesn't re-fetch on every touch.
+ */
+data class RecipeFilters(
+    val matchThreshold: MatchThreshold = MatchThreshold.ANY,
+    val maxReadyMinutes: Int? = null,
+    val mealType: MealType? = null,
+    val dietPreference: DietPreference? = null,
+    val excludedAllergens: Set<Allergen> = emptySet(),
+) {
+    /** How many distinct filter choices are active — the sheet's "N actief" header and the
+     *  filter button's badge both read this, rather than each recomputing it separately. */
+    val activeCount: Int
+        get() = listOfNotNull(
+            matchThreshold.takeIf { it != MatchThreshold.ANY },
+            maxReadyMinutes,
+            mealType,
+            dietPreference,
+        ).size + excludedAllergens.size
+}
 
 sealed interface GenerateRecipeResult {
     data class Success(val detail: RecipeDetail) : GenerateRecipeResult
@@ -219,17 +265,30 @@ class RecipeRepository(
      */
     suspend fun browseAllRecipes(
         languageTag: String? = null,
-        excludedAllergens: Set<Allergen> = emptySet(),
+        filters: RecipeFilters = RecipeFilters(),
         offset: Int = 0,
     ): Result<RecipePage> = try {
-        val intolerances = spoonacularIntolerances(excludedAllergens)
-        val (plain, hasMore) = parseSearchResults(callSearchRecipes(mode = "browse", number = PAGE_SIZE, offset = offset, intolerances = intolerances))
+        val intolerances = spoonacularIntolerances(filters.excludedAllergens)
+        val maxReadyTime = filters.maxReadyMinutes
+        val type = filters.mealType?.let(::spoonacularMealType)
+        val diet = filters.dietPreference?.let(::spoonacularDiet)
+        val (plain, hasMore, totalResults) = parseSearchResults(
+            callSearchRecipes(
+                mode = "browse", number = PAGE_SIZE, offset = offset, intolerances = intolerances,
+                maxReadyTime = maxReadyTime, type = type, diet = diet,
+            ),
+        )
         plain.forEach { cacheSearchResult(it) }
 
         val areaIds = LinkedHashSet<String>()
         if (offset == 0) {
             languageToCuisine[languageTag]?.let { cuisine ->
-                val (boosted, _) = parseSearchResults(callSearchRecipes(mode = "browse", cuisine = cuisine, number = 8, intolerances = intolerances))
+                val (boosted, _, _) = parseSearchResults(
+                    callSearchRecipes(
+                        mode = "browse", cuisine = cuisine, number = 8, intolerances = intolerances,
+                        maxReadyTime = maxReadyTime, type = type, diet = diet,
+                    ),
+                )
                 boosted.forEach { detail -> cacheSearchResult(detail); areaIds += detail.id }
             }
         }
@@ -265,8 +324,9 @@ class RecipeRepository(
                     .thenByDescending { it.matchesArea }
                     .thenBy { it.meal.name },
             )
+            .let { applyMatchThreshold(it, filters.matchThreshold) }
 
-        Result.success(RecipePage(withTranslatedTitles(list, languageTag), hasMore))
+        Result.success(RecipePage(withTranslatedTitles(list, languageTag), hasMore, totalResults))
     } catch (e: Exception) {
         Result.failure(e)
     }
@@ -281,12 +341,18 @@ class RecipeRepository(
      */
     suspend fun searchRecipesByName(
         query: String,
-        excludedAllergens: Set<Allergen> = emptySet(),
+        filters: RecipeFilters = RecipeFilters(),
         languageTag: String? = null,
         offset: Int = 0,
     ): Result<RecipePage> = try {
-        val (details, hasMore) = parseSearchResults(
-            callSearchRecipes(mode = "query", query = query, number = PAGE_SIZE, offset = offset, intolerances = spoonacularIntolerances(excludedAllergens)),
+        val (details, hasMore, totalResults) = parseSearchResults(
+            callSearchRecipes(
+                mode = "query", query = query, number = PAGE_SIZE, offset = offset,
+                intolerances = spoonacularIntolerances(filters.excludedAllergens),
+                maxReadyTime = filters.maxReadyMinutes,
+                type = filters.mealType?.let(::spoonacularMealType),
+                diet = filters.dietPreference?.let(::spoonacularDiet),
+            ),
         )
         details.forEach { cacheSearchResult(it) }
         val inventoryNames = inventoryRepository.observeInventoryWithProduct().first().map { it.name }
@@ -301,8 +367,32 @@ class RecipeRepository(
                 servings = detail.servings,
                 expiringIngredientUsed = match.expiringIngredientUsed,
             )
-        }
-        Result.success(RecipePage(withTranslatedTitles(suggestions, languageTag), hasMore))
+        }.let { applyMatchThreshold(it, filters.matchThreshold) }
+        Result.success(RecipePage(withTranslatedTitles(suggestions, languageTag), hasMore, totalResults))
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    /**
+     * The filter sheet's own live "N recepten met deze filters" preview — a real Spoonacular
+     * `totalResults` count for the exact server-enforceable filter combination (allergens/ready
+     * time/meal type/diet), not an estimate. Cheap: the server skips the expensive
+     * addRecipeInformation/addRecipeNutrition add-ons for this call (see `searchRecipes`'s "count"
+     * mode in functions/src/index.ts), so this is safe to call again on every filter edit.
+     * Doesn't (can't) reflect [RecipeFilters.matchThreshold] — see [RecipePage.totalResults]'s doc
+     * for why that one only ever narrows an already-fetched page, never a server-side count.
+     */
+    suspend fun countMatchingRecipes(query: String?, filters: RecipeFilters): Result<Int> = try {
+        val response = callSearchRecipes(
+            mode = "count",
+            query = query?.trim()?.takeIf { it.isNotEmpty() },
+            intolerances = spoonacularIntolerances(filters.excludedAllergens),
+            maxReadyTime = filters.maxReadyMinutes,
+            type = filters.mealType?.let(::spoonacularMealType),
+            diet = filters.dietPreference?.let(::spoonacularDiet),
+            number = 1,
+        )
+        Result.success((response["totalResults"] as? Number)?.toInt() ?: 0)
     } catch (e: Exception) {
         Result.failure(e)
     }
@@ -966,6 +1056,9 @@ class RecipeRepository(
         ingredients: String? = null,
         cuisine: String? = null,
         intolerances: List<String> = emptyList(),
+        maxReadyTime: Int? = null,
+        type: String? = null,
+        diet: String? = null,
         number: Int,
         offset: Int = 0,
     ): Map<*, *> {
@@ -980,6 +1073,9 @@ class RecipeRepository(
         ingredients?.let { requestData["ingredients"] = it }
         cuisine?.let { requestData["cuisine"] = it }
         if (intolerances.isNotEmpty()) requestData["intolerances"] = intolerances
+        maxReadyTime?.let { requestData["maxReadyTime"] = it }
+        type?.let { requestData["type"] = it }
+        diet?.let { requestData["diet"] = it }
 
         val result = functions.getHttpsCallable("searchRecipes").call(requestData).await()
         return result.getData() as? Map<*, *> ?: emptyMap<String, Any?>()
@@ -990,11 +1086,47 @@ class RecipeRepository(
         return rawDetails.mapNotNull { (it as? Map<*, *>)?.let(::mapToDetail) }
     }
 
-    /** Like [parseDetails], plus the server's `hasMore` flag for [browseAllRecipes]/[searchRecipesByName]'s pagination. */
-    private fun parseSearchResults(response: Map<*, *>): Pair<List<RecipeDetail>, Boolean> {
+    /** Like [parseDetails], plus the server's `hasMore` flag for [browseAllRecipes]/[searchRecipesByName]'s
+     *  pagination and its real `totalResults` count (see [RecipePage.totalResults]'s doc) — null
+     *  only if the server response didn't carry one at all. */
+    private fun parseSearchResults(response: Map<*, *>): Triple<List<RecipeDetail>, Boolean, Int?> {
         val details = parseDetails(response)
         val hasMore = (response["hasMore"] as? Boolean) ?: false
-        return details to hasMore
+        val totalResults = (response["totalResults"] as? Number)?.toInt()
+        return Triple(details, hasMore, totalResults)
+    }
+
+    /** Maps [MealType] to Spoonacular's own `type` (dishType) request param — see that enum's doc for why [MealType.LUNCH]/[MealType.DINNER] collapse to the same value. */
+    private fun spoonacularMealType(type: MealType): String = when (type) {
+        MealType.BREAKFAST -> "breakfast"
+        MealType.LUNCH, MealType.DINNER -> "main course"
+        MealType.SIDE_DISH -> "side dish"
+        MealType.DESSERT -> "dessert"
+    }
+
+    /** Maps [DietPreference] to Spoonacular's own `diet` request param. */
+    private fun spoonacularDiet(diet: DietPreference): String = when (diet) {
+        DietPreference.VEGETARIAN -> "vegetarian"
+        DietPreference.VEGAN -> "vegan"
+    }
+
+    /** [RecipeFilters.matchThreshold]'s client-side half — Spoonacular has no notion of "how much
+     *  of this does the household already have", so this narrows an already-fetched page rather
+     *  than being sent as a request param, using the real [RecipeSuggestion.matchCount]/
+     *  [RecipeSuggestion.totalIngredientCount] every [browseAllRecipes]/[searchRecipesByName]
+     *  result already carries. A suggestion with no ingredient data at all ([totalIngredientCount]
+     *  null) is dropped rather than assumed to qualify, for either non-[MatchThreshold.ANY] tier. */
+    private fun applyMatchThreshold(list: List<RecipeSuggestion>, threshold: MatchThreshold): List<RecipeSuggestion> {
+        if (threshold == MatchThreshold.ANY) return list
+        return list.filter { suggestion ->
+            val total = suggestion.totalIngredientCount ?: return@filter false
+            val missing = total - (suggestion.matchCount ?: 0)
+            when (threshold) {
+                MatchThreshold.ALL_IN_HOUSE -> missing <= 0
+                MatchThreshold.MAX_3_MISSING -> missing <= 3
+                MatchThreshold.ANY -> true
+            }
+        }
     }
 
     /** One row of the "ingredients" mode of `searchRecipes` — Spoonacular's used/missed

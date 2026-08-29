@@ -1174,10 +1174,18 @@ interface RecipeSearchCachePayload {
   totalResults: number;
 }
 
-/** Deterministic key for a "browse" mode call's exact param combination — order-independent on intolerances so ["Gluten","Dairy"] and ["Dairy","Gluten"] share a cache entry. Includes [offset] so each page of a paginated browse gets its own cache entry rather than colliding on page 1's. */
-export function browseCacheKey(cuisine: string | undefined, intolerances: string[] | undefined, number: number, offset: number): string {
+/** Deterministic key for a "browse" mode call's exact param combination — order-independent on intolerances so ["Gluten","Dairy"] and ["Dairy","Gluten"] share a cache entry. Includes [offset] so each page of a paginated browse gets its own cache entry rather than colliding on page 1's. [maxReadyTime]/[type]/[diet] are the filter sheet's BEREIDINGSTIJD/MAALTIJD/DIEET sections — folded into the key so a filtered browse never collides with (or evicts) the plain unfiltered one. */
+export function browseCacheKey(
+  cuisine: string | undefined,
+  intolerances: string[] | undefined,
+  number: number,
+  offset: number,
+  maxReadyTime?: number,
+  type?: string,
+  diet?: string,
+): string {
   const intolerancesKey = intolerances && intolerances.length > 0 ? [...intolerances].sort().join(",") : "none";
-  return `browse_${cuisine ?? "none"}_${intolerancesKey}_${number}_${offset}`;
+  return `browse_${cuisine ?? "none"}_${intolerancesKey}_${number}_${offset}_${maxReadyTime ?? "none"}_${type ?? "none"}_${diet ?? "none"}`;
 }
 
 async function spoonacularGet<T>(path: string, params: Record<string, string>, apiKey: string): Promise<T> {
@@ -1278,15 +1286,23 @@ async function fetchAndCacheBrowseChunk(
 
 interface SearchRecipesRequest {
   householdId: string;
-  /** "browse" (no filters, popular first), "query" (free-text name search), or "ingredients" (what-can-I-cook). */
-  mode: "browse" | "query" | "ingredients";
+  /** "browse" (no filters, popular first), "query" (free-text name search), "ingredients"
+   *  (what-can-I-cook), or "count" (the filter sheet's own live result-count preview — see
+   *  [searchRecipes]'s "count" branch for why it's cheap enough to call on every filter edit). */
+  mode: "browse" | "query" | "ingredients" | "count";
   query?: string;
   /** CSV of English ingredient terms — only used for mode "ingredients". */
   ingredients?: string;
   /** Spoonacular cuisine name, e.g. "Italian" — only used for modes "browse"/"query". */
   cuisine?: string;
-  /** Spoonacular intolerance names, e.g. ["Gluten", "Dairy"] — only used for modes "browse"/"query". */
+  /** Spoonacular intolerance names, e.g. ["Gluten", "Dairy"] — only used for modes "browse"/"query"/"count". */
   intolerances?: string[];
+  /** Recepten filter sheet's BEREIDINGSTIJD/MAALTIJD/DIEET sections — Spoonacular's own
+   *  `maxReadyTime`/`type`/`diet` complexSearch params, forwarded as-is. Only used for
+   *  "browse"/"query"/"count". */
+  maxReadyTime?: number;
+  type?: string;
+  diet?: string;
   number?: number;
   /** How many results to skip, for paginating "browse"/"query" — Spoonacular caps this at 900 regardless of filters, so that's the deepest any single query can page. */
   offset?: number;
@@ -1342,31 +1358,54 @@ export const searchRecipes = onCall(
       };
     }
 
-    // The plain browse (no cuisine boost, no query) is by far the most common call — every
-    // household's Recepten screen hits this on open. Requests land on one of nine 100-recipe
-    // chunks (see RECIPE_BROWSE_CHUNK_SIZE); fetchAndCacheBrowseChunk itself checks the cache
-    // first, so this is just "get me the one chunk this offset falls in" — see that function's
-    // doc for why this stays lazy (one chunk at a time) rather than eagerly warming all nine.
-    // The much smaller cuisine-boosted call (only 8 recipes, only page 1) falls through to the
-    // per-page cache-or-fetch logic below instead, same as "query".
-    if (data?.mode === "browse" && !data.cuisine) {
+    // The filter sheet's own live "N recepten met deze filters" preview — deliberately skips
+    // addRecipeInformation/addRecipeNutrition/fillIngredients (the expensive parts of a real
+    // browse/query call) and asks for just one result, since all that's actually wanted here is
+    // Spoonacular's own totalResults count for this exact filter combination. Cheap enough to
+    // call again on every filter edit in the sheet, unlike a full page fetch. Uncached — the
+    // combination of filters a household is mid-edit on is too short-lived to be worth a cache
+    // entry the way a finished "browse" page is.
+    if (data?.mode === "count") {
+      const params: Record<string, string> = { number: "1" };
+      if (data.query) params.query = data.query;
+      if (data.cuisine) params.cuisine = data.cuisine;
+      if (data.intolerances && data.intolerances.length > 0) params.intolerances = data.intolerances.join(",");
+      if (data.maxReadyTime) params.maxReadyTime = String(data.maxReadyTime);
+      if (data.type) params.type = data.type;
+      if (data.diet) params.diet = data.diet;
+      const response = await spoonacularGet<SpoonacularComplexSearchResponse>("/recipes/complexSearch", params, apiKey);
+      return { totalResults: response.totalResults ?? 0 };
+    }
+
+    // The plain browse (no cuisine boost, no query, no ready-time/meal-type/diet filter) is by
+    // far the most common call — every household's Recepten screen hits this on open. Requests
+    // land on one of nine 100-recipe chunks (see RECIPE_BROWSE_CHUNK_SIZE); fetchAndCacheBrowseChunk
+    // itself checks the cache first, so this is just "get me the one chunk this offset falls in"
+    // — see that function's doc for why this stays lazy (one chunk at a time) rather than eagerly
+    // warming all nine. The much smaller cuisine-boosted call (only 8 recipes, only page 1) and
+    // any call carrying the filter sheet's BEREIDINGSTIJD/MAALTIJD/DIEET filters both fall through
+    // to the per-page cache-or-fetch logic below instead, same as "query" — those combinations are
+    // too numerous to each get their own pre-chunked cache the way the filterless browse does.
+    if (data?.mode === "browse" && !data.cuisine && !data.maxReadyTime && !data.type && !data.diet) {
       const chunkOffset = Math.min(Math.floor(offset / RECIPE_BROWSE_CHUNK_SIZE) * RECIPE_BROWSE_CHUNK_SIZE, 800);
       const chunk = await fetchAndCacheBrowseChunk(data?.intolerances, chunkOffset, apiKey);
       const startInChunk = offset - chunkOffset;
       const details = chunk.details.slice(startInChunk, startInChunk + number);
       const hasMore = offset + details.length < chunk.totalResults;
-      return { details, hasMore };
+      return { details, hasMore, totalResults: chunk.totalResults };
     }
 
-    // Only the cuisine-boosted "browse" call is cached as a whole page here — "query"/
+    // Only "browse" calls (plain or filtered) are cached as a whole page here — "query"/
     // "ingredients" results are shaped by what this particular household typed or has in
     // stock, too personalized to expect much reuse from caching the result set itself.
     // Individual recipes surfaced by ANY mode still get backfilled into recipeDetailCache below,
     // since a given recipe's own content is shared regardless of how it was found.
-    const cacheKey = data?.mode === "browse" ? browseCacheKey(data?.cuisine, data?.intolerances, number, offset) : null;
+    const cacheKey = data?.mode === "browse"
+      ? browseCacheKey(data?.cuisine, data?.intolerances, number, offset, data?.maxReadyTime, data?.type, data?.diet)
+      : null;
     if (cacheKey) {
       const cached = await getFreshCache<RecipeSearchCachePayload>("recipeSearchCache", cacheKey, RECIPE_BROWSE_CACHE_TTL_MS);
-      if (cached) return { details: cached.details, hasMore: offset + cached.details.length < cached.totalResults };
+      if (cached) return { details: cached.details, hasMore: offset + cached.details.length < cached.totalResults, totalResults: cached.totalResults };
     }
 
     const params: Record<string, string> = {
@@ -1380,6 +1419,9 @@ export const searchRecipes = onCall(
     if (data?.mode === "query" && data.query) params.query = data.query;
     if (data?.cuisine) params.cuisine = data.cuisine;
     if (data?.intolerances && data.intolerances.length > 0) params.intolerances = data.intolerances.join(",");
+    if (data?.maxReadyTime) params.maxReadyTime = String(data.maxReadyTime);
+    if (data?.type) params.type = data.type;
+    if (data?.diet) params.diet = data.diet;
 
     const response = await spoonacularGet<SpoonacularComplexSearchResponse>("/recipes/complexSearch", params, apiKey);
     const details = response.results.map(toRecipeDetail);
@@ -1394,7 +1436,7 @@ export const searchRecipes = onCall(
       ...details.map((detail) => setCache("recipeDetailCache", detail.id, detail)),
     ]);
 
-    return { details, hasMore };
+    return { details, hasMore, totalResults };
   },
 );
 

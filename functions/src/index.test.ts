@@ -158,7 +158,14 @@ describe("browseCacheKey", () => {
   });
 
   it("uses stable placeholders for missing cuisine/intolerances", () => {
-    expect(browseCacheKey(undefined, undefined, 10, 0)).toBe("browse_none_none_10_0");
+    expect(browseCacheKey(undefined, undefined, 10, 0)).toBe("browse_none_none_10_0_none_none_none");
+  });
+
+  it("differs when the filter sheet's ready-time/meal-type/diet params differ", () => {
+    const base = browseCacheKey("italian", ["dairy"], 10, 0);
+    expect(browseCacheKey("italian", ["dairy"], 10, 0, 30)).not.toBe(base);
+    expect(browseCacheKey("italian", ["dairy"], 10, 0, undefined, "main course")).not.toBe(base);
+    expect(browseCacheKey("italian", ["dairy"], 10, 0, undefined, undefined, "vegetarian")).not.toBe(base);
   });
 });
 

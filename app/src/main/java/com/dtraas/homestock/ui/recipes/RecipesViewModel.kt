@@ -4,9 +4,13 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dtraas.homestock.data.model.Allergen
 import com.dtraas.homestock.data.model.RecipeTag
+import com.dtraas.homestock.data.repository.DietPreference
 import com.dtraas.homestock.data.repository.GenerateRecipeResult
 import com.dtraas.homestock.data.repository.HouseholdMembersRepository
+import com.dtraas.homestock.data.repository.MatchThreshold
+import com.dtraas.homestock.data.repository.MealType
 import com.dtraas.homestock.data.repository.RecipeDetail
+import com.dtraas.homestock.data.repository.RecipeFilters
 import com.dtraas.homestock.data.repository.RecipePage
 import com.dtraas.homestock.data.repository.RecipeRepository
 import com.dtraas.homestock.data.repository.RecipeSuggestion
@@ -14,6 +18,7 @@ import com.dtraas.homestock.data.repository.ShoppingListRepository
 import com.google.firebase.functions.FirebaseFunctionsException
 import java.io.IOException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -84,7 +89,24 @@ data class RecipesUiState(
     val isLoading: Boolean = true,
     val recipes: List<RecipeSuggestion> = emptyList(),
     val loadError: RecipesLoadError? = null,
-    val excludedAllergens: Set<Allergen> = emptySet(),
+    /** Currently applied to [recipes] — only ever changes via [RecipesViewModel.applyFilters]
+     *  ("Toon resultaten"), never live as the sheet is being edited (see [draftFilters]). */
+    val filters: RecipeFilters = RecipeFilters(),
+    /** The open [RecipesFilterSheet]'s own in-progress edits — seeded from [filters] when the
+     *  sheet opens (see [RecipesViewModel.openFilterSheet]), discarded on dismiss, only copied
+     *  back into [filters] on "Toon resultaten". Meaningless while [showFilterSheet] is false. */
+    val draftFilters: RecipeFilters = RecipeFilters(),
+    val showFilterSheet: Boolean = false,
+    /** [RecipesViewModel.countMatchingRecipes]-backed live "N recepten met deze filters" for
+     *  [draftFilters] — real, debounced, not a fabricated preview (see
+     *  [RecipeRepository.countMatchingRecipes]'s doc). Null before the first count has resolved. */
+    val filterPreviewCount: Int? = null,
+    val isLoadingFilterPreview: Boolean = false,
+    /** One name per [Allergen] that's excluded because a household member's own profile lists it
+     *  (see HouseholdSettingsScreen's "Mijn allergenen") — multiple names joined, e.g. "Marit en
+     *  Tom". Only ever used for the ALLERGENEN VERMIJDEN section's explanatory banner; an allergen
+     *  with no entry here simply wasn't seeded from anyone's profile. */
+    val allergenOwners: Map<Allergen, String> = emptyMap(),
     // Free-text labels households typed themselves (see RecipeDetailScreen's tag editor) — only
     // meaningful for MINE (see RecipesViewModel.launchMineTab); BROWSE/search results never carry
     // tags at all (see RecipeSuggestion's doc), so this filter simply isn't shown on that tab.
@@ -149,9 +171,10 @@ class RecipesViewModel(
     // Seeded once, the first time load() runs — not kept live — from every household member's
     // own saved allergen preferences (see HouseholdSettingsScreen's "Mijn allergenen"), so
     // recipe suggestions steer clear of a housemate's allergy by default without anyone having
-    // to remember to toggle it by hand every time. Once seeded, the per-session toggleAllergen
-    // filter is free to add/remove on top without a housemate's later preference change (which
-    // would arrive as a new emission from the same flow) silently overwriting it mid-session.
+    // to remember to toggle it by hand every time. Once seeded, the filter sheet's own
+    // toggleDraftAllergen is free to add/remove on top without a housemate's later preference
+    // change (which would arrive as a new emission from the same flow) silently overwriting it
+    // mid-session.
     private var hasSeededHouseholdAllergens = false
 
     /** Emits the newly generated recipe's id once [generateRecipe] succeeds — the screen navigates to RecipeDetailScreen with it. */
@@ -182,7 +205,7 @@ class RecipesViewModel(
     private val _missingIngredientsAdded = MutableSharedFlow<MissingIngredientsAddedEvent>()
     val missingIngredientsAdded: SharedFlow<MissingIngredientsAddedEvent> = _missingIngredientsAdded
 
-    // Remembered from the last load() call so search()/toggleAllergen()/generateRecipe() don't
+    // Remembered from the last load() call so search()/applyFilters()/generateRecipe() don't
     // need the caller (RecipesScreen) to keep threading the current app language through every action.
     private var languageTag: String? = null
 
@@ -215,8 +238,22 @@ class RecipesViewModel(
         } else {
             hasSeededHouseholdAllergens = true
             viewModelScope.launch {
-                val householdDefaults = householdMembersRepository.observeHouseholdExcludedAllergens().first()
-                if (householdDefaults.isNotEmpty()) _uiState.update { it.copy(excludedAllergens = householdDefaults) }
+                // One member fetch covers both the merged default exclusion set (unchanged
+                // behavior) and [RecipesUiState.allergenOwners]'s per-allergen attribution — no
+                // reason to ask HouseholdMembersRepository for the same data twice.
+                val members = householdMembersRepository.observeMembers().first()
+                val householdDefaults = members.flatMapTo(mutableSetOf()) { it.excludedAllergens }
+                val owners = mutableMapOf<Allergen, MutableList<String>>()
+                members.forEach { member ->
+                    val name = member.displayName?.trim()?.takeIf { it.isNotEmpty() } ?: return@forEach
+                    member.excludedAllergens.forEach { allergen -> owners.getOrPut(allergen) { mutableListOf() }.add(name) }
+                }
+                _uiState.update {
+                    it.copy(
+                        filters = if (householdDefaults.isNotEmpty()) it.filters.copy(excludedAllergens = householdDefaults) else it.filters,
+                        allergenOwners = owners.mapValues { (_, names) -> names.joinToString(" en ") },
+                    )
+                }
                 refreshCurrentTab()
             }
             // Own long-lived collection, not tied to listJob/refreshCurrentTab — favorite state
@@ -364,9 +401,9 @@ class RecipesViewModel(
 
     private suspend fun fetchPage(state: RecipesUiState, offset: Int): Result<RecipePage> =
         if (state.searchQuery.isNotBlank()) {
-            recipeRepository.searchRecipesByName(state.searchQuery.trim(), state.excludedAllergens, languageTag, offset)
+            recipeRepository.searchRecipesByName(state.searchQuery.trim(), state.filters, languageTag, offset)
         } else {
-            recipeRepository.browseAllRecipes(languageTag, state.excludedAllergens, offset)
+            recipeRepository.browseAllRecipes(languageTag, state.filters, offset)
         }
 
     /** Distinguishes "Spoonacular's quota is used up, try later" from a real connectivity
@@ -405,7 +442,7 @@ class RecipesViewModel(
      */
     private fun launchInventoryTab(): Job = viewModelScope.launch {
         _uiState.update { it.copy(isLoading = true, loadError = null, hasMore = false, isLoadingMore = false) }
-        recipeRepository.suggestRecipes(excludedAllergens = _uiState.value.excludedAllergens, languageTag = languageTag)
+        recipeRepository.suggestRecipes(excludedAllergens = _uiState.value.filters.excludedAllergens, languageTag = languageTag)
             .onSuccess { list -> _uiState.update { it.copy(isLoading = false, recipes = list, loadError = null) } }
             .onFailure { e -> _uiState.update { it.copy(isLoading = false, recipes = emptyList(), loadError = classifyLoadError(e)) } }
     }
@@ -466,13 +503,92 @@ class RecipesViewModel(
         mineSearchQuery.value = query
     }
 
-    /** Toggles [allergen] in/out of the exclusion filter and re-fetches. */
-    fun toggleAllergen(allergen: Allergen) {
-        _uiState.update {
-            val updated = if (allergen in it.excludedAllergens) it.excludedAllergens - allergen else it.excludedAllergens + allergen
-            it.copy(excludedAllergens = updated)
-        }
+    // Debounces RecipesFilterSheet's live "N recepten met deze filters" preview — cancelled and
+    // restarted on every draft edit so a fast slider drag or a run of chip taps only ever fires
+    // the request for wherever the household actually stopped, not every intermediate value.
+    private var filterPreviewJob: Job? = null
+
+    /** Opens the filter sheet, seeding its draft from whatever's currently applied — reopening
+     *  after a previous "Toon resultaten" continues from there instead of starting blank. */
+    fun openFilterSheet() {
+        _uiState.update { it.copy(showFilterSheet = true, draftFilters = it.filters) }
+        requestFilterPreview()
+    }
+
+    /** Closes the sheet without applying anything — [RecipesUiState.draftFilters] is simply
+     *  discarded, [RecipesUiState.filters] (and the current recipe list) are untouched. */
+    fun dismissFilterSheet() {
+        filterPreviewJob?.cancel()
+        _uiState.update { it.copy(showFilterSheet = false) }
+    }
+
+    /** "Toon resultaten" — commits every edit made in the open sheet and re-fetches with it. */
+    fun applyFilters() {
+        filterPreviewJob?.cancel()
+        _uiState.update { it.copy(filters = it.draftFilters, showFilterSheet = false) }
         search()
+    }
+
+    /** "Alles wissen" — resets the sheet's draft to no filters at all; still needs "Toon
+     *  resultaten" to actually take effect, same as any other draft edit. */
+    fun clearDraftFilters() {
+        _uiState.update { it.copy(draftFilters = RecipeFilters()) }
+        requestFilterPreview()
+    }
+
+    /** "WAT JE IN HUIS HEBT" — purely client-side (see [RecipeFilters.matchThreshold]'s doc), so
+     *  this alone doesn't need a fresh preview count: it can't change [RecipesUiState.filterPreviewCount],
+     *  which only ever reflects server-enforceable filters. */
+    fun updateDraftMatchThreshold(threshold: MatchThreshold) {
+        _uiState.update { it.copy(draftFilters = it.draftFilters.copy(matchThreshold = threshold)) }
+    }
+
+    /** "BEREIDINGSTIJD" slider — null means "alles" (no cap). */
+    fun updateDraftReadyMinutes(minutes: Int?) {
+        _uiState.update { it.copy(draftFilters = it.draftFilters.copy(maxReadyMinutes = minutes)) }
+        requestFilterPreview()
+    }
+
+    /** "MAALTIJD" — single-select; tapping the already-selected chip clears it back to "geen filter". */
+    fun updateDraftMealType(type: MealType) {
+        _uiState.update {
+            val next = if (it.draftFilters.mealType == type) null else type
+            it.copy(draftFilters = it.draftFilters.copy(mealType = next))
+        }
+        requestFilterPreview()
+    }
+
+    /** "DIEET" (Vegetarisch/Veganistisch) — single-select, same toggle-off-if-already-selected
+     *  behavior as [updateDraftMealType]. "Glutenvrij" isn't handled here — see [toggleDraftAllergen]. */
+    fun updateDraftDietPreference(diet: DietPreference) {
+        _uiState.update {
+            val next = if (it.draftFilters.dietPreference == diet) null else diet
+            it.copy(draftFilters = it.draftFilters.copy(dietPreference = next))
+        }
+        requestFilterPreview()
+    }
+
+    /** ALLERGENEN VERMIJDEN chips, and "Glutenvrij" in DIEET (both toggle [Allergen.GLUTEN] —
+     *  the same underlying exclusion, not two independent flags). */
+    fun toggleDraftAllergen(allergen: Allergen) {
+        _uiState.update {
+            val current = it.draftFilters.excludedAllergens
+            val updated = if (allergen in current) current - allergen else current + allergen
+            it.copy(draftFilters = it.draftFilters.copy(excludedAllergens = updated))
+        }
+        requestFilterPreview()
+    }
+
+    private fun requestFilterPreview() {
+        filterPreviewJob?.cancel()
+        filterPreviewJob = viewModelScope.launch {
+            delay(400)
+            _uiState.update { it.copy(isLoadingFilterPreview = true) }
+            val state = _uiState.value
+            recipeRepository.countMatchingRecipes(state.searchQuery, state.draftFilters)
+                .onSuccess { count -> _uiState.update { it.copy(filterPreviewCount = count, isLoadingFilterPreview = false) } }
+                .onFailure { _uiState.update { it.copy(isLoadingFilterPreview = false) } }
+        }
     }
 
     /** Asks Claude to invent one recipe from the household's current inventory, optionally steered by [wish]. */
