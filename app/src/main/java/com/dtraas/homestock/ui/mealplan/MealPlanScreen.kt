@@ -43,6 +43,7 @@ import androidx.compose.material.icons.filled.DinnerDining
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FreeBreakfast
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.LunchDining
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlaylistAdd
@@ -87,6 +88,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -170,6 +172,8 @@ fun MealPlanScreen(
     val alreadyOnListFormat = stringResource(R.string.meal_plan_product_already_on_shopping_list_format)
     val removedFormat = stringResource(R.string.meal_plan_removed_format)
     val undoLabel = stringResource(R.string.common_undo)
+    val hintCardPreferences = application.container.hintCardPreferences
+    val missingIngredientsCollapsed by hintCardPreferences.mealPlanMissingIngredientsCollapsed.collectAsState()
 
     // Tapping CompactPlannedRow's "toevoegen aan boodschappenlijst" button otherwise gives no
     // feedback that anything happened — this confirms it, and says which of the two outcomes
@@ -220,6 +224,10 @@ fun MealPlanScreen(
             if (uiState.missingIngredientsForWeek.isNotEmpty()) {
                 MissingIngredientsBar(
                     count = uiState.missingIngredientsForWeek.size,
+                    collapsed = missingIngredientsCollapsed,
+                    onToggleCollapsed = {
+                        hintCardPreferences.setMealPlanMissingIngredientsCollapsed(!missingIngredientsCollapsed)
+                    },
                     onAddToList = viewModel::addMissingIngredientsForWeekToShoppingList,
                 )
             }
@@ -1038,36 +1046,57 @@ private fun RemoveMealIconButton(onRemove: () -> Unit) {
     }
 }
 
-/** Pinned above the nav bar, only shown once [count] > 0 — the "plan -> shop" loop closer. */
+/** Pinned above the nav bar, only shown once [count] > 0 — the "plan -> shop" loop closer.
+ *  [collapsed] (persisted per-device via [HintCardPreferences], same as
+ *  [ExpiringSoonCard]/[CookWithWhatYouHaveCard]) hides the subtitle and the "Op lijst" button,
+ *  leaving just the title row — toggled by tapping that row anywhere, since nothing else in it
+ *  has its own click action to conflict with. */
 @Composable
-private fun MissingIngredientsBar(count: Int, onAddToList: () -> Unit) {
+private fun MissingIngredientsBar(count: Int, collapsed: Boolean, onToggleCollapsed: () -> Unit, onAddToList: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceContainer)) {
         HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
         Row(
-            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 10.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable(onClick = onToggleCollapsed)
+                .padding(horizontal = 16.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = pluralStringResource(R.plurals.meal_plan_missing_ingredients_title, count, count),
-                    style = MaterialTheme.typography.bodyMedium,
-                    fontWeight = FontWeight.Bold,
-                )
-                Text(
-                    text = stringResource(R.string.meal_plan_missing_ingredients_subtitle),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Row(modifier = Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f, fill = false)) {
+                    Text(
+                        text = pluralStringResource(R.plurals.meal_plan_missing_ingredients_title, count, count),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    if (!collapsed) {
+                        Text(
+                            text = stringResource(R.string.meal_plan_missing_ingredients_subtitle),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+                Icon(
+                    imageVector = Icons.Filled.KeyboardArrowDown,
+                    contentDescription = stringResource(
+                        if (collapsed) R.string.hint_card_expand_cd else R.string.hint_card_collapse_cd,
+                    ),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 6.dp).rotate(if (collapsed) 0f else 180f),
                 )
             }
-            Button(
-                onClick = onAddToList,
-                colors = androidx.compose.material3.ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary,
-                    contentColor = MaterialTheme.colorScheme.onSecondary,
-                ),
-                modifier = Modifier.height(46.dp).padding(start = 12.dp),
-            ) {
-                Text(stringResource(R.string.recipes_add_missing_short))
+            if (!collapsed) {
+                Button(
+                    onClick = onAddToList,
+                    colors = androidx.compose.material3.ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary,
+                        contentColor = MaterialTheme.colorScheme.onSecondary,
+                    ),
+                    modifier = Modifier.height(46.dp).padding(start = 12.dp),
+                ) {
+                    Text(stringResource(R.string.recipes_add_missing_short))
+                }
             }
         }
     }

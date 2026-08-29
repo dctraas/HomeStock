@@ -16,6 +16,8 @@
     <string name="common_save">Opslaan</string>
     <string name="common_now">Nu</string>
     <string name="common_undo">Ongedaan maken</string>
+    <string name="hint_card_expand_cd">Uitklappen</string>
+    <string name="hint_card_collapse_cd">Inklappen</string>
     <string name="quantity_decrease_cd">Minder</string>
     <string name="quantity_increase_cd">Meer</string>
     <string name="search_clear_cd">Zoekopdracht wissen</string>

@@ -15,6 +15,7 @@ import com.dtraas.homestock.data.repository.ExportPreferences
 import com.dtraas.homestock.data.repository.FeedbackRepository
 import com.dtraas.homestock.data.repository.HouseholdMembersRepository
 import com.dtraas.homestock.data.repository.HouseholdRepository
+import com.dtraas.homestock.data.repository.HintCardPreferences
 import com.dtraas.homestock.data.repository.HouseholdSession
 import com.dtraas.homestock.data.repository.InventoryPreferences
 import com.dtraas.homestock.data.repository.InventoryRepository
@@ -66,6 +67,7 @@ class AppContainer(context: Context) {
     val themePreferences: ThemePreferences = ThemePreferences(context)
     val exportPreferences: ExportPreferences = ExportPreferences(context)
     val inventoryPreferences: InventoryPreferences = InventoryPreferences(context)
+    val hintCardPreferences: HintCardPreferences = HintCardPreferences(context)
     val analyticsRepository: AnalyticsRepository = AnalyticsRepository(context)
     val remoteConfigRepository: RemoteConfigRepository = RemoteConfigRepository(context)
     val onboardingTourPreferences: OnboardingTourPreferences = OnboardingTourPreferences(context)

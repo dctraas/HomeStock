@@ -16,6 +16,8 @@
     <string name="common_save">Save</string>
     <string name="common_now">Now</string>
     <string name="common_undo">Undo</string>
+    <string name="hint_card_expand_cd">Expand</string>
+    <string name="hint_card_collapse_cd">Collapse</string>
     <string name="quantity_decrease_cd">Decrease</string>
     <string name="quantity_increase_cd">Increase</string>
     <string name="search_clear_cd">Clear search</string>

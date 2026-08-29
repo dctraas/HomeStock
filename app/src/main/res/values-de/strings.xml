@@ -16,6 +16,8 @@
     <string name="common_save">Speichern</string>
     <string name="common_now">Jetzt</string>
     <string name="common_undo">Rückgängig machen</string>
+    <string name="hint_card_expand_cd">Ausklappen</string>
+    <string name="hint_card_collapse_cd">Einklappen</string>
     <string name="quantity_decrease_cd">Weniger</string>
     <string name="quantity_increase_cd">Mehr</string>
     <string name="search_clear_cd">Suche löschen</string>

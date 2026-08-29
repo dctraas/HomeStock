@@ -51,6 +51,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Kitchen
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Lock
@@ -107,6 +108,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -208,6 +210,8 @@ fun InventoryScreen(
     val displayName by deviceProfile.displayName.collectAsState()
     val photoPath by deviceProfile.photoPath.collectAsState()
     val unreadNoticeCount by application.container.dismissedNoticesStore.unreadCount.collectAsState()
+    val hintCardPreferences = application.container.hintCardPreferences
+    val expiringSoonCollapsed by hintCardPreferences.inventoryExpiringSoonCollapsed.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
     val removedFormat = stringResource(R.string.inventory_removed_snackbar_format)
@@ -366,6 +370,8 @@ fun InventoryScreen(
                 if (uiState.expiringSoonItems.isNotEmpty()) {
                     ExpiringSoonCard(
                         items = uiState.expiringSoonItems,
+                        collapsed = expiringSoonCollapsed,
+                        onToggleCollapsed = { hintCardPreferences.setInventoryExpiringSoonCollapsed(!expiringSoonCollapsed) },
                         onItemClick = { item -> onProductClick(item.barcode) },
                         onSeeAllClick = { viewModel.onExpiringSoonFilterChange(true) },
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -760,10 +766,17 @@ private fun InventoryHeader(
  * filter rather than opening a separate screen — same list, just narrowed to everything, not
  * only the 3 shown here. The mockup's "Kook hiermee" recipe-suggestion button is deliberately
  * not built here, out of scope for this pass.
+ *
+ * The header row itself (title + chevron, "Alles →" excepted — that keeps its own separate tap
+ * target) toggles [collapsed], a per-device choice persisted via [HintCardPreferences] — see
+ * that class's own doc for why a persisted collapse beats a one-time dismiss here. Collapsed,
+ * only the header shows, freeing the grid below from this card's chip row entirely.
  */
 @Composable
 private fun ExpiringSoonCard(
     items: List<InventoryItemWithProduct>,
+    collapsed: Boolean,
+    onToggleCollapsed: () -> Unit,
     onItemClick: (InventoryItemWithProduct) -> Unit,
     onSeeAllClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -775,33 +788,48 @@ private fun ExpiringSoonCard(
         shape = SoftCardShape,
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth().clickable(onClick = onToggleCollapsed),
+            ) {
                 Text(
                     text = stringResource(R.string.inventory_expiring_soon_title),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f),
                 )
-                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable(onClick = onSeeAllClick)) {
-                    Text(
-                        text = stringResource(R.string.inventory_filter_all),
-                        style = MaterialTheme.typography.labelLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                    Icon(
-                        Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(18.dp),
-                    )
+                if (!collapsed) {
+                    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.clickable(onClick = onSeeAllClick)) {
+                        Text(
+                            text = stringResource(R.string.inventory_filter_all),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                        Icon(
+                            Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp),
+                        )
+                    }
                 }
+                Icon(
+                    imageVector = Icons.Filled.KeyboardArrowDown,
+                    contentDescription = stringResource(
+                        if (collapsed) R.string.hint_card_expand_cd else R.string.hint_card_collapse_cd,
+                    ),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(start = 4.dp).rotate(if (collapsed) 0f else 180f),
+                )
             }
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                items.forEach { item ->
-                    ExpiringSoonChip(item = item, onClick = { onItemClick(item) }, modifier = Modifier.weight(1f))
+            if (!collapsed) {
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items.forEach { item ->
+                        ExpiringSoonChip(item = item, onClick = { onItemClick(item) }, modifier = Modifier.weight(1f))
+                    }
                 }
             }
         }

@@ -49,6 +49,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Link
 import androidx.compose.material.icons.filled.Public
 import androidx.compose.material.icons.filled.RestaurantMenu
@@ -98,6 +99,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
@@ -172,6 +174,8 @@ fun RecipesScreen(
     // subscribed at screen level regardless since [RecipesScreen] already recomposes on
     // household changes and this avoids a subscribe/unsubscribe blip every time that tab opens.
     val inventoryItems by application.container.inventoryRepository.observeInventoryWithProduct().collectAsState(initial = emptyList())
+    val hintCardPreferences = application.container.hintCardPreferences
+    val cookWithWhatYouHaveCollapsed by hintCardPreferences.recipesCookWithWhatYouHaveCollapsed.collectAsState()
     val languageTag = LocalConfiguration.current.locales[0].language
     val nowMillis = remember { System.currentTimeMillis() }
     val inventoryWishChips = remember(inventoryItems, nowMillis) {
@@ -304,6 +308,10 @@ fun RecipesScreen(
                 CookWithWhatYouHaveCard(
                     expiringSoonCount = expiringSoonChips.size,
                     expiringSoonNames = expiringSoonChips.take(3).map { it.name },
+                    collapsed = cookWithWhatYouHaveCollapsed,
+                    onToggleCollapsed = {
+                        hintCardPreferences.setRecipesCookWithWhatYouHaveCollapsed(!cookWithWhatYouHaveCollapsed)
+                    },
                     onClick = { viewModel.selectTab(RecipesTab.INVENTORY) },
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
@@ -1274,14 +1282,19 @@ private fun RecipesTabRow(selected: RecipesTab, onSelect: (RecipesTab) -> Unit) 
  * Persistent "Kook wat je hebt" card, always shown atop Ontdek (BROWSE) — not an opt-in banner
  * the way this used to work. [TopAppBarContainerGradientEnd] is the same dark-green token the
  * app's gradient headers bottom out to (see MoreScreen's PremiumCard for the same reuse), so it
- * reads as a promoted shortcut rather than just another recipe result. Tapping it always jumps
- * to [RecipesTab.INVENTORY] — that tab's hero + grid is the full version of what this card only
- * teases with a name or two.
+ * reads as a promoted shortcut rather than just another recipe result. Tapping the card anywhere
+ * (collapsed or not) still jumps to [RecipesTab.INVENTORY] — collapsing it only hides the badge/
+ * subtitle/arrow below the title, it never turns off the shortcut itself. The chevron is its own
+ * tap target (an [IconButton] inside the card's own clickable area), so toggling [collapsed]
+ * doesn't also fire [onClick] — same [HintCardPreferences]-backed persisted collapse as
+ * [ExpiringSoonCard]/the Maaltijden missing-ingredients bar.
  */
 @Composable
 private fun CookWithWhatYouHaveCard(
     expiringSoonCount: Int,
     expiringSoonNames: List<String>,
+    collapsed: Boolean,
+    onToggleCollapsed: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -1296,25 +1309,27 @@ private fun CookWithWhatYouHaveCard(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                if (expiringSoonCount > 0) {
-                    Surface(shape = RoundedCornerShape(percent = 50), color = MaterialTheme.colorScheme.secondary) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
-                        ) {
-                            Icon(
-                                imageVector = Icons.Filled.Timer,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSecondary,
-                                modifier = Modifier.size(12.dp),
-                            )
-                            Text(
-                                text = pluralStringResource(R.plurals.recipes_hero_expiring_badge, expiringSoonCount, expiringSoonCount),
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSecondary,
-                                modifier = Modifier.padding(start = 4.dp),
-                            )
+                if (!collapsed) {
+                    if (expiringSoonCount > 0) {
+                        Surface(shape = RoundedCornerShape(percent = 50), color = MaterialTheme.colorScheme.secondary) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Timer,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSecondary,
+                                    modifier = Modifier.size(12.dp),
+                                )
+                                Text(
+                                    text = pluralStringResource(R.plurals.recipes_hero_expiring_badge, expiringSoonCount, expiringSoonCount),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSecondary,
+                                    modifier = Modifier.padding(start = 4.dp),
+                                )
+                            }
                         }
                     }
                 }
@@ -1323,27 +1338,41 @@ private fun CookWithWhatYouHaveCard(
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = Color.White,
-                    modifier = Modifier.padding(top = 8.dp),
+                    modifier = Modifier.padding(top = if (collapsed) 0.dp else 8.dp),
                 )
-                Text(
-                    text = if (expiringSoonNames.isNotEmpty()) {
-                        stringResource(R.string.recipes_hero_card_subtitle_format, expiringSoonNames.joinToString(", "))
-                    } else {
-                        stringResource(R.string.recipes_hero_card_subtitle_empty)
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = OnTopAppBarContainerAccent,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
+                if (!collapsed) {
+                    Text(
+                        text = if (expiringSoonNames.isNotEmpty()) {
+                            stringResource(R.string.recipes_hero_card_subtitle_format, expiringSoonNames.joinToString(", "))
+                        } else {
+                            stringResource(R.string.recipes_hero_card_subtitle_empty)
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = OnTopAppBarContainerAccent,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                }
             }
-            Surface(shape = CircleShape, color = Color.White, modifier = Modifier.padding(start = 12.dp)) {
+            if (!collapsed) {
+                Surface(shape = CircleShape, color = Color.White, modifier = Modifier.padding(start = 12.dp)) {
+                    Icon(
+                        imageVector = Icons.Filled.ArrowForward,
+                        contentDescription = stringResource(R.string.recipes_hero_card_cta_cd),
+                        tint = TopAppBarContainerGradientEnd,
+                        modifier = Modifier.padding(10.dp).size(20.dp),
+                    )
+                }
+            }
+            IconButton(onClick = onToggleCollapsed, modifier = Modifier.padding(start = 4.dp)) {
                 Icon(
-                    imageVector = Icons.Filled.ArrowForward,
-                    contentDescription = stringResource(R.string.recipes_hero_card_cta_cd),
-                    tint = TopAppBarContainerGradientEnd,
-                    modifier = Modifier.padding(10.dp).size(20.dp),
+                    imageVector = Icons.Filled.KeyboardArrowDown,
+                    contentDescription = stringResource(
+                        if (collapsed) R.string.hint_card_expand_cd else R.string.hint_card_collapse_cd,
+                    ),
+                    tint = Color.White,
+                    modifier = Modifier.rotate(if (collapsed) 0f else 180f),
                 )
             }
         }
