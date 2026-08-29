@@ -990,7 +990,7 @@
     <string name="recipes_allergen_menu_header">Allergenen uitsluiten</string>
     <string name="recipes_area_match_cd">Sluit aan bij jouw taal/regio</string>
     <string name="recipes_match_complete_cd">Alles in huis</string>
-    <string name="recipes_hero_card_title">Kook wat je hebt</string>
+    <string name="recipes_hero_card_title">Kook met wat je hebt</string>
     <string name="recipes_hero_card_subtitle_format">Nu koken met: %1$s</string>
     <string name="recipes_hero_card_subtitle_empty">Bekijk recepten die passen bij jouw voorraad.</string>
     <string name="recipes_hero_card_cta_cd">Bekijk recepten uit je voorraad</string>

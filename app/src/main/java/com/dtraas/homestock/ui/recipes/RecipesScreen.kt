@@ -1236,15 +1236,15 @@ private fun RecipesTabRow(selected: RecipesTab, onSelect: (RecipesTab) -> Unit) 
             .padding(horizontal = 16.dp, vertical = 8.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        // Mijn recepten, Uit je voorraad, Ontdek, AI — per de Claude Design mockup. Favorieten en
-        // Eigen recepten zijn niet langer twee losse tabbladen (een recept kan allebei zijn),
-        // maar één gecombineerde "Mijn recepten" met Alles/Favoriet/Zelf-chips erin (zie
-        // MineFilterRow) in plaats van een harde tab-knip.
+        // Ontdek, Mijn recepten, AI, Uit je voorraad — per expliciet verzoek. Favorieten en Eigen
+        // recepten zijn niet langer twee losse tabbladen (een recept kan allebei zijn), maar één
+        // gecombineerde "Mijn recepten" met Alles/Favoriet/Zelf-chips erin (zie MineFilterRow) in
+        // plaats van een harde tab-knip.
         val tabs = listOf(
-            RecipesTab.MINE to R.string.recipes_tab_mine,
-            RecipesTab.INVENTORY to R.string.recipes_tab_inventory,
             RecipesTab.BROWSE to R.string.recipes_tab_browse,
+            RecipesTab.MINE to R.string.recipes_tab_mine,
             RecipesTab.AI to R.string.recipes_tab_ai,
+            RecipesTab.INVENTORY to R.string.recipes_tab_inventory,
         )
         tabs.forEach { (tab, labelRes) ->
             if (tab == RecipesTab.AI) {

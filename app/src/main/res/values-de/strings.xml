@@ -986,7 +986,7 @@
     <string name="recipes_allergen_menu_header">Allergene ausschließen</string>
     <string name="recipes_area_match_cd">Passt zu deiner Sprache/Region</string>
     <string name="recipes_match_complete_cd">Alles vorhanden</string>
-    <string name="recipes_hero_card_title">Koche, was du hast</string>
+    <string name="recipes_hero_card_title">Koche mit dem, was du hast</string>
     <string name="recipes_hero_card_subtitle_format">Jetzt kochen mit: %1$s</string>
     <string name="recipes_hero_card_subtitle_empty">Entdecke Rezepte, die zu deinem Vorrat passen.</string>
     <string name="recipes_hero_card_cta_cd">Rezepte aus deinem Vorrat ansehen</string>

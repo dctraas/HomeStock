@@ -377,11 +377,11 @@ fun InventoryScreen(
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
-                LocationChipRow(
+                CategoryChipRow(
                     totalCount = uiState.totalCount,
-                    groupedByLocation = uiState.groupedByLocation,
-                    selectedLocation = uiState.selectedLocation,
-                    onSelectLocation = viewModel::onLocationFilterChange,
+                    groupedByCategory = uiState.groupedInventory,
+                    selectedCategory = uiState.selectedCategory,
+                    onSelectCategory = viewModel::onCategoryFilterChange,
                     modifier = Modifier.padding(top = 4.dp, bottom = 4.dp),
                 )
             }
@@ -882,25 +882,25 @@ private val Location.icon: ImageVector
     }
 
 /**
- * Always-visible "Alles"/per-[Location] filter row — replaces having to open
- * [InventoryFilterSheet] just to narrow by location, per the Claude Design mockup's "Alles 82 ·
- * Koelkast 24 · Vries 12 · Voorraadkast …" chip row. Reuses the same
- * [InventoryUiState.selectedLocation]/[InventoryViewModel.onLocationFilterChange] the filter
- * sheet's own location control already writes to, so the two never disagree. Fixed 4 locations
- * shown regardless of whether each currently has any items (a location with 0 is still a valid
- * place to look, and a fixed set of chips doesn't jump around as items move between them).
+ * Always-visible "Alles"/per-[Category] filter row — replaces having to open
+ * [InventoryFilterSheet] just to narrow by category, per explicit request (this used to be the
+ * same idea but grouped by [Location] — "Alles 82 · Koelkast 24 · Vries 12 · …" — swapped for
+ * category since that's the grouping a household actually shops by, "Zuivel 12 · Vlees & Vis 8 ·
+ * …"). Location filtering isn't gone, just no longer duplicated here — it still lives in
+ * [InventoryFilterSheet] alongside this same category control. Reuses the same
+ * [InventoryUiState.selectedCategory]/[InventoryViewModel.onCategoryFilterChange] that sheet's
+ * own category chips already write to, so the two never disagree. Fixed set of categories shown
+ * regardless of whether each currently has any items (a category with 0 is still a valid place
+ * to look, and a fixed set of chips doesn't jump around as items move between them).
  */
 @Composable
-private fun LocationChipRow(
+private fun CategoryChipRow(
     totalCount: Int,
-    groupedByLocation: Map<String?, List<InventoryItemWithProduct>>,
-    selectedLocation: String?,
-    onSelectLocation: (String?) -> Unit,
+    groupedByCategory: Map<Category, List<InventoryItemWithProduct>>,
+    selectedCategory: Category?,
+    onSelectCategory: (Category?) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    fun countFor(location: Location): Int =
-        groupedByLocation.entries.firstOrNull { it.key?.equals(location.storageKey, ignoreCase = true) == true }?.value?.size ?: 0
-
     val selectedColors = FilterChipDefaults.filterChipColors(
         selectedContainerColor = MaterialTheme.colorScheme.primary,
         selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
@@ -913,19 +913,19 @@ private fun LocationChipRow(
     ) {
         item {
             FilterChip(
-                selected = selectedLocation == null,
-                onClick = { onSelectLocation(null) },
+                selected = selectedCategory == null,
+                onClick = { onSelectCategory(null) },
                 label = { Text("${stringResource(R.string.inventory_filter_all)} $totalCount") },
                 colors = selectedColors,
             )
         }
-        items(Location.entries) { location ->
-            val isSelected = selectedLocation?.equals(location.storageKey, ignoreCase = true) == true
+        items(Category.entries.sortedBy { it.sortOrder }) { category ->
+            val isSelected = selectedCategory == category
             FilterChip(
                 selected = isSelected,
-                onClick = { onSelectLocation(if (isSelected) null else location.storageKey) },
-                label = { Text("${stringResource(location.labelRes)} ${countFor(location)}") },
-                leadingIcon = { Icon(location.icon, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                onClick = { onSelectCategory(if (isSelected) null else category) },
+                label = { Text("${stringResource(category.displayNameRes)} ${groupedByCategory[category]?.size ?: 0}") },
+                leadingIcon = { Icon(category.icon, contentDescription = null, modifier = Modifier.size(16.dp)) },
                 colors = selectedColors,
             )
         }
