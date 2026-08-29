@@ -61,8 +61,6 @@ import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.WifiOff
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Badge
-import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -70,11 +68,12 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -1248,9 +1247,10 @@ private fun RecipesTabRow(selected: RecipesTab, onSelect: (RecipesTab) -> Unit) 
         )
         tabs.forEach { (tab, labelRes) ->
             if (tab == RecipesTab.AI) {
-                // Coral + sparkle, deliberately distinct from the other three plain chips — AI
-                // is a different kind of tab (a form, not a result list, see RecipesTab's doc),
-                // and the styling signals that before anyone taps it.
+                // Sparkle + bold label, same plain colors as the other three chips now (used to
+                // also get its own coral container color, dropped per explicit request) — AI is
+                // still a different kind of tab (a form, not a result list, see RecipesTab's
+                // doc), just signaled by the icon/weight alone rather than a background color too.
                 FilterChip(
                     selected = selected == tab,
                     onClick = { onSelect(tab) },
@@ -1258,14 +1258,6 @@ private fun RecipesTabRow(selected: RecipesTab, onSelect: (RecipesTab) -> Unit) 
                     leadingIcon = {
                         Icon(Icons.Filled.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
                     },
-                    colors = FilterChipDefaults.filterChipColors(
-                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                        labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        iconColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                        selectedContainerColor = MaterialTheme.colorScheme.secondary,
-                        selectedLabelColor = MaterialTheme.colorScheme.onSecondary,
-                        selectedLeadingIconColor = MaterialTheme.colorScheme.onSecondary,
-                    ),
                 )
             } else {
                 FilterChip(
@@ -1524,40 +1516,88 @@ private fun RecipesHeader(
                     )
                 }
             }
-            // Two direct icon buttons instead of one "Meer opties" menu — each toggle/filter is
-            // one tap away now rather than a menu-then-item detour (per the design review: "de
-            // knoppen mogen los rechtsboven staan"). Mijn recepten and Uit je voorraad both have
-            // their own fixed grid (no list/grid toggle — see RecipesScreen's `else` branch), and
-            // AI has no list at all, so that button only ever shows for Ontdek.
-            Row(
-                modifier = Modifier.align(Alignment.CenterEnd),
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                if (tab == RecipesTab.BROWSE) {
-                    IconButton(onClick = onToggleViewMode) {
-                        Icon(
-                            imageVector = if (viewMode == RecipesViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
-                            contentDescription = stringResource(
-                                if (viewMode == RecipesViewMode.LIST) R.string.recipes_show_as_grid_cd else R.string.recipes_show_as_list_cd,
-                            ),
-                            tint = contentColor,
-                        )
-                    }
+            // View-mode toggle only — the allergen filter moved down beside the search field
+            // (see below), matching Voorraad's own search-row-plus-filter-button layout. Mijn
+            // recepten and Uit je voorraad both have their own fixed grid (no list/grid toggle —
+            // see RecipesScreen's `else` branch), and AI has no list at all, so this button only
+            // ever shows for Ontdek.
+            if (tab == RecipesTab.BROWSE) {
+                IconButton(onClick = onToggleViewMode, modifier = Modifier.align(Alignment.CenterEnd)) {
+                    Icon(
+                        imageVector = if (viewMode == RecipesViewMode.LIST) Icons.Filled.GridView else Icons.Filled.ViewList,
+                        contentDescription = stringResource(
+                            if (viewMode == RecipesViewMode.LIST) R.string.recipes_show_as_grid_cd else R.string.recipes_show_as_list_cd,
+                        ),
+                        tint = contentColor,
+                    )
                 }
+            }
+        }
+        if (tab == RecipesTab.BROWSE || tab == RecipesTab.MINE) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            ) {
+                // Ontdek submits a fresh Spoonacular query on IME action (see onSearch); Mijn
+                // recepten's own list is small and already fully loaded, so it just live-filters
+                // as you type instead (see RecipesUiState.mineSearchQuery's doc) — same field,
+                // two different query/onChange sources depending on which tab is showing.
+                SearchField(
+                    query = if (tab == RecipesTab.MINE) mineSearchQuery else searchQuery,
+                    onQueryChange = if (tab == RecipesTab.MINE) onMineSearchQueryChange else onSearchQueryChange,
+                    placeholder = stringResource(
+                        if (tab == RecipesTab.MINE) R.string.recipes_mine_search_placeholder else R.string.recipes_search_placeholder,
+                    ),
+                    dense = true,
+                    onSearch = onSearch,
+                    // A white pill instead of the default outline styling, which would barely
+                    // read against the green gradient — same white-on-green pairing as
+                    // Voorraad's header search field.
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White,
+                        disabledContainerColor = Color.White,
+                        focusedBorderColor = Color.Transparent,
+                        unfocusedBorderColor = Color.Transparent,
+                        focusedTextColor = SageGreenPrimary,
+                        unfocusedTextColor = SageGreenPrimary,
+                        focusedLeadingIconColor = SageGreenPrimary,
+                        unfocusedLeadingIconColor = SageGreenPrimary,
+                        focusedTrailingIconColor = SageGreenPrimary,
+                        unfocusedTrailingIconColor = SageGreenPrimary,
+                        cursorColor = SageGreenPrimary,
+                        focusedPlaceholderColor = SageGreenPrimary.copy(alpha = 0.6f),
+                        unfocusedPlaceholderColor = SageGreenPrimary.copy(alpha = 0.6f),
+                    ),
+                    modifier = Modifier.weight(1f),
+                )
                 // Allergenen zijn alleen zinvol tegen Spoonacular's brede catalogus op
                 // Ontdekken — Mijn recepten/Uit je voorraad zijn al beperkt tot wat het
-                // huishouden zelf al heeft opgeslagen of in voorraad heeft.
+                // huishouden zelf al heeft opgeslagen of in voorraad heeft. Same white
+                // FilledIconButton + coral dot badge as Voorraad's own filter button, next to
+                // the search field instead of up with the title, per explicit request.
                 if (tab == RecipesTab.BROWSE) {
                     Box {
                         val hasActiveAllergenFilter = excludedAllergens.isNotEmpty()
-                        IconButton(onClick = { menuExpanded = true }) {
-                            if (hasActiveAllergenFilter) {
-                                BadgedBox(badge = { Badge() }) {
-                                    Icon(Icons.Filled.Tune, contentDescription = stringResource(R.string.recipes_filter_cd), tint = contentColor)
-                                }
-                            } else {
-                                Icon(Icons.Filled.Tune, contentDescription = stringResource(R.string.recipes_filter_cd), tint = contentColor)
-                            }
+                        FilledIconButton(
+                            onClick = { menuExpanded = true },
+                            shape = SoftCardShape,
+                            colors = IconButtonDefaults.filledIconButtonColors(
+                                containerColor = Color.White,
+                                contentColor = SageGreenPrimary,
+                            ),
+                        ) {
+                            Icon(Icons.Filled.Tune, contentDescription = stringResource(R.string.recipes_filter_cd))
+                        }
+                        if (hasActiveAllergenFilter) {
+                            Box(
+                                modifier = Modifier
+                                    .align(Alignment.TopEnd)
+                                    .padding(6.dp)
+                                    .size(8.dp)
+                                    .background(MaterialTheme.colorScheme.secondary, CircleShape),
+                            )
                         }
                         DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
                             Text(
@@ -1580,41 +1620,6 @@ private fun RecipesHeader(
                     }
                 }
             }
-        }
-        if (tab == RecipesTab.BROWSE || tab == RecipesTab.MINE) {
-            // Ontdek submits a fresh Spoonacular query on IME action (see onSearch); Mijn
-            // recepten's own list is small and already fully loaded, so it just live-filters as
-            // you type instead (see RecipesUiState.mineSearchQuery's doc) — same field, two
-            // different query/onChange sources depending on which tab is showing.
-            SearchField(
-                query = if (tab == RecipesTab.MINE) mineSearchQuery else searchQuery,
-                onQueryChange = if (tab == RecipesTab.MINE) onMineSearchQueryChange else onSearchQueryChange,
-                placeholder = stringResource(
-                    if (tab == RecipesTab.MINE) R.string.recipes_mine_search_placeholder else R.string.recipes_search_placeholder,
-                ),
-                dense = true,
-                onSearch = onSearch,
-                // A white pill instead of the default outline styling, which would barely read
-                // against the green gradient — same white-on-green pairing as Voorraad's header
-                // search field.
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    disabledContainerColor = Color.White,
-                    focusedBorderColor = Color.Transparent,
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedTextColor = SageGreenPrimary,
-                    unfocusedTextColor = SageGreenPrimary,
-                    focusedLeadingIconColor = SageGreenPrimary,
-                    unfocusedLeadingIconColor = SageGreenPrimary,
-                    focusedTrailingIconColor = SageGreenPrimary,
-                    unfocusedTrailingIconColor = SageGreenPrimary,
-                    cursorColor = SageGreenPrimary,
-                    focusedPlaceholderColor = SageGreenPrimary.copy(alpha = 0.6f),
-                    unfocusedPlaceholderColor = SageGreenPrimary.copy(alpha = 0.6f),
-                ),
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
-            )
         }
     }
 }

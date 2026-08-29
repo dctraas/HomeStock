@@ -2763,7 +2763,10 @@ private fun ReorderableStoreList(
                     }
 
                     if (inUse) {
-                        val indent = Modifier.padding(start = 50.dp, top = 8.dp)
+                        // Right-aligned rather than indented under the icon column above it —
+                        // per explicit request. Both branches (already-customized vs. not) share
+                        // this so the button doesn't visually jump sides depending on that state.
+                        val indent = Modifier.padding(top = 8.dp).align(Alignment.End)
                         if (customized) {
                             // The per-store gangpad chip row (Groente & Fruit > Zuivel > ...)
                             // used to preview here too, but stacked across every "in use" store
