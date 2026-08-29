@@ -68,6 +68,7 @@ import androidx.compose.material.icons.filled.Tune
 import androidx.compose.material.icons.filled.ViewList
 import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material.icons.outlined.StarBorder
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Badge
 import androidx.compose.material3.Card
@@ -96,11 +97,13 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -214,7 +217,6 @@ fun InventoryScreen(
     val expiringSoonCollapsed by hintCardPreferences.inventoryExpiringSoonCollapsed.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
-    val removedFormat = stringResource(R.string.inventory_removed_snackbar_format)
     val undoLabel = stringResource(R.string.common_undo)
     val addedToShoppingListMessage = stringResource(R.string.inventory_added_to_shopping_list_snackbar)
     val bulkAddedFormat = stringResource(R.string.inventory_bulk_added_to_shopping_list_format)
@@ -251,21 +253,19 @@ fun InventoryScreen(
         selectedBarcodes = if (barcode in selectedBarcodes) selectedBarcodes - barcode else selectedBarcodes + barcode
     }
 
-    fun deleteWithUndo(item: InventoryItemWithProduct) {
-        viewModel.removeFromInventory(item.barcode)
-        coroutineScope.launch {
-            val result = snackbarHostState.showSnackbar(
-                message = removedFormat.format(item.name),
-                actionLabel = undoLabel,
-                // showSnackbar defaults to SnackbarDuration.Indefinite whenever an
-                // actionLabel is set, so without this the "ongedaan maken" snackbar
-                // would never auto-dismiss.
-                duration = SnackbarDuration.Short,
-            )
-            if (result == SnackbarResult.ActionPerformed) {
-                viewModel.restoreItem(item)
-            }
-        }
+    // Swipe-to-delete (and the row's own overflow-menu "Verwijderen", which shares the same
+    // onDelete callback) used to just remove the item outright with an "ongedaan maken"
+    // snackbar. Per explicit request this now follows the exact same opgebruikt/weggegooid
+    // flow as ProductDetailScreen's own Opgebruikt button instead — see that screen's
+    // pendingRemovalWasted for the identical pattern this mirrors. No undo any more either,
+    // same as that button: the used-up/wasted question already is the "are you sure", and an
+    // undo here would silently drop whichever of the two it was logged as.
+    var pendingRemovalItem by remember { mutableStateOf<InventoryItemWithProduct?>(null) }
+    var pendingRemovalWasted by remember { mutableStateOf<Boolean?>(null) }
+    var removalQuantity by remember { mutableIntStateOf(1) }
+
+    fun requestRemoval(item: InventoryItemWithProduct) {
+        pendingRemovalItem = item
     }
 
     fun addToShoppingListWithFeedback(item: InventoryItemWithProduct) {
@@ -420,7 +420,7 @@ fun InventoryScreen(
                                 onLongClick = { toggleSelected(item.barcode) },
                                 onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
                                 onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
-                                onDelete = { deleteWithUndo(item) },
+                                onDelete = { requestRemoval(item) },
                                 onAddToShoppingList = { addToShoppingListWithFeedback(item) },
                                 onToggleFavorite = { viewModel.toggleFavorite(item) },
                                 modifier = Modifier.animateItem(),
@@ -442,7 +442,7 @@ fun InventoryScreen(
                                     onLongClick = { toggleSelected(item.barcode) },
                                     onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
                                     onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
-                                    onDelete = { deleteWithUndo(item) },
+                                    onDelete = { requestRemoval(item) },
                                     onAddToShoppingList = { addToShoppingListWithFeedback(item) },
                                     onToggleFavorite = { viewModel.toggleFavorite(item) },
                                     modifier = Modifier.animateItem(),
@@ -465,7 +465,7 @@ fun InventoryScreen(
                                     onLongClick = { toggleSelected(item.barcode) },
                                     onIncrease = { viewModel.setQuantity(item.barcode, item.quantity + 1) },
                                     onDecrease = { viewModel.setQuantity(item.barcode, item.quantity - 1) },
-                                    onDelete = { deleteWithUndo(item) },
+                                    onDelete = { requestRemoval(item) },
                                     onAddToShoppingList = { addToShoppingListWithFeedback(item) },
                                     onToggleFavorite = { viewModel.toggleFavorite(item) },
                                     modifier = Modifier.animateItem(),
@@ -562,6 +562,89 @@ fun InventoryScreen(
                 }
             },
             onDismiss = { showProfileDialog = false },
+        )
+    }
+
+    val removalItem = pendingRemovalItem
+    if (removalItem != null && pendingRemovalWasted == null) {
+        // Same choice, same wording as ProductDetailScreen's own Opgebruikt-button dialog —
+        // reuses those exact strings rather than near-duplicates, since it's meant to read as
+        // the identical flow reached from a different entry point.
+        AlertDialog(
+            onDismissRequest = { pendingRemovalItem = null },
+            title = { Text(stringResource(R.string.product_detail_delete_dialog_title)) },
+            text = { Text(stringResource(R.string.product_detail_delete_dialog_text_wasted_prompt)) },
+            confirmButton = {
+                Row {
+                    TextButton(
+                        onClick = {
+                            if (removalItem.quantity > 1) {
+                                removalQuantity = removalItem.quantity
+                                pendingRemovalWasted = false
+                            } else {
+                                viewModel.removeFromInventory(removalItem.barcode, wasted = false)
+                                pendingRemovalItem = null
+                            }
+                        },
+                    ) { Text(stringResource(R.string.product_detail_delete_used_up)) }
+                    TextButton(
+                        onClick = {
+                            if (removalItem.quantity > 1) {
+                                removalQuantity = removalItem.quantity
+                                pendingRemovalWasted = true
+                            } else {
+                                viewModel.removeFromInventory(removalItem.barcode, wasted = true)
+                                pendingRemovalItem = null
+                            }
+                        },
+                    ) { Text(stringResource(R.string.product_detail_delete_wasted), color = MaterialTheme.colorScheme.error) }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingRemovalItem = null }) { Text(stringResource(R.string.common_cancel)) }
+            },
+        )
+    }
+
+    val removalWasted = pendingRemovalWasted
+    if (removalItem != null && removalWasted != null) {
+        // Never more than what's actually there — QuantityStepper's own +/- only disables the
+        // − button at its minQuantity, it has no built-in cap, so the upper bound is enforced
+        // here in onIncrease instead.
+        // Cancelling here abandons the whole flow (both pending* reset), not just this step —
+        // it reads as "never mind" rather than "back to the previous question".
+        AlertDialog(
+            onDismissRequest = { pendingRemovalItem = null; pendingRemovalWasted = null },
+            title = {
+                Text(
+                    stringResource(
+                        if (removalWasted) R.string.product_detail_remove_quantity_wasted_title
+                        else R.string.product_detail_remove_quantity_used_up_title,
+                    ),
+                )
+            },
+            text = {
+                QuantityStepper(
+                    quantity = removalQuantity,
+                    onDecrease = { removalQuantity = (removalQuantity - 1).coerceAtLeast(1) },
+                    onIncrease = { removalQuantity = (removalQuantity + 1).coerceAtMost(removalItem.quantity) },
+                    minQuantity = 1,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        viewModel.removeQuantityFromInventory(removalItem.barcode, removalQuantity, removalWasted)
+                        pendingRemovalItem = null
+                        pendingRemovalWasted = null
+                    },
+                ) { Text(stringResource(R.string.product_detail_remove_quantity_confirm_action)) }
+            },
+            dismissButton = {
+                TextButton(onClick = { pendingRemovalItem = null; pendingRemovalWasted = null }) {
+                    Text(stringResource(R.string.common_cancel))
+                }
+            },
         )
     }
 
@@ -1371,7 +1454,14 @@ private fun InventoryRow(
             // Selection mode repurposes a tap/long-press for picking items, so a swipe here
             // would surprise-delete the wrong thing — only live outside selection mode.
             if (value != SwipeToDismissBoxValue.Settled && !selectionMode) onDelete()
-            true
+            // Always false, not true: onDelete() no longer removes anything itself — it opens
+            // the opgebruikt/weggegooid confirm flow (see InventoryScreen's requestRemoval),
+            // and the item's own quantity may end up only partially reduced rather than the row
+            // disappearing at all. Letting the swipe itself complete (true) would slide the row
+            // fully away regardless of what the dialog flow ends up doing; snapping back to
+            // Settled here instead leaves that entirely up to whether the row's underlying data
+            // actually changes.
+            false
         },
     )
     SwipeToDismissBox(

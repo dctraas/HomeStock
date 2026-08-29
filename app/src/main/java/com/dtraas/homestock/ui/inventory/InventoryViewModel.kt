@@ -245,8 +245,16 @@ class InventoryViewModel(
         }
     }
 
-    fun removeFromInventory(barcode: String) {
-        viewModelScope.launch { inventoryRepository.removeFromInventory(barcode) }
+    fun removeFromInventory(barcode: String, wasted: Boolean = false) {
+        viewModelScope.launch { inventoryRepository.removeFromInventory(barcode, wasted) }
+    }
+
+    /** See [InventoryRepository.removeQuantityFromInventory] — used instead of
+     *  [removeFromInventory] whenever the item's own quantity is more than 1 and the household
+     *  said how many were actually used up/wasted (the swipe-to-delete/Opgebruikt-of-weggegooid
+     *  flow), rather than assuming it was all of them. */
+    fun removeQuantityFromInventory(barcode: String, amount: Int, wasted: Boolean) {
+        viewModelScope.launch { inventoryRepository.removeQuantityFromInventory(barcode, amount, wasted) }
     }
 
     fun restoreItem(item: InventoryItemWithProduct) {
