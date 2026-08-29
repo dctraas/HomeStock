@@ -478,7 +478,12 @@ fun InventoryScreen(
                 LazyVerticalGrid(
                     columns = GridCells.Fixed(3),
                     modifier = Modifier.fillMaxSize(),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
+                    // Top kept separate from the other three sides — CategoryChipRow above
+                    // already ends in its own 4dp bottom margin, and the first CategoryHeader
+                    // this scrolls to adds its own 10dp of top padding again (GroupHeader), so
+                    // the usual 12dp here on top of both of those left a noticeably bigger gap
+                    // above the very first category than between any other two sections.
+                    contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 0.dp, bottom = 12.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                     verticalArrangement = Arrangement.spacedBy(10.dp),
                 ) {

@@ -2637,7 +2637,15 @@ private fun ReorderableStoreList(
                     modifier = Modifier
                         .fillMaxWidth()
                         .onGloballyPositioned { rowHeightPx = it.size.height.toFloat() }
-                        .padding(start = 4.dp, end = 8.dp, top = 10.dp, bottom = 10.dp),
+                        // An "in use" store ends in a TextButton/OutlinedButton (Gangvolgorde
+                        // aanpassen/Configureren), which already carries its own ~8dp vertical
+                        // content padding inside Material3's enforced 40dp button min-height —
+                        // stacking the usual 10dp bottom padding on top of that left a
+                        // noticeably bigger gap under that button than under any other card
+                        // edge. A store with nothing in use ends right on the plain header row
+                        // instead, which has no padding of its own to double up with, so it
+                        // keeps the full 10dp.
+                        .padding(start = 4.dp, end = 8.dp, top = 10.dp, bottom = if (inUse) 2.dp else 10.dp),
                 ) {
                     Row(verticalAlignment = Alignment.Top) {
                         // A real (not just long-press-after-a-hold) drag on this dedicated grip —
