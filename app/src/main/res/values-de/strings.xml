@@ -551,13 +551,10 @@
     <string name="inventory_search_placeholder">Vorrat durchsuchen…</string>
     <string name="inventory_filter_all">Alle</string>
     <string name="inventory_sort_cd">Sortieren</string>
-    <string name="inventory_filter_cd">Filtern</string>
     <string name="inventory_favorites_filter_cd">Nur Favoriten anzeigen</string>
     <string name="inventory_favorites_filter_active_cd">Nur Favoriten anzeigen (aktiv)</string>
     <string name="inventory_favorites_filter_menu_item">Favoriten</string>
     <string name="inventory_mark_favorite_cd">Als Favorit markieren</string>
-    <string name="inventory_quick_filter_low_stock">Wenig Vorrat</string>
-    <string name="inventory_quick_filter_expiring_soon">Bald ablaufend</string>
     <string name="inventory_unmark_favorite_cd">Favorit entfernen</string>
     <string name="inventory_tune_cd">Sortieren, filtern und Ansicht</string>
     <string name="inventory_view_mode_title">Ansicht</string>
@@ -603,8 +600,34 @@
         <item quantity="other">%1$d Tage</item>
     </plurals>
     <string name="inventory_row_menu_cd">Weitere Optionen</string>
-    <string name="inventory_group_by_cd">Gruppieren</string>
     <string name="inventory_no_location_label">Kein Ort</string>
+
+    <!-- Voorraad filter sheet -->
+    <string name="inventory_filter_sheet_title">Filter</string>
+    <plurals name="inventory_filter_sheet_active_count">
+        <item quantity="one">%1$d aktiv</item>
+        <item quantity="other">%1$d aktiv</item>
+    </plurals>
+    <plurals name="inventory_filter_sheet_total_count">
+        <item quantity="one">%1$d Produkt insgesamt</item>
+        <item quantity="other">%1$d Produkte insgesamt</item>
+    </plurals>
+    <string name="inventory_filter_sheet_clear_all">Alles zurücksetzen</string>
+    <string name="inventory_filter_remove_chip_cd">Filter entfernen</string>
+    <string name="inventory_filter_section_attention">Wo Aufmerksamkeit nötig ist</string>
+    <string name="inventory_filter_card_expiring_soon">Bald ablaufend</string>
+    <string name="inventory_filter_card_low_stock">Wenig Vorrat</string>
+    <string name="inventory_filter_no_expiration_date">Kein Datum</string>
+    <string name="inventory_filter_section_location">Ort</string>
+    <string name="inventory_filter_section_category">Kategorie</string>
+    <string name="inventory_filter_more_categories">+%1$d mehr</string>
+    <string name="inventory_filter_section_display">Anzeige</string>
+    <string name="inventory_filter_row_group_by">Gruppieren nach</string>
+    <plurals name="inventory_filter_footer_count">
+        <item quantity="one">%1$d Produkt</item>
+        <item quantity="other">%1$d Produkte</item>
+    </plurals>
+    <string name="inventory_filter_footer_show_results">Ergebnisse anzeigen</string>
 
     <!-- Vorrat sort options -->
     <string name="sort_option_name">Name</string>

@@ -133,6 +133,7 @@ import com.dtraas.homestock.ui.components.SheetChip
 import com.dtraas.homestock.ui.components.dashedBorder
 import com.dtraas.homestock.ui.components.SheetEyebrow
 import com.dtraas.homestock.ui.components.SheetPrimaryButton
+import com.dtraas.homestock.ui.components.SheetRemovableChip
 import com.dtraas.homestock.ui.components.SheetTitle
 import com.dtraas.homestock.ui.components.sheetContentPadding
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
@@ -1743,38 +1744,44 @@ private fun RecipesFilterSheet(
             // One removable chip per currently active choice — lets the household see (and undo)
             // everything they've set without opening each section below.
             if (draftFilters.activeCount > 0) {
+                val removeCd = stringResource(R.string.recipes_filter_remove_chip_cd)
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                     modifier = Modifier.padding(top = 14.dp),
                 ) {
                     if (draftFilters.matchThreshold != MatchThreshold.ANY) {
-                        ActiveFilterChip(
+                        SheetRemovableChip(
                             label = stringResource(matchThresholdLabelRes(draftFilters.matchThreshold)),
+                            removeCd = removeCd,
                             onRemove = { onMatchThresholdChange(MatchThreshold.ANY) },
                         )
                     }
                     draftFilters.maxReadyMinutes?.let { minutes ->
-                        ActiveFilterChip(
+                        SheetRemovableChip(
                             label = stringResource(R.string.recipes_filter_ready_time_chip, minutes),
+                            removeCd = removeCd,
                             onRemove = { onReadyMinutesChange(null) },
                         )
                     }
                     draftFilters.mealType?.let { type ->
-                        ActiveFilterChip(
+                        SheetRemovableChip(
                             label = stringResource(mealTypeLabelRes(type)),
+                            removeCd = removeCd,
                             onRemove = { onMealTypeChange(type) },
                         )
                     }
                     draftFilters.dietPreference?.let { diet ->
-                        ActiveFilterChip(
+                        SheetRemovableChip(
                             label = stringResource(dietPreferenceLabelRes(diet)),
+                            removeCd = removeCd,
                             onRemove = { onDietPreferenceChange(diet) },
                         )
                     }
                     RecipeRepository.filterableAllergens.filter { it in draftFilters.excludedAllergens }.forEach { allergen ->
-                        ActiveFilterChip(
+                        SheetRemovableChip(
                             label = stringResource(allergen.labelRes),
+                            removeCd = removeCd,
                             onRemove = { onToggleAllergen(allergen) },
                         )
                     }
@@ -1910,26 +1917,6 @@ private fun RecipesFilterSheet(
             }
         }
     }
-}
-
-/** A single active-filter pill in [RecipesFilterSheet]'s own removable-chip row — a thin,
- *  always-selected [FilterChip] with a trailing "✕" rather than [SheetChip] (which only ever
- *  supports a *leading* icon, wrong side for "tap to remove"). */
-@Composable
-private fun ActiveFilterChip(label: String, onRemove: () -> Unit) {
-    FilterChip(
-        selected = true,
-        onClick = onRemove,
-        label = { Text(label, style = MaterialTheme.typography.labelLarge) },
-        trailingIcon = {
-            Icon(
-                imageVector = Icons.Filled.Close,
-                contentDescription = stringResource(R.string.recipes_filter_remove_chip_cd),
-                modifier = Modifier.size(16.dp),
-            )
-        },
-        shape = CircleShape,
-    )
 }
 
 /** [RecipesFilterSheet]'s BEREIDINGSTIJD control — a discrete slider over [readyTimeSliderOptions] rather than a free-form range, see that list's doc. */

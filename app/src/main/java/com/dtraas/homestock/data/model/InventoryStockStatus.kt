@@ -42,6 +42,19 @@ enum class InventoryStockStatus {
             return daysUntilExpiry(expirationDate) <= EXPIRING_SOON_THRESHOLD_DAYS
         }
 
+        /**
+         * True once [expirationDate] has actually passed — a strict subset of [isExpiringSoon],
+         * which folds "already past" and "still N days out" into one combined check (by design,
+         * for the status dot/push notification, where either one is equally worth flagging).
+         * Exposed on its own for the Voorraad filter sheet's "Verlopen" quick filter, which needs
+         * to tell that apart from "Bijna over datum" (see [InventoryUiState.expiringSoonNotExpiredOnly]
+         * in `InventoryViewModel.kt`) rather than lumping both into one bucket.
+         */
+        fun isExpired(expirationDate: Long?): Boolean {
+            if (expirationDate == null) return false
+            return daysUntilExpiry(expirationDate) < 0
+        }
+
         /** Standalone version of the "low stock" check — see [isExpiringSoon]'s doc for why. */
         fun isLowStock(quantity: Int, minQuantity: Int?): Boolean =
             quantity > 0 && minQuantity != null && quantity < minQuantity

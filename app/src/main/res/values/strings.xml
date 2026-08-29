@@ -555,13 +555,10 @@
     <string name="inventory_search_placeholder">Zoek in voorraad…</string>
     <string name="inventory_filter_all">Alles</string>
     <string name="inventory_sort_cd">Sorteren</string>
-    <string name="inventory_filter_cd">Filteren</string>
     <string name="inventory_favorites_filter_cd">Alleen favorieten tonen</string>
     <string name="inventory_favorites_filter_active_cd">Alleen favorieten tonen (actief)</string>
     <string name="inventory_favorites_filter_menu_item">Favorieten</string>
     <string name="inventory_mark_favorite_cd">Markeren als favoriet</string>
-    <string name="inventory_quick_filter_low_stock">Weinig voorraad</string>
-    <string name="inventory_quick_filter_expiring_soon">Verloopt bijna</string>
     <string name="inventory_unmark_favorite_cd">Favoriet verwijderen</string>
     <string name="inventory_tune_cd">Sorteren, filteren en weergave</string>
     <string name="inventory_view_mode_title">Weergave</string>
@@ -607,8 +604,34 @@
         <item quantity="other">%1$d dagen</item>
     </plurals>
     <string name="inventory_row_menu_cd">Meer opties</string>
-    <string name="inventory_group_by_cd">Groeperen</string>
     <string name="inventory_no_location_label">Geen locatie</string>
+
+    <!-- Voorraad filter sheet -->
+    <string name="inventory_filter_sheet_title">Filters</string>
+    <plurals name="inventory_filter_sheet_active_count">
+        <item quantity="one">%1$d actief</item>
+        <item quantity="other">%1$d actief</item>
+    </plurals>
+    <plurals name="inventory_filter_sheet_total_count">
+        <item quantity="one">%1$d product totaal</item>
+        <item quantity="other">%1$d producten totaal</item>
+    </plurals>
+    <string name="inventory_filter_sheet_clear_all">Alles wissen</string>
+    <string name="inventory_filter_remove_chip_cd">Filter verwijderen</string>
+    <string name="inventory_filter_section_attention">Waar aandacht nodig is</string>
+    <string name="inventory_filter_card_expiring_soon">Bijna over datum</string>
+    <string name="inventory_filter_card_low_stock">Bijna op</string>
+    <string name="inventory_filter_no_expiration_date">Geen datum</string>
+    <string name="inventory_filter_section_location">Locatie</string>
+    <string name="inventory_filter_section_category">Categorie</string>
+    <string name="inventory_filter_more_categories">+%1$d meer</string>
+    <string name="inventory_filter_section_display">Zo toon je het</string>
+    <string name="inventory_filter_row_group_by">Koppen per</string>
+    <plurals name="inventory_filter_footer_count">
+        <item quantity="one">%1$d product</item>
+        <item quantity="other">%1$d producten</item>
+    </plurals>
+    <string name="inventory_filter_footer_show_results">Toon resultaten</string>
 
     <!-- Voorraad sort options -->
     <string name="sort_option_name">Naam</string>

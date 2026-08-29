@@ -7,6 +7,7 @@ import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.InventoryStockStatus
+import com.dtraas.homestock.data.model.Location
 import com.dtraas.homestock.data.repository.ActivityLogRepository
 import com.dtraas.homestock.data.repository.HouseholdRepository
 import com.dtraas.homestock.data.repository.InventoryRepository
@@ -41,11 +42,18 @@ data class InventoryUiState(
     val sortOption: InventorySortOption = InventorySortOption.NAME,
     val favoritesOnly: Boolean = false,
     // Independent of each other and of favoritesOnly/selectedCategory — all narrow the same
-    // list together, shown as chips (see InventoryScreen) rather than folded into the filter
-    // dropdown like favoritesOnly, since these two are meant to be glanceable/one-tap rather
-    // than a couple of taps deep in a menu.
+    // list together, shown as chips/cards (see InventoryFilterSheet) rather than folded into a
+    // menu, since these are meant to be glanceable/one-tap.
     val lowStockOnly: Boolean = false,
-    val expiringSoonOnly: Boolean = false,
+    // Split from what used to be one combined "expiringSoonOnly" (soon-or-already-past) into two
+    // non-overlapping quick filters, matching the filter sheet's "Verlopen"/"Bijna over datum"
+    // cards — see InventoryStockStatus.isExpired's doc for why. Together (both true) they cover
+    // exactly what the old single toggle used to; both jump-to-filtered-view entry points (the
+    // "Eerst opmaken" hint card's "Alles →" and the "bijna over datum" push notification) now set
+    // both at once instead of one broad flag.
+    val expiredOnly: Boolean = false,
+    val expiringSoonNotExpiredOnly: Boolean = false,
+    val noExpirationDateOnly: Boolean = false,
     val groupedInventory: Map<Category, List<InventoryItemWithProduct>> = emptyMap(),
     // Same items as groupedInventory, but as one globally ordered list rather than grouped
     // by category — grouping loses the overall order between categories (each category's
@@ -60,22 +68,38 @@ data class InventoryUiState(
     // Independent of groupBy — filtering to one location works the same whether headers are
     // currently grouped by category or by location. Null key holds items with no location set.
     val selectedLocation: String? = null,
+    // Distinct from selectedLocation == null ("no location filter applied, show everything") —
+    // this means "show only items with no location set", the filter sheet's "Zonder" chip.
+    // Mutually exclusive with selectedLocation in the UI (see InventoryViewModel.onLocationFilterChange/
+    // onNoLocationFilterChange): picking one clears the other.
+    val noLocationOnly: Boolean = false,
     val groupedByLocation: Map<String?, List<InventoryItemWithProduct>> = emptyMap(),
-    // Every distinct location currently in use, for the filter menu — derived from the full,
+    // Every distinct location currently in use, for the filter sheet — derived from the full,
     // unfiltered inventory (not `filtered`) so picking one location doesn't make the others
-    // disappear from the list of choices.
+    // disappear from the list of choices. Ordered by the fixed Location enum first (Koelkast/
+    // Vriezer/Voorraadkast/Kelder, in that declared order), then any custom/free-text location
+    // string a household typed that doesn't match one of those, alphabetically — matches the
+    // order a household would expect their most common storage spots to appear in.
     val availableLocations: List<String> = emptyList(),
     // "Keuken" header stats — derived from the *unfiltered* household inventory (not
     // `filtered`/`flatInventory` above), same reasoning as availableLocations: this gives an
     // at-a-glance picture of the whole voorraad, which shouldn't shrink just because a search/
-    // category filter happens to be active.
+    // category filter happens to be active. Same reasoning extends to every other *Count/*Counts
+    // field below — all real, all off the unfiltered list, never estimated.
     val totalCount: Int = 0,
     val lowStockCount: Int = 0,
     val expiringSoonCount: Int = 0,
+    val expiredCount: Int = 0,
+    val expiringSoonNotExpiredCount: Int = 0,
+    val noExpirationDateCount: Int = 0,
+    val favoritesCount: Int = 0,
+    val noLocationCount: Int = 0,
+    // The filter sheet's CATEGORIE/LOCATIE chip labels ("Zuivel · 9", "Koelkast · 34").
+    val categoryCounts: Map<Category, Int> = emptyMap(),
+    val locationCounts: Map<String, Int> = emptyMap(),
     // The 3 soonest-expiring items, unfiltered, soonest first — the "Eerst opmaken" header
     // card's chips. A subset of what expiringSoonCount counts, not everything it counts —
-    // the card only ever has room for a handful, "Alles" (expiringSoonOnly) is where the rest
-    // shows up.
+    // the card only ever has room for a handful, "Alles" is where the rest shows up.
     val expiringSoonItems: List<InventoryItemWithProduct> = emptyList(),
 )
 
@@ -91,20 +115,36 @@ class InventoryViewModel(
     private val sortOption = MutableStateFlow(InventorySortOption.NAME)
     private val favoritesOnly = MutableStateFlow(false)
     private val lowStockOnly = MutableStateFlow(false)
-    private val expiringSoonOnly = MutableStateFlow(false)
+    // See InventoryUiState.expiredOnly/expiringSoonNotExpiredOnly's doc — these replace what
+    // used to be one combined "expiringSoonOnly" flag.
+    private val expiredOnly = MutableStateFlow(false)
+    private val expiringSoonNotExpiredOnly = MutableStateFlow(false)
+    private val noExpirationDateOnly = MutableStateFlow(false)
     private val groupBy = MutableStateFlow(InventoryGroupBy.CATEGORY)
     private val selectedLocation = MutableStateFlow<String?>(null)
+    private val noLocationOnly = MutableStateFlow(false)
 
-    // combine() only has direct overloads up to 5 flows, and there are 9 inputs here — the
-    // filter/sort controls are combined into one flow first (itself built from two nested
-    // combines, for the same reason) so the outer combine stays within that limit.
-    private data class QuickFilters(val lowStockOnly: Boolean, val expiringSoonOnly: Boolean)
+    // combine() only has direct overloads up to 5 flows, and there are considerably more than
+    // that many inputs here — the filter/sort controls are combined into one flow first (itself
+    // built from several nested combines, for the same reason) so the outer combine stays within
+    // that limit.
+    private data class QuickFilters(
+        val lowStockOnly: Boolean,
+        val expiredOnly: Boolean,
+        val expiringSoonNotExpiredOnly: Boolean,
+        val noExpirationDateOnly: Boolean,
+    )
+
+    private data class LocationFilters(
+        val groupBy: InventoryGroupBy,
+        val selectedLocation: String?,
+        val noLocationOnly: Boolean,
+    )
 
     private data class Extras(
         val householdName: String?,
         val quickFilters: QuickFilters,
-        val groupBy: InventoryGroupBy,
-        val selectedLocation: String?,
+        val locationFilters: LocationFilters,
     )
 
     private data class FilterState(
@@ -115,6 +155,16 @@ class InventoryViewModel(
         val extras: Extras,
     )
 
+    private val quickFilters = combine(
+        lowStockOnly, expiredOnly, expiringSoonNotExpiredOnly, noExpirationDateOnly,
+    ) { lowStock, expired, expiringSoonNotExpired, noExpirationDate ->
+        QuickFilters(lowStock, expired, expiringSoonNotExpired, noExpirationDate)
+    }
+
+    private val locationFilters = combine(
+        groupBy, selectedLocation, noLocationOnly,
+    ) { groupByOption, location, noLocation -> LocationFilters(groupByOption, location, noLocation) }
+
     val uiState: StateFlow<InventoryUiState> = combine(
         inventoryRepository.observeInventoryWithProduct(),
         combine(
@@ -124,13 +174,9 @@ class InventoryViewModel(
             favoritesOnly,
             combine(
                 householdRepository.observeHouseholdName(),
-                lowStockOnly,
-                expiringSoonOnly,
-                groupBy,
-                selectedLocation,
-            ) { householdName, lowStock, expiringSoon, groupByOption, location ->
-                Extras(householdName, QuickFilters(lowStock, expiringSoon), groupByOption, location)
-            },
+                quickFilters,
+                locationFilters,
+            ) { householdName, qf, lf -> Extras(householdName, qf, lf) },
         ) { query, category, sort, favOnly, extras ->
             FilterState(query, category, sort, favOnly, extras)
         },
@@ -149,11 +195,18 @@ class InventoryViewModel(
             // chip, not just whichever one of the two of() would have picked.
             val matchesLowStock = !extras.quickFilters.lowStockOnly ||
                 InventoryStockStatus.isLowStock(item.quantity, item.minQuantity)
-            val matchesExpiringSoon = !extras.quickFilters.expiringSoonOnly ||
-                InventoryStockStatus.isExpiringSoon(item.expirationDate)
-            val matchesLocation = extras.selectedLocation == null ||
-                item.location.normalizedLocation()?.equals(extras.selectedLocation, ignoreCase = true) == true
-            matchesCategory && matchesQuery && matchesFavorite && matchesLowStock && matchesExpiringSoon && matchesLocation
+            val matchesExpired = !extras.quickFilters.expiredOnly || InventoryStockStatus.isExpired(item.expirationDate)
+            val matchesExpiringSoonNotExpired = !extras.quickFilters.expiringSoonNotExpiredOnly ||
+                (InventoryStockStatus.isExpiringSoon(item.expirationDate) && !InventoryStockStatus.isExpired(item.expirationDate))
+            val matchesNoExpirationDate = !extras.quickFilters.noExpirationDateOnly || item.expirationDate == null
+            val matchesLocation = when {
+                extras.locationFilters.noLocationOnly -> item.location.normalizedLocation() == null
+                extras.locationFilters.selectedLocation != null ->
+                    item.location.normalizedLocation()?.equals(extras.locationFilters.selectedLocation, ignoreCase = true) == true
+                else -> true
+            }
+            matchesCategory && matchesQuery && matchesFavorite && matchesLowStock &&
+                matchesExpired && matchesExpiringSoonNotExpired && matchesNoExpirationDate && matchesLocation
         }
         val sorted = when (filters.sort) {
             InventorySortOption.NAME -> filtered.sortedBy { it.name.lowercase() }
@@ -168,14 +221,17 @@ class InventoryViewModel(
             sortOption = filters.sort,
             favoritesOnly = filters.favoritesOnly,
             lowStockOnly = extras.quickFilters.lowStockOnly,
-            expiringSoonOnly = extras.quickFilters.expiringSoonOnly,
+            expiredOnly = extras.quickFilters.expiredOnly,
+            expiringSoonNotExpiredOnly = extras.quickFilters.expiringSoonNotExpiredOnly,
+            noExpirationDateOnly = extras.quickFilters.noExpirationDateOnly,
             groupedInventory = sorted
                 .groupBy { Category.fromStorageKey(it.category) }
                 .toSortedMap(compareBy { it.sortOrder }),
             flatInventory = sorted,
             householdName = extras.householdName,
-            groupBy = extras.groupBy,
-            selectedLocation = extras.selectedLocation,
+            groupBy = extras.locationFilters.groupBy,
+            selectedLocation = extras.locationFilters.selectedLocation,
+            noLocationOnly = extras.locationFilters.noLocationOnly,
             // Null-location bucket sorts last, everything else alphabetically — a
             // List<Pair>.toMap() preserves that order (LinkedHashMap), unlike a raw groupBy().
             groupedByLocation = sorted
@@ -186,10 +242,19 @@ class InventoryViewModel(
             availableLocations = items
                 .mapNotNull { it.location.normalizedLocation() }
                 .distinct()
-                .sortedBy { it.lowercase() },
+                .sortedWith(compareBy({ Location.fromStorageKey(it)?.ordinal ?: Int.MAX_VALUE }, { it.lowercase() })),
             totalCount = items.size,
             lowStockCount = items.count { InventoryStockStatus.isLowStock(it.quantity, it.minQuantity) },
             expiringSoonCount = items.count { InventoryStockStatus.isExpiringSoon(it.expirationDate) },
+            expiredCount = items.count { InventoryStockStatus.isExpired(it.expirationDate) },
+            expiringSoonNotExpiredCount = items.count {
+                InventoryStockStatus.isExpiringSoon(it.expirationDate) && !InventoryStockStatus.isExpired(it.expirationDate)
+            },
+            noExpirationDateCount = items.count { it.expirationDate == null },
+            favoritesCount = items.count { it.isFavorite },
+            noLocationCount = items.count { it.location.normalizedLocation() == null },
+            categoryCounts = items.groupingBy { Category.fromStorageKey(it.category) }.eachCount(),
+            locationCounts = items.mapNotNull { it.location.normalizedLocation() }.groupingBy { it }.eachCount(),
             expiringSoonItems = items
                 .filter { InventoryStockStatus.isExpiringSoon(it.expirationDate) }
                 .sortedBy { it.expirationDate }
@@ -205,8 +270,24 @@ class InventoryViewModel(
         lowStockOnly.value = enabled
     }
 
-    fun onExpiringSoonFilterChange(enabled: Boolean) {
-        expiringSoonOnly.value = enabled
+    fun onExpiredFilterChange(enabled: Boolean) {
+        expiredOnly.value = enabled
+    }
+
+    fun onExpiringSoonNotExpiredFilterChange(enabled: Boolean) {
+        expiringSoonNotExpiredOnly.value = enabled
+    }
+
+    fun onNoExpirationDateFilterChange(enabled: Boolean) {
+        noExpirationDateOnly.value = enabled
+    }
+
+    /** "Alles →" on the "Eerst opmaken" hint card, and the "bijna over datum" push notification
+     *  deep link — both used to set one broad "expiringSoonOnly" flag; now they set both of its
+     *  replacements at once, which together cover exactly the same "soon or already past" set. */
+    fun showExpiringOrExpiredOnly() {
+        expiredOnly.value = true
+        expiringSoonNotExpiredOnly.value = true
     }
 
     fun onCategoryFilterChange(category: Category?) {
@@ -227,6 +308,29 @@ class InventoryViewModel(
 
     fun onLocationFilterChange(location: String?) {
         selectedLocation.value = location
+        // Mutually exclusive with noLocationOnly in the UI (the filter sheet's "Zonder" chip) —
+        // picking a named location clears it.
+        if (location != null) noLocationOnly.value = false
+    }
+
+    /** The filter sheet's "Zonder" location chip — items with no location set at all. */
+    fun onNoLocationFilterChange(enabled: Boolean) {
+        noLocationOnly.value = enabled
+        if (enabled) selectedLocation.value = null
+    }
+
+    /** "Alles wissen" in the filter sheet — resets every filter dimension it controls. Leaves
+     *  [searchQuery] (not a sheet control) and [sortOption]/[groupBy] (display preferences, not
+     *  filters — see the sheet's own "ZO TOON JE HET" section) untouched. */
+    fun clearAllFilters() {
+        selectedCategory.value = null
+        favoritesOnly.value = false
+        lowStockOnly.value = false
+        expiredOnly.value = false
+        expiringSoonNotExpiredOnly.value = false
+        noExpirationDateOnly.value = false
+        selectedLocation.value = null
+        noLocationOnly.value = false
     }
 
     fun toggleFavorite(item: InventoryItemWithProduct) {

@@ -551,13 +551,10 @@
     <string name="inventory_search_placeholder">Rechercher dans le stock…</string>
     <string name="inventory_filter_all">Tout</string>
     <string name="inventory_sort_cd">Trier</string>
-    <string name="inventory_filter_cd">Filtrer</string>
     <string name="inventory_favorites_filter_cd">Afficher uniquement les favoris</string>
     <string name="inventory_favorites_filter_active_cd">Afficher uniquement les favoris (actif)</string>
     <string name="inventory_favorites_filter_menu_item">Favoris</string>
     <string name="inventory_mark_favorite_cd">Marquer comme favori</string>
-    <string name="inventory_quick_filter_low_stock">Stock faible</string>
-    <string name="inventory_quick_filter_expiring_soon">Bientôt périmé</string>
     <string name="inventory_unmark_favorite_cd">Retirer des favoris</string>
     <string name="inventory_tune_cd">Trier, filtrer et affichage</string>
     <string name="inventory_view_mode_title">Affichage</string>
@@ -603,8 +600,34 @@
         <item quantity="other">%1$d jours</item>
     </plurals>
     <string name="inventory_row_menu_cd">Plus d\'options</string>
-    <string name="inventory_group_by_cd">Grouper par</string>
     <string name="inventory_no_location_label">Aucun emplacement</string>
+
+    <!-- Voorraad filter sheet -->
+    <string name="inventory_filter_sheet_title">Filtres</string>
+    <plurals name="inventory_filter_sheet_active_count">
+        <item quantity="one">%1$d actif</item>
+        <item quantity="other">%1$d actifs</item>
+    </plurals>
+    <plurals name="inventory_filter_sheet_total_count">
+        <item quantity="one">%1$d produit au total</item>
+        <item quantity="other">%1$d produits au total</item>
+    </plurals>
+    <string name="inventory_filter_sheet_clear_all">Tout effacer</string>
+    <string name="inventory_filter_remove_chip_cd">Retirer le filtre</string>
+    <string name="inventory_filter_section_attention">Ce qui demande de l\'attention</string>
+    <string name="inventory_filter_card_expiring_soon">Bientôt périmé</string>
+    <string name="inventory_filter_card_low_stock">Stock faible</string>
+    <string name="inventory_filter_no_expiration_date">Aucune date</string>
+    <string name="inventory_filter_section_location">Emplacement</string>
+    <string name="inventory_filter_section_category">Catégorie</string>
+    <string name="inventory_filter_more_categories">+%1$d de plus</string>
+    <string name="inventory_filter_section_display">Affichage</string>
+    <string name="inventory_filter_row_group_by">Grouper par</string>
+    <plurals name="inventory_filter_footer_count">
+        <item quantity="one">%1$d produit</item>
+        <item quantity="other">%1$d produits</item>
+    </plurals>
+    <string name="inventory_filter_footer_show_results">Afficher les résultats</string>
 
     <!-- Stock sort options -->
     <string name="sort_option_name">Nom</string>

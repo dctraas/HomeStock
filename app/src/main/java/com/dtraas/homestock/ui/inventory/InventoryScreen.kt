@@ -11,9 +11,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -50,6 +52,7 @@ import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -87,7 +90,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -141,7 +143,10 @@ import com.dtraas.homestock.ui.components.ProfileEditDialog
 import com.dtraas.homestock.ui.components.QuantityStepper
 import com.dtraas.homestock.ui.components.SearchField
 import com.dtraas.homestock.ui.components.SheetActionRow
+import com.dtraas.homestock.ui.components.SheetChip
 import com.dtraas.homestock.ui.components.SheetEyebrow
+import com.dtraas.homestock.ui.components.SheetPrimaryButton
+import com.dtraas.homestock.ui.components.SheetRemovableChip
 import com.dtraas.homestock.ui.components.SheetTitle
 import com.dtraas.homestock.ui.components.sheetContentPadding
 import com.dtraas.homestock.ui.components.color
@@ -149,7 +154,9 @@ import com.dtraas.homestock.ui.components.icon
 import com.dtraas.homestock.ui.components.onColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
+import com.dtraas.homestock.ui.theme.CoralSecondary
 import com.dtraas.homestock.ui.theme.CoralSecondaryDark
+import com.dtraas.homestock.ui.theme.GoldTertiary
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SageGreenPrimary
 import com.dtraas.homestock.ui.theme.SoftBadgeShape
@@ -224,9 +231,14 @@ fun InventoryScreen(
     val bulkAddedFormat = stringResource(R.string.inventory_bulk_added_to_shopping_list_format)
     val restockedFormat = stringResource(R.string.inventory_restocked_snackbar_format)
 
-    // Drives the coral dot on the tune icon — any dimension the sheet controls being non-default.
-    val hasActiveFilter = uiState.selectedCategory != null || uiState.favoritesOnly || uiState.lowStockOnly ||
-        uiState.expiringSoonOnly || uiState.selectedLocation != null
+    // Drives the coral dot on the tune icon and the filter sheet's own "N actief"/active-chip
+    // row — every dimension InventoryFilterSheet controls, each counted at most once.
+    val activeFilterCount = listOf(
+        uiState.selectedCategory != null, uiState.favoritesOnly, uiState.lowStockOnly,
+        uiState.expiredOnly, uiState.expiringSoonNotExpiredOnly, uiState.noExpirationDateOnly,
+        uiState.selectedLocation != null, uiState.noLocationOnly,
+    ).count { it }
+    val hasActiveFilter = activeFilterCount > 0
 
     LaunchedEffect(Unit) {
         viewModel.restockEvents.collect { name ->
@@ -239,7 +251,7 @@ fun InventoryScreen(
     // MainActivity's onNewIntent semantics for pendingRoute.
     LaunchedEffect(showExpiringSoonOnOpen) {
         if (showExpiringSoonOnOpen) {
-            viewModel.onExpiringSoonFilterChange(true)
+            viewModel.showExpiringOrExpiredOnly()
             onShowExpiringSoonConsumed()
         }
     }
@@ -375,7 +387,7 @@ fun InventoryScreen(
                         collapsed = expiringSoonCollapsed,
                         onToggleCollapsed = { hintCardPreferences.setInventoryExpiringSoonCollapsed(!expiringSoonCollapsed) },
                         onItemClick = { item -> onProductClick(item.barcode) },
-                        onSeeAllClick = { viewModel.onExpiringSoonFilterChange(true) },
+                        onSeeAllClick = { viewModel.showExpiringOrExpiredOnly() },
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
@@ -400,9 +412,7 @@ fun InventoryScreen(
 
             if (uiState.flatInventory.isEmpty()) {
                 EmptyInventory(
-                    isFiltered = uiState.searchQuery.isNotBlank() || uiState.selectedCategory != null ||
-                        uiState.favoritesOnly || uiState.lowStockOnly || uiState.expiringSoonOnly ||
-                        uiState.selectedLocation != null,
+                    isFiltered = uiState.searchQuery.isNotBlank() || hasActiveFilter,
                     modifier = Modifier.fillMaxSize(),
                 )
             } else if (viewMode == InventoryViewMode.LIST) {
@@ -670,24 +680,42 @@ fun InventoryScreen(
 
     if (showFilterSheet) {
         InventoryFilterSheet(
-            viewMode = viewMode,
-            onViewModeChange = { viewMode = it },
+            totalCount = uiState.totalCount,
+            resultCount = uiState.flatInventory.size,
+            activeFilterCount = activeFilterCount,
+            onClearAll = viewModel::clearAllFilters,
+            expiredCount = uiState.expiredCount,
+            expiredOnly = uiState.expiredOnly,
+            onExpiredToggle = viewModel::onExpiredFilterChange,
+            expiringSoonNotExpiredCount = uiState.expiringSoonNotExpiredCount,
+            expiringSoonNotExpiredOnly = uiState.expiringSoonNotExpiredOnly,
+            onExpiringSoonNotExpiredToggle = viewModel::onExpiringSoonNotExpiredFilterChange,
+            lowStockCount = uiState.lowStockCount,
+            lowStockOnly = uiState.lowStockOnly,
+            onLowStockToggle = viewModel::onLowStockFilterChange,
+            favoritesCount = uiState.favoritesCount,
+            favoritesOnly = uiState.favoritesOnly,
+            onFavoritesToggle = viewModel::onFavoritesFilterChange,
+            noExpirationDateCount = uiState.noExpirationDateCount,
+            noExpirationDateOnly = uiState.noExpirationDateOnly,
+            onNoExpirationDateToggle = viewModel::onNoExpirationDateFilterChange,
+            availableLocations = uiState.availableLocations,
+            locationCounts = uiState.locationCounts,
+            selectedLocation = uiState.selectedLocation,
+            onLocationSelected = viewModel::onLocationFilterChange,
+            noLocationCount = uiState.noLocationCount,
+            noLocationOnly = uiState.noLocationOnly,
+            onNoLocationToggle = viewModel::onNoLocationFilterChange,
+            categoryCounts = uiState.categoryCounts,
+            selectedCategory = uiState.selectedCategory,
+            onCategorySelected = viewModel::onCategoryFilterChange,
             sortSelected = uiState.sortOption,
             onSortSelected = viewModel::onSortOptionChange,
             groupBySelected = uiState.groupBy,
             onGroupBySelected = viewModel::onGroupByChange,
             showGroupBy = uiState.availableLocations.size > 1,
-            selectedCategory = uiState.selectedCategory,
-            favoritesOnly = uiState.favoritesOnly,
-            lowStockOnly = uiState.lowStockOnly,
-            expiringSoonOnly = uiState.expiringSoonOnly,
-            availableLocations = uiState.availableLocations,
-            selectedLocation = uiState.selectedLocation,
-            onCategorySelected = viewModel::onCategoryFilterChange,
-            onFavoritesToggle = viewModel::onFavoritesFilterChange,
-            onLowStockToggle = viewModel::onLowStockFilterChange,
-            onExpiringSoonToggle = viewModel::onExpiringSoonFilterChange,
-            onLocationSelected = viewModel::onLocationFilterChange,
+            viewMode = viewMode,
+            onViewModeChange = { viewMode = it },
             onDismiss = { showFilterSheet = false },
         )
     }
@@ -853,8 +881,8 @@ private fun InventoryHeader(
 /**
  * "Eerst opmaken" — up to 3 soonest-expiring items as horizontal chips, each showing how soon
  * (the same wording [stockStatusPillText] already gives the grid/list badges) and the product
- * name. "Alles →" switches on the existing [InventoryViewModel.onExpiringSoonFilterChange] quick
- * filter rather than opening a separate screen — same list, just narrowed to everything, not
+ * name. "Alles →" switches on the existing [InventoryViewModel.showExpiringOrExpiredOnly] quick
+ * filters rather than opening a separate screen — same list, just narrowed to everything, not
  * only the 3 shown here. The mockup's "Kook hiermee" recipe-suggestion button is deliberately
  * not built here, out of scope for this pass.
  *
@@ -1154,181 +1182,392 @@ private fun PremiumLockOrChevron(isPremium: Boolean) {
 }
 
 /**
- * One sheet holding everything that used to live behind four separate icon-button dropdowns
- * (sorteren/groeperen/filteren/weergave) — opened from the search field's trailing "tune"
- * button, per the Claude Design review. Scrollable: the category chip row alone can run wider
- * than useful screen height together with everything above it on a small device.
+ * The Voorraad "Filters" sheet — opened from the search field's trailing "tune" button. Every
+ * toggle here applies live/instantly (unlike Recepten's own filter sheet, which stages edits in
+ * a draft and only applies them on "Toon resultaten"): everything Voorraad filters by is already
+ * loaded locally (Room/Firestore, no network round trip), so there's no cost to re-filter on
+ * every single tap the way a live Spoonacular re-query would have. "Toon resultaten" here simply
+ * dismisses the sheet — the list behind it has been showing the current result the whole time,
+ * this just reveals it. [resultCount]/[activeFilterCount] and every card/chip count are real,
+ * computed off the actual (unfiltered, for the chip counts; filtered, for [resultCount]) list —
+ * never estimated.
  */
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 private fun InventoryFilterSheet(
-    viewMode: InventoryViewMode,
-    onViewModeChange: (InventoryViewMode) -> Unit,
+    totalCount: Int,
+    resultCount: Int,
+    activeFilterCount: Int,
+    onClearAll: () -> Unit,
+    expiredCount: Int,
+    expiredOnly: Boolean,
+    onExpiredToggle: (Boolean) -> Unit,
+    expiringSoonNotExpiredCount: Int,
+    expiringSoonNotExpiredOnly: Boolean,
+    onExpiringSoonNotExpiredToggle: (Boolean) -> Unit,
+    lowStockCount: Int,
+    lowStockOnly: Boolean,
+    onLowStockToggle: (Boolean) -> Unit,
+    favoritesCount: Int,
+    favoritesOnly: Boolean,
+    onFavoritesToggle: (Boolean) -> Unit,
+    noExpirationDateCount: Int,
+    noExpirationDateOnly: Boolean,
+    onNoExpirationDateToggle: (Boolean) -> Unit,
+    availableLocations: List<String>,
+    locationCounts: Map<String, Int>,
+    selectedLocation: String?,
+    onLocationSelected: (String?) -> Unit,
+    noLocationCount: Int,
+    noLocationOnly: Boolean,
+    onNoLocationToggle: (Boolean) -> Unit,
+    categoryCounts: Map<Category, Int>,
+    selectedCategory: Category?,
+    onCategorySelected: (Category?) -> Unit,
     sortSelected: InventorySortOption,
     onSortSelected: (InventorySortOption) -> Unit,
     groupBySelected: InventoryGroupBy,
     onGroupBySelected: (InventoryGroupBy) -> Unit,
     showGroupBy: Boolean,
-    selectedCategory: Category?,
-    favoritesOnly: Boolean,
-    lowStockOnly: Boolean,
-    expiringSoonOnly: Boolean,
-    availableLocations: List<String>,
-    selectedLocation: String?,
-    onCategorySelected: (Category?) -> Unit,
-    onFavoritesToggle: (Boolean) -> Unit,
-    onLowStockToggle: (Boolean) -> Unit,
-    onExpiringSoonToggle: (Boolean) -> Unit,
-    onLocationSelected: (String?) -> Unit,
+    viewMode: InventoryViewMode,
+    onViewModeChange: (InventoryViewMode) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    var categoriesExpanded by remember { mutableStateOf(false) }
+    var sortMenuExpanded by remember { mutableStateOf(false) }
+    val removeChipCd = stringResource(R.string.inventory_filter_remove_chip_cd)
+
+    HomeStockBottomSheet(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 20.dp)
-                .padding(bottom = 28.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp),
+                .padding(sheetContentPadding),
         ) {
-            FilterSheetSection(title = stringResource(R.string.inventory_view_mode_title)) {
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = viewMode == InventoryViewMode.GRID,
-                        onClick = { onViewModeChange(InventoryViewMode.GRID) },
-                        label = { Text(stringResource(R.string.inventory_view_mode_grid)) },
-                        leadingIcon = { Icon(Icons.Filled.GridView, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                    )
-                    FilterChip(
-                        selected = viewMode == InventoryViewMode.LIST,
-                        onClick = { onViewModeChange(InventoryViewMode.LIST) },
-                        label = { Text(stringResource(R.string.inventory_view_mode_list)) },
-                        leadingIcon = { Icon(Icons.Filled.ViewList, contentDescription = null, modifier = Modifier.size(18.dp)) },
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.weight(1f)) {
+                    SheetTitle(title = stringResource(R.string.inventory_filter_sheet_title))
+                    val totalText = pluralStringResource(R.plurals.inventory_filter_sheet_total_count, totalCount, totalCount)
+                    Text(
+                        text = if (activeFilterCount > 0) {
+                            "${pluralStringResource(R.plurals.inventory_filter_sheet_active_count, activeFilterCount, activeFilterCount)} · $totalText"
+                        } else {
+                            totalText
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp),
                     )
                 }
+                if (activeFilterCount > 0) {
+                    TextButton(onClick = onClearAll) { Text(stringResource(R.string.inventory_filter_sheet_clear_all)) }
+                }
             }
-            FilterSheetSection(title = stringResource(R.string.inventory_sort_cd)) {
-                Column {
-                    InventorySortOption.entries.forEach { option ->
-                        FilterSheetRow(
-                            label = stringResource(option.labelRes),
-                            selected = option == sortSelected,
-                            onClick = { onSortSelected(option) },
+
+            // One removable chip per currently active choice — see RecipesFilterSheet's own
+            // active-chip row for the identical pattern.
+            if (activeFilterCount > 0) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(top = 14.dp),
+                ) {
+                    if (expiredOnly) {
+                        SheetRemovableChip(stringResource(R.string.inventory_pill_expiry_expired), removeChipCd, { onExpiredToggle(false) })
+                    }
+                    if (expiringSoonNotExpiredOnly) {
+                        SheetRemovableChip(stringResource(R.string.inventory_filter_card_expiring_soon), removeChipCd, { onExpiringSoonNotExpiredToggle(false) })
+                    }
+                    if (lowStockOnly) {
+                        SheetRemovableChip(stringResource(R.string.inventory_filter_card_low_stock), removeChipCd, { onLowStockToggle(false) })
+                    }
+                    if (favoritesOnly) {
+                        SheetRemovableChip(stringResource(R.string.inventory_favorites_filter_menu_item), removeChipCd, { onFavoritesToggle(false) })
+                    }
+                    if (noExpirationDateOnly) {
+                        SheetRemovableChip(stringResource(R.string.inventory_filter_no_expiration_date), removeChipCd, { onNoExpirationDateToggle(false) })
+                    }
+                    selectedCategory?.let { category ->
+                        SheetRemovableChip(stringResource(category.displayNameRes), removeChipCd, { onCategorySelected(null) })
+                    }
+                    selectedLocation?.let { location ->
+                        SheetRemovableChip(locationDisplayLabel(location), removeChipCd, { onLocationSelected(null) })
+                    }
+                    if (noLocationOnly) {
+                        SheetRemovableChip(stringResource(R.string.inventory_no_location_label), removeChipCd, { onNoLocationToggle(false) })
+                    }
+                }
+            }
+
+            SheetEyebrow(text = stringResource(R.string.inventory_filter_section_attention), modifier = Modifier.padding(top = 24.dp))
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp),
+            ) {
+                AttentionCard(
+                    count = expiredCount,
+                    label = stringResource(R.string.inventory_pill_expiry_expired),
+                    selected = expiredOnly,
+                    tint = CoralSecondary,
+                    onClick = { onExpiredToggle(!expiredOnly) },
+                    modifier = Modifier.weight(1f),
+                )
+                AttentionCard(
+                    count = expiringSoonNotExpiredCount,
+                    label = stringResource(R.string.inventory_filter_card_expiring_soon),
+                    selected = expiringSoonNotExpiredOnly,
+                    tint = GoldTertiary,
+                    onClick = { onExpiringSoonNotExpiredToggle(!expiringSoonNotExpiredOnly) },
+                    modifier = Modifier.weight(1f),
+                )
+                AttentionCard(
+                    count = lowStockCount,
+                    label = stringResource(R.string.inventory_filter_card_low_stock),
+                    selected = lowStockOnly,
+                    tint = null,
+                    onClick = { onLowStockToggle(!lowStockOnly) },
+                    modifier = Modifier.weight(1f),
+                )
+            }
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = 8.dp),
+            ) {
+                SheetChip(
+                    label = "${stringResource(R.string.inventory_favorites_filter_menu_item)} · $favoritesCount",
+                    selected = favoritesOnly,
+                    onClick = { onFavoritesToggle(!favoritesOnly) },
+                    leadingIcon = { Icon(Icons.Filled.Favorite, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                )
+                SheetChip(
+                    label = "${stringResource(R.string.inventory_filter_no_expiration_date)} · $noExpirationDateCount",
+                    selected = noExpirationDateOnly,
+                    onClick = { onNoExpirationDateToggle(!noExpirationDateOnly) },
+                )
+            }
+
+            // Only offered once at least one item has a location set — an always-visible empty
+            // section would just be dead space for households not using the field yet.
+            if (availableLocations.isNotEmpty()) {
+                SheetEyebrow(text = stringResource(R.string.inventory_filter_section_location), modifier = Modifier.padding(top = 24.dp))
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(top = 10.dp),
+                ) {
+                    availableLocations.forEach { location ->
+                        SheetChip(
+                            label = "${locationDisplayLabel(location)} · ${locationCounts[location] ?: 0}",
+                            selected = selectedLocation == location,
+                            onClick = { onLocationSelected(if (selectedLocation == location) null else location) },
+                            leadingIcon = { Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                        )
+                    }
+                    if (noLocationCount > 0) {
+                        SheetChip(
+                            label = "${stringResource(R.string.inventory_no_location_label)} · $noLocationCount",
+                            selected = noLocationOnly,
+                            onClick = { onNoLocationToggle(!noLocationOnly) },
                         )
                     }
                 }
             }
-            // Only worth offering once there's more than one location in use — with zero or
-            // one, "group by location" would either be pointless (nothing to group) or
-            // identical to the flat list.
-            if (showGroupBy) {
-                FilterSheetSection(title = stringResource(R.string.inventory_group_by_cd)) {
-                    Column {
-                        InventoryGroupBy.entries.forEach { option ->
-                            FilterSheetRow(
-                                label = stringResource(option.labelRes),
-                                selected = option == groupBySelected,
-                                onClick = { onGroupBySelected(option) },
-                            )
-                        }
-                    }
+
+            SheetEyebrow(text = stringResource(R.string.inventory_filter_section_category), modifier = Modifier.padding(top = 24.dp))
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(top = 10.dp),
+            ) {
+                // The full fixed category set, in the same order a typical supermarket lays out
+                // its aisles (see Category.sortOrder) — only the first 4 shown until "+N meer" is
+                // tapped, same collapse-by-default pattern as Recepten's ALLERGENEN VERMIJDEN.
+                val sortedCategories = remember { Category.entries.sortedBy { it.sortOrder } }
+                val visibleCategories = if (categoriesExpanded) sortedCategories else sortedCategories.take(4)
+                visibleCategories.forEach { category ->
+                    SheetChip(
+                        label = "${stringResource(category.displayNameRes)} · ${categoryCounts[category] ?: 0}",
+                        selected = selectedCategory == category,
+                        onClick = { onCategorySelected(if (selectedCategory == category) null else category) },
+                        leadingIcon = { Icon(category.icon, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                    )
+                }
+                if (!categoriesExpanded && sortedCategories.size > visibleCategories.size) {
+                    SheetChip(
+                        label = stringResource(R.string.inventory_filter_more_categories, sortedCategories.size - visibleCategories.size),
+                        selected = false,
+                        onClick = { categoriesExpanded = true },
+                    )
                 }
             }
-            FilterSheetSection(title = stringResource(R.string.inventory_filter_cd)) {
-                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                    FilterSheetRow(
-                        label = stringResource(R.string.inventory_favorites_filter_menu_item),
-                        selected = favoritesOnly,
-                        onClick = { onFavoritesToggle(!favoritesOnly) },
-                    )
-                    FilterSheetRow(
-                        label = stringResource(R.string.inventory_quick_filter_low_stock),
-                        selected = lowStockOnly,
-                        onClick = { onLowStockToggle(!lowStockOnly) },
-                    )
-                    FilterSheetRow(
-                        label = stringResource(R.string.inventory_quick_filter_expiring_soon),
-                        selected = expiringSoonOnly,
-                        onClick = { onExpiringSoonToggle(!expiringSoonOnly) },
-                    )
-                }
-                Spacer(modifier = Modifier.height(12.dp))
-                // The full fixed category set, in the same order a typical supermarket lays
-                // out its aisles (see Category.sortOrder).
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    item {
-                        FilterChip(
-                            selected = selectedCategory == null,
-                            onClick = { onCategorySelected(null) },
-                            label = { Text(stringResource(R.string.inventory_filter_all)) },
+
+            SheetEyebrow(text = stringResource(R.string.inventory_filter_section_display), modifier = Modifier.padding(top = 24.dp))
+            Column(modifier = Modifier.padding(top = 10.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Box {
+                    DisplayRow(
+                        label = stringResource(R.string.inventory_sort_cd),
+                        onClick = { sortMenuExpanded = true },
+                    ) {
+                        Text(
+                            text = stringResource(sortSelected.labelRes),
+                            style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+                            color = MaterialTheme.colorScheme.primary,
                         )
+                        Icon(Icons.Filled.KeyboardArrowDown, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                     }
-                    items(Category.entries.sortedBy { it.sortOrder }) { category ->
-                        FilterChip(
-                            selected = selectedCategory == category,
-                            onClick = { onCategorySelected(if (selectedCategory == category) null else category) },
-                            label = { Text(stringResource(category.displayNameRes)) },
-                            leadingIcon = { Icon(category.icon, contentDescription = null, modifier = Modifier.size(18.dp)) },
-                        )
-                    }
-                }
-                // Only offered once at least one item has a location set — an always-visible
-                // empty row would just be dead space for households not using the field yet.
-                if (availableLocations.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        item {
-                            FilterChip(
-                                selected = selectedLocation == null,
-                                onClick = { onLocationSelected(null) },
-                                label = { Text(stringResource(R.string.inventory_filter_all)) },
-                            )
-                        }
-                        items(availableLocations) { location ->
-                            FilterChip(
-                                selected = selectedLocation == location,
-                                onClick = { onLocationSelected(if (selectedLocation == location) null else location) },
-                                label = { Text(locationDisplayLabel(location)) },
-                                leadingIcon = { Icon(Icons.Filled.LocationOn, contentDescription = null, modifier = Modifier.size(18.dp)) },
+                    DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
+                        InventorySortOption.entries.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(stringResource(option.labelRes)) },
+                                trailingIcon = { if (option == sortSelected) Icon(Icons.Filled.Check, contentDescription = null) },
+                                onClick = { onSortSelected(option); sortMenuExpanded = false },
                             )
                         }
                     }
                 }
+                // Only worth offering once there's more than one location in use — with zero or
+                // one, "group by location" would either be pointless (nothing to group) or
+                // identical to the flat list.
+                if (showGroupBy) {
+                    DisplayRow(label = stringResource(R.string.inventory_filter_row_group_by)) {
+                        SegmentedTwoWay(
+                            optionA = InventoryGroupBy.CATEGORY,
+                            labelA = stringResource(InventoryGroupBy.CATEGORY.labelRes),
+                            optionB = InventoryGroupBy.LOCATION,
+                            labelB = stringResource(InventoryGroupBy.LOCATION.labelRes),
+                            selected = groupBySelected,
+                            onSelect = onGroupBySelected,
+                        )
+                    }
+                }
+                DisplayRow(label = stringResource(R.string.inventory_view_mode_title)) {
+                    SegmentedTwoWay(
+                        optionA = InventoryViewMode.LIST,
+                        iconA = Icons.Filled.ViewList,
+                        iconACd = stringResource(R.string.inventory_view_mode_list),
+                        optionB = InventoryViewMode.GRID,
+                        iconB = Icons.Filled.GridView,
+                        iconBCd = stringResource(R.string.inventory_view_mode_grid),
+                        selected = viewMode,
+                        onSelect = onViewModeChange,
+                    )
+                }
+            }
+
+            Column(modifier = Modifier.padding(top = 28.dp)) {
+                Text(
+                    text = pluralStringResource(R.plurals.inventory_filter_footer_count, resultCount, resultCount),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(bottom = 10.dp),
+                )
+                SheetPrimaryButton(text = stringResource(R.string.inventory_filter_footer_show_results), onClick = onDismiss)
             }
         }
     }
 }
 
-/** One titled group inside [InventoryFilterSheet] — an eyebrow-style label above its content. */
+/** One "ZO TOON JE HET" row — a label on the left, arbitrary trailing content (a dropdown
+ *  trigger, a segmented control) on the right. [onClick] makes the whole row tappable, for the
+ *  Sorteren row's dropdown trigger; left null for rows whose trailing content is itself
+ *  interactive (the segmented controls), so taps outside those pill buttons don't do anything. */
 @Composable
-private fun FilterSheetSection(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Column {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.labelLarge,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.padding(bottom = 8.dp),
-        )
-        content()
-    }
-}
-
-/** One selectable row inside a [FilterSheetSection] — label left, checkmark right when selected. */
-@Composable
-private fun FilterSheetRow(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun DisplayRow(
+    label: String,
+    onClick: (() -> Unit)? = null,
+    trailing: @Composable RowScope.() -> Unit,
+) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(SoftCardShapeCompact)
-            .clickable(onClick = onClick)
-            .padding(vertical = 12.dp, horizontal = 4.dp),
+            .let { if (onClick != null) it.clickable(onClick = onClick) else it }
+            .padding(vertical = 10.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(text = label, style = MaterialTheme.typography.bodyLarge)
-        if (selected) {
-            Icon(Icons.Filled.Check, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp), content = trailing)
+    }
+}
+
+/** A 2-way pill segmented control — Koppen-per (Categorie/Locatie, text) and Weergave
+ *  (lijst/tegels, icon-only) both use this instead of hand-rolling two near-identical rows. */
+@Composable
+private fun <T> SegmentedTwoWay(
+    optionA: T,
+    optionB: T,
+    selected: T,
+    onSelect: (T) -> Unit,
+    labelA: String? = null,
+    labelB: String? = null,
+    iconA: ImageVector? = null,
+    iconB: ImageVector? = null,
+    iconACd: String? = null,
+    iconBCd: String? = null,
+) {
+    Row(
+        modifier = Modifier
+            .background(MaterialTheme.colorScheme.surfaceContainerHigh, CircleShape)
+            .padding(3.dp),
+    ) {
+        SegmentButton(labelA, iconA, iconACd, selected == optionA) { onSelect(optionA) }
+        SegmentButton(labelB, iconB, iconBCd, selected == optionB) { onSelect(optionB) }
+    }
+}
+
+@Composable
+private fun SegmentButton(label: String?, icon: ImageVector?, iconCd: String?, selected: Boolean, onClick: () -> Unit) {
+    val background = if (selected) SageGreenPrimary else Color.Transparent
+    val content = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+    Row(
+        modifier = Modifier
+            .clip(CircleShape)
+            .background(background)
+            .clickable(onClick = onClick)
+            .padding(horizontal = if (label != null) 14.dp else 10.dp, vertical = 8.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+    ) {
+        if (icon != null) Icon(icon, contentDescription = iconCd, tint = content, modifier = Modifier.size(18.dp))
+        if (label != null) Text(label, color = content, style = MaterialTheme.typography.labelLarge)
+    }
+}
+
+/** One "WAAR AANDACHT NODIG IS" severity card — a big real count over a short label, tinted with
+ *  [tint] (null = neutral, for "Bijna op": low stock is a real, independent axis from the other
+ *  two date-based cards rather than a third severity tier of the same "verlopen" spectrum, so it
+ *  reads as the calmest of the three). Ringed in [tint] (or the theme outline, when neutral)
+ *  while [selected]. */
+@Composable
+private fun AttentionCard(
+    count: Int,
+    label: String,
+    selected: Boolean,
+    tint: Color?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val ringColor = tint ?: MaterialTheme.colorScheme.outline
+    Surface(
+        onClick = onClick,
+        shape = SoftCardShapeCompact,
+        color = tint?.copy(alpha = 0.14f) ?: MaterialTheme.colorScheme.surfaceContainerHigh,
+        border = if (selected) BorderStroke(2.dp, ringColor) else null,
+        modifier = modifier,
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 14.dp)) {
+            Text(
+                text = count.toString(),
+                style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.ExtraBold),
+                color = tint ?: MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                color = tint ?: MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
+            )
         }
     }
 }

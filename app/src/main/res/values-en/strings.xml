@@ -551,13 +551,10 @@
     <string name="inventory_search_placeholder">Search inventory…</string>
     <string name="inventory_filter_all">All</string>
     <string name="inventory_sort_cd">Sort</string>
-    <string name="inventory_filter_cd">Filter</string>
     <string name="inventory_favorites_filter_cd">Show favorites only</string>
     <string name="inventory_favorites_filter_active_cd">Show favorites only (active)</string>
     <string name="inventory_favorites_filter_menu_item">Favorites</string>
     <string name="inventory_mark_favorite_cd">Mark as favorite</string>
-    <string name="inventory_quick_filter_low_stock">Low stock</string>
-    <string name="inventory_quick_filter_expiring_soon">Expiring soon</string>
     <string name="inventory_unmark_favorite_cd">Remove favorite</string>
     <string name="inventory_tune_cd">Sort, filter and view</string>
     <string name="inventory_view_mode_title">View</string>
@@ -603,8 +600,34 @@
         <item quantity="other">%1$d days</item>
     </plurals>
     <string name="inventory_row_menu_cd">More options</string>
-    <string name="inventory_group_by_cd">Group by</string>
     <string name="inventory_no_location_label">No location</string>
+
+    <!-- Voorraad filter sheet -->
+    <string name="inventory_filter_sheet_title">Filters</string>
+    <plurals name="inventory_filter_sheet_active_count">
+        <item quantity="one">%1$d active</item>
+        <item quantity="other">%1$d active</item>
+    </plurals>
+    <plurals name="inventory_filter_sheet_total_count">
+        <item quantity="one">%1$d product total</item>
+        <item quantity="other">%1$d products total</item>
+    </plurals>
+    <string name="inventory_filter_sheet_clear_all">Clear all</string>
+    <string name="inventory_filter_remove_chip_cd">Remove filter</string>
+    <string name="inventory_filter_section_attention">Where attention is needed</string>
+    <string name="inventory_filter_card_expiring_soon">Expiring soon</string>
+    <string name="inventory_filter_card_low_stock">Low stock</string>
+    <string name="inventory_filter_no_expiration_date">No date</string>
+    <string name="inventory_filter_section_location">Location</string>
+    <string name="inventory_filter_section_category">Category</string>
+    <string name="inventory_filter_more_categories">+%1$d more</string>
+    <string name="inventory_filter_section_display">Display</string>
+    <string name="inventory_filter_row_group_by">Group by</string>
+    <plurals name="inventory_filter_footer_count">
+        <item quantity="one">%1$d product</item>
+        <item quantity="other">%1$d products</item>
+    </plurals>
+    <string name="inventory_filter_footer_show_results">Show results</string>
 
     <!-- Inventory sort options -->
     <string name="sort_option_name">Name</string>

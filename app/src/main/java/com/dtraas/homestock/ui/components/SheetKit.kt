@@ -19,10 +19,12 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -233,6 +235,27 @@ fun SheetChip(
         onClick = onClick,
         label = { Text(label, style = MaterialTheme.typography.labelLarge) },
         leadingIcon = leadingIcon,
+        shape = CircleShape,
+        modifier = modifier,
+    )
+}
+
+/**
+ * One active-filter pill in a filter sheet's own "N actief" removable-chip row (Recepten's and
+ * Voorraad's filter sheets both use this) — a thin, always-selected [FilterChip] with a trailing
+ * "✕" rather than [SheetChip] (which only ever supports a *leading* icon, wrong side for "tap to
+ * remove"). [removeCd] is the "✕"'s content description, screen-specific (e.g. "Filter
+ * verwijderen") since each caller phrases it slightly differently.
+ */
+@Composable
+fun SheetRemovableChip(label: String, removeCd: String, onRemove: () -> Unit, modifier: Modifier = Modifier) {
+    FilterChip(
+        selected = true,
+        onClick = onRemove,
+        label = { Text(label, style = MaterialTheme.typography.labelLarge) },
+        trailingIcon = {
+            Icon(imageVector = Icons.Filled.Close, contentDescription = removeCd, modifier = Modifier.size(16.dp))
+        },
         shape = CircleShape,
         modifier = modifier,
     )
