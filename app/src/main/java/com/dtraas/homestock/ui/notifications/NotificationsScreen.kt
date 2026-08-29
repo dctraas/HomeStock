@@ -66,7 +66,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
@@ -78,8 +77,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import coil.compose.AsyncImage
-import coil.compose.AsyncImagePainter
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.dao.ActivityLogWithProduct
@@ -87,7 +84,6 @@ import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.model.ActivityType
 import com.dtraas.homestock.data.model.DeveloperNotice
 import com.dtraas.homestock.data.repository.HouseholdMember
-import com.dtraas.homestock.data.repository.photoUrlFor
 import com.dtraas.homestock.ui.components.HomeStockBottomSheet
 import com.dtraas.homestock.ui.components.SheetTitle
 import com.dtraas.homestock.ui.components.sheetContentPadding
@@ -163,7 +159,6 @@ fun NotificationsScreen(onBack: () -> Unit, onNavigateToProduct: (String) -> Uni
                     ActivityTimeline(
                         urgentItem = urgentItem,
                         activity = appActivity,
-                        members = members,
                         lastSeenAt = lastActivitySeenAt,
                         unreadCount = unreadActivityCount,
                         onMarkSeen = viewModel::markActivitySeen,
@@ -309,7 +304,6 @@ private fun dayHeaderLabel(date: LocalDate, today: LocalDate): String = when (da
 private fun ActivityTimeline(
     urgentItem: InventoryItemWithProduct?,
     activity: List<ActivityLogWithProduct>,
-    members: List<HouseholdMember>,
     lastSeenAt: Long,
     unreadCount: Int,
     onMarkSeen: () -> Unit,
@@ -354,7 +348,6 @@ private fun ActivityTimeline(
             }
             HouseholdActivityRow(
                 entry = entry,
-                photoUrl = members.photoUrlFor(entry.actorName),
                 entryDate = entryDate,
                 today = today,
                 isUnread = entry.timestamp > lastSeenAt,
@@ -441,6 +434,18 @@ private fun UrgentCard(item: InventoryItemWithProduct, today: LocalDate, onClick
     }
 }
 
+/** "Dennis Traas" -> "DT", "Marieke" -> "MA" — first letter of each of the first two words, or
+ *  (a single-word name has no second word to draw from) the first two letters of that one word
+ *  instead. Always uppercased, always 2 characters for any non-blank [name]. */
+private fun initialsFor(name: String): String {
+    val words = name.trim().split(Regex("\\s+")).filter { it.isNotEmpty() }
+    return when {
+        words.size >= 2 -> "${words[0].first()}${words[1].first()}"
+        words.size == 1 -> words[0].take(2)
+        else -> ""
+    }.uppercase()
+}
+
 private fun activityIcon(type: ActivityType): ImageVector = when (type) {
     ActivityType.SCANNED -> Icons.Filled.QrCodeScanner
     ActivityType.QUANTITY_CHANGED -> Icons.Filled.Tune
@@ -452,14 +457,14 @@ private fun activityIcon(type: ActivityType): ImageVector = when (type) {
     ActivityType.WASTED -> Icons.Filled.DeleteSweep
 }
 
-/** A household event: an unread dot (only while [isUnread]), a 34dp member avatar (photo, or a
- *  fallback icon when the best-effort name match in [NotificationsViewModel.members] finds
- *  nothing), then exactly two lines — "<naam> <actie>" (the product name folded into the action
- *  text, bold) and "<dag> <tijdstip>" — matching the design review's mockup format. No background
- *  of its own, per the same review ("activiteit meldingen hoeven ook geen aparte
- *  achtergrondkleur te hebben"). */
+/** A household event: an unread dot (only while [isUnread]), a 34dp member avatar (that actor's
+ *  initials, e.g. "Dennis Traas" -> "DT" and "Marieke" -> "MA" — see [initialsFor] — or a
+ *  fallback icon when there's no actor name at all), then exactly two lines — "<naam> <actie>"
+ *  (the product name folded into the action text, bold) and "<dag> <tijdstip>" — matching the
+ *  design review's mockup format. No background of its own, per the same review ("activiteit
+ *  meldingen hoeven ook geen aparte achtergrondkleur te hebben"). */
 @Composable
-private fun HouseholdActivityRow(entry: ActivityLogWithProduct, photoUrl: String?, entryDate: LocalDate, today: LocalDate, isUnread: Boolean) {
+private fun HouseholdActivityRow(entry: ActivityLogWithProduct, entryDate: LocalDate, today: LocalDate, isUnread: Boolean) {
     val type = ActivityType.fromStorageKey(entry.type)
     val time = remember(entry.timestamp) {
         timeOnlyFormatter.format(Instant.ofEpochMilli(entry.timestamp).atZone(ZoneId.systemDefault()))
@@ -502,18 +507,13 @@ private fun HouseholdActivityRow(entry: ActivityLogWithProduct, photoUrl: String
             modifier = Modifier.size(34.dp),
         ) {
             Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-                // photoLoadFailed catches a URL that exists but doesn't actually load (deleted
-                // Storage object, a stale/broken download URL, no network) — without this, that
-                // case rendered a blank circle instead of falling back to the activity icon the
-                // way a genuinely missing photoUrl already does below.
-                var photoLoadFailed by remember(photoUrl) { mutableStateOf(false) }
-                if (photoUrl != null && !photoLoadFailed) {
-                    AsyncImage(
-                        model = photoUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        onState = { state -> photoLoadFailed = state is AsyncImagePainter.State.Error },
-                        modifier = Modifier.fillMaxSize().clip(CircleShape),
+                val initials = entry.actorName?.trim()?.takeIf { it.isNotEmpty() }?.let { initialsFor(it) }
+                if (initials != null) {
+                    Text(
+                        text = initials,
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSecondaryContainer,
                     )
                 } else {
                     Icon(

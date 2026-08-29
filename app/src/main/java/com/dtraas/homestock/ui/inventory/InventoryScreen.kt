@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
@@ -1608,7 +1609,10 @@ private fun InventoryGridTile(
                     shape = CircleShape,
                     color = MaterialTheme.colorScheme.surface.copy(alpha = 0.85f),
                     onClick = onAddToShoppingList,
-                    modifier = Modifier.align(Alignment.BottomEnd).padding(2.dp),
+                    // Nudged past the photo's own corner rather than just flush with it (plain
+                    // .padding() can't go negative) — sits a little into the bottom-right corner
+                    // instead of sitting just inside it.
+                    modifier = Modifier.align(Alignment.BottomEnd).offset(x = 4.dp, y = 4.dp),
                 ) {
                     Icon(
                         Icons.Filled.AddShoppingCart,

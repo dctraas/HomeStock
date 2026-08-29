@@ -1917,16 +1917,24 @@ private fun MatchRingBadge(matchRatio: Float?, modifier: Modifier = Modifier) {
     }
 }
 
-/** Heart overlay shared by every grid tile flavor — toggles [RecipesViewModel.toggleFavorite]. */
+/** Heart overlay shared by every grid tile flavor — toggles [RecipesViewModel.toggleFavorite].
+ *  Same fixed 34dp circle (and same 6dp corner padding) as [MatchRingBadge] — this used to just
+ *  wrap tightly around its icon+padding instead (a smaller ~28dp circle), which still put its
+ *  top edge at the same 6dp from the card corner as the ring badge but, being a smaller circle,
+ *  left its CENTER a few dp higher than the ring badge's center: the two looked like they sat on
+ *  different lines even though both were "6dp from the top". Explicitly sizing both the same
+ *  makes their centers line up automatically. */
 @Composable
 private fun FavoriteHeartButton(isFavorite: Boolean, onToggle: () -> Unit, modifier: Modifier = Modifier) {
-    Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.85f), onClick = onToggle, modifier = modifier) {
-        Icon(
-            imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
-            contentDescription = stringResource(if (isFavorite) R.string.recipes_favorite_remove_cd else R.string.recipes_favorite_add_cd),
-            tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(6.dp).size(16.dp),
-        )
+    Surface(shape = CircleShape, color = Color.White.copy(alpha = 0.85f), onClick = onToggle, modifier = modifier.size(34.dp)) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
+            Icon(
+                imageVector = if (isFavorite) Icons.Filled.Favorite else Icons.Filled.FavoriteBorder,
+                contentDescription = stringResource(if (isFavorite) R.string.recipes_favorite_remove_cd else R.string.recipes_favorite_add_cd),
+                tint = if (isFavorite) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(16.dp),
+            )
+        }
     }
 }
 

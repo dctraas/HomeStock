@@ -605,9 +605,17 @@ private fun ShoppingModeItemRow(item: ShoppingListItemEntity, onCheckedChange: (
     ) {
         ShoppingModeCheckbox(checked = item.isChecked, onCheckedChange = onCheckedChange)
         Column(modifier = Modifier.weight(1f).padding(start = 14.dp)) {
+            // bodyLarge, not titleSmall — a product name is free text a household typed in, not
+            // a heading, and can run long ("Halfvolle yoghurt drinkyoghurt framboos 1 liter").
+            // Type.kt's own Baloo 2 (titleX) is meant for short display text, "never for long
+            // text"; ShoppingListRow's equivalent name already uses the Nunito (bodyX) family for
+            // exactly that reason, so this stayed inconsistent with it — titleSmall here rendered
+            // every product name in the chunky display face regardless of length. Kept Bold and
+            // sized up from ShoppingListRow's own bodyMedium, matching this screen's own
+            // larger-touch-target reasoning above, without switching typeface families.
             Text(
                 text = item.name,
-                style = MaterialTheme.typography.titleSmall,
+                style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 textDecoration = if (item.isChecked) TextDecoration.LineThrough else null,
                 maxLines = 1,
