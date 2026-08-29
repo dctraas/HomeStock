@@ -1297,7 +1297,10 @@ private fun CookWithWhatYouHaveCard(
         shape = SoftCardShape,
     ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(16.dp),
+            // Collapsed, this row holds nothing but the one-line title — vertical padding
+            // drops from 16dp to 6dp so the card hugs it closely instead of leaving what
+            // looked like two blank lines above/below.
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = if (collapsed) 6.dp else 16.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -1357,15 +1360,36 @@ private fun CookWithWhatYouHaveCard(
                     )
                 }
             }
-            IconButton(onClick = onToggleCollapsed, modifier = Modifier.padding(start = 4.dp)) {
-                Icon(
-                    imageVector = Icons.Filled.KeyboardArrowDown,
-                    contentDescription = stringResource(
-                        if (collapsed) R.string.hint_card_expand_cd else R.string.hint_card_collapse_cd,
-                    ),
-                    tint = Color.White,
-                    modifier = Modifier.rotate(if (collapsed) 0f else 180f),
-                )
+            // A plain clickable box instead of IconButton while collapsed — IconButton enforces
+            // its own 48dp minimum touch target internally regardless of the row's own padding
+            // (same reasoning as QuantityStepper's RepeatingIconButton), which alone would have
+            // kept this row tall no matter how far the padding above dropped. Expanded, there's
+            // enough else going on in the row that the full-size button doesn't stand out the
+            // same way, so it stays there.
+            if (collapsed) {
+                Box(
+                    modifier = Modifier
+                        .padding(start = 4.dp)
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .clickable(onClick = onToggleCollapsed),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowDown,
+                        contentDescription = stringResource(R.string.hint_card_expand_cd),
+                        tint = Color.White,
+                    )
+                }
+            } else {
+                IconButton(onClick = onToggleCollapsed, modifier = Modifier.padding(start = 4.dp)) {
+                    Icon(
+                        imageVector = Icons.Filled.KeyboardArrowDown,
+                        contentDescription = stringResource(R.string.hint_card_collapse_cd),
+                        tint = Color.White,
+                        modifier = Modifier.rotate(180f),
+                    )
+                }
             }
         }
     }
