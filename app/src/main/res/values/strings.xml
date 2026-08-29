@@ -1018,6 +1018,10 @@
     <string name="recipes_filter_diet_vegetarian">Vegetarisch</string>
     <string name="recipes_filter_diet_vegan">Veganistisch</string>
     <string name="recipes_filter_diet_gluten_free">Glutenvrij</string>
+    <string name="recipes_filter_diet_keto">Keto</string>
+    <string name="recipes_filter_diet_paleo">Paleo</string>
+    <string name="recipes_filter_diet_pescetarian">Pescetarisch</string>
+    <string name="recipes_filter_diet_low_fodmap">Low FODMAP</string>
     <string name="recipes_filter_section_allergens">Allergenen vermijden</string>
     <string name="recipes_filter_allergen_owner_banner">%1$s heeft %2$s als allergie in het profiel staan</string>
     <string name="recipes_filter_footer_counting">Bezig met tellen…</string>

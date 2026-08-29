@@ -76,12 +76,15 @@ enum class MatchThreshold { ANY, MAX_3_MISSING, ALL_IN_HOUSE }
  *  today the server can't tell the two apart any more precisely than that. */
 enum class MealType { BREAKFAST, LUNCH, DINNER, SIDE_DISH, DESSERT }
 
-/** "DIEET" section — [VEGAN] implies [VEGETARIAN] (Spoonacular's own `diet` request param only
- *  ever accepts one value), so the two are mutually exclusive in the UI rather than combinable.
- *  "Glutenvrij" isn't a third case here — it reuses [RecipeFilters.excludedAllergens] (adding
- *  [com.dtraas.homestock.data.model.Allergen.GLUTEN]) instead, the same mechanism the ALLERGENEN
- *  VERMIJDEN section already uses, rather than a second, parallel gluten-free flag. */
-enum class DietPreference { VEGETARIAN, VEGAN }
+/** "DIEET" section — a curated subset of Spoonacular's own `diet` request param values (it also
+ *  supports "lacto-vegetarian"/"ovo-vegetarian"/"primal", left out here as too niche/overlapping
+ *  with [VEGETARIAN] for a general grocery app). Spoonacular's `diet` only ever accepts one value
+ *  per request, so these stay mutually exclusive in the UI rather than combinable — e.g. [VEGAN]
+ *  implies [VEGETARIAN], not a second filter stacked on top of it. "Glutenvrij" isn't a case here
+ *  — it reuses [RecipeFilters.excludedAllergens] (adding [com.dtraas.homestock.data.model.Allergen.GLUTEN])
+ *  instead, the same mechanism the ALLERGENEN VERMIJDEN section already uses, rather than a
+ *  second, parallel gluten-free flag. */
+enum class DietPreference { VEGETARIAN, VEGAN, KETO, PALEO, PESCETARIAN, LOW_FODMAP }
 
 /**
  * Everything the Recepten filter sheet can narrow [RecipeRepository.browseAllRecipes]/
@@ -1108,6 +1111,10 @@ class RecipeRepository(
     private fun spoonacularDiet(diet: DietPreference): String = when (diet) {
         DietPreference.VEGETARIAN -> "vegetarian"
         DietPreference.VEGAN -> "vegan"
+        DietPreference.KETO -> "ketogenic"
+        DietPreference.PALEO -> "paleo"
+        DietPreference.PESCETARIAN -> "pescetarian"
+        DietPreference.LOW_FODMAP -> "low fodmap"
     }
 
     /** [RecipeFilters.matchThreshold]'s client-side half — Spoonacular has no notion of "how much

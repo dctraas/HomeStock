@@ -1678,6 +1678,10 @@ private fun mealTypeLabelRes(type: MealType): Int = when (type) {
 private fun dietPreferenceLabelRes(diet: DietPreference): Int = when (diet) {
     DietPreference.VEGETARIAN -> R.string.recipes_filter_diet_vegetarian
     DietPreference.VEGAN -> R.string.recipes_filter_diet_vegan
+    DietPreference.KETO -> R.string.recipes_filter_diet_keto
+    DietPreference.PALEO -> R.string.recipes_filter_diet_paleo
+    DietPreference.PESCETARIAN -> R.string.recipes_filter_diet_pescetarian
+    DietPreference.LOW_FODMAP -> R.string.recipes_filter_diet_low_fodmap
 }
 
 /**

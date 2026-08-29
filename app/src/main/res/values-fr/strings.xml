@@ -1014,6 +1014,10 @@
     <string name="recipes_filter_diet_vegetarian">Végétarien</string>
     <string name="recipes_filter_diet_vegan">Végétalien</string>
     <string name="recipes_filter_diet_gluten_free">Sans gluten</string>
+    <string name="recipes_filter_diet_keto">Kéto</string>
+    <string name="recipes_filter_diet_paleo">Paléo</string>
+    <string name="recipes_filter_diet_pescetarian">Pescétarien</string>
+    <string name="recipes_filter_diet_low_fodmap">Pauvre en FODMAP</string>
     <string name="recipes_filter_section_allergens">Éviter les allergènes</string>
     <string name="recipes_filter_allergen_owner_banner">%1$s a %2$s indiqué comme allergie dans son profil</string>
     <string name="recipes_filter_footer_counting">Comptage en cours…</string>
