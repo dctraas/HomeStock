@@ -848,6 +848,10 @@
     <string name="shopping_mode_in_cart_format">%1$s in de wagen</string>
     <string name="shopping_mode_aisle_label_format">gang %1$d · %2$s</string>
     <string name="shopping_mode_done_button">Klaar met winkelen</string>
+    <plurals name="shopping_mode_added_to_inventory_format">
+        <item quantity="one">%1$d product toegevoegd aan Voorraad</item>
+        <item quantity="other">%1$d producten toegevoegd aan Voorraad</item>
+    </plurals>
     <string name="shopping_mode_empty">Niets om af te vinken — je lijst is leeg.</string>
     <string name="shopping_mode_picker_subtitle">Welke winkel ga je nu langs?</string>
     <string name="shopping_mode_switch_store">Wissel</string>

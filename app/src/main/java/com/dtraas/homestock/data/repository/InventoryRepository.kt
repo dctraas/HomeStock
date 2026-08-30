@@ -4,14 +4,17 @@ import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.local.entity.InventoryItemEntity
 import com.dtraas.homestock.data.local.entity.ProductEntity
 import com.dtraas.homestock.data.local.entity.ScanHistoryEntity
+import com.dtraas.homestock.data.local.entity.ShoppingListItemEntity
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.ExpiryEstimator
 import com.dtraas.homestock.data.remote.observeSnapshot
 import com.dtraas.homestock.data.remote.observeSnapshots
 import com.google.firebase.firestore.FirebaseFirestore
+import java.util.UUID
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -230,9 +233,24 @@ class InventoryRepository(
      * remainder hits zero, same as [consumeOneFromMeal] one unit at a time already does.
      */
     suspend fun removeQuantityFromInventory(barcode: String, amount: Int, wasted: Boolean = false) {
-        val householdId = householdSession.householdId.value ?: return
+        val removedAmount = decrementQuantity(barcode, amount)
+        if (removedAmount <= 0) return
+        if (wasted) {
+            activityLogRepository.logWasted(barcode, removedAmount)
+        } else {
+            activityLogRepository.logRemoved(barcode, removedAmount)
+        }
+    }
+
+    /** The decrement-and-delete-at-zero mechanics [removeQuantityFromInventory] logs to
+     *  Activiteit and [undoInventoryAddition] deliberately doesn't — factored out so both share
+     *  the exact same clamping/delete behavior instead of drifting apart. Returns how much was
+     *  actually removed (0 if [barcode] had no inventory row at all), same clamp
+     *  [removeQuantityFromInventory]'s own doc already describes. */
+    private suspend fun decrementQuantity(barcode: String, amount: Int): Int {
+        val householdId = householdSession.householdId.value ?: return 0
         val inventoryDoc = inventoryCollection(householdId).document(barcode)
-        val existing = InventoryItemEntity.fromDocument(inventoryDoc.get().await()) ?: return
+        val existing = InventoryItemEntity.fromDocument(inventoryDoc.get().await()) ?: return 0
         val removedAmount = amount.coerceIn(1, existing.quantity)
         val newQuantity = existing.quantity - removedAmount
         if (newQuantity <= 0) {
@@ -240,11 +258,46 @@ class InventoryRepository(
         } else {
             inventoryDoc.set(existing.copy(quantity = newQuantity, updatedAt = System.currentTimeMillis()).toMap()).await()
         }
-        if (wasted) {
-            activityLogRepository.logWasted(barcode, removedAmount)
-        } else {
-            activityLogRepository.logRemoved(barcode, removedAmount)
+        return removedAmount
+    }
+
+    /**
+     * "Klaar met winkelen" — adds each checked shopping list [items] entry to Voorraad: existing
+     * quantity + this item's own (see [recordScan]). Reuses an existing inventory item's real
+     * barcode when one already matches this item's name exactly (so repeatedly buying a
+     * never-scanned "appels" consolidates into one row instead of a fresh one every trip); a
+     * synthetic `manual-<uuid>` id otherwise — the same barcode-free pattern Voorraad's own
+     * manual-add flow uses (see [ProductRepository.saveManualProduct]/ScanResultViewModel's
+     * `isManualEntry`). Doesn't touch the shopping list itself, or log to Activiteit the way a
+     * household-initiated scan/edit would — the caller (ShoppingListViewModel.finishShopping)
+     * removes the shopping list items separately, and this is closer to a manual-add than a
+     * "scan" in intent. Returns the barcode actually used for each [items] entry, same order —
+     * [undoInventoryAddition] needs exactly that to reverse this if the household taps "ongedaan
+     * maken".
+     */
+    suspend fun addCheckedShoppingItemsToInventory(items: List<ShoppingListItemEntity>): List<String> {
+        if (items.isEmpty()) return emptyList()
+        val existingByName = observeInventoryWithProduct().first().associateBy { it.name.trim().lowercase() }
+        return items.map { item ->
+            val matchedExisting = existingByName[item.name.trim().lowercase()]
+            val barcode = item.barcode ?: matchedExisting?.barcode ?: "manual-${UUID.randomUUID()}"
+            val category = Category.fromStorageKey(item.category)
+            when {
+                item.barcode != null -> productRepository.getOrFetchProduct(barcode)
+                matchedExisting == null -> Result.success(productRepository.saveManualProduct(barcode, item.name, category))
+                else -> null // reused an existing inventory item's own barcode — its product doc already exists
+            }
+            recordScan(barcode, item.quantity, category)
+            barcode
         }
+    }
+
+    /** Reverses one [addCheckedShoppingItemsToInventory] entry — same decrement-and-delete-at-
+     *  zero mechanics as [removeQuantityFromInventory], but skips the activity log entirely:
+     *  undoing an automatic "klaar met winkelen" add isn't a real removed/wasted event the
+     *  household consciously chose, so it shouldn't show up in Activiteit as one. */
+    suspend fun undoInventoryAddition(barcode: String, amount: Int) {
+        decrementQuantity(barcode, amount)
     }
 
     /** Re-creates an inventory row after an undo action, without touching the activity log. */

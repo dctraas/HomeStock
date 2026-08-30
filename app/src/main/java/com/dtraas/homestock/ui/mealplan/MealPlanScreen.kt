@@ -34,7 +34,6 @@ import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.ChevronLeft
 import androidx.compose.material.icons.filled.ChevronRight
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.Cookie
 import androidx.compose.material.icons.filled.Delete
@@ -859,16 +858,17 @@ private fun EmptySlotAddButton(onClick: () -> Unit, contentDescription: String) 
  * A recipe pick or a matched voorraad product may have [PlannedMeal.thumbnailUrl]; the compact
  * row deliberately doesn't show it (unlike the old thumbnail-led row this replaces) — avondeten's
  * own [DinnerCard] is now where the app's one photo-forward treatment lives, so every other slot
- * reads as a slim, scannable line instead: name, an optional "toevoegen aan boodschappenlijst"
- * button for a planned product that didn't match voorraad (see [PlannedMeal.isProduct]/
- * [PlannedMeal.productBarcode]'s doc), and remove. Still swipeable end-to-start to remove, same
- * as before, on top of the explicit "X" button.
+ * reads as a slim, scannable line instead: name plus one menu button ([PlannedMealMenuButton])
+ * pinned to the card's own top-right corner rather than sharing a row with the name — per
+ * explicit request, this replaced what used to be up to three separate icons squeezed inline
+ * (an opgebruikt/weggegooid overflow, an optional "toevoegen aan boodschappenlijst" button, and
+ * a standalone "X") with that one corner button covering all of it, "Verwijderen" included.
+ * Still swipeable end-to-start to remove too, on top of that menu's own entry for it.
  *
- * [stacked] puts the name on its own full-width line (wrapping to 2 lines instead of hard-
- * truncating to almost nothing) with the action icons on a second line underneath, instead of
- * everything squeezed onto one line — [MealSlotTile] passes this for Ontbijt/Lunch, whose
- * half-width column (two tiles side by side) leaves too little room for a name plus up to 3
- * icons on one line. [DinnerCard]'s own extra rows are full app width, so they stay single-line.
+ * [stacked] wraps the name to 2 lines instead of hard-truncating it, rather than the 1-line
+ * ellipsis [MealSlotTile] uses for [DinnerCard]'s own full-app-width extra rows — [MealSlotTile]
+ * passes this for Ontbijt/Lunch, whose half-width column (two tiles side by side) would
+ * otherwise leave a name almost nothing to work with.
  */
 @Composable
 private fun CompactPlannedRow(
@@ -906,143 +906,127 @@ private fun CompactPlannedRow(
             }
         },
     ) {
-        val containerModifier = Modifier
-            .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
-            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
-            .clickable(enabled = meal.recipeId != null || meal.productBarcode != null, onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = if (stacked) 8.dp else 10.dp)
         val nameStyle = MaterialTheme.typography.bodyMedium
         val nameDecoration = if (meal.status != null) TextDecoration.LineThrough else null
         val nameColor = if (meal.status != null) MaterialTheme.colorScheme.onSurfaceVariant else Color.Unspecified
 
-        if (stacked) {
-            Column(modifier = containerModifier, verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    text = meal.name,
-                    style = nameStyle,
-                    textDecoration = nameDecoration,
-                    color = nameColor,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.fillMaxWidth(),
-                )
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    PlannedMealStatusActions(meal, onAddToShoppingList, onMarkEaten, onMarkWasted)
-                    RemoveMealIconButton(onRemove)
-                }
-            }
-        } else {
-            Row(modifier = containerModifier, verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = meal.name,
-                    style = nameStyle,
-                    textDecoration = nameDecoration,
-                    color = nameColor,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                PlannedMealStatusActions(meal, onAddToShoppingList, onMarkEaten, onMarkWasted)
-                RemoveMealIconButton(onRemove)
-            }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(12.dp))
+                .clickable(enabled = meal.recipeId != null || meal.productBarcode != null, onClick = onClick)
+                .padding(horizontal = 12.dp, vertical = if (stacked) 8.dp else 10.dp),
+        ) {
+            Text(
+                text = meal.name,
+                style = nameStyle,
+                textDecoration = nameDecoration,
+                color = nameColor,
+                maxLines = if (stacked) 2 else 1,
+                overflow = TextOverflow.Ellipsis,
+                // Room reserved for PlannedMealMenuButton's own corner, regardless of how wide
+                // that button's content ends up (a plain icon, or a resolved-status label plus
+                // one) — it's laid out in the same Box, not this Text's own trailing content.
+                modifier = Modifier.fillMaxWidth().padding(end = 28.dp),
+            )
+            PlannedMealMenuButton(
+                meal = meal,
+                onRemove = onRemove,
+                onAddToShoppingList = onAddToShoppingList,
+                onMarkEaten = onMarkEaten,
+                onMarkWasted = onMarkWasted,
+                modifier = Modifier.align(Alignment.TopEnd),
+            )
         }
     }
 }
 
 /**
- * Opgemaakt/weggegooid (folded into one overflow menu, or — once resolved — a small status
- * label) plus the "toevoegen aan boodschappenlijst" icon, shared between [CompactPlannedRow]'s
- * single-line and [stacked][CompactPlannedRow] layouts. Doesn't include the "X" remove button
- * (see [RemoveMealIconButton]) — that one's always last, and each layout already places it that
- * way itself.
+ * The one menu button every [CompactPlannedRow] card ends in, pinned to its top-right corner.
+ * Always shows — even a plain recipe (not [PlannedMeal.isProduct]) still needs somewhere to
+ * reach "Verwijderen" from besides swiping — but what's inside varies:
+ * - Not yet resolved AND tied to a real product: Opgebruikt/Weggegooid (one-way, same as
+ *   Productdetail's own — see [InventoryRepository.removeFromInventory]'s doc), an optional
+ *   "toevoegen aan boodschappenlijst" for a planned product that didn't match voorraad (see
+ *   [PlannedMeal.isProduct]/[PlannedMeal.productBarcode]'s doc), then Verwijderen.
+ * - Already resolved: a small "Opgebruikt"/"Weggegooid" label next to the button (flipping it
+ *   back and forth isn't offered, same one-way reasoning) — the menu itself then only has
+ *   Verwijderen left.
+ * - A plain recipe, no product tie at all: just Verwijderen.
  */
 @Composable
-private fun PlannedMealStatusActions(
+private fun PlannedMealMenuButton(
     meal: PlannedMeal,
+    onRemove: () -> Unit,
     onAddToShoppingList: () -> Unit,
     onMarkEaten: () -> Unit,
     onMarkWasted: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    // Opgebruikt/weggegooid only ever applies to a planned product, and only until it's been
-    // resolved — after that a small label replaces the overflow button rather than letting you
-    // flip it back and forth (matching Productdetail's own one-way opgebruikt/weggegooid choice,
-    // see removeFromInventory's doc). Folded into one overflow menu instead of two dedicated icon
-    // buttons — same MoreVert-menu pattern DinnerCard's featured recipe card already uses for
-    // swap/verwijder.
-    if (meal.isProduct) {
-        if (meal.status == null) {
-            var showStatusMenu by remember { mutableStateOf(false) }
-            Box {
-                IconButton(onClick = { showStatusMenu = true }, modifier = Modifier.size(28.dp)) {
-                    Icon(
-                        imageVector = Icons.Filled.MoreVert,
-                        contentDescription = stringResource(R.string.meal_plan_overflow_cd),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(16.dp),
-                    )
-                }
-                DropdownMenu(expanded = showStatusMenu, onDismissRequest = { showStatusMenu = false }) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.product_detail_delete_used_up)) },
-                        leadingIcon = {
-                            Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                        },
-                        onClick = { showStatusMenu = false; onMarkEaten() },
-                    )
-                    DropdownMenuItem(
-                        text = { Text(stringResource(R.string.product_detail_delete_wasted)) },
-                        leadingIcon = {
-                            Icon(Icons.Filled.DeleteSweep, contentDescription = null, tint = MaterialTheme.colorScheme.error)
-                        },
-                        onClick = { showStatusMenu = false; onMarkWasted() },
-                    )
-                }
-            }
-        } else {
-            Text(
-                text = stringResource(
-                    if (meal.status == MealCompletionStatus.EATEN) {
-                        R.string.product_detail_delete_used_up
+    var expanded by remember { mutableStateOf(false) }
+    val resolved = meal.isProduct && meal.status != null
+    Box(modifier = modifier) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            if (resolved) {
+                Text(
+                    text = stringResource(
+                        if (meal.status == MealCompletionStatus.EATEN) {
+                            R.string.product_detail_delete_used_up
+                        } else {
+                            R.string.product_detail_delete_wasted
+                        }
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = if (meal.status == MealCompletionStatus.EATEN) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
                     } else {
-                        R.string.product_detail_delete_wasted
-                    }
-                ),
-                style = MaterialTheme.typography.labelSmall,
-                color = if (meal.status == MealCompletionStatus.EATEN) {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                } else {
-                    MaterialTheme.colorScheme.error
-                },
-                modifier = Modifier.padding(end = 4.dp),
+                        MaterialTheme.colorScheme.error
+                    },
+                    modifier = Modifier.padding(end = 4.dp),
+                )
+            }
+            IconButton(onClick = { expanded = true }, modifier = Modifier.size(24.dp)) {
+                Icon(
+                    imageVector = Icons.Filled.MoreVert,
+                    contentDescription = stringResource(R.string.meal_plan_overflow_cd),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(16.dp),
+                )
+            }
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            if (meal.isProduct && meal.status == null) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.product_detail_delete_used_up)) },
+                    leadingIcon = {
+                        Icon(Icons.Filled.CheckCircle, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    },
+                    onClick = { expanded = false; onMarkEaten() },
+                )
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.product_detail_delete_wasted)) },
+                    leadingIcon = {
+                        Icon(Icons.Filled.DeleteSweep, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                    },
+                    onClick = { expanded = false; onMarkWasted() },
+                )
+            }
+            if (meal.isProduct && meal.productBarcode == null && meal.status == null) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.product_detail_add_to_shopping_list)) },
+                    leadingIcon = {
+                        Icon(Icons.Filled.PlaylistAdd, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                    },
+                    onClick = { expanded = false; onAddToShoppingList() },
+                )
+            }
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.meal_plan_clear_cd)) },
+                leadingIcon = { Icon(Icons.Filled.Delete, contentDescription = null) },
+                onClick = { expanded = false; onRemove() },
             )
         }
-    }
-    if (meal.isProduct && meal.productBarcode == null && meal.status == null) {
-        IconButton(onClick = onAddToShoppingList, modifier = Modifier.size(28.dp)) {
-            Icon(
-                imageVector = Icons.Filled.PlaylistAdd,
-                contentDescription = stringResource(R.string.product_detail_add_to_shopping_list),
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(16.dp),
-            )
-        }
-    }
-}
-
-@Composable
-private fun RemoveMealIconButton(onRemove: () -> Unit) {
-    IconButton(onClick = onRemove, modifier = Modifier.size(28.dp)) {
-        Icon(
-            imageVector = Icons.Filled.Close,
-            contentDescription = stringResource(R.string.meal_plan_clear_cd),
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(16.dp),
-        )
     }
 }
 

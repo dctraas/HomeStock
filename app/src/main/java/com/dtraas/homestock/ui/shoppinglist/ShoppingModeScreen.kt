@@ -40,6 +40,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,6 +53,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -80,6 +85,7 @@ import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
 import com.dtraas.homestock.ui.theme.OnTopAppBarContainerAccent
 import com.dtraas.homestock.ui.theme.SoftCardShapeCompact
 import java.util.Locale
+import kotlinx.coroutines.launch
 
 /** €-formatted total, e.g. "€26,15" — same shape as the rest of this package's [formatPrice]
  *  (private to that file), duplicated rather than exported since it's a one-line format call. */
@@ -103,9 +109,12 @@ private fun formatModePrice(value: Double): String = String.format(Locale.getDef
  * — on explicit request, this screen only ever shows one store's worth of items at a time, never
  * several mixed together the way the old design's optional store-header briefly did.
  *
- * "Klaar met winkelen" just closes back to the list — items stay checked exactly as tapped here,
- * so there's nothing destructive to confirm; clearing them off the list entirely is still its own
- * separate action in ShoppingListScreen's meer-opties, same as before this screen existed.
+ * "Klaar met winkelen" adds every item checked off in this store to Voorraad and clears them off
+ * the shopping list, with a snackbar offering to undo both halves before this screen actually
+ * closes — a household changing their mind (or a mis-tap) isn't stuck editing Voorraad by hand
+ * afterward. An empty store, or one where nothing got checked off, closes straight away — there's
+ * nothing to add or undo. Clearing checked items *without* adding them to Voorraad is still its
+ * own separate action in ShoppingListScreen's meer-opties, same as before this screen existed.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -169,6 +178,8 @@ fun ShoppingModeScreen(listId: String?, initialStoreName: String?, onClose: () -
             onCheckedChange = { itemId, checked -> viewModel.setChecked(itemId, checked) },
             // Alleen aanbieden om te wisselen als er ook daadwerkelijk iets te wisselen valt.
             onSwitchStore = if (storeNames.size > 1) { { selectedStore = null } } else null,
+            onFinishShopping = viewModel::finishShopping,
+            onUndoFinishedShopping = viewModel::undoFinishedShopping,
             onClose = onClose,
         )
     }
@@ -305,8 +316,41 @@ private fun ShoppingModeStoreScreen(
     items: List<ShoppingListItemEntity>,
     onCheckedChange: (itemId: String, checked: Boolean) -> Unit,
     onSwitchStore: (() -> Unit)?,
+    onFinishShopping: suspend (List<ShoppingListItemEntity>) -> List<String>,
+    onUndoFinishedShopping: (List<ShoppingListItemEntity>, List<String>) -> Unit,
     onClose: () -> Unit,
 ) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val undoLabel = stringResource(R.string.common_undo)
+
+    // "Klaar met winkelen" used to just close back to the list, nothing more (checked items
+    // stayed checked, still on the list). Now it also adds every checked item here — this
+    // store's, not the whole list's, since Winkelmodus only ever shows one store at a time — to
+    // Voorraad with its own quantity, and clears them off the shopping list; a snackbar with
+    // "ongedaan maken" covers both halves (see ShoppingListViewModel.finishShopping/
+    // undoFinishedShopping) before this screen closes either way. Nothing to add/undo (an empty
+    // store, or one where nothing got checked off) skips straight to onClose, same as before.
+    fun finishShoppingWithUndo() {
+        val checkedItems = items.filter { it.isChecked }
+        if (checkedItems.isEmpty()) {
+            onClose()
+            return
+        }
+        coroutineScope.launch {
+            val barcodes = onFinishShopping(checkedItems)
+            val message = context.resources.getQuantityString(
+                R.plurals.shopping_mode_added_to_inventory_format, checkedItems.size, checkedItems.size,
+            )
+            val result = snackbarHostState.showSnackbar(message = message, actionLabel = undoLabel, duration = SnackbarDuration.Short)
+            if (result == SnackbarResult.ActionPerformed) {
+                onUndoFinishedShopping(checkedItems, barcodes)
+            }
+            onClose()
+        }
+    }
+
     val checkedCount = items.count { it.isChecked }
     val totalCount = items.size
     val plannedTotal = remember(items) {
@@ -340,6 +384,7 @@ private fun ShoppingModeStoreScreen(
 
     Scaffold(
         contentWindowInsets = WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
+        snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
             ShoppingModeHeader(
@@ -415,7 +460,7 @@ private fun ShoppingModeStoreScreen(
             }
             Surface(color = MaterialTheme.colorScheme.surfaceContainer, modifier = Modifier.fillMaxWidth()) {
                 Button(
-                    onClick = onClose,
+                    onClick = { finishShoppingWithUndo() },
                     shape = SoftCardShapeCompact,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.secondary,

@@ -181,6 +181,18 @@ class ShoppingListRepository(
         refreshWidget()
     }
 
+    /** Batch version of [removeItem] — one write instead of N, same [clearChecked] uses. Used by
+     *  "klaar met winkelen" (see [InventoryRepository.addCheckedShoppingItemsToInventory]) to
+     *  clear every item it just added to Voorraad in one go. */
+    suspend fun removeItems(ids: List<String>) {
+        if (ids.isEmpty()) return
+        val householdId = householdSession.householdId.value ?: return
+        val batch = firestore.batch()
+        ids.forEach { id -> batch.delete(shoppingListCollection(householdId).document(id)) }
+        batch.commit().await()
+        refreshWidget()
+    }
+
     /**
      * Moves [item] to sit between [previous] and [next] (either may be null at a list
      * boundary) by writing a single new sortOrder value — the midpoint of its new

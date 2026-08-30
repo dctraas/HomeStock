@@ -276,6 +276,34 @@ class ShoppingListViewModel(
         viewModelScope.launch { shoppingListRepository.clearChecked() }
     }
 
+    /**
+     * "Klaar met winkelen" — see [InventoryRepository.addCheckedShoppingItemsToInventory]'s doc.
+     * [items] are exactly the checked items for the store just finished (Winkelmodus only ever
+     * shows one store's items at a time — the caller, ShoppingModeScreen, already knows which).
+     * Suspend rather than fire-and-forget like most actions here: the caller needs the returned
+     * barcodes — one per [items] entry, same order — to offer a real "ongedaan maken" once the
+     * writes are actually done, not before.
+     */
+    suspend fun finishShopping(items: List<ShoppingListItemEntity>): List<String> {
+        if (items.isEmpty()) return emptyList()
+        val barcodes = inventoryRepository.addCheckedShoppingItemsToInventory(items)
+        shoppingListRepository.removeItems(items.map { it.id })
+        return barcodes
+    }
+
+    /** Undoes [finishShopping] — reverses each item's own inventory quantity increase (see
+     *  [InventoryRepository.undoInventoryAddition]) and restores the shopping list items (as new
+     *  documents, same as any other undo here — see [restoreItem]). [barcodes] must be exactly
+     *  what [finishShopping] returned for these same [items], same order. */
+    fun undoFinishedShopping(items: List<ShoppingListItemEntity>, barcodes: List<String>) {
+        viewModelScope.launch {
+            items.zip(barcodes).forEach { (item, barcode) ->
+                inventoryRepository.undoInventoryAddition(barcode, item.quantity)
+            }
+            items.forEach { shoppingListRepository.restoreItem(it) }
+        }
+    }
+
     fun checkAll() {
         viewModelScope.launch { shoppingListRepository.checkAll() }
     }
