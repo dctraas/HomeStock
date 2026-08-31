@@ -655,9 +655,6 @@
     </plurals>
     <string name="notifications_date_today">Vandaag</string>
     <string name="notifications_date_yesterday">Gisteren</string>
-    <string name="notifications_urgent_action">Bekijk</string>
-    <string name="notifications_urgent_expiring_today_format">%1$s is vandaag over de datum</string>
-    <string name="notifications_urgent_expiring_tomorrow_format">%1$s is morgen over de datum</string>
     <plurals name="notifications_tips_teaser_subtitle_format">
         <item quantity="one">%1$d tip</item>
         <item quantity="other">%1$d tips</item>

@@ -651,9 +651,6 @@
     </plurals>
     <string name="notifications_date_today">Hoy</string>
     <string name="notifications_date_yesterday">Ayer</string>
-    <string name="notifications_urgent_action">Ver</string>
-    <string name="notifications_urgent_expiring_today_format">%1$s caduca hoy</string>
-    <string name="notifications_urgent_expiring_tomorrow_format">%1$s caduca mañana</string>
     <plurals name="notifications_tips_teaser_subtitle_format">
         <item quantity="one">%1$d consejo</item>
         <item quantity="other">%1$d consejos</item>

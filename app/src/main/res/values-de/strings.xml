@@ -651,9 +651,6 @@
     </plurals>
     <string name="notifications_date_today">Heute</string>
     <string name="notifications_date_yesterday">Gestern</string>
-    <string name="notifications_urgent_action">Ansehen</string>
-    <string name="notifications_urgent_expiring_today_format">%1$s ist heute abgelaufen</string>
-    <string name="notifications_urgent_expiring_tomorrow_format">%1$s läuft morgen ab</string>
     <plurals name="notifications_tips_teaser_subtitle_format">
         <item quantity="one">%1$d Tipp</item>
         <item quantity="other">%1$d Tipps</item>

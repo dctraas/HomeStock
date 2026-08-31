@@ -35,9 +35,6 @@ import androidx.compose.material.icons.filled.DeleteSweep
 import androidx.compose.material.icons.filled.Lightbulb
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Tune
-import androidx.compose.material.icons.filled.Warning
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -80,7 +77,6 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.dao.ActivityLogWithProduct
-import com.dtraas.homestock.data.local.dao.InventoryItemWithProduct
 import com.dtraas.homestock.data.model.ActivityType
 import com.dtraas.homestock.data.model.DeveloperNotice
 import com.dtraas.homestock.data.repository.HouseholdMember
@@ -101,14 +97,13 @@ import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun NotificationsScreen(onBack: () -> Unit, onNavigateToProduct: (String) -> Unit = {}) {
+fun NotificationsScreen(onBack: () -> Unit) {
     val application = LocalContext.current.applicationContext as HomeStockApplication
     val viewModel: NotificationsViewModel = viewModel(
         factory = viewModelFactory {
             initializer {
                 NotificationsViewModel(
                     application.container.activityLogRepository,
-                    application.container.inventoryRepository,
                     application.container.householdMembersRepository,
                     application.container.dismissedNoticesStore,
                     application.container.activityReadStore,
@@ -119,7 +114,6 @@ fun NotificationsScreen(onBack: () -> Unit, onNavigateToProduct: (String) -> Uni
     val developerNotices by viewModel.developerNotices.collectAsState()
     val appActivity by viewModel.filteredActivity.collectAsState()
     val members by viewModel.members.collectAsState()
-    val urgentItem by viewModel.urgentItem.collectAsState()
     val selectedMemberUid by viewModel.selectedMemberUid.collectAsState()
     val lastActivitySeenAt by viewModel.lastActivitySeenAt.collectAsState()
     val unreadActivityCount by viewModel.unreadActivityCount.collectAsState()
@@ -153,16 +147,14 @@ fun NotificationsScreen(onBack: () -> Unit, onNavigateToProduct: (String) -> Uni
             )
 
             Box(modifier = Modifier.weight(1f)) {
-                if (appActivity.isEmpty() && urgentItem == null) {
+                if (appActivity.isEmpty()) {
                     EmptyState(stringResource(R.string.notifications_history_empty))
                 } else {
                     ActivityTimeline(
-                        urgentItem = urgentItem,
                         activity = appActivity,
                         lastSeenAt = lastActivitySeenAt,
                         unreadCount = unreadActivityCount,
                         onMarkSeen = viewModel::markActivitySeen,
-                        onNavigateToProduct = onNavigateToProduct,
                     )
                 }
             }
@@ -294,29 +286,23 @@ private fun dayHeaderLabel(date: LocalDate, today: LocalDate): String = when (da
 }
 
 /**
- * The main (and now only) timeline view: an optional urgent card, an unread banner when there's
- * anything new since [lastSeenAt], and the household activity log grouped under date-eyebrow
- * headers ("VANDAAG", "GISTEREN", …) with an unread dot per row. The developer-tips teaser row
- * used to be the last item here; it's now pinned below this whole timeline instead (see
- * [NotificationsScreen]), so it isn't part of this list any more.
+ * The main (and now only) timeline view: an unread banner when there's anything new since
+ * [lastSeenAt], and the household activity log grouped under date-eyebrow headers ("VANDAAG",
+ * "GISTEREN", …) with an unread dot per row. The developer-tips teaser row used to be the last
+ * item here; it's now pinned below this whole timeline instead (see [NotificationsScreen]), so
+ * it isn't part of this list any more. Used to also open with an "urgent" expiring-item card —
+ * removed per explicit request, expiry nudges belong in Voorraad, not in the household activity
+ * feed (see [com.dtraas.homestock.ui.inventory.InventoryScreen]'s "Eerst opmaken" card instead).
  */
 @Composable
 private fun ActivityTimeline(
-    urgentItem: InventoryItemWithProduct?,
     activity: List<ActivityLogWithProduct>,
     lastSeenAt: Long,
     unreadCount: Int,
     onMarkSeen: () -> Unit,
-    onNavigateToProduct: (String) -> Unit,
 ) {
     val today = remember { LocalDate.now() }
     LazyColumn(modifier = Modifier.fillMaxSize(), contentPadding = PaddingValues(16.dp)) {
-        if (urgentItem != null) {
-            item(key = "urgent") {
-                UrgentCard(item = urgentItem, today = today, onClick = { onNavigateToProduct(urgentItem.barcode) })
-            }
-        }
-
         if (unreadCount > 0) {
             item(key = "unread_banner") {
                 UnreadBanner(
@@ -382,53 +368,6 @@ private fun UnreadBanner(count: Int, since: Long, today: LocalDate, onMarkSeen: 
             )
             TextButton(onClick = onMarkSeen) {
                 Text(stringResource(R.string.notifications_mark_read_action))
-            }
-        }
-    }
-}
-
-/** Coral card for the single soonest-expiring item (today or tomorrow only — see
- *  NotificationsViewModel.urgentItem), with a "Bekijk" action straight to that product. */
-@Composable
-private fun UrgentCard(item: InventoryItemWithProduct, today: LocalDate, onClick: () -> Unit) {
-    val expirationDate = remember(item.expirationDate) {
-        Instant.ofEpochMilli(item.expirationDate!!).atZone(ZoneId.systemDefault()).toLocalDate()
-    }
-    val message = if (expirationDate == today) {
-        stringResource(R.string.notifications_urgent_expiring_today_format, item.name)
-    } else {
-        stringResource(R.string.notifications_urgent_expiring_tomorrow_format, item.name)
-    }
-    Card(
-        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.secondaryContainer),
-        shape = SoftCardShapeCompact,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Icon(
-                imageVector = Icons.Filled.Warning,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.size(22.dp),
-            )
-            Text(
-                text = message,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                modifier = Modifier.weight(1f).padding(start = 10.dp),
-            )
-            Button(
-                onClick = onClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = MaterialTheme.colorScheme.secondary,
-                    contentColor = MaterialTheme.colorScheme.onSecondary,
-                ),
-            ) {
-                Text(stringResource(R.string.notifications_urgent_action))
             }
         }
     }
