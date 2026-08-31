@@ -644,6 +644,21 @@ fun MoreScreen(
     }
 
     suspend fun commitInventoryRows(rows: List<ImportedInventoryRow>) {
+        // A barcode-less row's only stable identity is its own name+brand — matched
+        // case-insensitively, and on both together (name alone would wrongly merge two
+        // different brands of the same generic product, "Melk" AH vs "Melk" Jumbo, into one
+        // line). Seeded from the household's current inventory and updated as new synthetic
+        // barcodes get minted below, so re-importing the same file (the household's own report:
+        // doing this more than once used to create a duplicate product every time) merges back
+        // into the same items instead of piling up a fresh "csv-…" copy per import — a real
+        // scanned barcode already avoided this via getOrFetchProduct/restoreItem's own
+        // overwrite-by-barcode below, only a barcode-less row (hand-typed, or an export from
+        // before the barcode column existed) had nothing to match on until now.
+        fun matchKey(name: String, brand: String?) = name.trim().lowercase() to brand?.trim()?.lowercase().orEmpty()
+        val barcodeByKey = inventoryRepository.observeInventoryWithProduct().first()
+            .associate { matchKey(it.name, it.brand) to it.barcode }
+            .toMutableMap()
+
         rows.forEach { row ->
             // A real (all-digit) barcode gets an actual Open Food Facts re-check — the
             // household's own request: an item that was originally scanned should come back
@@ -656,12 +671,13 @@ fun MoreScreen(
             // re-fetching it, and restoreItem below then merges into that same barcode's
             // existing inventory line instead of creating a duplicate.
             val realBarcode = row.barcode?.takeIf { it.isNotEmpty() && it.all(Char::isDigit) }
+            val key = matchKey(row.name, row.brand)
             val barcode = if (realBarcode != null) {
                 val fetched = application.container.productRepository.getOrFetchProduct(realBarcode)
                 if (fetched.isSuccess) {
                     realBarcode
                 } else {
-                    "csv-${UUID.randomUUID()}".also { fallbackBarcode ->
+                    barcodeByKey[key] ?: "csv-${UUID.randomUUID()}".also { fallbackBarcode ->
                         application.container.productRepository.saveManualProduct(
                             barcode = fallbackBarcode,
                             name = row.name,
@@ -669,10 +685,11 @@ fun MoreScreen(
                             brand = row.brand,
                             unit = row.unitKey,
                         )
+                        barcodeByKey[key] = fallbackBarcode
                     }
                 }
             } else {
-                "csv-${UUID.randomUUID()}".also { newBarcode ->
+                barcodeByKey[key] ?: "csv-${UUID.randomUUID()}".also { newBarcode ->
                     application.container.productRepository.saveManualProduct(
                         barcode = newBarcode,
                         name = row.name,
@@ -680,6 +697,7 @@ fun MoreScreen(
                         brand = row.brand,
                         unit = row.unitKey,
                     )
+                    barcodeByKey[key] = newBarcode
                 }
             }
             inventoryRepository.restoreItem(

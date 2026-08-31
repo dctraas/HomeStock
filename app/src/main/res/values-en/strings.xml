@@ -729,7 +729,7 @@
     <string name="product_detail_note_title">Personal note</string>
     <string name="product_detail_note_placeholder">E.g. a recipe idea, favorite way to prepare it, or where you bought it</string>
     <string name="product_detail_edit_title">Edit details</string>
-    <string name="product_detail_catalog_eyebrow">The product · applies to the whole household</string>
+    <string name="product_detail_catalog_eyebrow">The product</string>
     <string name="product_detail_shared_caption_one_format">Changes here are instantly visible to %1$s.</string>
     <string name="product_detail_shared_caption_many">Changes here are instantly visible to your housemates.</string>
     <string name="product_detail_min_quantity_subtitle">Below this amount → added to the list</string>

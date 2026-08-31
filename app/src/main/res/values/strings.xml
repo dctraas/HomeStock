@@ -733,7 +733,7 @@
     <string name="product_detail_note_title">Persoonlijke notitie</string>
     <string name="product_detail_note_placeholder">Bijv. een recept-idee, favoriete bereidingswijze of waar je dit hebt gekocht</string>
     <string name="product_detail_edit_title">Gegevens bewerken</string>
-    <string name="product_detail_catalog_eyebrow">Het product · geldt voor het hele huishouden</string>
+    <string name="product_detail_catalog_eyebrow">Het product</string>
     <string name="product_detail_shared_caption_one_format">Wijzigingen hierin zijn direct zichtbaar voor %1$s.</string>
     <string name="product_detail_shared_caption_many">Wijzigingen hierin zijn direct zichtbaar voor je huisgenoten.</string>
     <string name="product_detail_min_quantity_subtitle">Onder dit aantal → op de lijst</string>
