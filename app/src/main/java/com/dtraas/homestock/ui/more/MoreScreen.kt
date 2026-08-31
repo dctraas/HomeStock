@@ -2425,7 +2425,7 @@ private fun StoresHeader(onBack: () -> Unit, onAddClick: () -> Unit) {
             Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back), tint = contentColor)
         }
         Column(modifier = Modifier.weight(1f).padding(start = 4.dp)) {
-            Text(text = stringResource(R.string.more_stores_title), style = MaterialTheme.typography.titleLarge, color = contentColor)
+            Text(text = stringResource(R.string.more_stores_title), style = MaterialTheme.typography.headlineSmall, color = contentColor)
             Text(
                 text = stringResource(R.string.more_stores_subtitle),
                 style = MaterialTheme.typography.bodySmall,
@@ -2842,7 +2842,7 @@ private fun AisleOrderHeader(storeName: String, onBack: () -> Unit) {
             Icon(Icons.Filled.ArrowBack, contentDescription = stringResource(R.string.common_back), tint = contentColor)
         }
         Column(modifier = Modifier.weight(1f).padding(start = 4.dp)) {
-            Text(text = stringResource(R.string.more_aisle_order_title), style = MaterialTheme.typography.titleLarge, color = contentColor)
+            Text(text = stringResource(R.string.more_aisle_order_title), style = MaterialTheme.typography.headlineSmall, color = contentColor)
             Text(
                 text = stringResource(R.string.more_aisle_order_screen_subtitle_format, storeName),
                 style = MaterialTheme.typography.bodySmall,

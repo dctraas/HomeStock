@@ -387,7 +387,7 @@ fun InventoryScreen(
                         collapsed = expiringSoonCollapsed,
                         onToggleCollapsed = { hintCardPreferences.setInventoryExpiringSoonCollapsed(!expiringSoonCollapsed) },
                         onItemClick = { item -> onProductClick(item.barcode) },
-                        onSeeAllClick = { viewModel.showExpiringOrExpiredOnly() },
+                        onSeeAllClick = { viewModel.showExpiringSoonNotExpiredOnly() },
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                     )
                 }
@@ -722,11 +722,12 @@ fun InventoryScreen(
 }
 
 /**
- * Household eyebrow + "Keuken" title + profile row + stats row + search field/filter button,
- * all folded into one green gradient header (same Keukenlinnen pattern as Productdetail/
+ * "Voorraad" title + household name + profile row + stats row + search field/filter button, all
+ * folded into one green gradient header (same Keukenlinnen pattern as Productdetail/
  * Boodschappenlijst/Maaltijdplanner/Instellingen/Statistieken/Premium/Activiteiten this round).
- * Title left-aligned (per the app-wide header pass) with the household's own name as a small
- * eyebrow above it — matching the Claude Design mockup's "HUIZE TRAAS" / "Keuken" pairing — and
+ * Title left-aligned (per the app-wide header pass), with the household's own name as a small
+ * line *underneath* it — per explicit request, "Voorraad" reads first here rather than the
+ * household name eyebrow-above-title pairing every other one of those screens still uses — and
  * a new "N producten · N verlopen bijna · N bijna op" stats line, both replacing the old
  * centered "household name (or 'Voorraad') as the one and only title" treatment.
  */
@@ -757,6 +758,12 @@ private fun InventoryHeader(
     ) {
         Row(verticalAlignment = Alignment.Top) {
             Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.inventory_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = contentColor,
+                )
                 if (!householdName.isNullOrBlank()) {
                     Text(
                         text = householdName.uppercase(locale),
@@ -765,15 +772,9 @@ private fun InventoryHeader(
                         color = OnTopAppBarContainerAccent,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(top = 2.dp),
                     )
                 }
-                Text(
-                    text = stringResource(R.string.inventory_title),
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = contentColor,
-                    modifier = Modifier.padding(top = 2.dp),
-                )
             }
             // Meldingen is no longer its own bottom-nav tab — this is the way to reach it. The
             // red counter badge tracks unread developer notices. Bell icon rather than the old
@@ -881,10 +882,13 @@ private fun InventoryHeader(
 /**
  * "Eerst opmaken" — up to 3 soonest-expiring items as horizontal chips, each showing how soon
  * (the same wording [stockStatusPillText] already gives the grid/list badges) and the product
- * name. "Alles →" switches on the existing [InventoryViewModel.showExpiringOrExpiredOnly] quick
- * filters rather than opening a separate screen — same list, just narrowed to everything, not
- * only the 3 shown here. The mockup's "Kook hiermee" recipe-suggestion button is deliberately
- * not built here, out of scope for this pass.
+ * name. Already-expired items never show up here — that's what the filter sheet's separate
+ * "Verlopen" chip is for, an item you're already too late for isn't something you need to be
+ * urged to use up "first". "Alles →" switches on the existing
+ * [InventoryViewModel.showExpiringSoonNotExpiredOnly] quick filter rather than opening a
+ * separate screen — same list, just narrowed to everything, not only the 3 shown here. The
+ * mockup's "Kook hiermee" recipe-suggestion button is deliberately not built here, out of scope
+ * for this pass.
  *
  * The header row itself (title + chevron, "Alles →" excepted — that keeps its own separate tap
  * target) toggles [collapsed], a per-device choice persisted via [HintCardPreferences] — see

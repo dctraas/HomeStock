@@ -208,8 +208,7 @@ private fun ShoppingModeEmptyScreen(onClose: () -> Unit) {
                 }
                 Text(
                     text = stringResource(R.string.shopping_mode_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.headlineSmall,
                     color = contentColor,
                 )
             }
@@ -251,8 +250,7 @@ private fun ShoppingModePicker(storeCounts: Map<String, Int>, onSelectStore: (St
                     }
                     Text(
                         text = stringResource(R.string.shopping_mode_title),
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.headlineSmall,
                         color = contentColor,
                     )
                 }
@@ -513,8 +511,7 @@ private fun ShoppingModeHeader(
             Column(modifier = Modifier.weight(1f).padding(start = 4.dp)) {
                 Text(
                     text = stringResource(R.string.shopping_mode_title),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.headlineSmall,
                     color = contentColor,
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {

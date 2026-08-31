@@ -947,7 +947,7 @@ private fun ImportRecipeHeader(onDismiss: () -> Unit) {
         }
         Text(
             text = stringResource(R.string.recipes_import_title),
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.headlineSmall,
             color = contentColor,
             modifier = Modifier.padding(start = 16.dp),
         )
@@ -1550,7 +1550,7 @@ private fun RecipesHeader(
             Column(modifier = Modifier.align(Alignment.CenterStart).padding(end = 48.dp)) {
                 Text(
                     text = stringResource(R.string.recipes_title),
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.headlineSmall,
                     color = contentColor,
                 )
                 // Only on Uit je voorraad — the other tabs don't have a single natural "N of

@@ -47,10 +47,11 @@ data class InventoryUiState(
     val lowStockOnly: Boolean = false,
     // Split from what used to be one combined "expiringSoonOnly" (soon-or-already-past) into two
     // non-overlapping quick filters, matching the filter sheet's "Verlopen"/"Bijna over datum"
-    // cards — see InventoryStockStatus.isExpired's doc for why. Together (both true) they cover
-    // exactly what the old single toggle used to; both jump-to-filtered-view entry points (the
-    // "Eerst opmaken" hint card's "Alles →" and the "bijna over datum" push notification) now set
-    // both at once instead of one broad flag.
+    // cards — see InventoryStockStatus.isExpired's doc for why. Already-expired items no longer
+    // belong under "bijna over datum" at all (an expired item isn't "soon" to expire, it already
+    // has) — the "Eerst opmaken" hint card and its "Alles →" only ever deal in
+    // expiringSoonNotExpiredOnly now; expiredOnly is its own separate quick filter, surfaced only
+    // via the filter sheet's "Verlopen" chip.
     val expiredOnly: Boolean = false,
     val expiringSoonNotExpiredOnly: Boolean = false,
     val noExpirationDateOnly: Boolean = false,
@@ -88,6 +89,10 @@ data class InventoryUiState(
     // field below — all real, all off the unfiltered list, never estimated.
     val totalCount: Int = 0,
     val lowStockCount: Int = 0,
+    // Expiring soon but NOT already expired — the header stat line. Equal to
+    // expiringSoonNotExpiredCount below (both mean the same thing now); kept as a separate field
+    // because it serves a different piece of UI (the "Keuken" stats row vs. the filter sheet's
+    // "Bijna over datum" chip label).
     val expiringSoonCount: Int = 0,
     val expiredCount: Int = 0,
     val expiringSoonNotExpiredCount: Int = 0,
@@ -97,9 +102,10 @@ data class InventoryUiState(
     // The filter sheet's CATEGORIE/LOCATIE chip labels ("Zuivel · 9", "Koelkast · 34").
     val categoryCounts: Map<Category, Int> = emptyMap(),
     val locationCounts: Map<String, Int> = emptyMap(),
-    // The 3 soonest-expiring items, unfiltered, soonest first — the "Eerst opmaken" header
-    // card's chips. A subset of what expiringSoonCount counts, not everything it counts —
-    // the card only ever has room for a handful, "Alles" is where the rest shows up.
+    // The 3 soonest-expiring items that aren't already expired, unfiltered, soonest first — the
+    // "Eerst opmaken" header card's chips. A subset of what expiringSoonCount counts, not
+    // everything it counts — the card only ever has room for a handful, "Alles" is where the
+    // rest shows up. Already-expired items never appear here — see expiredOnly's doc.
     val expiringSoonItems: List<InventoryItemWithProduct> = emptyList(),
 )
 
@@ -215,6 +221,12 @@ class InventoryViewModel(
             // Items with a set expiration date first (soonest first); items without one sink to the bottom.
             InventorySortOption.EXPIRATION -> filtered.sortedWith(compareBy(nullsLast()) { it.expirationDate })
         }
+        // Expiring-soon-but-not-yet-expired: shared by the header stat, the "Eerst opmaken" hint
+        // card, and the filter sheet's "Bijna over datum" chip — all three now mean exactly this
+        // and nothing broader, so this is computed once instead of three times.
+        val expiringSoonNotExpired = items.filter {
+            InventoryStockStatus.isExpiringSoon(it.expirationDate) && !InventoryStockStatus.isExpired(it.expirationDate)
+        }
         InventoryUiState(
             searchQuery = filters.query,
             selectedCategory = filters.category,
@@ -245,18 +257,15 @@ class InventoryViewModel(
                 .sortedWith(compareBy({ Location.fromStorageKey(it)?.ordinal ?: Int.MAX_VALUE }, { it.lowercase() })),
             totalCount = items.size,
             lowStockCount = items.count { InventoryStockStatus.isLowStock(it.quantity, it.minQuantity) },
-            expiringSoonCount = items.count { InventoryStockStatus.isExpiringSoon(it.expirationDate) },
+            expiringSoonCount = expiringSoonNotExpired.size,
             expiredCount = items.count { InventoryStockStatus.isExpired(it.expirationDate) },
-            expiringSoonNotExpiredCount = items.count {
-                InventoryStockStatus.isExpiringSoon(it.expirationDate) && !InventoryStockStatus.isExpired(it.expirationDate)
-            },
+            expiringSoonNotExpiredCount = expiringSoonNotExpired.size,
             noExpirationDateCount = items.count { it.expirationDate == null },
             favoritesCount = items.count { it.isFavorite },
             noLocationCount = items.count { it.location.normalizedLocation() == null },
             categoryCounts = items.groupingBy { Category.fromStorageKey(it.category) }.eachCount(),
             locationCounts = items.mapNotNull { it.location.normalizedLocation() }.groupingBy { it }.eachCount(),
-            expiringSoonItems = items
-                .filter { InventoryStockStatus.isExpiringSoon(it.expirationDate) }
+            expiringSoonItems = expiringSoonNotExpired
                 .sortedBy { it.expirationDate }
                 .take(3),
         )
@@ -282,9 +291,18 @@ class InventoryViewModel(
         noExpirationDateOnly.value = enabled
     }
 
-    /** "Alles →" on the "Eerst opmaken" hint card, and the "bijna over datum" push notification
-     *  deep link — both used to set one broad "expiringSoonOnly" flag; now they set both of its
-     *  replacements at once, which together cover exactly the same "soon or already past" set. */
+    /** "Alles →" on the "Eerst opmaken" hint card. The card itself no longer shows already-
+     *  expired items (see expiredOnly's doc), so jumping from it only ever means "show me
+     *  everything that card counts" — just expiringSoonNotExpiredOnly. An already-expired item
+     *  would be a non-sequitur in that view. */
+    fun showExpiringSoonNotExpiredOnly() {
+        expiringSoonNotExpiredOnly.value = true
+    }
+
+    /** The "bijna over datum" push notification's deep link ([ExpiryCheckWorker] groups both
+     *  soon-to-expire AND already-expired items into that one notification, under separate
+     *  "Vandaag"/"Verlopen"-style day headers) — unlike the hint card above, tapping it should
+     *  land on everything the notification just listed, so this still sets both flags. */
     fun showExpiringOrExpiredOnly() {
         expiredOnly.value = true
         expiringSoonNotExpiredOnly.value = true

@@ -245,7 +245,7 @@ private fun CustomRecipeEditHeader(
             }
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 color = contentColor,
                 modifier = Modifier.weight(1f).padding(start = 12.dp),
             )

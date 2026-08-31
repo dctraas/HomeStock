@@ -241,7 +241,7 @@ private fun StatisticsHeader(
             }
             Text(
                 text = stringResource(R.string.statistics_title),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 color = contentColor,
                 modifier = Modifier.weight(1f),
             )

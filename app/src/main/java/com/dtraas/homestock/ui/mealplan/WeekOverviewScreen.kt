@@ -141,8 +141,7 @@ fun WeekOverviewScreen(anchorDate: LocalDate, onClose: () -> Unit, onSelectDate:
                     Column(modifier = Modifier.padding(start = 4.dp)) {
                         Text(
                             text = stringResource(R.string.week_overview_title),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.headlineSmall,
                             color = contentColor,
                         )
                         Text(

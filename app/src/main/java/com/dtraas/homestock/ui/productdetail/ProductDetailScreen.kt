@@ -1263,7 +1263,7 @@ private fun ProductEditHeader(productName: String, onDismiss: () -> Unit) {
         Column(modifier = Modifier.weight(1f).padding(start = 4.dp)) {
             Text(
                 text = stringResource(R.string.product_detail_edit_title),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 color = contentColor,
             )
             Text(

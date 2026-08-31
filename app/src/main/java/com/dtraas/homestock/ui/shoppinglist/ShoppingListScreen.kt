@@ -58,7 +58,6 @@ import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Share
@@ -79,7 +78,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -128,7 +126,6 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
-import coil.compose.AsyncImage
 import com.dtraas.homestock.HomeStockApplication
 import com.dtraas.homestock.R
 import com.dtraas.homestock.data.local.entity.ShoppingListItemEntity
@@ -136,7 +133,6 @@ import com.dtraas.homestock.data.local.entity.ShoppingListMeta
 import com.dtraas.homestock.data.local.entity.StoreEntity
 import com.dtraas.homestock.data.model.Category
 import com.dtraas.homestock.data.model.MeasurementUnit
-import com.dtraas.homestock.data.repository.HouseholdMember
 import com.dtraas.homestock.ui.components.AddStoreDialog
 import com.dtraas.homestock.ui.components.CategoryDropdown
 import com.dtraas.homestock.ui.components.HomeStockBottomSheet
@@ -151,7 +147,6 @@ import com.dtraas.homestock.ui.components.SheetPrimaryButton
 import com.dtraas.homestock.ui.components.SheetTitle
 import com.dtraas.homestock.ui.components.formatQuantityWithUnit
 import com.dtraas.homestock.ui.components.icon
-import com.dtraas.homestock.ui.components.initialsOf
 import com.dtraas.homestock.ui.components.sheetContentPadding
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContainerColor
 import com.dtraas.homestock.ui.theme.LocalTopAppBarContentColor
@@ -228,7 +223,6 @@ fun ShoppingListScreen(onNavigateToShoppingMode: (listId: String?, storeName: St
     val lists by viewModel.lists.collectAsState()
     val activeList by viewModel.activeList.collectAsState()
     val itemCountByListId by viewModel.itemCountByListId.collectAsState()
-    val totalPrice by viewModel.totalPrice.collectAsState()
     val allItems = groupedByStore.values.flatten()
     val hasCheckedItems = allItems.any { it.isChecked }
     val hasUncheckedItems = allItems.any { !it.isChecked }
@@ -243,7 +237,6 @@ fun ShoppingListScreen(onNavigateToShoppingMode: (listId: String?, storeName: St
     // together with it below rather than routed through the ViewModel/repository.
     var showSearch by remember { mutableStateOf(false) }
     var searchQuery by remember { mutableStateOf("") }
-    val members by application.container.householdMembersRepository.observeMembers().collectAsState(initial = emptyList())
     // Whether each store's "In de wagen" (already-checked) section is expanded — keyed by
     // store name so multiple stores can be open independently. Deliberately not applied to
     // ReorderableShoppingList's manual drag-order view (see its call site below): hiding
@@ -339,11 +332,11 @@ fun ShoppingListScreen(onNavigateToShoppingMode: (listId: String?, storeName: St
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            // The green header carries the list switcher + meer-opties, and — once the active
-            // list has items — the progress bar right underneath, back after a round briefly
-            // removed it for more vertical room. Delen stays gone from here: it's a plain
-            // duplicate of "Boodschappenlijst delen" already inside meer-opties (see
-            // ShoppingListMoreOptionsDialog).
+            // The green header carries just the list switcher + meer-opties now — the checked/
+            // total progress bar, store/price meta line, and member avatars that used to sit
+            // underneath it are gone per explicit request, so the item list itself starts right
+            // after this instead. Delen stays gone from here too: it's a plain duplicate of
+            // "Boodschappenlijst delen" already inside meer-opties (see ShoppingListMoreOptionsDialog).
             ShoppingListHeader(
                 listName = activeList.name,
                 onListNameClick = { showListMenu = true },
@@ -357,12 +350,6 @@ fun ShoppingListScreen(onNavigateToShoppingMode: (listId: String?, storeName: St
                 onRenameList = { listToRename = it },
                 onDeleteList = { listToDelete = it },
                 onMoreOptionsClick = { showMoreOptions = true },
-                showProgress = groupedByStore.isNotEmpty(),
-                checkedCount = allItems.count { it.isChecked },
-                totalCount = allItems.size,
-                totalPrice = totalPrice,
-                storeCount = groupedByStore.keys.count { it.isNotBlank() },
-                members = members,
                 showSearch = showSearch,
                 searchQuery = searchQuery,
                 onSearchQueryChange = { searchQuery = it },
@@ -1297,12 +1284,6 @@ private fun ShoppingListHeader(
     onRenameList: (ShoppingListMeta) -> Unit,
     onDeleteList: (ShoppingListMeta) -> Unit,
     onMoreOptionsClick: () -> Unit,
-    showProgress: Boolean,
-    checkedCount: Int,
-    totalCount: Int,
-    totalPrice: Double?,
-    storeCount: Int,
-    members: List<HouseholdMember>,
     showSearch: Boolean,
     searchQuery: String,
     onSearchQueryChange: (String) -> Unit,
@@ -1364,7 +1345,7 @@ private fun ShoppingListHeader(
                 ) {
                     Text(
                         text = listName,
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.headlineSmall,
                         color = contentColor,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -1394,145 +1375,6 @@ private fun ShoppingListHeader(
                     IconButton(onClick = onMoreOptionsClick) {
                         Icon(Icons.Filled.MoreHoriz, contentDescription = stringResource(R.string.shopping_list_more_options_cd), tint = contentColor)
                     }
-                }
-            }
-        }
-        // Unconditional now (used to be gated behind showProgress, i.e. only once the list had
-        // items) — the member avatars need to stay visible even on a brand-new empty list, same
-        // reasoning the voice button they replaced had. [showProgress] still hides the bar/meta
-        // line specifically, since "0/0 afgevinkt" with an empty bar underneath isn't meaningful
-        // the way the count text and avatars both still are.
-        ShoppingProgressBar(
-            checkedCount = checkedCount,
-            totalCount = totalCount,
-            totalPrice = totalPrice,
-            storeCount = storeCount,
-            showBar = showProgress,
-            members = members,
-            modifier = Modifier.padding(top = 4.dp, start = 4.dp),
-        )
-    }
-}
-
-/**
- * How far through the list the household is — checked/total items as plain text plus a filled
- * bar — with a small "who's in this household" avatar facepile pinned top-right of that same
- * count line, replacing the spraak (voice quick-add) button that used to sit there. Lives
- * permanently inside [ShoppingListHeader]'s dark green gradient, hence the white/coral palette
- * below instead of the surface-oriented colors a plain page background would use.
- */
-@Composable
-private fun ShoppingProgressBar(
-    checkedCount: Int,
-    totalCount: Int,
-    totalPrice: Double?,
-    storeCount: Int,
-    showBar: Boolean,
-    members: List<HouseholdMember>,
-    modifier: Modifier = Modifier,
-) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Text(
-                text = stringResource(R.string.shopping_list_progress_checked_format, checkedCount, totalCount),
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color.White,
-            )
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                val metaParts = listOfNotNull(
-                    if (storeCount > 0) pluralStringResource(R.plurals.shopping_list_store_count_format, storeCount, storeCount) else null,
-                    totalPrice?.let { formatPrice(it) },
-                )
-                if (metaParts.isNotEmpty()) {
-                    Text(
-                        text = metaParts.joinToString(" · "),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = OnTopAppBarContainerAccent,
-                    )
-                }
-                MemberAvatarRow(members = members)
-            }
-        }
-        if (showBar) {
-            LinearProgressIndicator(
-                progress = { if (totalCount > 0) checkedCount.toFloat() / totalCount else 0f },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 6.dp)
-                    .height(8.dp)
-                    .clip(RoundedCornerShape(percent = 50)),
-                color = OnTopAppBarContainerAccent,
-                trackColor = Color.White.copy(alpha = 0.18f),
-            )
-        }
-    }
-}
-
-/** A compact, overlapping row of up to 3 household member avatars (photo, initials, or a plain
- *  person icon — same fallback order as [com.dtraas.homestock.ui.household.HouseholdSettingsScreen]'s
- *  own member rows), plus a "+N" pill for the rest. Purely informational — "who's in this
- *  household" — not a filter; tapping the header's search icon is how the list itself gets
- *  narrowed. */
-@Composable
-private fun MemberAvatarRow(members: List<HouseholdMember>, modifier: Modifier = Modifier) {
-    if (members.isEmpty()) return
-    val shown = members.take(3)
-    val overflow = members.size - shown.size
-    Row(modifier = modifier, horizontalArrangement = Arrangement.spacedBy((-8).dp)) {
-        shown.forEach { member -> MemberAvatarDot(member) }
-        if (overflow > 0) {
-            MemberAvatarDot(overflowCount = overflow)
-        }
-    }
-}
-
-@Composable
-private fun MemberAvatarDot(member: HouseholdMember? = null, overflowCount: Int? = null) {
-    Surface(
-        shape = CircleShape,
-        color = Color.White.copy(alpha = 0.22f),
-        border = BorderStroke(1.5.dp, LocalTopAppBarContainerColor.current),
-        modifier = Modifier.size(24.dp),
-    ) {
-        Box(contentAlignment = Alignment.Center, modifier = Modifier.fillMaxSize()) {
-            val trimmedName = member?.displayName?.trim()?.takeIf { it.isNotEmpty() }
-            when {
-                overflowCount != null -> {
-                    Text(
-                        text = "+$overflowCount",
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                    )
-                }
-                member?.photoUrl != null -> {
-                    AsyncImage(
-                        model = member.photoUrl,
-                        contentDescription = null,
-                        contentScale = ContentScale.Crop,
-                        modifier = Modifier.fillMaxSize().clip(CircleShape),
-                    )
-                }
-                trimmedName != null -> {
-                    Text(
-                        text = initialsOf(trimmedName),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                    )
-                }
-                else -> {
-                    Icon(
-                        imageVector = Icons.Filled.Person,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(12.dp),
-                    )
                 }
             }
         }

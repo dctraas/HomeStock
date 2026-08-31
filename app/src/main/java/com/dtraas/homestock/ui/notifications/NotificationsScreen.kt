@@ -221,7 +221,7 @@ private fun NotificationsHeader(
             }
             Text(
                 text = stringResource(R.string.nav_news),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.headlineSmall,
                 color = contentColor,
             )
         }
