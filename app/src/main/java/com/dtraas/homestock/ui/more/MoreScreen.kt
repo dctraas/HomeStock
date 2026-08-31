@@ -477,17 +477,6 @@ fun MoreScreen(
     // "Exporteren" that hasn't visibly done anything yet reads as broken rather than busy.
     var isExporting by remember { mutableStateOf(false) }
 
-    fun exportData(scope: ExportScope) {
-        isExporting = true
-        coroutineScope.launch {
-            try {
-                exportDataInner(scope)
-            } finally {
-                isExporting = false
-            }
-        }
-    }
-
     suspend fun exportDataInner(scope: ExportScope) {
         val inventoryCsv = if (scope == ExportScope.INVENTORY || scope == ExportScope.ALL) {
             val items = inventoryRepository.observeInventoryWithProduct().first()
@@ -580,6 +569,17 @@ fun MoreScreen(
         }
         pendingExportCsv = csv
         exportLauncher.launch(filename)
+    }
+
+    fun exportData(scope: ExportScope) {
+        isExporting = true
+        coroutineScope.launch {
+            try {
+                exportDataInner(scope)
+            } finally {
+                isExporting = false
+            }
+        }
     }
 
     // CSV import — moved+extended from the now-gone MoreOptionsScreen.kt. Voorraad/Lijsten/
