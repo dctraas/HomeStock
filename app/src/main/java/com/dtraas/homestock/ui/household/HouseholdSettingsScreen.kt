@@ -224,6 +224,7 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
         minQuantity = stringResource(R.string.product_detail_min_quantity_label),
         favorite = stringResource(R.string.more_export_header_favorite),
         note = stringResource(R.string.shopping_list_note_label),
+        barcode = stringResource(R.string.more_export_header_barcode),
     )
     val shoppingListCsvHeaders = ShoppingListCsvHeaders(
         name = stringResource(R.string.common_name),

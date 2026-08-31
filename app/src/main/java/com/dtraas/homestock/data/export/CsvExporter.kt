@@ -44,7 +44,7 @@ object CsvExporter {
     ): String {
         val header = row(
             headers.name, headers.brand, headers.category, headers.quantity, headers.unit,
-            headers.expiration, headers.minQuantity, headers.favorite, headers.note,
+            headers.expiration, headers.minQuantity, headers.favorite, headers.note, headers.barcode,
         )
         val dataRows = items.map { item ->
             row(
@@ -57,6 +57,10 @@ object CsvExporter {
                 item.minQuantity?.toString(),
                 if (item.isFavorite) yesLabel else noLabel,
                 item.note,
+                // A synthetic barcode ("csv-…"/"manual-…"/"ai-…" — see the barcode column's own
+                // read-side doc in CsvImporter) round-trips here just as faithfully as a real
+                // scanned one; CsvImporter is the one that tells the two apart on the way back in.
+                item.barcode,
             )
         }
         return rows(header, dataRows)
@@ -64,10 +68,9 @@ object CsvExporter {
 
     /**
      * A shopping-list export, same reasoning as [inventoryToCsv] — the "Lijsten" scope of
-     * MoreScreen's Data-overzetten sheet. [CsvImporter] has no matching read side for this one
-     * yet (only Voorraad round-trips today), so this is export-only; it's still real, complete
-     * data — every open and checked line, across every named list, with its store/quantity/
-     * unit/note/price as the household set them.
+     * MoreScreen's Data-overzetten sheet — every open and checked line, across every named list,
+     * with its store/quantity/unit/note/price as the household set them. [CsvImporter.parseShoppingListCsv]
+     * reads this exact shape back in.
      */
     fun shoppingListToCsv(
         items: List<ShoppingListItemEntity>,
@@ -187,6 +190,7 @@ data class InventoryCsvHeaders(
     val minQuantity: String,
     val favorite: String,
     val note: String,
+    val barcode: String,
 )
 
 data class ShoppingListCsvHeaders(

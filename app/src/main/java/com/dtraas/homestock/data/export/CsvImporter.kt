@@ -7,8 +7,12 @@ import java.util.Locale
  * Parses a CSV built by [CsvExporter] back into typed Voorraad rows — the "read side" mirroring
  * CsvExporter's "write side". Columns are read *positionally*, in exactly the order
  * [CsvExporter.inventoryToCsv] writes them (name, brand, category, quantity, unit, expiration,
- * minQuantity, favorite, note), not matched by header text — a translated or hand-edited header
- * row still parses fine, as long as the column order itself wasn't changed. This is meant for
+ * minQuantity, favorite, note, barcode), not matched by header text — a translated or hand-edited
+ * header row still parses fine, as long as the column order itself wasn't changed. The barcode
+ * column is read leniently (a file exported before it existed simply has 9 columns, not 10 — see
+ * the `cols.size < 9` check below, not 10) — MoreScreen's own import flow is what decides whether
+ * a real (all-digit) barcode is worth an Open Food Facts re-check versus a synthetic
+ * "csv-…"/"manual-…"/"ai-…" one from a product that was never actually scanned. This is meant for
  * round-tripping the app's own export, not for importing an arbitrary CSV from elsewhere.
  *
  * [categoryKeyByLabel]/[unitKeyByLabel] are the reverse of CsvExporter's label lookups — localized
@@ -32,8 +36,16 @@ object CsvImporter {
     ): InventoryImportResult {
         val allRows = parseCsv(csv)
         if (allRows.isEmpty()) return InventoryImportResult(emptyList(), 0)
-        val dataRows = allRows.drop(1) // first row is the header, written by CsvExporter — not data.
+        // First row is the header, written by CsvExporter — not data.
+        return parseInventoryRows(allRows.drop(1), categoryKeyByLabel, unitKeyByLabel, yesLabel)
+    }
 
+    private fun parseInventoryRows(
+        dataRows: List<List<String>>,
+        categoryKeyByLabel: Map<String, String>,
+        unitKeyByLabel: Map<String, String>,
+        yesLabel: String,
+    ): InventoryImportResult {
         var skipped = 0
         val imported = mutableListOf<ImportedInventoryRow>()
         for (cols in dataRows) {
@@ -57,9 +69,60 @@ object CsvImporter {
                 minQuantity = cols[6].trim().toIntOrNull(),
                 isFavorite = cols[7].trim().equals(yesLabel, ignoreCase = true),
                 note = cols[8].trim().ifEmpty { null },
+                barcode = cols.getOrNull(9)?.trim()?.ifEmpty { null },
             )
         }
         return InventoryImportResult(imported, skipped)
+    }
+
+    /**
+     * Reads back a [CsvExporter.shoppingListToCsv] file, positionally: name, category, store,
+     * quantity, unit, note, price, checked — same "column order, not header text" contract as
+     * [parseInventoryCsv]. A row missing its name or with an unparseable quantity is skipped,
+     * same reasoning as an inventory row.
+     */
+    fun parseShoppingListCsv(
+        csv: String,
+        categoryKeyByLabel: Map<String, String>,
+        unitKeyByLabel: Map<String, String>,
+        yesLabel: String,
+    ): ShoppingListImportResult {
+        val allRows = parseCsv(csv)
+        if (allRows.isEmpty()) return ShoppingListImportResult(emptyList(), 0)
+        return parseShoppingListRows(allRows.drop(1), categoryKeyByLabel, unitKeyByLabel, yesLabel)
+    }
+
+    private fun parseShoppingListRows(
+        dataRows: List<List<String>>,
+        categoryKeyByLabel: Map<String, String>,
+        unitKeyByLabel: Map<String, String>,
+        yesLabel: String,
+    ): ShoppingListImportResult {
+        var skipped = 0
+        val imported = mutableListOf<ImportedShoppingListRow>()
+        for (cols in dataRows) {
+            if (cols.size < 8) {
+                skipped++
+                continue
+            }
+            val name = cols[0].trim()
+            val quantity = cols[3].trim().toIntOrNull()
+            if (name.isEmpty() || quantity == null) {
+                skipped++
+                continue
+            }
+            imported += ImportedShoppingListRow(
+                name = name,
+                categoryKey = categoryKeyByLabel[cols[1].trim()] ?: FALLBACK_CATEGORY_KEY,
+                store = cols[2].trim().ifEmpty { null },
+                quantity = quantity,
+                unitKey = unitKeyByLabel[cols[4].trim()],
+                note = cols[5].trim().ifEmpty { null },
+                price = cols[6].trim().toDoubleOrNull(),
+                isChecked = cols[7].trim().equals(yesLabel, ignoreCase = true),
+            )
+        }
+        return ShoppingListImportResult(imported, skipped)
     }
 
     private fun parseDateOrNull(raw: String): Long? {
@@ -77,8 +140,10 @@ object CsvImporter {
     fun parseRecipesCsv(csv: String, yesLabel: String): RecipeImportResult {
         val allRows = parseCsv(csv)
         if (allRows.isEmpty()) return RecipeImportResult(emptyList(), 0)
-        val dataRows = allRows.drop(1)
+        return parseRecipeRows(allRows.drop(1), yesLabel)
+    }
 
+    private fun parseRecipeRows(dataRows: List<List<String>>, yesLabel: String): RecipeImportResult {
         var skipped = 0
         val imported = mutableListOf<ImportedRecipeRow>()
         for (cols in dataRows) {
@@ -117,7 +182,79 @@ object CsvImporter {
     fun parseStoresCsv(csv: String): List<String> {
         val allRows = parseCsv(csv)
         if (allRows.isEmpty()) return emptyList()
-        return allRows.drop(1).mapNotNull { cols -> cols.getOrNull(0)?.trim()?.takeIf { it.isNotEmpty() } }
+        return parseStoreRows(allRows.drop(1))
+    }
+
+    private fun parseStoreRows(dataRows: List<List<String>>): List<String> =
+        dataRows.mapNotNull { cols -> cols.getOrNull(0)?.trim()?.takeIf { it.isNotEmpty() } }
+
+    /**
+     * True when [csv]'s very first row is a lone one-column title cell rather than a real
+     * (multi-column) header — i.e. it looks like a [CsvExporter.combinedToCsv] "Alles" export
+     * bundling several sections, not a single-scope file. Every single-scope export
+     * ([parseInventoryCsv]/[parseShoppingListCsv]/[parseRecipesCsv]/[parseStoresCsv]) always
+     * starts with its own real, multi-column header row, so this never misfires on one of those.
+     */
+    fun isCombinedCsv(csv: String): Boolean = parseCsv(csv).firstOrNull()?.size == 1
+
+    /**
+     * Splits a [CsvExporter.combinedToCsv] file back into its per-section row groups — title to
+     * that section's own rows, header row included first. Works entirely off [parseCsv]'s
+     * already quote-aware row list rather than splitting the raw text on blank lines, so a
+     * recipe's own multi-line Bereidingswijze field is never mistaken for a section boundary just
+     * because it happens to contain a blank line itself. A lone one-column row anywhere in the
+     * file is exactly what [CsvExporter.combinedToCsv] uses to mark a new section's title, so
+     * that shape alone — not a fixed list of known section names — is what this looks for; a
+     * section this app doesn't know how to import (or one a future version added) simply comes
+     * back as an entry [parseCombinedCsv] doesn't recognize and skips.
+     */
+    fun splitCombinedCsv(csv: String): List<Pair<String, List<List<String>>>> {
+        val sections = mutableListOf<Pair<String, MutableList<List<String>>>>()
+        for (cols in parseCsv(csv)) {
+            if (cols.size == 1) {
+                sections += cols[0] to mutableListOf()
+            } else {
+                sections.lastOrNull()?.second?.add(cols)
+            }
+        }
+        return sections
+    }
+
+    /**
+     * The "Alles" export's read side: splits [csv] into its sections (see [splitCombinedCsv]) and
+     * runs each one through the matching scope's own row parser, matched by comparing that
+     * section's title against the *currently displayed* localized section titles the caller
+     * passes in — the same strings [CsvExporter.combinedToCsv] was given when this file was
+     * written, so a file exported in one language still imports correctly in that same language.
+     * A section whose title matches none of them (Maaltijden historie, or an older/newer export
+     * format) is left out of the result entirely rather than guessed at — same "no import meaning"
+     * reasoning [CsvExporter.mealHistoryToCsv]'s own doc gives.
+     */
+    fun parseCombinedCsv(
+        csv: String,
+        inventorySectionTitle: String,
+        shoppingListSectionTitle: String,
+        recipesSectionTitle: String,
+        storesSectionTitle: String,
+        categoryKeyByLabel: Map<String, String>,
+        unitKeyByLabel: Map<String, String>,
+        yesLabel: String,
+    ): CombinedImportResult {
+        var inventory: InventoryImportResult? = null
+        var shoppingList: ShoppingListImportResult? = null
+        var recipes: RecipeImportResult? = null
+        var stores: List<String>? = null
+        for ((title, rows) in splitCombinedCsv(csv)) {
+            if (rows.isEmpty()) continue
+            val dataRows = rows.drop(1) // that section's own header row, not data.
+            when (title) {
+                inventorySectionTitle -> inventory = parseInventoryRows(dataRows, categoryKeyByLabel, unitKeyByLabel, yesLabel)
+                shoppingListSectionTitle -> shoppingList = parseShoppingListRows(dataRows, categoryKeyByLabel, unitKeyByLabel, yesLabel)
+                recipesSectionTitle -> recipes = parseRecipeRows(dataRows, yesLabel)
+                storesSectionTitle -> stores = parseStoreRows(dataRows)
+            }
+        }
+        return CombinedImportResult(inventory, shoppingList, recipes, stores)
     }
 
     /**
@@ -197,10 +334,31 @@ data class ImportedInventoryRow(
     val minQuantity: Int?,
     val isFavorite: Boolean,
     val note: String?,
+    // The product's own barcode as CsvExporter last saw it — real (all-digit) if the product was
+    // ever actually scanned, or one of the app's own synthetic prefixes ("csv-…"/"manual-…"/
+    // "ai-…") otherwise. Null for a file exported before this column existed. See MoreScreen's
+    // confirmImport for what a real barcode is used for on the way back in.
+    val barcode: String?,
 )
 
 data class InventoryImportResult(
     val rows: List<ImportedInventoryRow>,
+    val skippedCount: Int,
+)
+
+data class ImportedShoppingListRow(
+    val name: String,
+    val categoryKey: String,
+    val store: String?,
+    val quantity: Int,
+    val unitKey: String?,
+    val note: String?,
+    val price: Double?,
+    val isChecked: Boolean,
+)
+
+data class ShoppingListImportResult(
+    val rows: List<ImportedShoppingListRow>,
     val skippedCount: Int,
 )
 
@@ -220,4 +378,13 @@ data class ImportedRecipeRow(
 data class RecipeImportResult(
     val rows: List<ImportedRecipeRow>,
     val skippedCount: Int,
+)
+
+/** [CsvImporter.parseCombinedCsv]'s result — one nullable field per importable scope, null for
+ *  any section the file simply didn't have (e.g. a household that had no custom stores yet). */
+data class CombinedImportResult(
+    val inventory: InventoryImportResult?,
+    val shoppingList: ShoppingListImportResult?,
+    val recipes: RecipeImportResult?,
+    val stores: List<String>?,
 )

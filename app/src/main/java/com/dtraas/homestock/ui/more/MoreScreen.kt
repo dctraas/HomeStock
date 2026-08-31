@@ -82,6 +82,7 @@ import androidx.compose.material.icons.filled.WorkspacePremium
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -143,6 +144,8 @@ import com.dtraas.homestock.R
 import com.dtraas.homestock.data.export.CsvExporter
 import com.dtraas.homestock.data.export.CsvImporter
 import com.dtraas.homestock.data.export.ImportedInventoryRow
+import com.dtraas.homestock.data.export.ImportedRecipeRow
+import com.dtraas.homestock.data.export.ImportedShoppingListRow
 import com.dtraas.homestock.data.export.InventoryCsvHeaders
 import com.dtraas.homestock.data.export.InventoryImportResult
 import com.dtraas.homestock.data.export.MealHistoryCsvHeaders
@@ -202,17 +205,20 @@ import kotlinx.coroutines.launch
  *  it just builds whichever CSV(s) it's asked for; this enum is purely UI/state.
  *
  *  [importable] marks which scopes [ImportCard]'s "Bestand kiezen" button actually knows how to
- *  read back in — [LISTS]/[MEAL_HISTORY]/[ALL] are export-only (see [CsvExporter.shoppingListToCsv]/
- *  [CsvExporter.mealHistoryToCsv]'s own docs for why an import side wouldn't have a clean meaning
- *  for either), same reasoning both already had before [RECIPES]/[STORES] existed. */
+ *  read back in — only [MEAL_HISTORY] stays export-only (see [CsvExporter.mealHistoryToCsv]'s own
+ *  doc for why a planned-meal history has no clean import meaning). [ALL] is importable too: a
+ *  combined export is recognized from the picked file's own content
+ *  ([CsvImporter.isCombinedCsv]), not from this scope actually being selected, so marking it here
+ *  is about what the sheet tells the household to expect, not routing — see the CSV-import
+ *  section below for why routing off this pill at all was the bug. */
 private enum class ExportScope(val labelRes: Int, val importable: Boolean = false) {
     // "Voorraad" is exactly inventory_title's own meaning — reused rather than a near-duplicate key.
     INVENTORY(R.string.inventory_title, importable = true),
-    LISTS(R.string.more_data_scope_lists),
+    LISTS(R.string.more_data_scope_lists, importable = true),
     RECIPES(R.string.more_data_scope_recipes, importable = true),
     STORES(R.string.more_data_scope_stores, importable = true),
     MEAL_HISTORY(R.string.more_data_scope_meal_history),
-    ALL(R.string.more_data_scope_all),
+    ALL(R.string.more_data_scope_all, importable = true),
 }
 
 private enum class AppLanguage(val tag: String, val labelRes: Int, val flag: String) {
@@ -425,6 +431,7 @@ fun MoreScreen(
         minQuantity = stringResource(R.string.product_detail_min_quantity_label),
         favorite = stringResource(R.string.more_export_header_favorite),
         note = stringResource(R.string.shopping_list_note_label),
+        barcode = stringResource(R.string.more_export_header_barcode),
     )
     val shoppingListCsvHeaders = ShoppingListCsvHeaders(
         name = stringResource(R.string.common_name),
@@ -464,124 +471,156 @@ fun MoreScreen(
     val mealStatusEaten = stringResource(R.string.product_detail_delete_used_up)
     val mealStatusWasted = stringResource(R.string.product_detail_delete_wasted)
 
+    // Shown while exportData below is still building the CSV(s) — a household with a lot of
+    // Voorraad/Recepten/history can take a real moment (several sequential Firestore reads before
+    // there's anything to hand to exportLauncher), and with no feedback at all a tap on
+    // "Exporteren" that hasn't visibly done anything yet reads as broken rather than busy.
+    var isExporting by remember { mutableStateOf(false) }
+
     fun exportData(scope: ExportScope) {
+        isExporting = true
         coroutineScope.launch {
-            val inventoryCsv = if (scope == ExportScope.INVENTORY || scope == ExportScope.ALL) {
-                val items = inventoryRepository.observeInventoryWithProduct().first()
-                CsvExporter.inventoryToCsv(
-                    items,
-                    inventoryCsvHeaders,
-                    categoryLabel = { key -> categoryLabels[key] ?: key },
-                    unitLabel = { key -> unitLabels[key] ?: (key ?: "") },
-                    yesLabel = csvYes,
-                    noLabel = csvNo,
-                )
-            } else {
-                null
+            try {
+                exportDataInner(scope)
+            } finally {
+                isExporting = false
             }
-            val listCsv = if (scope == ExportScope.LISTS || scope == ExportScope.ALL) {
-                val items = application.container.shoppingListRepository.observeShoppingList().first()
-                CsvExporter.shoppingListToCsv(
-                    items,
-                    shoppingListCsvHeaders,
-                    categoryLabel = { key -> categoryLabels[key] ?: key },
-                    unitLabel = { key -> unitLabels[key] ?: key },
-                    yesLabel = csvYes,
-                    noLabel = csvNo,
-                )
-            } else {
-                null
-            }
-            val recipesCsv = if (scope == ExportScope.RECIPES || scope == ExportScope.ALL) {
-                val customDetails = recipeRepository.fetchAllCustomRecipeDetails()
-                val favoriteDetails = recipeRepository.fetchAllFavoriteRecipeDetails()
-                val merged = LinkedHashMap<String, RecipeDetail>()
-                customDetails.forEach { merged[it.id] = it }
-                favoriteDetails.forEach { merged.putIfAbsent(it.id, it) }
-                CsvExporter.recipesToCsv(
-                    merged.values.toList(),
-                    customIds = customDetails.map { it.id }.toSet(),
-                    favoriteIds = favoriteDetails.map { it.id }.toSet(),
-                    headers = recipeCsvHeaders,
-                    yesLabel = csvYes,
-                    noLabel = csvNo,
-                )
-            } else {
-                null
-            }
-            val storesCsv = if (scope == ExportScope.STORES || scope == ExportScope.ALL) {
-                CsvExporter.storesToCsv(stores, storeCsvHeaders)
-            } else {
-                null
-            }
-            val mealHistoryCsv = if (scope == ExportScope.MEAL_HISTORY || scope == ExportScope.ALL) {
-                val today = LocalDate.now()
-                // Half a year back, nothing forward — a "historie" export is about what already
-                // happened, not the days the household hasn't planned yet.
-                val history = mealPlanRepository.fetchDateRange(today.minusDays(180), today)
-                val historyRows = history.entries.sortedBy { it.key }.flatMap { (date, dayPlan) ->
-                    MealSlot.ORDERED.flatMap { slot ->
-                        dayPlan[slot].orEmpty().map { meal ->
-                            MealHistoryCsvRow(
-                                date = date.toString(),
-                                slot = mealSlotLabels[slot] ?: slot.storageKey,
-                                name = meal.name,
-                                status = when (meal.status) {
-                                    MealCompletionStatus.EATEN -> mealStatusEaten
-                                    MealCompletionStatus.WASTED -> mealStatusWasted
-                                    null -> null
-                                },
-                            )
-                        }
-                    }
-                }
-                CsvExporter.mealHistoryToCsv(historyRows, mealHistoryCsvHeaders)
-            } else {
-                null
-            }
-            val (csv, filename) = when (scope) {
-                ExportScope.INVENTORY -> requireNotNull(inventoryCsv) to "voorraad.csv"
-                ExportScope.LISTS -> requireNotNull(listCsv) to "boodschappenlijst.csv"
-                ExportScope.RECIPES -> requireNotNull(recipesCsv) to "recepten.csv"
-                ExportScope.STORES -> requireNotNull(storesCsv) to "winkels.csv"
-                ExportScope.MEAL_HISTORY -> requireNotNull(mealHistoryCsv) to "maaltijden-historie.csv"
-                ExportScope.ALL -> CsvExporter.combinedToCsv(
-                    listOf(
-                        inventorySectionTitle to requireNotNull(inventoryCsv),
-                        shoppingListSectionTitle to requireNotNull(listCsv),
-                        recipesSectionTitle to requireNotNull(recipesCsv),
-                        storesSectionTitle to requireNotNull(storesCsv),
-                        mealHistorySectionTitle to requireNotNull(mealHistoryCsv),
-                    ),
-                ) to "homestock-data.csv"
-            }
-            pendingExportCsv = csv
-            exportLauncher.launch(filename)
         }
     }
 
-    // CSV import — moved+extended from the now-gone MoreOptionsScreen.kt. Only the three scopes
-    // [ExportScope.importable] marks (Voorraad/Recepten/Winkels) have a read side at all — see
-    // that flag's own doc for why Lijsten/Maaltijden historie/Alles don't. Voorraad alone gets a
-    // preview step (see pendingImportPreview/confirmImport below): every row becomes a brand-new
-    // product (synthetic "csv-..." barcode, same convention AI-productherkenning uses for
-    // products with no real barcode) with quantities/expiration dates a household should get to
-    // glance over first. Recepten/Winkels skip that step and commit straight away instead — both
-    // upsert by their own real id/name (see RecipeRepository.saveCustomRecipe/addFavorite,
-    // StoreRepository.addStore) rather than always minting something new, so re-importing the
-    // same file twice is harmless without needing a look-before-you-leap preview either.
+    suspend fun exportDataInner(scope: ExportScope) {
+        val inventoryCsv = if (scope == ExportScope.INVENTORY || scope == ExportScope.ALL) {
+            val items = inventoryRepository.observeInventoryWithProduct().first()
+            CsvExporter.inventoryToCsv(
+                items,
+                inventoryCsvHeaders,
+                categoryLabel = { key -> categoryLabels[key] ?: key },
+                unitLabel = { key -> unitLabels[key] ?: (key ?: "") },
+                yesLabel = csvYes,
+                noLabel = csvNo,
+            )
+        } else {
+            null
+        }
+        val listCsv = if (scope == ExportScope.LISTS || scope == ExportScope.ALL) {
+            val items = application.container.shoppingListRepository.observeShoppingList().first()
+            CsvExporter.shoppingListToCsv(
+                items,
+                shoppingListCsvHeaders,
+                categoryLabel = { key -> categoryLabels[key] ?: key },
+                unitLabel = { key -> unitLabels[key] ?: key },
+                yesLabel = csvYes,
+                noLabel = csvNo,
+            )
+        } else {
+            null
+        }
+        val recipesCsv = if (scope == ExportScope.RECIPES || scope == ExportScope.ALL) {
+            val customDetails = recipeRepository.fetchAllCustomRecipeDetails()
+            val favoriteDetails = recipeRepository.fetchAllFavoriteRecipeDetails()
+            val merged = LinkedHashMap<String, RecipeDetail>()
+            customDetails.forEach { merged[it.id] = it }
+            favoriteDetails.forEach { merged.putIfAbsent(it.id, it) }
+            CsvExporter.recipesToCsv(
+                merged.values.toList(),
+                customIds = customDetails.map { it.id }.toSet(),
+                favoriteIds = favoriteDetails.map { it.id }.toSet(),
+                headers = recipeCsvHeaders,
+                yesLabel = csvYes,
+                noLabel = csvNo,
+            )
+        } else {
+            null
+        }
+        val storesCsv = if (scope == ExportScope.STORES || scope == ExportScope.ALL) {
+            CsvExporter.storesToCsv(stores, storeCsvHeaders)
+        } else {
+            null
+        }
+        val mealHistoryCsv = if (scope == ExportScope.MEAL_HISTORY || scope == ExportScope.ALL) {
+            val today = LocalDate.now()
+            // Half a year back, nothing forward — a "historie" export is about what already
+            // happened, not the days the household hasn't planned yet.
+            val history = mealPlanRepository.fetchDateRange(today.minusDays(180), today)
+            val historyRows = history.entries.sortedBy { it.key }.flatMap { (date, dayPlan) ->
+                MealSlot.ORDERED.flatMap { slot ->
+                    dayPlan[slot].orEmpty().map { meal ->
+                        MealHistoryCsvRow(
+                            date = date.toString(),
+                            slot = mealSlotLabels[slot] ?: slot.storageKey,
+                            name = meal.name,
+                            status = when (meal.status) {
+                                MealCompletionStatus.EATEN -> mealStatusEaten
+                                MealCompletionStatus.WASTED -> mealStatusWasted
+                                null -> null
+                            },
+                        )
+                    }
+                }
+            }
+            CsvExporter.mealHistoryToCsv(historyRows, mealHistoryCsvHeaders)
+        } else {
+            null
+        }
+        val (csv, filename) = when (scope) {
+            ExportScope.INVENTORY -> requireNotNull(inventoryCsv) to "voorraad.csv"
+            ExportScope.LISTS -> requireNotNull(listCsv) to "boodschappenlijst.csv"
+            ExportScope.RECIPES -> requireNotNull(recipesCsv) to "recepten.csv"
+            ExportScope.STORES -> requireNotNull(storesCsv) to "winkels.csv"
+            ExportScope.MEAL_HISTORY -> requireNotNull(mealHistoryCsv) to "maaltijden-historie.csv"
+            ExportScope.ALL -> CsvExporter.combinedToCsv(
+                listOf(
+                    inventorySectionTitle to requireNotNull(inventoryCsv),
+                    shoppingListSectionTitle to requireNotNull(listCsv),
+                    recipesSectionTitle to requireNotNull(recipesCsv),
+                    storesSectionTitle to requireNotNull(storesCsv),
+                    mealHistorySectionTitle to requireNotNull(mealHistoryCsv),
+                ),
+            ) to "homestock-data.csv"
+        }
+        pendingExportCsv = csv
+        exportLauncher.launch(filename)
+    }
+
+    // CSV import — moved+extended from the now-gone MoreOptionsScreen.kt. Voorraad/Lijsten/
+    // Recepten/Winkels ([ExportScope.importable]) all have a read side — see that flag's own doc
+    // for why Maaltijden historie doesn't. Voorraad alone gets a preview step (see
+    // pendingImportPreview/confirmImport below): every row becomes a brand-new product (synthetic
+    // "csv-..." barcode, same convention AI-productherkenning uses for products with no real
+    // barcode) with quantities/expiration dates a household should get to glance over first.
+    // Lijsten/Recepten/Winkels skip that step and commit straight away instead — all three upsert
+    // by their own real name/id (see ShoppingListRepository.addItem,
+    // RecipeRepository.saveCustomRecipe/addFavorite, StoreRepository.addStore) rather than always
+    // minting something new, so re-importing the same file twice is harmless without needing a
+    // look-before-you-leap preview either.
+    //
+    // Which parser a picked file actually goes through is decided by the FILE'S OWN CONTENT
+    // ([CsvImporter.isCombinedCsv]), never by whichever scope pill happens to be selected in the
+    // sheet at pick time. Those two used to be conflated here — the actual cause of a real
+    // data-loss bug: picking a combined "Alles" export while the sheet had anything other than
+    // Recepten/Winkels selected (e.g. its own default, Voorraad) silently ran the *entire*
+    // multi-section file through parseInventoryCsv alone, so only a stray handful of
+    // Voorraad-shaped rows from elsewhere in the file happened to parse and every other section —
+    // Lijsten, Recepten, Winkels, Maaltijden historie, even most of Voorraad's own rows once the
+    // file was long enough — was silently dropped, with no error and a skipped-rows count that
+    // didn't explain why. [importCombined] below is the fix: it splits a combined file into its
+    // sections first and runs each one through its own matching parser.
     val importErrorMessage = stringResource(R.string.more_import_error)
     val importEmptyMessage = stringResource(R.string.more_import_empty)
     val importSuccessFormat = stringResource(R.string.more_import_success_format)
     val importSkippedFormat = stringResource(R.string.more_import_skipped_format)
+    val importListSuccessFormat = stringResource(R.string.more_import_list_success_format)
     val importRecipeSuccessFormat = stringResource(R.string.more_import_recipe_success_format)
     val importStoreSuccessFormat = stringResource(R.string.more_import_store_success_format)
     var pendingImportPreview by remember { mutableStateOf<InventoryImportResult?>(null) }
 
-    suspend fun importRecipes(csv: String): String {
-        val result = CsvImporter.parseRecipesCsv(csv, csvYes)
-        if (result.rows.isEmpty()) return importEmptyMessage
-        result.rows.forEach { row ->
+    fun summarize(count: Int, successFormat: String, skippedCount: Int): String {
+        val summary = String.format(successFormat, count)
+        return if (skippedCount > 0) summary + " " + String.format(importSkippedFormat, skippedCount) else summary
+    }
+
+    suspend fun commitRecipeRows(rows: List<ImportedRecipeRow>) {
+        rows.forEach { row ->
             if (row.isCustom) {
                 val customId = row.id.takeIf { it.startsWith(RecipeRepository.CUSTOM_ID_PREFIX) }
                 recipeRepository.saveCustomRecipe(
@@ -612,8 +651,28 @@ fun MoreScreen(
                 )
             }
         }
-        val summary = String.format(importRecipeSuccessFormat, result.rows.size)
-        return if (result.skippedCount > 0) summary + " " + String.format(importSkippedFormat, result.skippedCount) else summary
+    }
+
+    suspend fun commitShoppingListRows(rows: List<ImportedShoppingListRow>) {
+        rows.forEach { row ->
+            val id = shoppingListRepository.addItem(
+                name = row.name,
+                category = Category.fromStorageKey(row.categoryKey),
+                store = row.store ?: "",
+                quantity = row.quantity,
+                note = row.note,
+                unit = MeasurementUnit.fromStorageKey(row.unitKey),
+                price = row.price,
+            )
+            if (row.isChecked && id != null) shoppingListRepository.setChecked(id, true)
+        }
+    }
+
+    suspend fun importRecipes(csv: String): String {
+        val result = CsvImporter.parseRecipesCsv(csv, csvYes)
+        if (result.rows.isEmpty()) return importEmptyMessage
+        commitRecipeRows(result.rows)
+        return summarize(result.rows.size, importRecipeSuccessFormat, result.skippedCount)
     }
 
     suspend fun importStores(csv: String): String {
@@ -621,6 +680,53 @@ fun MoreScreen(
         if (names.isEmpty()) return importEmptyMessage
         names.forEach { storeRepository.addStore(it) }
         return String.format(importStoreSuccessFormat, names.size)
+    }
+
+    suspend fun importShoppingList(csv: String): String {
+        val result = CsvImporter.parseShoppingListCsv(csv, categoryKeyByLabel, unitKeyByLabel, csvYes)
+        if (result.rows.isEmpty()) return importEmptyMessage
+        commitShoppingListRows(result.rows)
+        return summarize(result.rows.size, importListSuccessFormat, result.skippedCount)
+    }
+
+    // The "Alles" export's read side — see the CSV-import doc above for the bug this replaces.
+    // Lijsten/Recepten/Winkels commit immediately, same as their own single-scope imports above;
+    // Voorraad still gets its usual preview step rather than committing here too, so a combined
+    // file's other sections don't have to wait on the household reviewing Voorraad's new products
+    // first, and Voorraad doesn't lose its look-before-you-leap step just because it arrived
+    // alongside other data.
+    suspend fun importCombined(csv: String): String? {
+        val result = CsvImporter.parseCombinedCsv(
+            csv,
+            inventorySectionTitle = inventorySectionTitle,
+            shoppingListSectionTitle = shoppingListSectionTitle,
+            recipesSectionTitle = recipesSectionTitle,
+            storesSectionTitle = storesSectionTitle,
+            categoryKeyByLabel = categoryKeyByLabel,
+            unitKeyByLabel = unitKeyByLabel,
+            yesLabel = csvYes,
+        )
+        val messages = mutableListOf<String>()
+        result.shoppingList?.rows?.takeIf { it.isNotEmpty() }?.let { rows ->
+            commitShoppingListRows(rows)
+            messages += summarize(rows.size, importListSuccessFormat, result.shoppingList.skippedCount)
+        }
+        result.recipes?.rows?.takeIf { it.isNotEmpty() }?.let { rows ->
+            commitRecipeRows(rows)
+            messages += summarize(rows.size, importRecipeSuccessFormat, result.recipes.skippedCount)
+        }
+        result.stores?.takeIf { it.isNotEmpty() }?.let { names ->
+            names.forEach { storeRepository.addStore(it) }
+            messages += String.format(importStoreSuccessFormat, names.size)
+        }
+        val inventoryRows = result.inventory?.rows.orEmpty()
+        if (inventoryRows.isNotEmpty()) pendingImportPreview = result.inventory
+
+        return when {
+            messages.isNotEmpty() -> messages.joinToString(" ")
+            inventoryRows.isNotEmpty() -> null // The Voorraad preview sheet takes over from here.
+            else -> importEmptyMessage
+        }
     }
 
     val importLauncher = rememberLauncherForActivityResult(
@@ -631,12 +737,16 @@ fun MoreScreen(
         coroutineScope.launch {
             val message = try {
                 val csv = context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
-                if (csv == null) {
-                    importErrorMessage
-                } else {
-                    when (scopeAtPick) {
+                when {
+                    csv == null -> importErrorMessage
+                    // A combined "Alles" export is recognized from its own content, not the
+                    // currently selected scope pill — see the doc above for why that distinction
+                    // is the whole fix here.
+                    CsvImporter.isCombinedCsv(csv) -> importCombined(csv)
+                    else -> when (scopeAtPick) {
                         ExportScope.RECIPES -> importRecipes(csv)
                         ExportScope.STORES -> importStores(csv)
+                        ExportScope.LISTS -> importShoppingList(csv)
                         else -> {
                             val result = CsvImporter.parseInventoryCsv(csv, categoryKeyByLabel, unitKeyByLabel, csvYes)
                             if (result.rows.isEmpty()) {
@@ -664,14 +774,43 @@ fun MoreScreen(
         pendingImportPreview = null
         coroutineScope.launch {
             result.rows.forEach { row ->
-                val barcode = "csv-${UUID.randomUUID()}"
-                application.container.productRepository.saveManualProduct(
-                    barcode = barcode,
-                    name = row.name,
-                    category = Category.fromStorageKey(row.categoryKey),
-                    brand = row.brand,
-                    unit = row.unitKey,
-                )
+                // A real (all-digit) barcode gets an actual Open Food Facts re-check — the
+                // household's own request: an item that was originally scanned should come back
+                // with its real photo/nutrition instead of a bare manual entry every time. A
+                // synthetic barcode ("csv-…"/"manual-…"/"ai-…", from a product that was never
+                // actually scanned to begin with) or a missing one — an export from before this
+                // column existed — falls back to the manual product it always used to be; there's
+                // nothing to look up either way. getOrFetchProduct also means a barcode already
+                // known to this household resolves to its existing product doc rather than
+                // re-fetching it, and restoreItem below then merges into that same barcode's
+                // existing inventory line instead of creating a duplicate.
+                val realBarcode = row.barcode?.takeIf { it.isNotEmpty() && it.all(Char::isDigit) }
+                val barcode = if (realBarcode != null) {
+                    val fetched = application.container.productRepository.getOrFetchProduct(realBarcode)
+                    if (fetched.isSuccess) {
+                        realBarcode
+                    } else {
+                        "csv-${UUID.randomUUID()}".also { fallbackBarcode ->
+                            application.container.productRepository.saveManualProduct(
+                                barcode = fallbackBarcode,
+                                name = row.name,
+                                category = Category.fromStorageKey(row.categoryKey),
+                                brand = row.brand,
+                                unit = row.unitKey,
+                            )
+                        }
+                    }
+                } else {
+                    "csv-${UUID.randomUUID()}".also { newBarcode ->
+                        application.container.productRepository.saveManualProduct(
+                            barcode = newBarcode,
+                            name = row.name,
+                            category = Category.fromStorageKey(row.categoryKey),
+                            brand = row.brand,
+                            unit = row.unitKey,
+                        )
+                    }
+                }
                 inventoryRepository.restoreItem(
                     barcode = barcode,
                     quantity = row.quantity,
@@ -1056,6 +1195,10 @@ fun MoreScreen(
             onConfirm = ::confirmImport,
             onDismiss = { pendingImportPreview = null },
         )
+    }
+
+    if (isExporting) {
+        ExportProgressDialog()
     }
 
     if (showFeedbackDialog) {
@@ -1455,10 +1598,10 @@ private fun formatExportDate(timestampMillis: Long): String =
 /** The lighter of the two cards — amber-tinted (same [MaterialTheme.colorScheme.tertiaryContainer]
  *  treatment InventoryScreen's own premium rows use), ending on an outlined button rather than a
  *  second filled one. Importing doesn't happen on tap here — this only opens the system file
- *  picker; [ImportPreviewDialog] is the actual commit step for Voorraad — Recepten/Winkels commit
- *  straight away instead, see [ExportScope.importable]'s own doc for why. The button is disabled
- *  entirely for the three scopes with no read side at all (Lijsten/Maaltijden historie/Alles) —
- *  clearer than letting a household pick a file only to be told afterwards it can't be read back. */
+ *  picker; [ImportPreviewDialog] is the actual commit step for Voorraad — Lijsten/Recepten/Winkels
+ *  commit straight away instead, see [ExportScope.importable]'s own doc for why. The button is
+ *  disabled entirely for the one scope with no read side at all (Maaltijden historie) — clearer
+ *  than letting a household pick a file only to be told afterwards it can't be read back. */
 @Composable
 private fun ImportCard(scope: ExportScope, onPickImportFile: () -> Unit) {
     val importable = scope.importable
@@ -1492,6 +1635,8 @@ private fun ImportCard(scope: ExportScope, onPickImportFile: () -> Unit) {
                         text = when (scope) {
                             ExportScope.RECIPES -> stringResource(R.string.more_import_subtitle_recipes)
                             ExportScope.STORES -> stringResource(R.string.more_import_subtitle_stores)
+                            ExportScope.LISTS -> stringResource(R.string.more_import_subtitle_lists)
+                            ExportScope.ALL -> stringResource(R.string.more_import_subtitle_all)
                             else -> stringResource(R.string.more_import_subtitle)
                         },
                         style = MaterialTheme.typography.bodySmall,
@@ -1503,6 +1648,7 @@ private fun ImportCard(scope: ExportScope, onPickImportFile: () -> Unit) {
                 text = when {
                     !importable -> stringResource(R.string.more_import_not_available)
                     scope == ExportScope.INVENTORY -> stringResource(R.string.more_import_info)
+                    scope == ExportScope.ALL -> stringResource(R.string.more_import_info_all)
                     else -> stringResource(R.string.more_import_info_direct)
                 },
                 style = MaterialTheme.typography.labelMedium,
@@ -1519,6 +1665,32 @@ private fun ImportCard(scope: ExportScope, onPickImportFile: () -> Unit) {
                 Icon(imageVector = Icons.Filled.Upload, contentDescription = null, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(stringResource(R.string.more_import_choose_file_action))
+            }
+        }
+    }
+}
+
+/**
+ * Shown for as long as exportDataInner is still reading the household's data — see
+ * MoreScreen's own isExporting doc for why this exists. Not dismissible (no scrim-tap, no back
+ * press): there's nothing meaningful to cancel back into mid-read, and it clears itself the
+ * moment the CSV is ready.
+ */
+@Composable
+private fun ExportProgressDialog() {
+    Dialog(onDismissRequest = {}, properties = DialogProperties(dismissOnBackPress = false, dismissOnClickOutside = false)) {
+        Surface(shape = SoftCardShape, color = MaterialTheme.colorScheme.surface) {
+            Column(
+                modifier = Modifier.padding(28.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+            ) {
+                CircularProgressIndicator()
+                Text(
+                    text = stringResource(R.string.more_export_in_progress),
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                )
             }
         }
     }
