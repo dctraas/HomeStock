@@ -77,9 +77,12 @@ object CsvImporter {
 
     /**
      * Reads back a [CsvExporter.shoppingListToCsv] file, positionally: name, category, store,
-     * quantity, unit, note, price, checked — same "column order, not header text" contract as
-     * [parseInventoryCsv]. A row missing its name or with an unparseable quantity is skipped,
-     * same reasoning as an inventory row.
+     * quantity, unit, note, price, checked, list — same "column order, not header text" contract
+     * as [parseInventoryCsv]. A row missing its name or with an unparseable quantity is skipped,
+     * same reasoning as an inventory row. The list column is read leniently (a file exported
+     * before it existed simply has 8 columns, not 9 — see the `cols.size < 8` check below, not 9)
+     * — a missing/blank value there means "the default list", same as [ImportedShoppingListRow.listName]
+     * being null does on the way in.
      */
     fun parseShoppingListCsv(
         csv: String,
@@ -120,6 +123,7 @@ object CsvImporter {
                 note = cols[5].trim().ifEmpty { null },
                 price = cols[6].trim().toDoubleOrNull(),
                 isChecked = cols[7].trim().equals(yesLabel, ignoreCase = true),
+                listName = cols.getOrNull(8)?.trim()?.ifEmpty { null },
             )
         }
         return ShoppingListImportResult(imported, skipped)
@@ -178,15 +182,81 @@ object CsvImporter {
         return RecipeImportResult(imported, skipped)
     }
 
-    /** Reads back a [CsvExporter.storesToCsv] file — just the one name column, blank rows skipped outright rather than counted (a store list has no other field to make a blank row worth reporting). */
-    fun parseStoresCsv(csv: String): List<String> {
+    /** Reads back a [CsvExporter.storesToCsv] file — name plus its gangvolgorde, blank-name rows
+     *  skipped outright rather than counted (a store list has no other required field to make a
+     *  blank row worth reporting). The aisleOrder column is read leniently, same reasoning as
+     *  every other column CsvExporter added after this file's first release — a file exported
+     *  before it existed simply has 1 column, and comes back with an empty gangvolgorde. */
+    fun parseStoresCsv(csv: String): List<ImportedStoreRow> {
         val allRows = parseCsv(csv)
         if (allRows.isEmpty()) return emptyList()
         return parseStoreRows(allRows.drop(1))
     }
 
-    private fun parseStoreRows(dataRows: List<List<String>>): List<String> =
-        dataRows.mapNotNull { cols -> cols.getOrNull(0)?.trim()?.takeIf { it.isNotEmpty() } }
+    private fun parseStoreRows(dataRows: List<List<String>>): List<ImportedStoreRow> =
+        dataRows.mapNotNull { cols ->
+            val name = cols.getOrNull(0)?.trim()?.takeIf { it.isNotEmpty() } ?: return@mapNotNull null
+            val aisleOrder = cols.getOrNull(1)
+                ?.split(CsvExporter.INGREDIENT_SEPARATOR)
+                ?.map { it.trim() }
+                ?.filter { it.isNotEmpty() }
+                .orEmpty()
+            ImportedStoreRow(name, aisleOrder)
+        }
+
+    /**
+     * Reads back a [CsvExporter.mealHistoryToCsv] file, positionally: date, slot, name, status —
+     * same "column order, not header text" contract as [parseInventoryCsv]. [slotKeyByLabel] is
+     * the reverse of the localized [com.dtraas.homestock.data.model.MealSlot] label lookup
+     * MoreScreen builds for export, same reasoning as [categoryKeyByLabel] elsewhere in this
+     * file. A row is skipped when its name is blank or its date/slot don't parse — there's no
+     * sensible "default day" or "default slot" to fall back to for either.
+     */
+    fun parseMealHistoryCsv(
+        csv: String,
+        slotKeyByLabel: Map<String, String>,
+        eatenLabel: String,
+        wastedLabel: String,
+    ): MealHistoryImportResult {
+        val allRows = parseCsv(csv)
+        if (allRows.isEmpty()) return MealHistoryImportResult(emptyList(), 0)
+        return parseMealHistoryRows(allRows.drop(1), slotKeyByLabel, eatenLabel, wastedLabel)
+    }
+
+    private fun parseMealHistoryRows(
+        dataRows: List<List<String>>,
+        slotKeyByLabel: Map<String, String>,
+        eatenLabel: String,
+        wastedLabel: String,
+    ): MealHistoryImportResult {
+        var skipped = 0
+        val imported = mutableListOf<ImportedMealHistoryRow>()
+        for (cols in dataRows) {
+            if (cols.size < 4) {
+                skipped++
+                continue
+            }
+            val date = cols[0].trim()
+            val slotKey = slotKeyByLabel[cols[1].trim()]
+            val name = cols[2].trim()
+            if (date.isEmpty() || slotKey == null || name.isEmpty()) {
+                skipped++
+                continue
+            }
+            val statusRaw = cols[3].trim()
+            imported += ImportedMealHistoryRow(
+                date = date,
+                slotKey = slotKey,
+                name = name,
+                status = when {
+                    statusRaw.equals(eatenLabel, ignoreCase = true) -> "eaten"
+                    statusRaw.equals(wastedLabel, ignoreCase = true) -> "wasted"
+                    else -> null
+                },
+            )
+        }
+        return MealHistoryImportResult(imported, skipped)
+    }
 
     /**
      * True when [csv]'s very first row is a lone one-column title cell rather than a real
@@ -226,9 +296,8 @@ object CsvImporter {
      * section's title against the *currently displayed* localized section titles the caller
      * passes in — the same strings [CsvExporter.combinedToCsv] was given when this file was
      * written, so a file exported in one language still imports correctly in that same language.
-     * A section whose title matches none of them (Maaltijden historie, or an older/newer export
-     * format) is left out of the result entirely rather than guessed at — same "no import meaning"
-     * reasoning [CsvExporter.mealHistoryToCsv]'s own doc gives.
+     * A section whose title matches none of them (an older/newer export format's own new section)
+     * is left out of the result entirely rather than guessed at.
      */
     fun parseCombinedCsv(
         csv: String,
@@ -236,14 +305,19 @@ object CsvImporter {
         shoppingListSectionTitle: String,
         recipesSectionTitle: String,
         storesSectionTitle: String,
+        mealHistorySectionTitle: String,
         categoryKeyByLabel: Map<String, String>,
         unitKeyByLabel: Map<String, String>,
+        slotKeyByLabel: Map<String, String>,
         yesLabel: String,
+        eatenLabel: String,
+        wastedLabel: String,
     ): CombinedImportResult {
         var inventory: InventoryImportResult? = null
         var shoppingList: ShoppingListImportResult? = null
         var recipes: RecipeImportResult? = null
-        var stores: List<String>? = null
+        var stores: List<ImportedStoreRow>? = null
+        var mealHistory: MealHistoryImportResult? = null
         for ((title, rows) in splitCombinedCsv(csv)) {
             if (rows.isEmpty()) continue
             val dataRows = rows.drop(1) // that section's own header row, not data.
@@ -252,9 +326,10 @@ object CsvImporter {
                 shoppingListSectionTitle -> shoppingList = parseShoppingListRows(dataRows, categoryKeyByLabel, unitKeyByLabel, yesLabel)
                 recipesSectionTitle -> recipes = parseRecipeRows(dataRows, yesLabel)
                 storesSectionTitle -> stores = parseStoreRows(dataRows)
+                mealHistorySectionTitle -> mealHistory = parseMealHistoryRows(dataRows, slotKeyByLabel, eatenLabel, wastedLabel)
             }
         }
-        return CombinedImportResult(inventory, shoppingList, recipes, stores)
+        return CombinedImportResult(inventory, shoppingList, recipes, stores, mealHistory)
     }
 
     /**
@@ -355,6 +430,10 @@ data class ImportedShoppingListRow(
     val note: String?,
     val price: Double?,
     val isChecked: Boolean,
+    // Null (or the default list's own exported display name — MoreScreen is the one that knows
+    // that name and tells the two apart) means the default, unnamed list. Any other name gets
+    // looked up (or created, if it's new) by MoreScreen's own commitShoppingListRows.
+    val listName: String?,
 )
 
 data class ShoppingListImportResult(
@@ -380,11 +459,44 @@ data class RecipeImportResult(
     val skippedCount: Int,
 )
 
-/** [CsvImporter.parseCombinedCsv]'s result — one nullable field per importable scope, null for
- *  any section the file simply didn't have (e.g. a household that had no custom stores yet). */
+data class ImportedStoreRow(
+    val name: String,
+    // Each element is one aisle path, same encoding as [com.dtraas.homestock.data.local.entity.StoreEntity.aisleOrder]
+    // itself — empty means "no custom gangvolgorde set" (or a file exported before this column
+    // existed), not "clear whatever the household already had".
+    val aisleOrder: List<String>,
+)
+
+data class ImportedMealHistoryRow(
+    // Kept as the raw "yyyy-MM-dd" text CsvExporter wrote rather than parsed here, so this file
+    // stays free of a java.time import — MoreScreen's own commitMealHistoryRows parses it with
+    // the same LocalDate.toString()/parse() round-trip CsvExporter's own date column already
+    // relies on implicitly.
+    val date: String,
+    val slotKey: String,
+    val name: String,
+    // "eaten"/"wasted"/null — a com.dtraas.homestock.data.local.entity.MealCompletionStatus
+    // storage key, kept as a raw string for the same "no extra import" reason as [date].
+    val status: String?,
+)
+
+data class MealHistoryImportResult(
+    val rows: List<ImportedMealHistoryRow>,
+    val skippedCount: Int,
+)
+
+/**
+ * [CsvImporter.parseCombinedCsv]'s result — one nullable field per importable scope, null for any
+ * section the file simply didn't have (e.g. a household that had no custom stores yet). Also used
+ * directly by MoreScreen as the shape of a *single*-scope import's own staged preview (every
+ * field but that one scope's left at its default null) — see MoreScreen's own pendingImportPreview
+ * doc for why every scope now stages through this same one type instead of committing straight
+ * away.
+ */
 data class CombinedImportResult(
-    val inventory: InventoryImportResult?,
-    val shoppingList: ShoppingListImportResult?,
-    val recipes: RecipeImportResult?,
-    val stores: List<String>?,
+    val inventory: InventoryImportResult? = null,
+    val shoppingList: ShoppingListImportResult? = null,
+    val recipes: RecipeImportResult? = null,
+    val stores: List<ImportedStoreRow>? = null,
+    val mealHistory: MealHistoryImportResult? = null,
 )

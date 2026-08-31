@@ -416,6 +416,8 @@
     <string name="more_data_csv_subtitle">Exportez ou importez votre stock, listes, recettes, magasins et plus en CSV</string>
     <string name="more_section_support">Assistance</string>
     <string name="more_export_header_favorite">Favori</string>
+    <string name="more_export_header_aisle_order">Ordre des rayons</string>
+    <string name="more_export_header_list">Liste</string>
     <string name="more_export_header_barcode">Code-barres</string>
     <string name="more_export_success">Fichier enregistré</string>
     <string name="more_export_error">Échec de l\'exportation</string>
@@ -448,21 +450,26 @@
     <string name="more_export_header_status">Statut</string>
     <string name="more_export_subtitle_meal_history">Repas planifiés des 6 derniers mois</string>
     <string name="more_import_title">Importer</string>
+    <string name="more_import_preview_subtitle">Vérifie ce qui sera ajouté avant de confirmer.</string>
     <string name="more_import_subtitle">S’ajoute à ton stock actuel</string>
     <string name="more_import_subtitle_recipes">S’ajoute à tes recettes perso et favorites</string>
     <string name="more_import_subtitle_stores">S’ajoute à ta liste de magasins</string>
+    <string name="more_import_subtitle_meal_history">S’ajoute à ton historique de repas</string>
     <string name="more_import_subtitle_lists">S’ajoute à ta liste de courses actuelle</string>
     <string name="more_import_subtitle_all">Reconnaît automatiquement à quelle partie appartient chaque section : Stock, Listes, Recettes et Magasins</string>
-    <string name="more_import_info">Tu verras d’abord un aperçu de ce qui sera ajouté. Les produits existants restent inchangés.</string>
-    <string name="more_import_info_direct">Ajouté immédiatement, sans écran d’aperçu.</string>
-    <string name="more_import_info_all">Tu verras d’abord un aperçu des produits de stock ; le reste est ajouté immédiatement.</string>
+    <string name="more_import_info">Tu verras d’abord un aperçu de ce qui sera ajouté.</string>
     <string name="more_import_not_available">Cette catégorie ne peut être qu’exportée pour l’instant.</string>
     <string name="more_import_choose_file_action">Choisir un fichier</string>
     <string name="more_import_preview_title">Aperçu</string>
-    <string name="more_import_preview_confirm">Ajouter au stock</string>
+    <string name="more_import_preview_confirm">Ajouter</string>
     <string name="more_import_preview_skipped_format">%1$d lignes seront ignorées (nom ou quantité manquant).</string>
+    <plurals name="more_import_preview_count_format">
+        <item quantity="one">%1$d élément ajouté</item>
+        <item quantity="other">%1$d éléments ajoutés</item>
+    </plurals>
     <string name="more_import_recipe_success_format">%1$d recettes importées.</string>
     <string name="more_import_store_success_format">%1$d magasins importés.</string>
+    <string name="more_import_meal_history_success_format">%1$d repas ajoutés à ton historique.</string>
     <string name="more_import_list_success_format">%1$d articles ajoutés à ta liste.</string>
     <plurals name="more_export_subtitle_inventory_format">
         <item quantity="one">%1$d produit en stock</item>
@@ -479,10 +486,6 @@
     <plurals name="more_export_subtitle_stores_format">
         <item quantity="one">%1$d magasin</item>
         <item quantity="other">%1$d magasins</item>
-    </plurals>
-    <plurals name="more_import_preview_subtitle_format">
-        <item quantity="one">%1$d produit sera ajouté à ton stock.</item>
-        <item quantity="other">%1$d produits seront ajoutés à ton stock.</item>
     </plurals>
     <string name="more_about_version_format">Version de l\'app %1$s</string>
     <string name="more_about_feedback">Donner mon avis</string>

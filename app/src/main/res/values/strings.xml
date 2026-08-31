@@ -419,6 +419,8 @@
     <string name="more_data_csv_title">Data overzetten</string>
     <string name="more_data_csv_subtitle">Voorraad, lijsten, recepten, winkels en meer exporteren of importeren als CSV</string>
     <string name="more_export_header_favorite">Favoriet</string>
+    <string name="more_export_header_aisle_order">Gangvolgorde</string>
+    <string name="more_export_header_list">Lijst</string>
     <string name="more_export_header_barcode">Barcode</string>
     <string name="more_export_success">Bestand opgeslagen</string>
     <string name="more_export_error">Exporteren mislukt</string>
@@ -451,21 +453,26 @@
     <string name="more_export_header_status">Status</string>
     <string name="more_export_subtitle_meal_history">Geplande maaltijden van de laatste 6 maanden</string>
     <string name="more_import_title">Importeren</string>
+    <string name="more_import_preview_subtitle">Bekijk wat wordt toegevoegd voordat je bevestigt.</string>
     <string name="more_import_subtitle">Voegt toe aan je huidige voorraad</string>
     <string name="more_import_subtitle_recipes">Voegt toe aan je eigen recepten en favorieten</string>
     <string name="more_import_subtitle_stores">Voegt toe aan je winkellijst</string>
+    <string name="more_import_subtitle_meal_history">Voegt toe aan je maaltijden-geschiedenis</string>
     <string name="more_import_subtitle_lists">Voegt toe aan je huidige boodschappenlijst</string>
     <string name="more_import_subtitle_all">Herkent zelf welk deel bij Voorraad, Lijsten, Recepten en Winkels hoort</string>
-    <string name="more_import_info">Je ziet eerst een voorbeeld van wat wordt toegevoegd. Bestaande producten blijven staan.</string>
-    <string name="more_import_info_direct">Wordt direct toegevoegd, zonder voorbeeldscherm.</string>
-    <string name="more_import_info_all">Voorraad-producten zie je eerst in een voorbeeld; de rest wordt direct toegevoegd.</string>
+    <string name="more_import_info">Je ziet eerst een voorbeeld van wat wordt toegevoegd.</string>
     <string name="more_import_not_available">Voor deze categorie kun je op dit moment alleen exporteren.</string>
     <string name="more_import_choose_file_action">Bestand kiezen</string>
     <string name="more_import_preview_title">Voorbeeld</string>
-    <string name="more_import_preview_confirm">Toevoegen aan voorraad</string>
+    <string name="more_import_preview_confirm">Toevoegen</string>
     <string name="more_import_preview_skipped_format">%1$d regels worden overgeslagen (ontbrekende naam of aantal).</string>
+    <plurals name="more_import_preview_count_format">
+        <item quantity="one">%1$d item toegevoegd</item>
+        <item quantity="other">%1$d items toegevoegd</item>
+    </plurals>
     <string name="more_import_recipe_success_format">%1$d recepten geïmporteerd.</string>
     <string name="more_import_store_success_format">%1$d winkels geïmporteerd.</string>
+    <string name="more_import_meal_history_success_format">%1$d maaltijden toegevoegd aan je geschiedenis.</string>
     <string name="more_import_list_success_format">%1$d items op je lijst gezet.</string>
     <plurals name="more_export_subtitle_inventory_format">
         <item quantity="one">%1$d product in voorraad</item>
@@ -482,10 +489,6 @@
     <plurals name="more_export_subtitle_stores_format">
         <item quantity="one">%1$d winkel</item>
         <item quantity="other">%1$d winkels</item>
-    </plurals>
-    <plurals name="more_import_preview_subtitle_format">
-        <item quantity="one">%1$d product wordt toegevoegd aan je voorraad.</item>
-        <item quantity="other">%1$d producten worden toegevoegd aan je voorraad.</item>
     </plurals>
     <string name="more_section_support">Ondersteuning</string>
     <string name="more_about_version_format">App versie %1$s</string>

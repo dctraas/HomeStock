@@ -416,6 +416,8 @@
     <string name="more_data_csv_subtitle">Export or import your inventory, lists, recipes, stores and more as CSV</string>
     <string name="more_section_support">Support</string>
     <string name="more_export_header_favorite">Favorite</string>
+    <string name="more_export_header_aisle_order">Aisle order</string>
+    <string name="more_export_header_list">List</string>
     <string name="more_export_header_barcode">Barcode</string>
     <string name="more_export_success">File saved</string>
     <string name="more_export_error">Export failed</string>
@@ -448,21 +450,26 @@
     <string name="more_export_header_status">Status</string>
     <string name="more_export_subtitle_meal_history">Planned meals from the last 6 months</string>
     <string name="more_import_title">Import</string>
+    <string name="more_import_preview_subtitle">Review what will be added before you confirm.</string>
     <string name="more_import_subtitle">Adds to your current stock</string>
     <string name="more_import_subtitle_recipes">Adds to your own recipes and favorites</string>
     <string name="more_import_subtitle_stores">Adds to your store list</string>
+    <string name="more_import_subtitle_meal_history">Adds to your meal history</string>
     <string name="more_import_subtitle_lists">Adds to your current shopping list</string>
     <string name="more_import_subtitle_all">Automatically recognizes which part belongs to Stock, Lists, Recipes and Stores</string>
-    <string name="more_import_info">You’ll see a preview of what’s added first. Existing products stay as they are.</string>
-    <string name="more_import_info_direct">Added right away, with no preview screen.</string>
-    <string name="more_import_info_all">You’ll see a preview of the stock products first; everything else is added right away.</string>
+    <string name="more_import_info">You’ll see a preview of what’s added first.</string>
     <string name="more_import_not_available">This category can only be exported right now.</string>
     <string name="more_import_choose_file_action">Choose file</string>
     <string name="more_import_preview_title">Preview</string>
-    <string name="more_import_preview_confirm">Add to stock</string>
+    <string name="more_import_preview_confirm">Add</string>
     <string name="more_import_preview_skipped_format">%1$d rows will be skipped (missing name or quantity).</string>
+    <plurals name="more_import_preview_count_format">
+        <item quantity="one">%1$d item added</item>
+        <item quantity="other">%1$d items added</item>
+    </plurals>
     <string name="more_import_recipe_success_format">%1$d recipes imported.</string>
     <string name="more_import_store_success_format">%1$d stores imported.</string>
+    <string name="more_import_meal_history_success_format">%1$d meals added to your history.</string>
     <string name="more_import_list_success_format">%1$d items added to your list.</string>
     <plurals name="more_export_subtitle_inventory_format">
         <item quantity="one">%1$d product in stock</item>
@@ -479,10 +486,6 @@
     <plurals name="more_export_subtitle_stores_format">
         <item quantity="one">%1$d store</item>
         <item quantity="other">%1$d stores</item>
-    </plurals>
-    <plurals name="more_import_preview_subtitle_format">
-        <item quantity="one">%1$d product will be added to your stock.</item>
-        <item quantity="other">%1$d products will be added to your stock.</item>
     </plurals>
     <string name="more_about_version_format">App version %1$s</string>
     <string name="more_about_feedback">Give feedback</string>

@@ -3,9 +3,12 @@ package com.dtraas.homestock.ui.account
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.VerifiedUser
@@ -33,12 +36,19 @@ import com.dtraas.homestock.R
  * isn't urgent enough to interrupt whatever screen someone lands on, and staying visible across
  * navigation — instead of vanishing the moment it's dismissed once — gives it more than one
  * chance to be noticed. Meer > Account koppelen remains available afterward either way.
+ *
+ * Sits above every screen's own top app bar (see HomeStockNavHost), so — unlike those, which all
+ * live inside a Scaffold that already zeroes out the top content padding in favor of each
+ * header's own `windowInsetsPadding(WindowInsets.statusBars)` — this banner needs that same
+ * status-bar clearance itself, or its content starts right under the status bar with only the
+ * Row's own 10dp top padding for cushion, reading as almost no space above the text at all next
+ * to the same 10dp below it.
  */
 @Composable
 fun AccountLinkBanner(onLinkNow: () -> Unit, onDismiss: () -> Unit, modifier: Modifier = Modifier) {
     Surface(
         color = MaterialTheme.colorScheme.primaryContainer,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars),
     ) {
         Row(
             modifier = Modifier.padding(start = 16.dp, end = 4.dp, top = 10.dp, bottom = 10.dp),

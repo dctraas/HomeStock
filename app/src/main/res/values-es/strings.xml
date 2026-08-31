@@ -416,6 +416,8 @@
     <string name="more_data_csv_subtitle">Exporta o importa tu inventario, listas, recetas, tiendas y más como CSV</string>
     <string name="more_section_support">Soporte</string>
     <string name="more_export_header_favorite">Favorito</string>
+    <string name="more_export_header_aisle_order">Orden de pasillos</string>
+    <string name="more_export_header_list">Lista</string>
     <string name="more_export_header_barcode">Código de barras</string>
     <string name="more_export_success">Archivo guardado</string>
     <string name="more_export_error">Error al exportar</string>
@@ -448,21 +450,26 @@
     <string name="more_export_header_status">Estado</string>
     <string name="more_export_subtitle_meal_history">Comidas planificadas de los últimos 6 meses</string>
     <string name="more_import_title">Importar</string>
+    <string name="more_import_preview_subtitle">Revisa lo que se añadirá antes de confirmar.</string>
     <string name="more_import_subtitle">Se añade a tu inventario actual</string>
     <string name="more_import_subtitle_recipes">Se añade a tus recetas propias y favoritas</string>
     <string name="more_import_subtitle_stores">Se añade a tu lista de tiendas</string>
+    <string name="more_import_subtitle_meal_history">Se añade a tu historial de comidas</string>
     <string name="more_import_subtitle_lists">Se añade a tu lista de la compra actual</string>
     <string name="more_import_subtitle_all">Reconoce automáticamente qué parte pertenece a Inventario, Listas, Recetas y Tiendas</string>
-    <string name="more_import_info">Primero verás una vista previa de lo que se añadirá. Los productos existentes se mantienen.</string>
-    <string name="more_import_info_direct">Se añade de inmediato, sin pantalla de vista previa.</string>
-    <string name="more_import_info_all">Primero verás una vista previa de los productos de inventario; el resto se añade de inmediato.</string>
+    <string name="more_import_info">Primero verás una vista previa de lo que se añadirá.</string>
     <string name="more_import_not_available">Por ahora, esta categoría solo se puede exportar.</string>
     <string name="more_import_choose_file_action">Elegir archivo</string>
     <string name="more_import_preview_title">Vista previa</string>
-    <string name="more_import_preview_confirm">Añadir al inventario</string>
+    <string name="more_import_preview_confirm">Añadir</string>
     <string name="more_import_preview_skipped_format">%1$d filas se omitirán (falta el nombre o la cantidad).</string>
+    <plurals name="more_import_preview_count_format">
+        <item quantity="one">%1$d elemento añadido</item>
+        <item quantity="other">%1$d elementos añadidos</item>
+    </plurals>
     <string name="more_import_recipe_success_format">%1$d recetas importadas.</string>
     <string name="more_import_store_success_format">%1$d tiendas importadas.</string>
+    <string name="more_import_meal_history_success_format">%1$d comidas añadidas a tu historial.</string>
     <string name="more_import_list_success_format">%1$d artículos añadidos a tu lista.</string>
     <plurals name="more_export_subtitle_inventory_format">
         <item quantity="one">%1$d producto en existencia</item>
@@ -479,10 +486,6 @@
     <plurals name="more_export_subtitle_stores_format">
         <item quantity="one">%1$d tienda</item>
         <item quantity="other">%1$d tiendas</item>
-    </plurals>
-    <plurals name="more_import_preview_subtitle_format">
-        <item quantity="one">%1$d producto se añadirá a tu inventario.</item>
-        <item quantity="other">%1$d productos se añadirán a tu inventario.</item>
     </plurals>
     <string name="more_about_version_format">Versión de la app %1$s</string>
     <string name="more_about_feedback">Enviar comentarios</string>

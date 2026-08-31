@@ -416,6 +416,8 @@
     <string name="more_data_csv_subtitle">Vorrat, Listen, Rezepte, Geschäfte und mehr als CSV exportieren oder importieren</string>
     <string name="more_section_support">Support</string>
     <string name="more_export_header_favorite">Favorit</string>
+    <string name="more_export_header_aisle_order">Gangreihenfolge</string>
+    <string name="more_export_header_list">Liste</string>
     <string name="more_export_header_barcode">Barcode</string>
     <string name="more_export_success">Datei gespeichert</string>
     <string name="more_export_error">Export fehlgeschlagen</string>
@@ -448,21 +450,26 @@
     <string name="more_export_header_status">Status</string>
     <string name="more_export_subtitle_meal_history">Geplante Mahlzeiten der letzten 6 Monate</string>
     <string name="more_import_title">Importieren</string>
+    <string name="more_import_preview_subtitle">Sieh dir an, was hinzugefügt wird, bevor du bestätigst.</string>
     <string name="more_import_subtitle">Wird zu deinem aktuellen Bestand hinzugefügt</string>
     <string name="more_import_subtitle_recipes">Wird zu deinen eigenen Rezepten und Favoriten hinzugefügt</string>
     <string name="more_import_subtitle_stores">Wird zu deiner Geschäfteliste hinzugefügt</string>
+    <string name="more_import_subtitle_meal_history">Wird zu deiner Mahlzeiten-Historie hinzugefügt</string>
     <string name="more_import_subtitle_lists">Wird zu deiner aktuellen Einkaufsliste hinzugefügt</string>
     <string name="more_import_subtitle_all">Erkennt automatisch, welcher Teil zu Bestand, Listen, Rezepten und Geschäften gehört</string>
-    <string name="more_import_info">Du siehst zuerst eine Vorschau dessen, was hinzugefügt wird. Bestehende Produkte bleiben erhalten.</string>
-    <string name="more_import_info_direct">Wird sofort hinzugefügt, ohne Vorschau.</string>
-    <string name="more_import_info_all">Du siehst zuerst eine Vorschau der Bestandsprodukte; der Rest wird sofort hinzugefügt.</string>
+    <string name="more_import_info">Du siehst zuerst eine Vorschau dessen, was hinzugefügt wird.</string>
     <string name="more_import_not_available">Diese Kategorie kann derzeit nur exportiert werden.</string>
     <string name="more_import_choose_file_action">Datei auswählen</string>
     <string name="more_import_preview_title">Vorschau</string>
-    <string name="more_import_preview_confirm">Zum Bestand hinzufügen</string>
+    <string name="more_import_preview_confirm">Hinzufügen</string>
     <string name="more_import_preview_skipped_format">%1$d Zeilen werden übersprungen (fehlender Name oder fehlende Menge).</string>
+    <plurals name="more_import_preview_count_format">
+        <item quantity="one">%1$d Element hinzugefügt</item>
+        <item quantity="other">%1$d Elemente hinzugefügt</item>
+    </plurals>
     <string name="more_import_recipe_success_format">%1$d Rezepte importiert.</string>
     <string name="more_import_store_success_format">%1$d Geschäfte importiert.</string>
+    <string name="more_import_meal_history_success_format">%1$d Mahlzeiten zu deiner Historie hinzugefügt.</string>
     <string name="more_import_list_success_format">%1$d Artikel zu deiner Liste hinzugefügt.</string>
     <plurals name="more_export_subtitle_inventory_format">
         <item quantity="one">%1$d Produkt auf Lager</item>
@@ -479,10 +486,6 @@
     <plurals name="more_export_subtitle_stores_format">
         <item quantity="one">%1$d Geschäft</item>
         <item quantity="other">%1$d Geschäfte</item>
-    </plurals>
-    <plurals name="more_import_preview_subtitle_format">
-        <item quantity="one">%1$d Produkt wird zu deinem Bestand hinzugefügt.</item>
-        <item quantity="other">%1$d Produkte werden zu deinem Bestand hinzugefügt.</item>
     </plurals>
     <string name="more_about_version_format">App-Version %1$s</string>
     <string name="more_about_feedback">Feedback geben</string>

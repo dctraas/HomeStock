@@ -35,13 +35,19 @@ class StoreRepository(
             }
         }
 
-    suspend fun addStore(name: String) {
+    /** [aisleOrder] lets a CSV import (see CsvImporter.ImportedStoreRow) recreate a store with its
+     *  own gangvolgorde already set in the same write, instead of a bare name followed by a
+     *  separate [setAisleOrder] call — every other caller (the plain "add a store" flow) just
+     *  omits it and gets today's unset-gangvolgorde behavior. */
+    suspend fun addStore(name: String, aisleOrder: List<String> = emptyList()) {
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return
         val householdId = householdSession.householdId.value ?: return
         val existing = storesCollection(householdId).get().await()
         val nextSortOrder = (existing.documents.maxOfOrNull { it.getDouble("sortOrder") ?: 0.0 } ?: -1.0) + 1
-        storesCollection(householdId).add(StoreEntity(id = "", name = trimmed, sortOrder = nextSortOrder).toMap()).await()
+        storesCollection(householdId).add(
+            StoreEntity(id = "", name = trimmed, sortOrder = nextSortOrder, aisleOrder = aisleOrder).toMap(),
+        ).await()
     }
 
     suspend fun removeStore(id: String) {

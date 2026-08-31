@@ -235,6 +235,7 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
         note = stringResource(R.string.shopping_list_note_label),
         price = stringResource(R.string.more_export_header_price),
         checked = stringResource(R.string.more_export_header_checked),
+        list = stringResource(R.string.more_export_header_list),
     )
     val inventorySectionTitle = stringResource(R.string.inventory_title)
     val shoppingListSectionTitle = stringResource(R.string.shopping_list_title)
@@ -249,11 +250,13 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                 yesLabel = csvYes,
                 noLabel = csvNo,
             )
+            val listNameById = shoppingListsRepository.observeLists().first().associate { it.id to it.name }
             val listCsv = CsvExporter.shoppingListToCsv(
                 shoppingListRepository.observeShoppingList().first(),
                 shoppingListCsvHeaders,
                 categoryLabel = { key -> categoryLabels[key] ?: key },
                 unitLabel = { key -> unitLabels[key] ?: key },
+                listName = { listId -> listId?.let { listNameById[it] } ?: shoppingListSectionTitle },
                 yesLabel = csvYes,
                 noLabel = csvNo,
             )
@@ -459,6 +462,22 @@ fun HouseholdSettingsScreen(onBack: () -> Unit) {
                 coroutineScope.launch {
                     try {
                         householdRepository.deleteHousehold(idToDelete)
+                        // This device's Firebase session keeps whatever Google credential it had
+                        // linked even after the household it protected is gone — Firestore data
+                        // and Firebase Auth state are independent, so deleting the household alone
+                        // doesn't touch it. Left alone, that stale link permanently blocks this
+                        // same Google account from ever cleanly linking to a *future* household:
+                        // Firebase treats it as already claimed and throws a collision, sending
+                        // the household member into the "overstappen naar bestaand account?"
+                        // recovery flow for an account that (correctly) has nothing left to
+                        // recover. Unlinking here, now that the household it was protecting is
+                        // actually gone, is what keeps that from ever happening. Best-effort — the
+                        // household itself is already deleted by this point, so unlinkGoogleAccount's
+                        // own Result (it never throws) is deliberately not checked: a hiccup here
+                        // shouldn't read to the household member as the deletion having failed.
+                        if (application.container.accountLinkRepository.linkedEmail != null) {
+                            application.container.accountLinkRepository.unlinkGoogleAccount()
+                        }
                         showDeleteConfirm = false
                         // Shown while this screen (and its SnackbarHost) still exist —
                         // leaveHousehold() below flips householdId to null, which
