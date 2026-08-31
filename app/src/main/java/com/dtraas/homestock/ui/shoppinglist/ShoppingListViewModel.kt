@@ -61,7 +61,7 @@ class ShoppingListViewModel(
     private val storeRepository: StoreRepository,
     private val shoppingListsRepository: ShoppingListsRepository,
     activityLogRepository: ActivityLogRepository,
-    inventoryRepository: InventoryRepository,
+    private val inventoryRepository: InventoryRepository,
     defaultListName: String,
 ) : ViewModel() {
 
